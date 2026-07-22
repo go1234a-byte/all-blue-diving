@@ -122,25 +122,14 @@ const ChatRoom = () => {
       </header>
       <main className="mx-auto w-full max-w-md px-4 py-4 md:max-w-lg">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard" className="text-xs">대시보드</TabsTrigger>
-            <TabsTrigger value="chat" className="text-xs">그룹채팅</TabsTrigger>
             <TabsTrigger value="itinerary" className="text-xs">일정</TabsTrigger>
             <TabsTrigger value="participants" className="text-xs">참가자</TabsTrigger>
             <TabsTrigger value="more" className="text-xs">더보기</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard" className="pt-3">
             <TourDashboardTab tour={tour} bookings={tourBookings} isInstructor={isInstructor} />
-          </TabsContent>
-          <TabsContent value="chat" className="space-y-2 pt-3">
-            <TourInfoPinnedBanner tour={tour} />
-            {tour.instructorNotice && (
-              <div className="rounded-lg border border-primary/40 bg-secondary/60 px-3 py-2 text-xs text-foreground">
-                <span className="font-semibold text-primary">📌 강사 공지 </span>
-                {tour.instructorNotice}
-              </div>
-            )}
-            <ChatThread tourId={tour.id} tour={tour} />
           </TabsContent>
           <TabsContent value="itinerary" className="pt-3">
             <TourItineraryTab tour={tour} isInstructor={isInstructor} />

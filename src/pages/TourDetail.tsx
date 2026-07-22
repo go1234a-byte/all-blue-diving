@@ -91,7 +91,7 @@ const TourDetail = () => {
             className="flex items-center gap-2 rounded-xl border border-primary/30 bg-secondary/40 p-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
           >
             <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
-            예약한 투어예요 · 대시보드/그룹채팅 바로가기
+            예약한 투어예요 · 대시보드 바로가기
           </Link>
         )}
 

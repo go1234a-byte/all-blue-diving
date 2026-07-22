@@ -178,7 +178,7 @@ export function BookingHistoryList({ diverId }: BookingHistoryListProps) {
                   <Button
                     size="sm"
                     className="w-full gap-1.5 text-xs"
-                    onClick={() => navigate(`/chat/${tour.id}`)}
+                    onClick={() => navigate(`/chat/${tour.id}?view=chat`)}
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
                     예약 상세 그룹채팅
