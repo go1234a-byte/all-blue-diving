@@ -3,7 +3,6 @@ import { MessageCircleQuestion, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LicenseVaultCard } from "@/components/mypage/LicenseVaultCard";
 import { DiverSafetyProfileCard } from "@/components/mypage/DiverSafetyProfileCard";
-import { BookingHistoryList } from "@/components/mypage/BookingHistoryList";
 import { InquiryHistoryList } from "@/components/mypage/InquiryHistoryList";
 import { AccountActions } from "@/components/mypage/AccountActions";
 import { PushNotificationToggle } from "@/components/mypage/PushNotificationToggle";
@@ -34,10 +33,12 @@ export function DiverMyPageView() {
 
       <DiverSafetyProfileCard profile={profile} diverId={currentDiverId} />
 
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-foreground">내 예약 내역</h3>
-        <BookingHistoryList diverId={currentDiverId} />
-      </div>
+      <Link
+        to="/my-bookings"
+        className="flex items-center justify-between rounded-xl border border-border bg-card p-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary/40"
+      >
+        내 예약 내역 보기
+      </Link>
 
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-foreground">문의 내역</h3>
