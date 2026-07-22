@@ -50,6 +50,7 @@ const Search = () => {
     const activities = (activitiesParam ? activitiesParam.split(",") : []) as ActivityType[];
     const q = query.toLowerCase();
     return tours
+      .filter((t) => !t.adminStatus) // 관리자가 정지/보류 처리한 투어는 검색 결과에서 제외한다.
       .filter(
         (t) =>
           !q ||

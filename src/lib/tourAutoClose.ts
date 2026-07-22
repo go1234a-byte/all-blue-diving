@@ -32,10 +32,11 @@ export function isPastAutoCloseDate(tour: Pick<Tour, "startDate">): boolean {
  * - 이미 처리된 투어(autoCloseProcessed)나 이미 마감된 투어는 대상에서 제외한다.
  */
 export function shouldEvaluateAutoClose(
-  tour: Pick<Tour, "startDate" | "status" | "autoCloseProcessed">,
+  tour: Pick<Tour, "startDate" | "status" | "autoCloseProcessed" | "adminStatus">,
 ): boolean {
   if (tour.status !== "open") return false;
   if (tour.autoCloseProcessed) return false;
+  if (tour.adminStatus) return false; // 관리자 정지/보류 중인 투어는 자동 마감 평가에서 제외
   return isPastAutoCloseDate(tour);
 }
 

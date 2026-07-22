@@ -15,7 +15,9 @@ const Index = () => {
   const [splashDone, setSplashDone] = useState(
     () => typeof window !== "undefined" && window.sessionStorage.getItem(SPLASH_SESSION_KEY) === "true",
   );
-  const { tours, notices } = useAppData();
+  const { tours: allTours, notices } = useAppData();
+  // 관리자가 정지/보류 처리한 투어는 다이버에게 노출하지 않는다.
+  const tours = allTours.filter((t) => !t.adminStatus);
   const pinnedNotice = notices.find((n) => n.pinned);
 
   const handleSplashFinish = () => {

@@ -82,6 +82,14 @@ const Checkout = () => {
   // TODO: 실제 토스페이먼츠 연동 복구 시 이 함수를 TossPaymentWidget.requestPayment() 흐름으로 되돌릴 것.
   // 지금은 결제위젯 없이 "결제 완료"로 바로 처리하는 임시(테스트) 모드다.
   const handlePay = async () => {
+    if (tour.adminStatus) {
+      toast({
+        title: tour.adminStatus === "suspended" ? "정지된 투어예요" : "보류중인 투어예요",
+        description: "현재 예약을 받을 수 없는 투어입니다.",
+        variant: "destructive",
+      });
+      return;
+    }
     setProcessing(true);
     try {
       const created = await addBooking({

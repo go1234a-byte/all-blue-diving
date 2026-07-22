@@ -174,6 +174,7 @@ function mapTourRow(row: any): Tour {
     pledgeSignatureDataUrl: row.pledge_signature_data_url ?? undefined,
     instructorNotice: row.instructor_notice ?? undefined,
     itineraryDays: (row.itinerary_days ?? undefined) as Tour["itineraryDays"],
+    adminStatus: (row.admin_status ?? undefined) as Tour["adminStatus"],
   };
 }
 
@@ -438,6 +439,7 @@ interface AppDataContextValue {
   resolveUnderMinDecision: (tourId: string, decision: UnderMinParticipantsPolicy) => Promise<void>;
   updateTourNotice: (tourId: string, notice: string) => Promise<void>;
   updateTourItinerary: (tourId: string, days: TourItineraryDay[]) => Promise<void>;
+  setTourAdminStatus: (tourId: string, adminStatus: Tour["adminStatus"]) => Promise<void>;
   updateBookingTravelInfo: (bookingId: string, input: { flightInfo?: string; passportInfo?: string }) => Promise<void>;
   updateDiverProfile: (
     diverId: string,
@@ -964,6 +966,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateTourItinerary = async (tourId: string, days: TourItineraryDay[]) => {
     setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, itineraryDays: days } : t)));
     await supabase.from("tours").update({ itinerary_days: days }).eq("id", tourId);
+  };
+
+  /**
+   * 관리자 — 투어를 정지(즉시 예약 차단 + 검색 노출 제거) 또는 보류(임시 비공개) 처리한다.
+   * adminStatus를 undefined로 넘기면 정상 상태로 복귀(재개)시킨다.
+   */
+  const setTourAdminStatus = async (tourId: string, adminStatus: Tour["adminStatus"]) => {
+    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, adminStatus } : t)));
+    await supabase.from("tours").update({ admin_status: adminStatus ?? null }).eq("id", tourId);
   };
 
   /** 다이버 본인 — 참가자 대시보드 [더보기] 탭에서 본인 항공/여권 정보를 등록한다. */
@@ -1717,6 +1728,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       resolveUnderMinDecision,
       updateTourNotice,
       updateTourItinerary,
+      setTourAdminStatus,
       updateBookingTravelInfo,
       updateDiverProfile,
       addBooking,

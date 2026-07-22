@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ArrowLeft, Bookmark, CalendarDays, MessageCircle, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Bookmark, CalendarDays, MessageCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TourGallery } from "@/components/tour/TourGallery";
@@ -13,6 +13,7 @@ import { ReviewList } from "@/components/tour/ReviewList";
 import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
+import { useToast } from "@/hooks/use-toast";
 import { CERTIFICATION_LABELS } from "@/lib/constants";
 import { formatKRW } from "@/lib/pricing";
 import { formatDateKR, formatDateRangeKR } from "@/lib/dates";
@@ -29,6 +30,7 @@ const TourDetail = () => {
   const { getTourById, getInstructorById, getDiveCenterByInstructorId, getCenterById, isBookmarked, toggleBookmark, bookings } =
     useAppData();
   const { isLoggedIn, currentDiverId } = useRole();
+  const { toast } = useToast();
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
 
   const tour = tourId ? getTourById(tourId) : undefined;
@@ -53,8 +55,17 @@ const TourDetail = () => {
     .filter((o) => o.isActive && selectedOptionIds.includes(o.id))
     .reduce((sum, o) => sum + o.price, 0);
   const displayTotal = tour.basePrice + selectedOptionsTotal;
+  const isBookingBlocked = Boolean(tour.adminStatus);
 
   const handleBookNow = () => {
+    if (isBookingBlocked) {
+      toast({
+        title: tour.adminStatus === "suspended" ? "정지된 투어예요" : "보류중인 투어예요",
+        description: "현재 예약을 받을 수 없는 투어입니다.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!isLoggedIn) {
       // 비회원은 투어를 자유롭게 둘러볼 수 있고, "예약하기"를 누르는 시점에만 회원가입/로그인을 안내한다.
       // 가입 완료 후에는 원래 보던 투어의 결제 화면으로 자동으로 돌아온다.
@@ -90,6 +101,16 @@ const TourDetail = () => {
       </header>
 
       <main className="mx-auto w-full max-w-md space-y-6 px-4 py-5 md:max-w-lg">
+        {isBookingBlocked && (
+          <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {tour.adminStatus === "suspended"
+                ? "관리자에 의해 정지된 투어입니다. 예약을 받을 수 없습니다."
+                : "관리자 검토로 보류중인 투어입니다. 검토가 끝날 때까지 예약을 받을 수 없습니다."}
+            </span>
+          </div>
+        )}
         {myBooking && (
           <Link
             to={`/chat/${tour.id}`}
@@ -175,8 +196,8 @@ const TourDetail = () => {
           </p>
           <p className="text-lg font-bold text-primary">{formatKRW(displayTotal)}</p>
         </div>
-        <Button size="lg" onClick={handleBookNow}>
-          예약하기
+        <Button size="lg" onClick={handleBookNow} disabled={isBookingBlocked}>
+          {isBookingBlocked ? "예약 불가" : "예약하기"}
         </Button>
       </div>
     </div>
