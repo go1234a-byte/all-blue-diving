@@ -1,6 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatDateKR } from "@/lib/dates";
 import type { InstructorNotificationType } from "@/types";
@@ -13,55 +11,34 @@ const TYPE_LABEL: Record<InstructorNotificationType, string> = {
   min_participants_decision_needed: "최소인원 미달 결정 필요",
 };
 
+/** 모바일 폭에 맞춘 카드형 알림 목록 — 기존 데스크톱 표 대신 사용한다. */
 const AdminNotificationsPage = () => {
   const { instructorNotifications } = useAppData();
   const sorted = [...instructorNotifications].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
   return (
-    <Card className="accent-top-ocean">
-      <CardContent className="overflow-x-auto p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>유형</TableHead>
-              <TableHead>투어</TableHead>
-              <TableHead>예약자</TableHead>
-              <TableHead>생성일</TableHead>
-              <TableHead>읽음여부</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sorted.map((n) => (
-              <TableRow key={n.id}>
-                <TableCell>
-                  <Badge
-                    variant={n.type === "new_booking" ? "secondary" : "destructive"}
-                    className="text-[10px]"
-                  >
-                    {TYPE_LABEL[n.type]}
-                  </Badge>
-                </TableCell>
-                <TableCell className="max-w-[200px] truncate text-sm">{n.tourTitle}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{n.diverName ?? "-"}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{formatDateKR(n.createdAt)}</TableCell>
-                <TableCell>
-                  <Badge variant={n.read ? "outline" : "default"} className="text-[10px]">
-                    {n.read ? "읽음" : "안읽음"}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-            {sorted.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                  알림 내역이 없습니다.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+    <div className="space-y-2">
+      {sorted.length === 0 && (
+        <p className="py-8 text-center text-sm text-muted-foreground">알림 내역이 없습니다.</p>
+      )}
+      {sorted.map((n) => (
+        <div key={n.id} className="space-y-1.5 rounded-xl border border-border bg-card p-3">
+          <div className="flex items-start justify-between gap-2">
+            <Badge variant={n.type === "new_booking" ? "secondary" : "destructive"} className="text-[10px]">
+              {TYPE_LABEL[n.type]}
+            </Badge>
+            <Badge variant={n.read ? "outline" : "default"} className="shrink-0 text-[10px]">
+              {n.read ? "읽음" : "안읽음"}
+            </Badge>
+          </div>
+          <p className="line-clamp-1 text-sm text-foreground">{n.tourTitle}</p>
+          <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+            <span>{n.diverName ?? "-"}</span>
+            <span>{formatDateKR(n.createdAt)}</span>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 };
 

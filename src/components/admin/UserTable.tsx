@@ -1,6 +1,18 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import type { ProfileStatus } from "@/types";
 
 const STATUS_LABEL: Record<ProfileStatus, string> = {
@@ -18,7 +30,13 @@ const STATUS_VARIANT: Record<ProfileStatus, "default" | "secondary" | "destructi
 /** 모바일 폭에 맞춘 카드형 회원 목록 — 기존 데스크톱 표 대신 사용한다. */
 export function UserTable() {
   const { diverProfiles, instructorProfiles, setProfileStatus } = useAppData();
+  const { toast } = useToast();
   const allUsers = [...instructorProfiles, ...diverProfiles];
+
+  const handleStatusChange = (userId: string, userName: string, status: ProfileStatus) => {
+    setProfileStatus(userId, status);
+    toast({ title: `${userName}님을 ${STATUS_LABEL[status]} 처리했습니다.` });
+  };
 
   return (
     <div className="space-y-2">
@@ -40,24 +58,53 @@ export function UserTable() {
           </div>
           <p className="text-xs text-muted-foreground">{user.phone}</p>
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 text-xs"
-              onClick={() => setProfileStatus(user.id, "warned")}
-              disabled={user.status === "warned"}
-            >
-              회원 경고
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              className="flex-1 text-xs"
-              onClick={() => setProfileStatus(user.id, "suspended")}
-              disabled={user.status === "suspended"}
-            >
-              활동 정지
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="flex-1 text-xs" disabled={user.status === "warned"}>
+                  회원 경고
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{user.name}님에게 경고를 주시겠습니까?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    경고 처리 시 회원 상태가 &apos;경고&apos;로 변경됩니다.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleStatusChange(user.id, user.name, "warned")}>
+                    경고 처리
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="flex-1 text-xs"
+                  disabled={user.status === "suspended"}
+                >
+                  활동 정지
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{user.name}님을 활동정지 시키겠습니까?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    활동정지 처리 시 해당 회원은 서비스 이용이 제한됩니다. 이 작업은 나중에 다시 해제할 수 있습니다.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleStatusChange(user.id, user.name, "suspended")}>
+                    활동정지
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       ))}

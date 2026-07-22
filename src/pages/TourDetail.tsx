@@ -48,6 +48,7 @@ const TourDetail = () => {
   const myBooking = currentDiverId
     ? bookings.find((b) => b.tourId === tour.id && b.diverId === currentDiverId && b.status !== "cancelled")
     : undefined;
+  const confirmedCount = bookings.filter((b) => b.tourId === tour.id && b.status === "confirmed").length;
 
   const handleBookNow = () => {
     if (!isLoggedIn) {
@@ -117,7 +118,7 @@ const TourDetail = () => {
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="h-4 w-4" />
-            최대 {tour.maxParticipants}명
+            {confirmedCount}/{tour.maxParticipants}명 모집
           </div>
           <div className="col-span-2 border-t border-primary/20 pt-2 text-xs text-warning-foreground">
             모집 마감일: {formatDateKR(tour.recruitmentDeadline)}까지

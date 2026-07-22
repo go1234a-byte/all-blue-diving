@@ -1,64 +1,44 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ReviewModerationQueue } from "@/components/admin/ReviewModerationQueue";
 import { useAppData } from "@/contexts/AppDataContext";
 
+/** 모바일 폭에 맞춘 카드형 신고 목록 — 기존 데스크톱 표 대신 사용한다. */
 export function ReportsLog() {
   const { reports, resolveReport } = useAppData();
 
   return (
     <div className="space-y-5">
-      <div className="overflow-hidden rounded-xl border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>대상</TableHead>
-              <TableHead>위반 유형</TableHead>
-              <TableHead>상세 내용</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead className="text-right">처리</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {reports.map((report) => (
-              <TableRow key={report.id}>
-                <TableCell className="font-medium">
-                  {report.targetName}
-                  <span className="ml-1 text-xs text-muted-foreground">
-                    ({report.targetType === "instructor" ? "강사" : "다이버"})
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">{report.violationType}</Badge>
-                </TableCell>
-                <TableCell className="max-w-[280px] truncate text-muted-foreground">{report.description}</TableCell>
-                <TableCell>
-                  <Badge variant={report.status === "pending" ? "secondary" : "default"}>
-                    {report.status === "pending" ? "처리 대기" : "처리 완료"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={report.status === "resolved"}
-                    onClick={() => resolveReport(report.id)}
-                  >
-                    처리 완료 표시
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {reports.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  접수된 신고가 없습니다.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <div className="space-y-2">
+        {reports.length === 0 && (
+          <p className="py-8 text-center text-sm text-muted-foreground">접수된 신고가 없습니다.</p>
+        )}
+        {reports.map((report) => (
+          <div key={report.id} className="space-y-1.5 rounded-xl border border-border bg-card p-3">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-semibold text-foreground">
+                {report.targetName}
+                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                  ({report.targetType === "instructor" ? "강사" : "다이버"})
+                </span>
+              </p>
+              <Badge variant={report.status === "pending" ? "secondary" : "default"} className="shrink-0 text-[10px]">
+                {report.status === "pending" ? "처리 대기" : "처리 완료"}
+              </Badge>
+            </div>
+            <Badge variant="outline" className="text-[10px]">{report.violationType}</Badge>
+            <p className="text-xs text-muted-foreground">{report.description}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full text-xs"
+              disabled={report.status === "resolved"}
+              onClick={() => resolveReport(report.id)}
+            >
+              처리 완료 표시
+            </Button>
+          </div>
+        ))}
       </div>
 
       <div className="space-y-2">

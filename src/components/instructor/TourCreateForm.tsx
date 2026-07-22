@@ -227,8 +227,22 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !country || !site || activityTypes.length === 0 || !startDate || !endDate || !deadline || !basePrice || mainImage.length === 0) {
-      toast({ title: "필수 항목을 모두 입력해주세요", variant: "destructive" });
+    const missingFields: string[] = [];
+    if (!title) missingFields.push("투어명");
+    if (!country) missingFields.push("국가");
+    if (!site) missingFields.push("다이브 사이트");
+    if (activityTypes.length === 0) missingFields.push("액티비티 종류");
+    if (!startDate) missingFields.push("투어 출발일");
+    if (!endDate) missingFields.push("투어 종료일");
+    if (!deadline) missingFields.push("투어모집 마감일");
+    if (!basePrice) missingFields.push("기본가");
+    if (mainImage.length === 0) missingFields.push("대표 이미지");
+    if (missingFields.length > 0) {
+      toast({
+        title: "필수 항목을 입력해주세요",
+        description: `다음 항목이 비어있어요: ${missingFields.join(", ")}`,
+        variant: "destructive",
+      });
       return;
     }
     if (centerMode === "existing" && !selectedCenterId) {
