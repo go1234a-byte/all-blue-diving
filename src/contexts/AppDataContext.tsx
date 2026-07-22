@@ -175,6 +175,8 @@ function mapTourRow(row: any): Tour {
     instructorNotice: row.instructor_notice ?? undefined,
     itineraryDays: (row.itinerary_days ?? undefined) as Tour["itineraryDays"],
     adminStatus: (row.admin_status ?? undefined) as Tour["adminStatus"],
+    meetingPoint: row.meeting_point ?? "",
+    meetingTime: row.meeting_time ?? "",
   };
 }
 
@@ -242,6 +244,7 @@ function mapReviewRow(row: any): Review {
     categoryRatings: (row.category_ratings ?? undefined) as ReviewCategoryRatings | undefined,
     photos: row.photos ?? [],
     videoUrl: row.video_url ?? undefined,
+    visibility: (row.visibility as Review["visibility"]) ?? "public",
     reported: row.reported,
     deleted: row.deleted,
     createdAt: row.created_at,
@@ -348,6 +351,9 @@ interface NewTourInput {
   pledgeSignerName: string;
   pledgeAgreedAt: string;
   pledgeSignatureDataUrl?: string;
+  meetingPoint: string;
+  meetingTime: string;
+  itineraryDays: TourItineraryDay[];
 }
 
 interface NewCenterInput {
@@ -397,6 +403,8 @@ interface NewReviewInput {
   categoryRatings?: ReviewCategoryRatings;
   photos?: string[];
   videoUrl?: string;
+  /** "public"(전체공개, 기본값) | "instructor_only"(강사/관리자만 공개) */
+  visibility?: Review["visibility"];
 }
 
 interface NewSupportTicketInput {
@@ -439,7 +447,9 @@ interface AppDataContextValue {
   resolveUnderMinDecision: (tourId: string, decision: UnderMinParticipantsPolicy) => Promise<void>;
   updateTourNotice: (tourId: string, notice: string) => Promise<void>;
   updateTourItinerary: (tourId: string, days: TourItineraryDay[]) => Promise<void>;
+  updateTourMeetingInfo: (tourId: string, meetingPoint: string, meetingTime: string) => Promise<void>;
   setTourAdminStatus: (tourId: string, adminStatus: Tour["adminStatus"]) => Promise<void>;
+  deleteTour: (tourId: string) => Promise<void>;
   updateBookingTravelInfo: (bookingId: string, input: { flightInfo?: string; passportInfo?: string }) => Promise<void>;
   updateDiverProfile: (
     diverId: string,
@@ -462,6 +472,7 @@ interface AppDataContextValue {
   resolveReport: (reportId: string) => Promise<void>;
   addChatMessage: (input: Omit<ChatMessage, "id" | "createdAt">) => Promise<void>;
   setInstructorVerified: (instructorId: string, verified: boolean, verifiedBy?: string) => Promise<void>;
+  setInstructorPenalty: (instructorId: string, penaltyCount: number) => Promise<void>;
   updateInstructorProfile: (
     instructorId: string,
     updates: { name?: string; phone?: string; agency?: string; bio?: string; licenseFileNames?: string[] },
@@ -931,6 +942,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         pledge_signer_name: input.pledgeSignerName,
         pledge_agreed_at: input.pledgeAgreedAt,
         pledge_signature_data_url: input.pledgeSignatureDataUrl,
+        meeting_point: input.meetingPoint,
+        meeting_time: input.meetingTime,
+        itinerary_days: input.itineraryDays,
       })
       .select()
       .single();
@@ -941,19 +955,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       return tour;
     }
 
-    // 실패 시 로컬 폴백 (데모 안정성 확보)
-    const fallback: Tour = {
-      id: nextId("tour"),
-      createdAt: new Date().toISOString(),
-      status: "open",
-      rating: 0,
-      isConfirmed: true,
-      autoCloseProcessed: false,
-      underMinDecisionPending: false,
-      ...input,
-    };
-    setTours((prev) => [fallback, ...prev]);
-    return fallback;
+    // 저장 실패 시 로컬에만 존재하는 "가짜" 투어를 만들지 않는다 — 강사 화면에는 보이지만
+    // DB에 저장되지 않아 다른 회원/비회원에게는 영원히 노출되지 않는 유령 투어 버그의 원인이었다.
+    // 대신 에러를 그대로 던져 호출부(TourCreateForm)에서 실패를 사용자에게 알리도록 한다.
+    throw error ?? new Error("투어 등록에 실패했습니다.");
   };
 
   /** 강사 — 참가자 대시보드/그룹채팅 상단에 고정되는 공지사항을 갱신한다. */
@@ -968,6 +973,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     await supabase.from("tours").update({ itinerary_days: days }).eq("id", tourId);
   };
 
+  /** 강사 — 집합 장소/시간을 갱신한다(투어 생성 시 입력한 값을 이후에도 수정/저장할 수 있도록). */
+  const updateTourMeetingInfo = async (tourId: string, meetingPoint: string, meetingTime: string) => {
+    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, meetingPoint, meetingTime } : t)));
+    await supabase.from("tours").update({ meeting_point: meetingPoint, meeting_time: meetingTime }).eq("id", tourId);
+  };
+
   /**
    * 관리자 — 투어를 정지(즉시 예약 차단 + 검색 노출 제거) 또는 보류(임시 비공개) 처리한다.
    * adminStatus를 undefined로 넘기면 정상 상태로 복귀(재개)시킨다.
@@ -975,6 +986,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const setTourAdminStatus = async (tourId: string, adminStatus: Tour["adminStatus"]) => {
     setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, adminStatus } : t)));
     await supabase.from("tours").update({ admin_status: adminStatus ?? null }).eq("id", tourId);
+  };
+
+  /** 관리자 — 투어를 완전히 삭제한다. 예약 기록을 보존해야 하는 투어는 정지 처리를 권장한다. */
+  const deleteTour = async (tourId: string) => {
+    setTours((prev) => prev.filter((t) => t.id !== tourId));
+    await supabase.from("tours").delete().eq("id", tourId);
   };
 
   /** 다이버 본인 — 참가자 대시보드 [더보기] 탭에서 본인 항공/여권 정보를 등록한다. */
@@ -1197,6 +1214,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  /**
+   * 관리자 — 강사에게 경고를 주거나(+1) 경고를 해제한다(0으로 초기화).
+   * 누적 경고가 2회 이상이 되면 연결된 계정(profiles)을 자동으로 영구정지 처리한다.
+   */
+  const setInstructorPenalty = async (instructorId: string, penaltyCount: number): Promise<void> => {
+    await supabase.from("instructors").update({ penalty_count: penaltyCount }).eq("id", instructorId);
+    setInstructors((prev) => prev.map((i) => (i.id === instructorId ? { ...i, penaltyCount } : i)));
+
+    if (penaltyCount >= 2) {
+      const instructor = instructors.find((i) => i.id === instructorId);
+      if (instructor?.profileId) {
+        await setProfileStatus(instructor.profileId, "suspended");
+      }
+    }
+  };
+
   const updateInstructorProfile = async (
     instructorId: string,
     updates: { name?: string; phone?: string; agency?: string; bio?: string; licenseFileNames?: string[] },
@@ -1366,6 +1399,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         category_ratings: input.categoryRatings,
         photos: input.photos ?? [],
         video_url: input.videoUrl,
+        visibility: input.visibility ?? "public",
       })
       .select()
       .single();
@@ -1379,6 +1413,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           deleted: false,
           ...input,
           photos: input.photos ?? [],
+          visibility: input.visibility ?? "public",
         };
     setReviews((prev) => [review, ...prev]);
     return review;
@@ -1728,7 +1763,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       resolveUnderMinDecision,
       updateTourNotice,
       updateTourItinerary,
+      updateTourMeetingInfo,
       setTourAdminStatus,
+      deleteTour,
       updateBookingTravelInfo,
       updateDiverProfile,
       addBooking,
@@ -1741,6 +1778,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       resolveReport,
       addChatMessage,
       setInstructorVerified,
+      setInstructorPenalty,
       updateInstructorProfile,
       toggleBookmark,
       isBookmarked,

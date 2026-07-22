@@ -32,12 +32,27 @@ import {
 } from "@/lib/constants";
 import { formatDateKR, isPastDate, toISODate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import type { ActivityType, CertificationLevel, TourOption, UnderMinParticipantsPolicy } from "@/types";
+import type {
+  ActivityType,
+  CertificationLevel,
+  TourItineraryDay,
+  TourOption,
+  UnderMinParticipantsPolicy,
+} from "@/types";
 
 interface TourCreateFormProps {
   instructorId: string;
   onCreated: () => void;
 }
+
+const EMPTY_ITINERARY_DAY = (dayNumber: number): TourItineraryDay => ({
+  dayNumber,
+  title: `${dayNumber}일차`,
+  briefing: "",
+  diving: "",
+  meals: "",
+  freeTime: "",
+});
 
 function DatePickerField({
   label,
@@ -106,6 +121,9 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [deadline, setDeadline] = useState<Date>();
+  const [meetingPoint, setMeetingPoint] = useState("");
+  const [meetingTime, setMeetingTime] = useState("");
+  const [itineraryDays, setItineraryDays] = useState<TourItineraryDay[]>([EMPTY_ITINERARY_DAY(1)]);
   const [mainImage, setMainImage] = useState<File[]>([]);
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
   const [inclusions, setInclusions] = useState<string[]>(TOUR_INCLUSIONS);
@@ -147,6 +165,18 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
 
   const removeCustomOptionRow = (id: string) => {
     setCustomOptions((prev) => prev.filter((o) => o.id !== id));
+  };
+
+  const updateItineraryDay = (index: number, patch: Partial<TourItineraryDay>) => {
+    setItineraryDays((prev) => prev.map((d, i) => (i === index ? { ...d, ...patch } : d)));
+  };
+
+  const addItineraryDay = () => {
+    setItineraryDays((prev) => [...prev, EMPTY_ITINERARY_DAY(prev.length + 1)]);
+  };
+
+  const removeItineraryDay = (index: number) => {
+    setItineraryDays((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)));
   };
 
   const toggleInclusion = (item: string) => {
@@ -237,6 +267,11 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
     if (!deadline) missingFields.push("투어모집 마감일");
     if (!basePrice) missingFields.push("기본가");
     if (mainImage.length === 0) missingFields.push("대표 이미지");
+    if (!meetingPoint.trim()) missingFields.push("집합 장소");
+    if (!meetingTime.trim()) missingFields.push("집합 시간");
+    if (itineraryDays.length === 0 || itineraryDays.some((d) => !d.title.trim())) {
+      missingFields.push("투어 일정");
+    }
     if (missingFields.length > 0) {
       toast({
         title: "필수 항목을 입력해주세요",
@@ -305,10 +340,19 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         pledgeSignerName: pledgeSignerName.trim(),
         pledgeAgreedAt: new Date().toISOString(),
         pledgeSignatureDataUrl: pledgeSignature,
+        meetingPoint: meetingPoint.trim(),
+        meetingTime: meetingTime.trim(),
+        itineraryDays,
       });
 
       toast({ title: "투어가 등록되었습니다!" });
       onCreated();
+    } catch (err) {
+      toast({
+        title: "투어 등록에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -390,6 +434,75 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         <DatePickerField label="투어 출발일" value={startDate} onChange={setStartDate} />
         <DatePickerField label="투어 종료일" value={endDate} onChange={setEndDate} />
         <DatePickerField label="투어모집 마감일" value={deadline} onChange={setDeadline} />
+      </div>
+
+      <div className="space-y-3 rounded-xl border border-border p-3">
+        <Label>집합 정보 (필수)</Label>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">집합 장소</Label>
+            <Input
+              value={meetingPoint}
+              onChange={(e) => setMeetingPoint(e.target.value)}
+              placeholder="예: 세부 막탄공항 1층 출국장"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">집합 시간</Label>
+            <Input
+              value={meetingTime}
+              onChange={(e) => setMeetingTime(e.target.value)}
+              placeholder="예: 출발일 오전 9시"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3 rounded-xl border border-border p-3">
+        <div className="flex items-center justify-between">
+          <Label>투어 일정 (필수, 최소 1일차)</Label>
+          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={addItineraryDay}>
+            <Plus className="h-3.5 w-3.5" />
+            일차 추가
+          </Button>
+        </div>
+        <div className="space-y-3">
+          {itineraryDays.map((day, index) => (
+            <div key={index} className="space-y-2 rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Input
+                  value={day.title}
+                  onChange={(e) => updateItineraryDay(index, { title: e.target.value })}
+                  className="h-8 flex-1 font-semibold"
+                  placeholder="예: 1일차 - 입도 및 오리엔테이션"
+                />
+                {itineraryDays.length > 1 && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 shrink-0 text-destructive"
+                    onClick={() => removeItineraryDay(index)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+              <Textarea
+                value={day.briefing}
+                onChange={(e) => updateItineraryDay(index, { briefing: e.target.value })}
+                placeholder="브리핑 (선택)"
+                className="min-h-12 text-sm"
+              />
+              <Textarea
+                value={day.diving}
+                onChange={(e) => updateItineraryDay(index, { diving: e.target.value })}
+                placeholder="다이빙 일정 (선택)"
+                className="min-h-12 text-sm"
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

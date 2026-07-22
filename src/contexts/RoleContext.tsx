@@ -30,7 +30,7 @@ interface RoleContextValue {
   login: () => void;
   /** 실제 로그아웃: Supabase 세션 파기. */
   logout: () => Promise<void>;
-  /** 현재 강사 ID (profiles.id 문자열, 강사가 아니면 빈 문자열). */
+  /** 현재 강사 ID (instructors.id 문자열, 강사가 아니거나 아직 조회 중이면 빈 문자열). */
   currentInstructorId: string;
   /** 현재 다이버 ID (profiles.id 문자열, 다이버가 아니면 빈 문자열). */
   currentDiverId: string;
@@ -52,6 +52,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   });
   // 마스터 테스트 툴바로 "강사" 역할을 선택했을 때(실 로그인 없음) 바인딩할 시드 강사 profile id.
   const [seedInstructorId, setSeedInstructorId] = useState<string>("");
+  // 실 로그인한 강사의 instructors.id(= profiles.id와 다른 별도 PK). getInstructorById/tours.instructorId 등
+  // 앱 전역이 instructors.id를 기준으로 조인하므로, profile.id를 그대로 쓰면 안 되고 반드시 이 값으로 변환해야 한다.
+  const [resolvedInstructorId, setResolvedInstructorId] = useState<string>("");
 
   useEffect(() => {
     let active = true;
@@ -119,6 +122,29 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // 실 로그인한 강사의 profile.id(auth UID) → instructors.id를 조회해 바인딩한다.
+  // instructors.id는 회원가입 시 별도로 생성되는 PK(profile_id 컬럼으로만 profiles와 연결)이므로,
+  // profile.id를 그대로 강사 식별자로 쓰면 getInstructorById/투어 생성 등 전 영역에서 조회가 실패한다.
+  useEffect(() => {
+    if (profile?.role !== "instructor") {
+      setResolvedInstructorId("");
+      return;
+    }
+    let active = true;
+    supabase
+      .from("instructors")
+      .select("id")
+      .eq("profile_id", profile.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!active) return;
+        setResolvedInstructorId((data as { id?: string } | null)?.id ?? "");
+      });
+    return () => {
+      active = false;
+    };
+  }, [profile?.id, profile?.role]);
+
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     if (devRoleOverride) {
@@ -169,13 +195,22 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       logout,
       currentInstructorId:
         profile?.role === "instructor"
-          ? profile.id
+          ? resolvedInstructorId
           : import.meta.env.DEV && devRoleOverride === "instructor"
             ? seedInstructorId
             : "",
       currentDiverId: profile && profile.role !== "instructor" ? profile.id : "",
     }),
-    [resolvedRole, isLoggedIn, authLoading, session, profile, devRoleOverride, seedInstructorId],
+    [
+      resolvedRole,
+      isLoggedIn,
+      authLoading,
+      session,
+      profile,
+      devRoleOverride,
+      seedInstructorId,
+      resolvedInstructorId,
+    ],
   );
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;

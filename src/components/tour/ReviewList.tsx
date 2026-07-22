@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Flag, MessageSquareReply, Star } from "lucide-react";
+import { Flag, Lock, MessageSquareReply, Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -11,13 +13,23 @@ interface ReviewListProps {
   tourId: string;
 }
 
-/** 투어 상세페이지 - 후기 및 평점 목록 (평균 평점, 후기 개수, 사진 리뷰 포함). */
+/**
+ * 투어 상세페이지 - 후기 및 평점 목록 (평균 평점, 후기 개수, 사진 리뷰 포함).
+ * "강사/관리자만 공개" 후기는 일반 사용자(비회원/다이버)에게는 숨기고,
+ * 해당 투어의 담당 강사 본인과 관리자에게만 노출한다.
+ */
 export function ReviewList({ tourId }: ReviewListProps) {
-  const { getReviewsByTourId, reportReview } = useAppData();
+  const { getReviewsByTourId, getTourById, reportReview } = useAppData();
+  const { role, currentInstructorId } = useRole();
   const { toast } = useToast();
   const [reportedIds, setReportedIds] = useState<string[]>([]);
 
-  const reviews = getReviewsByTourId(tourId);
+  const tour = getTourById(tourId);
+  const isPrivilegedViewer =
+    role === "admin" || (role === "instructor" && !!currentInstructorId && currentInstructorId === tour?.instructorId);
+  const reviews = getReviewsByTourId(tourId).filter(
+    (r) => r.visibility !== "instructor_only" || isPrivilegedViewer,
+  );
 
   if (reviews.length === 0) {
     return (
@@ -73,6 +85,12 @@ export function ReviewList({ tourId }: ReviewListProps) {
                       )}
                     />
                   ))}
+                  {review.visibility === "instructor_only" && (
+                    <Badge variant="outline" className="ml-1 gap-1 px-1.5 py-0 text-[9px]">
+                      <Lock className="h-2.5 w-2.5" />
+                      강사/관리자 전용
+                    </Badge>
+                  )}
                 </div>
                 <span className="text-[10px] text-muted-foreground">{formatDateKR(review.createdAt)}</span>
               </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Bookmark, CalendarDays, MessageCircle, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, MapPin, MessageCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TourGallery } from "@/components/tour/TourGallery";
@@ -145,6 +145,16 @@ const TourDetail = () => {
             <Users className="h-4 w-4" />
             {confirmedCount}/{tour.maxParticipants}명 모집
           </div>
+          {(tour.meetingPoint || tour.meetingTime) && (
+            <div className="col-span-2 flex items-start gap-2 border-t border-primary/20 pt-2 text-muted-foreground">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                {tour.meetingPoint}
+                {tour.meetingPoint && tour.meetingTime ? " · " : ""}
+                {tour.meetingTime}
+              </span>
+            </div>
+          )}
           <div className="col-span-2 border-t border-primary/20 pt-2 text-xs text-warning-foreground">
             모집 마감일: {formatDateKR(tour.recruitmentDeadline)}까지
           </div>
@@ -165,7 +175,21 @@ const TourDetail = () => {
         {diveCenter && <DiveCenterCard diveCenter={diveCenter} />}
         {center && <TourCenterCard center={center} />}
 
-        {/* 4) 포함 및 불포함 사항 */}
+        {/* 4) 강사 추천 준비물 — 포함/불포함보다 먼저, 눈에 띄게 노출 */}
+        {tour.prepNotes && (
+          <div className="space-y-2 rounded-xl border-2 border-primary bg-primary/10 p-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Backpack className="h-4 w-4" />
+              </span>
+              <h3 className="text-sm font-bold text-primary">강사 추천 준비물</h3>
+              <Badge className="bg-primary text-primary-foreground">필독</Badge>
+            </div>
+            <p className="whitespace-pre-line text-sm font-medium leading-relaxed text-foreground">{tour.prepNotes}</p>
+          </div>
+        )}
+
+        {/* 5) 포함 및 불포함 사항 */}
         <InclusionsExclusionsCard inclusions={tour.inclusions} exclusions={tour.exclusions} />
 
         <TourOptionsSelector
@@ -173,13 +197,6 @@ const TourDetail = () => {
           selectedIds={selectedOptionIds}
           onChange={setSelectedOptionIds}
         />
-
-        {tour.prepNotes && (
-          <div className="space-y-2 rounded-xl border border-primary/30 bg-secondary/40 p-4">
-            <h3 className="text-sm font-semibold text-foreground">강사 추천 준비물</h3>
-            <p className="whitespace-pre-line text-sm text-muted-foreground">{tour.prepNotes}</p>
-          </div>
-        )}
 
         <ReviewList tourId={tour.id} />
 

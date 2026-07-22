@@ -151,6 +151,8 @@ export interface Tour {
   pledgeSignatureDataUrl?: string;
   instructorNotice?: string; // 참가자 대시보드/그룹채팅 상단에 고정되는 강사 공지
   itineraryDays?: TourItineraryDay[]; // 참가자 대시보드 [일정] 탭
+  meetingPoint: string; // 집합 장소 (투어 생성 시 필수 입력)
+  meetingTime: string; // 집합 시간 (투어 생성 시 필수 입력)
   /** 관리자가 투어를 검토 후 정지(즉시 예약 차단, 검색 노출 제거)하거나 보류(임시 비공개)한 상태. 없으면 정상. */
   adminStatus?: "suspended" | "held";
 }
@@ -301,6 +303,9 @@ export interface ReviewCategoryRatings {
   tourValue: number;
 }
 
+/** "public": 모두에게 공개, "instructor_only": 담당 강사/관리자에게만 공개. */
+export type ReviewVisibility = "public" | "instructor_only";
+
 export interface Review {
   id: string;
   tourId: string;
@@ -313,6 +318,7 @@ export interface Review {
   categoryRatings?: ReviewCategoryRatings;
   photos: string[]; // 최대 10장
   videoUrl?: string;
+  visibility: ReviewVisibility;
   reported: boolean;
   deleted: boolean;
   createdAt: string;

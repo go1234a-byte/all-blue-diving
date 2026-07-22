@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star } from "lucide-react";
+import { Globe, Lock, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,12 +10,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FileDropzone } from "@/components/auth/FileDropzone";
 import { CategoryStarRow } from "@/components/mypage/CategoryStarRow";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { ReviewCategoryRatings } from "@/types";
+import type { ReviewCategoryRatings, ReviewVisibility } from "@/types";
 
 interface ReviewDialogProps {
   open: boolean;
@@ -47,6 +49,7 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
   const [categoryRatings, setCategoryRatings] = useState<ReviewCategoryRatings>(DEFAULT_CATEGORY_RATINGS);
   const [photos, setPhotos] = useState<File[]>([]);
   const [videoUrl, setVideoUrl] = useState("");
+  const [visibility, setVisibility] = useState<ReviewVisibility>("public");
   const [submitting, setSubmitting] = useState(false);
 
   const tour = getTourById(tourId);
@@ -73,6 +76,7 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
         categoryRatings,
         photos: photos.map((f) => URL.createObjectURL(f)),
         videoUrl: videoUrl.trim() || undefined,
+        visibility,
       });
       toast({ title: "투어 평가가 등록되었습니다. 감사합니다!" });
       onOpenChange(false);
@@ -145,6 +149,48 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
         </div>
 
         <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="동영상 URL (선택)" />
+
+        <div className="space-y-2 rounded-xl border border-border p-3">
+          <p className="text-xs font-medium text-foreground">공개 범위</p>
+          <RadioGroup
+            value={visibility}
+            onValueChange={(v) => setVisibility(v as ReviewVisibility)}
+            className="gap-2"
+          >
+            <Label
+              htmlFor="visibility-public"
+              className={cn(
+                "flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 text-xs transition-colors",
+                visibility === "public" ? "border-primary bg-secondary/50" : "border-border",
+              )}
+            >
+              <RadioGroupItem value="public" id="visibility-public" className="mt-0.5" />
+              <span className="space-y-0.5">
+                <span className="flex items-center gap-1 font-medium text-foreground">
+                  <Globe className="h-3.5 w-3.5" />
+                  전체공개
+                </span>
+                <span className="block text-muted-foreground">투어 상세 페이지에서 모든 사용자가 볼 수 있어요.</span>
+              </span>
+            </Label>
+            <Label
+              htmlFor="visibility-instructor-only"
+              className={cn(
+                "flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 text-xs transition-colors",
+                visibility === "instructor_only" ? "border-primary bg-secondary/50" : "border-border",
+              )}
+            >
+              <RadioGroupItem value="instructor_only" id="visibility-instructor-only" className="mt-0.5" />
+              <span className="space-y-0.5">
+                <span className="flex items-center gap-1 font-medium text-foreground">
+                  <Lock className="h-3.5 w-3.5" />
+                  강사/관리자만 공개
+                </span>
+                <span className="block text-muted-foreground">담당 강사와 관리자에게만 전달되고, 다른 사용자에게는 보이지 않아요.</span>
+              </span>
+            </Label>
+          </RadioGroup>
+        </div>
 
         <p className="break-keep text-[11px] leading-relaxed text-muted-foreground">
           실제 참가자만 작성 가능 · 허위 후기 금지 · 욕설 및 비방 금지 · 광고 금지
