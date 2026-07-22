@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, MessageCircleOff } from "lucide-react";
+import { ArrowLeft, MessageCircleOff, Users } from "lucide-react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChatThread } from "@/components/chat/ChatThread";
 import { ChatParticipantList } from "@/components/chat/ChatParticipantList";
 import { RoomAssignmentDashboard } from "@/components/chat/RoomAssignmentDashboard";
@@ -10,8 +11,47 @@ import { TourInfoPinnedBanner } from "@/components/chat/TourInfoPinnedBanner";
 import { TourDashboardTab } from "@/components/chat/TourDashboardTab";
 import { TourItineraryTab } from "@/components/chat/TourItineraryTab";
 import { TourMoreInfoTab } from "@/components/chat/TourMoreInfoTab";
+import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
+import type { InstructorProfile } from "@/types";
+
+/** 그룹채팅 전용 화면(?view=chat) 상단에 담당 강사 프로필과 참가자 수를 요약해서 보여준다. */
+function ChatHeaderSummary({
+  instructor,
+  instructorId,
+  confirmedCount,
+  maxParticipants,
+}: {
+  instructor?: InstructorProfile;
+  instructorId: string;
+  confirmedCount: number;
+  maxParticipants: number;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+      <Link to={`/instructor/${instructorId}/profile`} className="flex min-w-0 flex-1 items-center gap-2">
+        <Avatar className="h-8 w-8 shrink-0 border border-border">
+          <AvatarImage src={instructor?.avatarUrl} alt={instructor?.name} crossOrigin="anonymous" />
+          <AvatarFallback className="bg-primary text-primary-foreground">
+            {instructor?.name?.[0] ?? "강"}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="line-clamp-1 text-sm font-semibold text-foreground">{instructor?.name ?? "강사"} 강사</p>
+            {instructor?.verified && <VerifiedBadge size="sm" />}
+          </div>
+          <p className="text-xs text-muted-foreground">담당 강사 · 프로필 보기</p>
+        </div>
+      </Link>
+      <div className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
+        <Users className="h-3.5 w-3.5" />
+        {confirmedCount}/{maxParticipants}명
+      </div>
+    </div>
+  );
+}
 
 const ChatRoom = () => {
   const { tourId } = useParams();
@@ -52,6 +92,12 @@ const ChatRoom = () => {
           <h1 className="line-clamp-1 text-base font-semibold text-foreground">{tour.title}</h1>
         </header>
         <main className="mx-auto w-full max-w-md space-y-2 px-4 py-4 md:max-w-lg">
+          <ChatHeaderSummary
+            instructor={instructor}
+            instructorId={tour.instructorId}
+            confirmedCount={tourBookings.filter((b) => b.status === "confirmed").length}
+            maxParticipants={tour.maxParticipants}
+          />
           <TourInfoPinnedBanner tour={tour} />
           {tour.instructorNotice && (
             <div className="rounded-lg border border-primary/40 bg-secondary/60 px-3 py-2 text-xs text-foreground">
