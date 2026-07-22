@@ -201,6 +201,8 @@ function mapBookingRow(row: any): Booking {
     gender: row.gender,
     snoring: row.snoring,
     smoking: row.smoking,
+    drinking: row.drinking ?? false,
+    roomNote: row.room_note ?? undefined,
     roomNo: row.room_no ?? undefined,
     depositStatus: row.deposit_status,
     status: row.status,
@@ -324,6 +326,8 @@ export interface NewBookingInput {
   gender: Booking["gender"];
   snoring: boolean;
   smoking: boolean;
+  drinking: boolean;
+  roomNote?: string;
 }
 
 interface NewTourInput {
@@ -1084,6 +1088,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         gender: input.gender,
         snoring: input.snoring,
         smoking: input.smoking,
+        drinking: input.drinking,
+        room_note: input.roomNote ?? null,
         deposit_status: "paid",
         status: "confirmed",
       })

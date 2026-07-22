@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InclusionsExclusionsCard } from "@/components/tour/InclusionsExclusionsCard";
@@ -35,6 +36,8 @@ const Checkout = () => {
   const [gender, setGender] = useState<Gender>("male");
   const [snoring, setSnoring] = useState(false);
   const [smoking, setSmoking] = useState(false);
+  const [drinking, setDrinking] = useState(false);
+  const [roomNote, setRoomNote] = useState("");
   const [processing, setProcessing] = useState(false);
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
   const [confirmedInclusions, setConfirmedInclusions] = useState(false);
@@ -109,6 +112,8 @@ const Checkout = () => {
         gender,
         snoring,
         smoking,
+        drinking,
+        roomNote: roomNote.trim() || undefined,
       });
 
       if (invoice.couponCode) {
@@ -168,7 +173,7 @@ const Checkout = () => {
                 </label>
               </RadioGroup>
             </div>
-            <div className="flex gap-4 pt-1">
+            <div className="flex flex-wrap gap-4 pt-1">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={snoring} onChange={(e) => setSnoring(e.target.checked)} />
                 코골이 있음
@@ -177,6 +182,19 @@ const Checkout = () => {
                 <input type="checkbox" checked={smoking} onChange={(e) => setSmoking(e.target.checked)} />
                 흡연자
               </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={drinking} onChange={(e) => setDrinking(e.target.checked)} />
+                음주
+              </label>
+            </div>
+            <div className="space-y-1.5 pt-1">
+              <Label className="text-xs text-muted-foreground">직접 입력 (선택)</Label>
+              <Textarea
+                value={roomNote}
+                onChange={(e) => setRoomNote(e.target.value)}
+                placeholder="룸 배정 시 참고할 사항을 자유롭게 입력해주세요 (예: 특정 인원과 같은 방 희망 등)"
+                className="min-h-16 text-sm"
+              />
             </div>
           </CardContent>
         </Card>

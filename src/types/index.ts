@@ -226,6 +226,8 @@ export interface Booking {
   gender: Gender;
   snoring: boolean;
   smoking: boolean;
+  drinking: boolean;
+  roomNote?: string; // 룸 배정 참고사항 직접 입력 (예: "코골이 심함, 조용한 방 희망")
   roomNo?: string;
   depositStatus: DepositStatus;
   status: BookingStatus;

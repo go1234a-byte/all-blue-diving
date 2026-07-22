@@ -35,14 +35,22 @@ export function RoomAssignmentDashboard({ bookings }: RoomAssignmentDashboardPro
                   </div>
                   <Badge variant="secondary">{room.occupants.length}인실</Badge>
                 </div>
-                <ul className="space-y-1">
+                <ul className="space-y-1.5">
                   {room.occupants.map((o) => (
-                    <li key={o.id} className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{maskName(o.diverName)}</span>
-                      <span className="flex gap-1">
-                        {o.snoring && <Badge variant="outline" className="text-[10px]">코골이</Badge>}
-                        {o.smoking && <Badge variant="outline" className="text-[10px]">흡연</Badge>}
-                      </span>
+                    <li key={o.id} className="space-y-1 text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between">
+                        <span>{maskName(o.diverName)}</span>
+                        <span className="flex gap-1">
+                          {o.snoring && <Badge variant="outline" className="text-[10px]">코골이</Badge>}
+                          {o.smoking && <Badge variant="outline" className="text-[10px]">흡연</Badge>}
+                          {o.drinking && <Badge variant="outline" className="text-[10px]">음주</Badge>}
+                        </span>
+                      </div>
+                      {o.roomNote && (
+                        <p className="break-keep rounded-md bg-secondary/50 px-2 py-1 text-[11px]">
+                          {o.roomNote}
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ul>
