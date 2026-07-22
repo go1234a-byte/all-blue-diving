@@ -22,6 +22,7 @@ import { CenterFormSection } from "@/components/instructor/CenterFormSection";
 import { TourPledgeAgreement } from "@/components/instructor/TourPledgeAgreement";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { uploadImageFile, uploadImageFiles } from "@/lib/uploadImage";
 import {
   COUNTRIES_SITES,
   SCUBA_CERT_LABELS,
@@ -310,8 +311,8 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         centerId = center.id;
       }
 
-      const mainUrl = URL.createObjectURL(mainImage[0]);
-      const galleryUrls = galleryImages.map((f) => URL.createObjectURL(f));
+      const mainUrl = await uploadImageFile(mainImage[0], "tours");
+      const galleryUrls = galleryImages.length > 0 ? await uploadImageFiles(galleryImages, "tours") : [];
 
       await addTour({
         instructorId,

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FileDropzone } from "@/components/auth/FileDropzone";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { uploadImageFile } from "@/lib/uploadImage";
 import type { InstructorProfile, Profile } from "@/types";
 
 interface InstructorProfileEditCardProps {
@@ -26,6 +27,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
   const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [name, setName] = useState(instructor.name);
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [agency, setAgency] = useState(instructor.agency ?? "");
@@ -124,11 +126,19 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
           <div className="flex-1 space-y-1">
             <Label>프로필 사진</Label>
             <FileDropzone
-              label="사진 선택"
+              label={uploadingAvatar ? "업로드 중..." : "사진 선택"}
               accept="image/*"
-              onFilesChange={(files) => {
+              onFilesChange={async (files) => {
                 if (files.length === 0) return;
-                setAvatarUrl(URL.createObjectURL(files[0]));
+                setUploadingAvatar(true);
+                try {
+                  const url = await uploadImageFile(files[0], "avatars");
+                  setAvatarUrl(url);
+                } catch {
+                  toast({ title: "사진 업로드에 실패했습니다", variant: "destructive" });
+                } finally {
+                  setUploadingAvatar(false);
+                }
               }}
             />
           </div>
@@ -194,7 +204,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
         </div>
 
         <div className="flex gap-2 pt-1">
-          <Button size="sm" className="flex-1" onClick={handleSave} disabled={saving}>
+          <Button size="sm" className="flex-1" onClick={handleSave} disabled={saving || uploadingAvatar}>
             {saving ? "저장 중..." : "저장"}
           </Button>
           <Button size="sm" variant="outline" className="flex-1" onClick={handleCancel} disabled={saving}>

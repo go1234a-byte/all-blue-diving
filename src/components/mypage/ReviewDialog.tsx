@@ -17,6 +17,7 @@ import { CategoryStarRow } from "@/components/mypage/CategoryStarRow";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { uploadImageFiles } from "@/lib/uploadImage";
 import type { ReviewCategoryRatings, ReviewVisibility } from "@/types";
 
 interface ReviewDialogProps {
@@ -65,6 +66,7 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
     }
     setSubmitting(true);
     try {
+      const photoUrls = photos.length > 0 ? await uploadImageFiles(photos, "reviews") : [];
       await addReview({
         tourId,
         bookingId,
@@ -74,12 +76,14 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
         title: title.trim() || undefined,
         comment,
         categoryRatings,
-        photos: photos.map((f) => URL.createObjectURL(f)),
+        photos: photoUrls,
         videoUrl: videoUrl.trim() || undefined,
         visibility,
       });
       toast({ title: "투어 평가가 등록되었습니다. 감사합니다!" });
       onOpenChange(false);
+    } catch {
+      toast({ title: "후기 등록에 실패했습니다", description: "잠시 후 다시 시도해주세요.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
