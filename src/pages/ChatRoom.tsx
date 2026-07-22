@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, MessageCircleOff } from "lucide-react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +15,10 @@ import { useRole } from "@/contexts/RoleContext";
 
 const ChatRoom = () => {
   const { tourId } = useParams();
+  const [searchParams] = useSearchParams();
+  // 하단 "채팅" 탭에서 들어온 경우(?view=chat)에는 그룹채팅만 보여주고,
+  // 대시보드/일정/참가자/더보기 탭은 "내 예약"에서 투어카드를 눌러 들어왔을 때만 노출한다.
+  const chatOnly = searchParams.get("view") === "chat";
   const { tours, bookings, getInstructorById } = useAppData();
   const { currentInstructorId, currentDiverId } = useRole();
   const tour = tours.find((t) => t.id === tourId);
@@ -33,6 +37,30 @@ const ChatRoom = () => {
         <Link to="/chat" className="text-sm font-medium text-primary underline underline-offset-4">
           채팅 목록으로 돌아가기
         </Link>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  if (chatOnly) {
+    return (
+      <div className="min-h-full bg-gradient-surface pb-20">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/95 px-4 backdrop-blur">
+          <Link to="/chat" className="text-foreground">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="line-clamp-1 text-base font-semibold text-foreground">{tour.title}</h1>
+        </header>
+        <main className="mx-auto w-full max-w-md space-y-2 px-4 py-4 md:max-w-lg">
+          <TourInfoPinnedBanner tour={tour} />
+          {tour.instructorNotice && (
+            <div className="rounded-lg border border-primary/40 bg-secondary/60 px-3 py-2 text-xs text-foreground">
+              <span className="font-semibold text-primary">📌 강사 공지 </span>
+              {tour.instructorNotice}
+            </div>
+          )}
+          <ChatThread tourId={tour.id} tour={tour} />
+        </main>
         <BottomNav />
       </div>
     );

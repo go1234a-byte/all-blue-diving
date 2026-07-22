@@ -34,7 +34,7 @@ const MyBookings = () => {
           const tour = getTourById(booking.tourId);
           if (!tour) return null;
           return (
-            <Link key={booking.id} to={`/tour/${tour.id}`}>
+            <Link key={booking.id} to={`/chat/${tour.id}`}>
               <Card className="transition-shadow hover:shadow-ocean">
                 <CardContent className="flex gap-3 p-4">
                   <img

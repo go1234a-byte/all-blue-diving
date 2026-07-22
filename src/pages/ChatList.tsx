@@ -98,7 +98,7 @@ const ChatList = () => {
           return (
             <Link
               key={tour.id}
-              to={`/chat/${tour.id}`}
+              to={`/chat/${tour.id}?view=chat`}
               className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:bg-secondary/40"
             >
               <img
