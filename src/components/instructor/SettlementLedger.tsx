@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -86,44 +86,40 @@ export function SettlementLedger({ instructorId }: SettlementLedgerProps) {
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>투어</TableHead>
-              <TableHead className="text-right">1차 정산 (80%)</TableHead>
-              <TableHead className="text-right">2차 정산 (20%)</TableHead>
-              <TableHead className="text-right">상태</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {myPayouts.map((payout) => {
-              const booking = bookings.find((b) => b.id === payout.bookingId);
-              const tour = booking ? getTourById(booking.tourId) : undefined;
-              return (
-                <TableRow
-                  key={payout.id}
-                  className="cursor-pointer"
-                  onClick={() => setSelected(payout)}
-                >
-                  <TableCell className="max-w-[160px] truncate">{tour?.title ?? "-"}</TableCell>
-                  <TableCell className="text-right">{formatKRW(payout.firstAmount)}</TableCell>
-                  <TableCell className="text-right">{formatKRW(payout.secondAmount)}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={STATUS_VARIANT[payout.status]}>{STATUS_LABEL[payout.status]}</Badge>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-            {myPayouts.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
-                  정산 내역이 없습니다.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <div className="space-y-2">
+        {myPayouts.length === 0 && (
+          <p className="py-6 text-center text-sm text-muted-foreground">정산 내역이 없습니다.</p>
+        )}
+        {myPayouts.map((payout) => {
+          const booking = bookings.find((b) => b.id === payout.bookingId);
+          const tour = booking ? getTourById(booking.tourId) : undefined;
+          return (
+            <Card
+              key={payout.id}
+              className="cursor-pointer transition-shadow hover:shadow-ocean"
+              onClick={() => setSelected(payout)}
+            >
+              <CardContent className="space-y-2 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="line-clamp-1 text-sm font-medium text-foreground">{tour?.title ?? "-"}</p>
+                  <Badge variant={STATUS_VARIANT[payout.status]} className="shrink-0 text-[10px]">
+                    {STATUS_LABEL[payout.status]}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">1차 정산 (80%)</p>
+                    <p className="font-semibold text-foreground">{formatKRW(payout.firstAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">2차 정산 (20%)</p>
+                    <p className="font-semibold text-foreground">{formatKRW(payout.secondAmount)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>

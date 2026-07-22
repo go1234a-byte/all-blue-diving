@@ -102,9 +102,9 @@ export function BookingHistoryList({ diverId }: BookingHistoryListProps) {
   return (
     <div className="space-y-3">
       <Tabs value={tab} onValueChange={(v) => setTab(v as StatusTab)}>
-        <TabsList className="grid w-full grid-cols-3 gap-1 sm:grid-cols-6">
+        <TabsList className="grid h-auto w-full grid-cols-6 gap-1 p-1">
           {STATUS_TABS.map((t) => (
-            <TabsTrigger key={t.value} value={t.value} className="text-[11px]">
+            <TabsTrigger key={t.value} value={t.value} className="px-1 py-1.5 text-[10px]">
               {t.label}
             </TabsTrigger>
           ))}

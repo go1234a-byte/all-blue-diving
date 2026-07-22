@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InstructorDashboard } from "@/components/instructor/InstructorDashboard";
 import { TourCreateForm } from "@/components/instructor/TourCreateForm";
 import { SettlementLedger } from "@/components/instructor/SettlementLedger";
-import { InstructorChatPanel } from "@/components/instructor/InstructorChatPanel";
 import { InstructorReviewsPanel } from "@/components/instructor/InstructorReviewsPanel";
 import { InstructorMyPageView } from "@/components/mypage/InstructorMyPageView";
 import { useRole } from "@/contexts/RoleContext";
@@ -20,13 +19,12 @@ const InstructorConsole = () => {
       <AppHeader title="강사 콘솔" />
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
-            <TabsTrigger value="dashboard">대시보드</TabsTrigger>
-            <TabsTrigger value="create">투어 생성</TabsTrigger>
-            <TabsTrigger value="chat">채팅</TabsTrigger>
-            <TabsTrigger value="reviews">리뷰</TabsTrigger>
-            <TabsTrigger value="settlement">정산</TabsTrigger>
-            <TabsTrigger value="mypage">마이페이지</TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-5 gap-1 p-1">
+            <TabsTrigger value="dashboard" className="px-1 py-1.5 text-xs">대시보드</TabsTrigger>
+            <TabsTrigger value="create" className="px-1 py-1.5 text-xs">투어생성</TabsTrigger>
+            <TabsTrigger value="reviews" className="px-1 py-1.5 text-xs">리뷰</TabsTrigger>
+            <TabsTrigger value="settlement" className="px-1 py-1.5 text-xs">정산</TabsTrigger>
+            <TabsTrigger value="mypage" className="px-1 py-1.5 text-xs">마이페이지</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard" className="pt-4">
             <InstructorDashboard
@@ -36,9 +34,6 @@ const InstructorConsole = () => {
           </TabsContent>
           <TabsContent value="create" className="pt-4">
             <TourCreateForm instructorId={currentInstructorId} onCreated={() => setTab("dashboard")} />
-          </TabsContent>
-          <TabsContent value="chat" className="pt-4">
-            <InstructorChatPanel instructorId={currentInstructorId} />
           </TabsContent>
           <TabsContent value="reviews" className="pt-4">
             <InstructorReviewsPanel instructorId={currentInstructorId} />
