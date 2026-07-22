@@ -1,3 +1,5 @@
+import { ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +31,7 @@ const STATUS_VARIANT: Record<ProfileStatus, "default" | "secondary" | "destructi
 
 /** 모바일 폭에 맞춘 카드형 회원 목록 — 기존 데스크톱 표 대신 사용한다. */
 export function UserTable() {
-  const { diverProfiles, instructorProfiles, setProfileStatus } = useAppData();
+  const { diverProfiles, instructorProfiles, instructors, setProfileStatus } = useAppData();
   const { toast } = useToast();
   const allUsers = [...instructorProfiles, ...diverProfiles];
 
@@ -38,25 +40,58 @@ export function UserTable() {
     toast({ title: `${userName}님을 ${STATUS_LABEL[status]} 처리했습니다.` });
   };
 
+  /** 강사는 profile.id와 instructors.id가 별개 PK라서, 프로필 상세로 가려면 instructors 테이블에서 매칭되는 id를 찾아야 한다. */
+  const detailLinkFor = (user: (typeof allUsers)[number]) => {
+    if (user.role === "instructor") {
+      const instructor = instructors.find((i) => i.profileId === user.id);
+      return instructor ? `/instructor/${instructor.id}/profile` : undefined;
+    }
+    return `/admin/users/${user.id}`;
+  };
+
   return (
     <div className="space-y-2">
       {allUsers.length === 0 && (
         <p className="py-6 text-center text-sm text-muted-foreground">등록된 회원이 없습니다.</p>
       )}
-      {allUsers.map((user) => (
+      {allUsers.map((user) => {
+        const detailLink = detailLinkFor(user);
+        return (
         <div key={user.id} className="space-y-2 rounded-xl border border-border bg-card p-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-1.5">
-              <p className="line-clamp-1 text-sm font-semibold text-foreground">{user.name}</p>
-              <Badge variant="outline" className="shrink-0 text-[10px]">
-                {user.role === "instructor" ? "강사" : "다이버"}
-              </Badge>
+          {detailLink ? (
+            <Link to={detailLink} className="block space-y-2 transition-colors hover:opacity-80">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <p className="line-clamp-1 text-sm font-semibold text-foreground">{user.name}</p>
+                  <Badge variant="outline" className="shrink-0 text-[10px]">
+                    {user.role === "instructor" ? "강사" : "다이버"}
+                  </Badge>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Badge variant={STATUS_VARIANT[user.status]} className="text-[10px]">
+                    {STATUS_LABEL[user.status]}
+                  </Badge>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">{user.phone}</p>
+            </Link>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <p className="line-clamp-1 text-sm font-semibold text-foreground">{user.name}</p>
+                  <Badge variant="outline" className="shrink-0 text-[10px]">
+                    {user.role === "instructor" ? "강사" : "다이버"}
+                  </Badge>
+                </div>
+                <Badge variant={STATUS_VARIANT[user.status]} className="shrink-0 text-[10px]">
+                  {STATUS_LABEL[user.status]}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{user.phone}</p>
             </div>
-            <Badge variant={STATUS_VARIANT[user.status]} className="shrink-0 text-[10px]">
-              {STATUS_LABEL[user.status]}
-            </Badge>
-          </div>
-          <p className="text-xs text-muted-foreground">{user.phone}</p>
+          )}
           <div className="flex gap-2">
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -130,7 +165,8 @@ export function UserTable() {
             </AlertDialog>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

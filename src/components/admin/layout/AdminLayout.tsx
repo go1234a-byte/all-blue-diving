@@ -41,7 +41,9 @@ const PERIOD_LABEL: Record<AdminPeriod, string> = {
 function AdminTopBar() {
   const location = useLocation();
   const { period, setPeriod } = useAdminPeriod();
-  const title = PAGE_TITLES[location.pathname] ?? "관리자 백오피스";
+  const title =
+    PAGE_TITLES[location.pathname] ??
+    (location.pathname.startsWith("/admin/users/") ? "회원 상세" : "관리자 백오피스");
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-border bg-card/95 px-4 backdrop-blur">

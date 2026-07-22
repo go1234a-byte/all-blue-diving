@@ -25,6 +25,7 @@ import AdminPayoutsPage from "./pages/admin/AdminPayoutsPage";
 import AdminInstructorsPage from "./pages/admin/AdminInstructorsPage";
 import AdminCentersPage from "./pages/admin/AdminCentersPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminUserDetailPage from "./pages/admin/AdminUserDetailPage";
 import AdminSupportPage from "./pages/admin/AdminSupportPage";
 import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
@@ -95,6 +96,7 @@ export const routers = [
               { path: "instructors", name: "admin-instructors", element: <AdminInstructorsPage /> },
               { path: "centers", name: "admin-centers", element: <AdminCentersPage /> },
               { path: "users", name: "admin-users", element: <AdminUsersPage /> },
+              { path: "users/:id", name: "admin-user-detail", element: <AdminUserDetailPage /> },
               { path: "support", name: "admin-support", element: <AdminSupportPage /> },
               { path: "reports", name: "admin-reports", element: <AdminReportsPage /> },
               { path: "notifications", name: "admin-notifications", element: <AdminNotificationsPage /> },

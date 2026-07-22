@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +31,16 @@ interface CenterFormState {
   phone: string;
 }
 
+const EMPTY_FORM: CenterFormState = {
+  name: "",
+  country: "",
+  address: "",
+  googleMap: "",
+  homepage: "",
+  instagram: "",
+  phone: "",
+};
+
 function toFormState(center: Center): CenterFormState {
   return {
     name: center.name,
@@ -44,26 +54,40 @@ function toFormState(center: Center): CenterFormState {
 }
 
 const AdminCentersPage = () => {
-  const { centers, updateCenter, deleteCenter } = useAppData();
+  const { centers, addCenter, updateCenter, deleteCenter } = useAppData();
   const { toast } = useToast();
   const [editingCenter, setEditingCenter] = useState<Center | null>(null);
+  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<CenterFormState | null>(null);
   const [saving, setSaving] = useState(false);
 
   const openEdit = (center: Center) => {
     setEditingCenter(center);
+    setCreating(false);
     setForm(toFormState(center));
   };
 
+  const openCreate = () => {
+    setEditingCenter(null);
+    setCreating(true);
+    setForm(EMPTY_FORM);
+  };
+
+  const closeDialog = () => {
+    setEditingCenter(null);
+    setCreating(false);
+    setForm(null);
+  };
+
   const handleSave = async () => {
-    if (!editingCenter || !form) return;
+    if (!form) return;
     if (!form.name.trim() || !form.address.trim()) {
       toast({ title: "센터명과 주소는 필수입니다", variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
-      await updateCenter(editingCenter.id, {
+      const payload = {
         name: form.name.trim(),
         country: form.country.trim() || undefined,
         address: form.address.trim(),
@@ -71,10 +95,15 @@ const AdminCentersPage = () => {
         homepage: form.homepage.trim() || undefined,
         instagram: form.instagram.trim() || undefined,
         phone: form.phone.trim() || undefined,
-        features: editingCenter.features,
-      });
-      toast({ title: "센터 정보가 저장되었습니다" });
-      setEditingCenter(null);
+      };
+      if (creating) {
+        await addCenter({ ...payload, features: [] });
+        toast({ title: "새 센터가 등록되었습니다" });
+      } else if (editingCenter) {
+        await updateCenter(editingCenter.id, { ...payload, features: editingCenter.features });
+        toast({ title: "센터 정보가 저장되었습니다" });
+      }
+      closeDialog();
     } finally {
       setSaving(false);
     }
@@ -87,6 +116,10 @@ const AdminCentersPage = () => {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <Button className="col-span-full gap-1.5" onClick={openCreate}>
+        <Plus className="h-4 w-4" />
+        새 센터 추가
+      </Button>
       {centers.map((center) => (
         <Card key={center.id} className="accent-top-ocean">
           <CardContent className="space-y-2 p-4">
@@ -141,10 +174,10 @@ const AdminCentersPage = () => {
         <p className="col-span-full py-10 text-center text-sm text-muted-foreground">등록된 센터가 없습니다.</p>
       )}
 
-      <Dialog open={!!editingCenter} onOpenChange={(open) => !open && setEditingCenter(null)}>
+      <Dialog open={!!editingCenter || creating} onOpenChange={(open) => !open && closeDialog()}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>센터 정보 수정</DialogTitle>
+            <DialogTitle>{creating ? "새 센터 추가" : "센터 정보 수정"}</DialogTitle>
           </DialogHeader>
           {form && (
             <div className="space-y-3">
@@ -179,11 +212,11 @@ const AdminCentersPage = () => {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingCenter(null)} disabled={saving}>
+            <Button variant="outline" onClick={closeDialog} disabled={saving}>
               취소
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? "저장 중..." : "저장"}
+              {saving ? "저장 중..." : creating ? "등록" : "저장"}
             </Button>
           </DialogFooter>
         </DialogContent>

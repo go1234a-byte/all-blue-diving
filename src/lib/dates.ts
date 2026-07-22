@@ -10,6 +10,14 @@ export function formatDateRangeKR(startIso: string, endIso: string): string {
   return `${formatDateKR(startIso)} - ${formatDateKR(endIso)}`;
 }
 
+/** 관리자 화면 등에서 작성자를 특정해야 할 때 쓰는 날짜+시간 표기 (YYYY.MM.DD HH:mm). */
+export function formatDateTimeKR(iso: string): string {
+  const d = new Date(iso);
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${formatDateKR(iso)} ${h}:${min}`;
+}
+
 export function addDays(base: Date, days: number): Date {
   const d = new Date(base);
   d.setDate(d.getDate() + days);
