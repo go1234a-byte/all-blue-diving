@@ -10,7 +10,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { formatKRW } from "@/lib/pricing";
 import { formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { handleImageFallback } from "@/lib/image";
+import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 
 interface TourCardProps {
   tour: Tour;
@@ -31,7 +31,7 @@ export function TourCard({ tour }: TourCardProps) {
       <Card className="accent-top-ocean group overflow-hidden border-border transition-shadow hover:shadow-ocean">
         <div className="relative aspect-[4/3] w-full overflow-hidden">
           <img
-            src={tour.mainImageUrl}
+            src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
             alt={tour.title}
             onError={handleImageFallback}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"

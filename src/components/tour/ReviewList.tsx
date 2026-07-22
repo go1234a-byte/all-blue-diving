@@ -7,7 +7,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
-import { handleImageFallback } from "@/lib/image";
+import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { cn } from "@/lib/utils";
 
 interface ReviewListProps {
@@ -65,7 +65,7 @@ export function ReviewList({ tourId }: ReviewListProps) {
         <div className="flex gap-2 overflow-x-auto pb-1">
           {allPhotos.slice(0, 10).map((url, i) => (
             <div key={url + i} className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border">
-              <img src={url} alt={`후기 사진 ${i + 1}`} onError={handleImageFallback} className="h-full w-full object-cover" />
+              <img src={url || IMAGE_PLACEHOLDER} alt={`후기 사진 ${i + 1}`} onError={handleImageFallback} className="h-full w-full object-cover" />
             </div>
           ))}
         </div>

@@ -17,7 +17,7 @@ import {
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
-import { handleImageFallback } from "@/lib/image";
+import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { UnderMinDecisionPanel } from "./UnderMinDecisionPanel";
 
 interface InstructorDashboardProps {
@@ -121,7 +121,7 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
             <CardContent className="space-y-2 p-3">
               <Link to={`/tour/${tour.id}`} className="flex items-center gap-3">
                 <img
-                  src={tour.mainImageUrl}
+                  src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
                   alt={tour.title}
                   onError={handleImageFallback}
                   className="h-12 w-12 shrink-0 rounded-md object-cover"

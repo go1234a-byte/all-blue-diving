@@ -17,7 +17,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { computeInvoice, formatKRW, validateAndComputeCouponDiscount } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { handleImageFallback } from "@/lib/image";
+import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import type { Gender } from "@/types";
 
 const Checkout = () => {
@@ -142,7 +142,7 @@ const Checkout = () => {
         <Card>
           <CardContent className="flex gap-3 p-4">
             <img
-              src={tour.mainImageUrl}
+              src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
               alt={tour.title}
               onError={handleImageFallback}
               className="h-16 w-16 shrink-0 rounded-lg object-cover"

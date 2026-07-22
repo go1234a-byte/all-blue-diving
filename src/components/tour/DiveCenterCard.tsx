@@ -1,6 +1,6 @@
 import { Clock, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { handleImageFallback } from "@/lib/image";
+import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import type { DiveCenter } from "@/types";
 
 interface DiveCenterCardProps {
@@ -29,7 +29,7 @@ export function DiveCenterCard({ diveCenter }: DiveCenterCardProps) {
           {diveCenter.photos.map((url, i) => (
             <div key={url + i} className="h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-border">
               <img
-                src={url}
+                src={url || IMAGE_PLACEHOLDER}
                 alt={`${diveCenter.name} 시설 사진 ${i + 1}`}
                 onError={handleImageFallback}
                 className="h-full w-full object-cover"

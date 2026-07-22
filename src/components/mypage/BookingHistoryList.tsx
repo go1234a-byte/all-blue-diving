@@ -12,7 +12,7 @@ import { PaymentReceiptBreakdown } from "@/components/checkout/PaymentReceiptBre
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatKRW } from "@/lib/pricing";
 import { formatDateRangeKR, hoursSince } from "@/lib/dates";
-import { handleImageFallback } from "@/lib/image";
+import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import type { Booking } from "@/types";
 
 interface BookingHistoryListProps {
@@ -127,7 +127,7 @@ export function BookingHistoryList({ diverId }: BookingHistoryListProps) {
               <CardContent className="space-y-2 p-3">
                 <Link to={`/tour/${tour.id}`} className="flex gap-3">
                   <img
-                    src={tour.mainImageUrl}
+                    src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
                     alt={tour.title}
                     onError={handleImageFallback}
                     className="h-14 w-14 shrink-0 rounded-lg object-cover"

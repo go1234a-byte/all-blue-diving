@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatKRW } from "@/lib/pricing";
 import { formatDateRangeKR, hoursSince } from "@/lib/dates";
-import { handleImageFallback } from "@/lib/image";
+import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import type { Booking, Payout, Tour } from "@/types";
 
 interface SettlementDetailCardProps {
@@ -31,7 +31,7 @@ export function SettlementDetailCard({ tour, booking, payout, onViewHistory }: S
       {/* 투어 정보 */}
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
         <img
-          src={tour.mainImageUrl}
+          src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
           alt={tour.title}
           onError={handleImageFallback}
           className="h-14 w-14 shrink-0 rounded-lg object-cover"
