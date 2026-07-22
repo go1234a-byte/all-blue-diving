@@ -1,0 +1,179 @@
+import { useState } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import { ArrowLeft, Bookmark, CalendarDays, MessageCircle, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { TourGallery } from "@/components/tour/TourGallery";
+import { InstructorTrustCard } from "@/components/tour/InstructorTrustCard";
+import { DiveCenterCard } from "@/components/tour/DiveCenterCard";
+import { TourCenterCard } from "@/components/tour/TourCenterCard";
+import { InclusionsExclusionsCard } from "@/components/tour/InclusionsExclusionsCard";
+import { TourOptionsSelector } from "@/components/tour/TourOptionsSelector";
+import { ReviewList } from "@/components/tour/ReviewList";
+import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
+import { useAppData } from "@/contexts/AppDataContext";
+import { useRole } from "@/contexts/RoleContext";
+import { CERTIFICATION_LABELS } from "@/lib/constants";
+import { formatKRW } from "@/lib/pricing";
+import { formatDateKR, formatDateRangeKR } from "@/lib/dates";
+import { cn } from "@/lib/utils";
+
+const ACTIVITY_LABEL: Record<string, string> = {
+  scuba: "스쿠버다이빙",
+  freediving: "프리다이빙",
+};
+
+const TourDetail = () => {
+  const { tourId } = useParams();
+  const navigate = useNavigate();
+  const { getTourById, getInstructorById, getDiveCenterByInstructorId, getCenterById, isBookmarked, toggleBookmark, bookings } =
+    useAppData();
+  const { isLoggedIn, currentDiverId } = useRole();
+  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
+
+  const tour = tourId ? getTourById(tourId) : undefined;
+  const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
+  const diveCenter = tour ? getDiveCenterByInstructorId(tour.instructorId) : undefined;
+  const center = tour?.centerId ? getCenterById(tour.centerId) : undefined;
+
+  if (!tour || !instructor) {
+    return (
+      <div className="flex min-h-full items-center justify-center p-6 text-sm text-muted-foreground">
+        투어 정보를 찾을 수 없습니다.
+      </div>
+    );
+  }
+
+  const bookmarked = isBookmarked(tour.id);
+  const myBooking = currentDiverId
+    ? bookings.find((b) => b.tourId === tour.id && b.diverId === currentDiverId && b.status !== "cancelled")
+    : undefined;
+
+  const handleBookNow = () => {
+    if (!isLoggedIn) {
+      // 비회원은 투어를 자유롭게 둘러볼 수 있고, "예약하기"를 누르는 시점에만 회원가입/로그인을 안내한다.
+      // 가입 완료 후에는 원래 보던 투어의 결제 화면으로 자동으로 돌아온다.
+      navigate("/auth", {
+        state: {
+          returnTo: `/checkout/${tour.id}`,
+          returnState: { selectedOptionIds },
+          reason: "booking",
+        },
+      });
+      return;
+    }
+    navigate(`/checkout/${tour.id}`, { state: { selectedOptionIds } });
+  };
+
+  return (
+    <div className="min-h-full bg-gradient-surface pb-28">
+      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-lg">
+          <Link to="/" className="text-foreground">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="line-clamp-1 flex-1 text-base font-semibold text-foreground">{tour.title}</h1>
+          <button
+            type="button"
+            onClick={() => toggleBookmark(tour.id)}
+            className="text-foreground"
+            aria-label="찜하기"
+          >
+            <Bookmark className={cn("h-5 w-5", bookmarked && "fill-primary text-primary")} />
+          </button>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-md space-y-6 px-4 py-5 md:max-w-lg">
+        {myBooking && (
+          <Link
+            to={`/chat/${tour.id}`}
+            className="flex items-center gap-2 rounded-xl border border-primary/30 bg-secondary/40 p-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+          >
+            <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
+            예약한 투어예요 · 대시보드/그룹채팅 바로가기
+          </Link>
+        )}
+
+        <TourGallery mainImageUrl={tour.mainImageUrl} galleryUrls={tour.galleryUrls} title={tour.title} />
+
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {tour.activityTypes.map((t) => (
+              <Badge key={t} className="bg-primary text-primary-foreground">
+                {ACTIVITY_LABEL[t]}
+              </Badge>
+            ))}
+            <Badge variant="secondary">{CERTIFICATION_LABELS[tour.certificationLevel]}</Badge>
+          </div>
+          <h2 className="text-xl font-bold text-foreground">{tour.title}</h2>
+          <p className="text-sm text-muted-foreground">{tour.country} · {tour.site}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 rounded-xl border border-primary/20 bg-card p-4 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <CalendarDays className="h-4 w-4" />
+            {formatDateRangeKR(tour.startDate, tour.endDate)}
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Users className="h-4 w-4" />
+            최대 {tour.maxParticipants}명
+          </div>
+          <div className="col-span-2 border-t border-primary/20 pt-2 text-xs text-warning-foreground">
+            모집 마감일: {formatDateKR(tour.recruitmentDeadline)}까지
+          </div>
+        </div>
+
+        {/* 1) 담당 강사 프로필 */}
+        <InstructorTrustCard instructor={instructor} />
+
+        {/* 2) 투어 소개 */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">투어 소개</h3>
+          <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+            {tour.description}
+          </p>
+        </div>
+
+        {/* 3) 예약된 센터 소개 */}
+        {diveCenter && <DiveCenterCard diveCenter={diveCenter} />}
+        {center && <TourCenterCard center={center} />}
+
+        {/* 4) 포함 및 불포함 사항 */}
+        <InclusionsExclusionsCard inclusions={tour.inclusions} exclusions={tour.exclusions} />
+
+        <TourOptionsSelector
+          options={tour.customOptions}
+          selectedIds={selectedOptionIds}
+          onChange={setSelectedOptionIds}
+        />
+
+        {tour.prepNotes && (
+          <div className="space-y-2 rounded-xl border border-primary/30 bg-secondary/40 p-4">
+            <h3 className="text-sm font-semibold text-foreground">강사 추천 준비물</h3>
+            <p className="whitespace-pre-line text-sm text-muted-foreground">{tour.prepNotes}</p>
+          </div>
+        )}
+
+        <ReviewList tourId={tour.id} />
+
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">주요 정책 및 안전 규정</h3>
+          <PolicyDisclosure />
+        </div>
+      </main>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-md items-center justify-between gap-4 border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:max-w-lg">
+        <div>
+          <p className="text-xs text-muted-foreground">1인 기준</p>
+          <p className="text-lg font-bold text-primary">{formatKRW(tour.basePrice)}</p>
+        </div>
+        <Button size="lg" onClick={handleBookNow}>
+          예약하기
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default TourDetail;

@@ -1,0 +1,148 @@
+-- Infinite Dive game: players table + settlement/leaderboard RPCs
+create table if not exists public.game_players (
+  uid text primary key,
+  nickname text not null default '다이버',
+  current_points integer not null default 0,
+  max_depth integer not null default 0,
+  equipped_skin text not null default 'default',
+  inventory text[] not null default '{}',
+  daily_points_earned integer not null default 0,
+  daily_points_date date not null default current_date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.game_players enable row level security;
+
+create policy "game_players_select_all"
+  on public.game_players for select
+  using (true);
+
+create policy "game_players_insert_self_zero"
+  on public.game_players for insert
+  with check (current_points = 0 and max_depth = 0 and inventory = '{}');
+
+create index if not exists game_players_max_depth_idx on public.game_players (max_depth desc);
+
+-- Settle a completed dive run: computes points, applies daily cap, updates max depth,
+-- and atomically transfers the "skin_legendary_diver" to whoever is currently rank 1.
+create or replace function public.settle_dive_score(
+  p_uid text,
+  p_nickname text,
+  p_depth integer
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_today date := current_date;
+  v_daily_earned integer;
+  v_raw_points integer;
+  v_bonus integer := 0;
+  v_allowed_points integer;
+  v_prev_max_depth integer;
+  v_new_max_depth integer;
+  v_is_new_record boolean;
+  v_prev_rank1_uid text;
+  v_new_rank1_uid text;
+  v_became_rank1 boolean := false;
+  v_total_points integer;
+begin
+  insert into public.game_players (uid, nickname)
+  values (p_uid, coalesce(p_nickname, '다이버'))
+  on conflict (uid) do nothing;
+
+  select daily_points_earned, max_depth
+    into v_daily_earned, v_prev_max_depth
+  from public.game_players
+  where uid = p_uid
+  for update;
+
+  if (select daily_points_date from public.game_players where uid = p_uid) <> v_today then
+    v_daily_earned := 0;
+  end if;
+
+  if p_depth >= 300 then
+    v_bonus := 2000;
+  elsif p_depth >= 100 then
+    v_bonus := 500;
+  end if;
+
+  v_raw_points := (p_depth * 10) + v_bonus;
+  v_allowed_points := greatest(least(v_raw_points, 5000 - v_daily_earned), 0);
+
+  v_new_max_depth := greatest(v_prev_max_depth, p_depth);
+  v_is_new_record := p_depth > v_prev_max_depth;
+
+  update public.game_players
+  set nickname = coalesce(p_nickname, nickname),
+      current_points = current_points + v_allowed_points,
+      max_depth = v_new_max_depth,
+      daily_points_earned = v_daily_earned + v_allowed_points,
+      daily_points_date = v_today,
+      updated_at = now()
+  where uid = p_uid
+  returning current_points into v_total_points;
+
+  -- Rank 1 legendary skin transfer
+  select uid into v_new_rank1_uid
+  from public.game_players
+  order by max_depth desc, updated_at asc
+  limit 1;
+
+  select uid into v_prev_rank1_uid
+  from public.game_players
+  where 'skin_legendary_diver' = any(inventory)
+  limit 1;
+
+  if v_new_rank1_uid is not null and v_new_rank1_uid is distinct from v_prev_rank1_uid then
+    if v_prev_rank1_uid is not null then
+      update public.game_players
+      set inventory = array_remove(inventory, 'skin_legendary_diver'),
+          equipped_skin = case when equipped_skin = 'skin_legendary_diver' then 'default' else equipped_skin end
+      where uid = v_prev_rank1_uid;
+    end if;
+
+    update public.game_players
+    set inventory = array_append(inventory, 'skin_legendary_diver'),
+        equipped_skin = 'skin_legendary_diver'
+    where uid = v_new_rank1_uid
+      and not ('skin_legendary_diver' = any(inventory));
+
+    if v_new_rank1_uid = p_uid then
+      v_became_rank1 := true;
+    end if;
+  end if;
+
+  return jsonb_build_object(
+    'earnedPoints', v_allowed_points,
+    'totalPoints', v_total_points,
+    'isNewRecord', v_is_new_record,
+    'maxDepth', v_new_max_depth,
+    'becameRank1', v_became_rank1
+  );
+end;
+$$;
+
+grant execute on function public.settle_dive_score(text, text, integer) to anon, authenticated;
+
+-- Equip a skin the player already owns
+create or replace function public.set_equipped_skin(
+  p_uid text,
+  p_skin text
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.game_players
+  set equipped_skin = p_skin,
+      updated_at = now()
+  where uid = p_uid
+    and (p_skin = 'default' or p_skin = any(inventory));
+end;
+$$;
+
+grant execute on function public.set_equipped_skin(text, text) to anon, authenticated;

@@ -1,0 +1,86 @@
+-- Infinite Dive: hearts (lives) system for freemium continue/revive flow
+alter table public.game_players
+  add column if not exists hearts_remaining integer not null default 5,
+  add column if not exists hearts_reset_date date not null default current_date;
+
+-- Consume one heart on game over. Resets to 5 if the stored date has rolled over.
+create or replace function public.consume_game_heart(
+  p_uid text
+) returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_today date := current_date;
+  v_hearts integer;
+  v_reset_date date;
+begin
+  insert into public.game_players (uid)
+  values (p_uid)
+  on conflict (uid) do nothing;
+
+  select hearts_remaining, hearts_reset_date
+    into v_hearts, v_reset_date
+  from public.game_players
+  where uid = p_uid
+  for update;
+
+  if v_reset_date <> v_today then
+    v_hearts := 5;
+  end if;
+
+  v_hearts := greatest(v_hearts - 1, 0);
+
+  update public.game_players
+  set hearts_remaining = v_hearts,
+      hearts_reset_date = v_today,
+      updated_at = now()
+  where uid = p_uid;
+
+  return v_hearts;
+end;
+$$;
+
+grant execute on function public.consume_game_heart(text) to anon, authenticated;
+
+-- Grant one extra heart after a simulated "continue" payment succeeds.
+create or replace function public.grant_continue_heart(
+  p_uid text
+) returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_today date := current_date;
+  v_hearts integer;
+  v_reset_date date;
+begin
+  insert into public.game_players (uid)
+  values (p_uid)
+  on conflict (uid) do nothing;
+
+  select hearts_remaining, hearts_reset_date
+    into v_hearts, v_reset_date
+  from public.game_players
+  where uid = p_uid
+  for update;
+
+  if v_reset_date <> v_today then
+    v_hearts := 5;
+  end if;
+
+  v_hearts := v_hearts + 1;
+
+  update public.game_players
+  set hearts_remaining = v_hearts,
+      hearts_reset_date = v_today,
+      updated_at = now()
+  where uid = p_uid;
+
+  return v_hearts;
+end;
+$$;
+
+grant execute on function public.grant_continue_heart(text) to anon, authenticated;

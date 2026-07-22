@@ -1,0 +1,8 @@
+-- ALL BLUE: 최소 인원 미달 시 진행/취소 결정을 투어 생성 시점이 아닌
+-- 출발 30일 전(자동 마감 시점)에 강사가 직접 선택하도록 변경.
+--
+-- under_min_decision_pending: 자동 마감 평가 시점에 확정 예약 수가 최소 인원 미달이라
+-- 강사의 진행/취소 결정이 필요한 상태인지 여부. 강사가 결정을 내리면 false로 되돌아가고
+-- under_min_policy 컬럼(기존)에 최종 결정 값("proceed"/"cancel")이 기록된다.
+alter table public.tours
+  add column if not exists under_min_decision_pending boolean not null default false;

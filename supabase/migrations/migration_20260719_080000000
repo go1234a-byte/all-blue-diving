@@ -1,0 +1,4 @@
+-- ALL BLUE: 리뷰에 강사 답글 기능 추가
+alter table public.reviews
+  add column if not exists instructor_reply text,
+  add column if not exists instructor_reply_at timestamptz;

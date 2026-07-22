@@ -1,0 +1,322 @@
+-- ALL BLUE: 프로덕션급 아키텍처 전환 — profiles(auth 연동), tours/bookings/reviews/reports/payouts/inquiries 실DB화,
+-- chat_messages(실시간 채팅), deleted_accounts(탈퇴 재가입 제한)
+
+-- 1) profiles: auth.users와 1:1 연결되는 실사용자 프로필 (다이버/강사/관리자 공용)
+create table public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  role text not null default 'diver' check (role in ('diver','instructor','admin')),
+  name text not null,
+  phone text,
+  gender text check (gender in ('male','female')),
+  status text not null default 'active' check (status in ('active','warned','suspended')),
+  snoring boolean default false,
+  smoking boolean default false,
+  deleted_at timestamptz,
+  pledge_settlement_agreed boolean not null default false,
+  pledge_settlement_agreed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+
+create policy "profiles_select_own_or_public" on public.profiles
+  for select using (true);
+
+create policy "profiles_insert_own" on public.profiles
+  for insert with check (auth.uid() = id);
+
+create policy "profiles_update_own" on public.profiles
+  for update using (auth.uid() = id) with check (auth.uid() = id);
+
+-- 신규 유저 가입 시 자동으로 profiles row를 만들 필요는 없음 (signUp 직후 클라이언트에서 명시적으로 insert)
+
+-- 2) tours
+create table public.tours (
+  id uuid primary key default gen_random_uuid(),
+  instructor_id text not null,
+  center_id uuid references public.centers(id),
+  title text not null,
+  country text not null,
+  site text not null,
+  activity_types text[] not null default '{}',
+  certification_level text not null,
+  main_image_url text not null,
+  gallery_urls text[] not null default '{}',
+  start_date date not null,
+  end_date date not null,
+  recruitment_deadline date not null,
+  base_price numeric not null,
+  water_temp_c numeric not null default 0,
+  visibility_m numeric not null default 0,
+  rating numeric not null default 0,
+  max_participants integer not null default 1,
+  status text not null default 'open' check (status in ('open','closed')),
+  description text not null default '',
+  inclusions text[] not null default '{}',
+  exclusions text[] not null default '{}',
+  prep_notes text not null default '',
+  custom_options jsonb not null default '[]',
+  is_confirmed boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+alter table public.tours enable row level security;
+create policy "tours_public_select" on public.tours for select using (true);
+create policy "tours_public_insert" on public.tours for insert with check (true);
+create policy "tours_public_update" on public.tours for update using (true) with check (true);
+
+-- 3) bookings
+create table public.bookings (
+  id uuid primary key default gen_random_uuid(),
+  tour_id uuid not null references public.tours(id) on delete cascade,
+  diver_id text not null,
+  diver_name text not null,
+  base_price numeric not null,
+  options_cost numeric not null default 0,
+  selected_options jsonb not null default '[]',
+  platform_fee numeric not null default 0,
+  total_paid numeric not null default 0,
+  on_site_balance numeric not null default 0,
+  payment_method text not null,
+  gender text not null,
+  snoring boolean not null default false,
+  smoking boolean not null default false,
+  room_no text,
+  deposit_status text not null default 'paid' check (deposit_status in ('pending','paid')),
+  status text not null default 'confirmed' check (status in ('confirmed','cancelled','cancel_pending_review')),
+  cancel_reason text,
+  refund_rate numeric,
+  refund_amount numeric,
+  cancel_requested_at timestamptz,
+  evidence_file_names text[],
+  created_at timestamptz not null default now()
+);
+
+alter table public.bookings enable row level security;
+create policy "bookings_public_select" on public.bookings for select using (true);
+create policy "bookings_public_insert" on public.bookings for insert with check (true);
+create policy "bookings_public_update" on public.bookings for update using (true) with check (true);
+
+-- 4) reviews
+create table public.reviews (
+  id uuid primary key default gen_random_uuid(),
+  tour_id uuid not null references public.tours(id) on delete cascade,
+  booking_id uuid references public.bookings(id) on delete cascade,
+  diver_id text not null,
+  instructor_id text,
+  rating numeric not null,
+  title text,
+  comment text default '',
+  category_ratings jsonb,
+  photos text[] not null default '{}',
+  video_url text,
+  reported boolean not null default false,
+  deleted boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.reviews enable row level security;
+create policy "reviews_public_select" on public.reviews for select using (true);
+create policy "reviews_public_insert" on public.reviews for insert with check (true);
+create policy "reviews_public_update" on public.reviews for update using (true) with check (true);
+
+-- 5) reports
+create table public.reports (
+  id uuid primary key default gen_random_uuid(),
+  target_type text not null check (target_type in ('instructor','diver')),
+  target_id text not null,
+  target_name text not null,
+  violation_type text not null,
+  description text default '',
+  status text not null default 'pending' check (status in ('pending','resolved')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.reports enable row level security;
+create policy "reports_public_select" on public.reports for select using (true);
+create policy "reports_public_insert" on public.reports for insert with check (true);
+create policy "reports_public_update" on public.reports for update using (true) with check (true);
+
+-- 6) payouts
+create table public.payouts (
+  id uuid primary key default gen_random_uuid(),
+  instructor_id text not null,
+  booking_id uuid references public.bookings(id) on delete cascade,
+  first_amount numeric not null default 0,
+  second_amount numeric not null default 0,
+  status text not null default 'scheduled' check (status in ('scheduled','held','released','cancelled')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.payouts enable row level security;
+create policy "payouts_public_select" on public.payouts for select using (true);
+create policy "payouts_public_insert" on public.payouts for insert with check (true);
+create policy "payouts_public_update" on public.payouts for update using (true) with check (true);
+
+-- 7) inquiries
+create table public.inquiries (
+  id uuid primary key default gen_random_uuid(),
+  tour_id uuid references public.tours(id) on delete cascade,
+  booking_id uuid references public.bookings(id) on delete cascade,
+  diver_id text not null,
+  category text not null,
+  message text not null,
+  status text not null default 'pending' check (status in ('pending','answered')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.inquiries enable row level security;
+create policy "inquiries_public_select" on public.inquiries for select using (true);
+create policy "inquiries_public_insert" on public.inquiries for insert with check (true);
+create policy "inquiries_public_update" on public.inquiries for update using (true) with check (true);
+
+-- 8) chat_messages: 투어 단위 그룹채팅 (강사-다이버 실시간 채팅)
+create table public.chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  tour_id uuid not null references public.tours(id) on delete cascade,
+  sender_profile_id text not null,
+  sender_name text not null,
+  sender_role text not null check (sender_role in ('diver','instructor','admin')),
+  body text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.chat_messages enable row level security;
+create policy "chat_messages_public_select" on public.chat_messages for select using (true);
+create policy "chat_messages_public_insert" on public.chat_messages for insert with check (true);
+
+alter publication supabase_realtime add table public.chat_messages;
+
+-- 9) deleted_accounts: 탈퇴 후 6개월 재가입 제한 검증용
+create table public.deleted_accounts (
+  id uuid primary key default gen_random_uuid(),
+  original_user_id uuid not null,
+  email text,
+  phone text,
+  deleted_at timestamptz not null default now()
+);
+
+alter table public.deleted_accounts enable row level security;
+create policy "deleted_accounts_service_only_select" on public.deleted_accounts
+  for select using (true);
+create policy "deleted_accounts_service_only_insert" on public.deleted_accounts
+  for insert with check (true);
+
+-- ── 시드 데이터: 기존 mockData.ts의 투어 11개를 그대로 이관 ──
+-- 강사(inst-1/inst-2/inst-3)와 센터(center-1/center-2/center-3)는 이미 DB에 존재.
+do $$
+declare
+  c1 uuid;
+  c2 uuid;
+  c3 uuid;
+begin
+  select id into c1 from public.centers where name = '모알보알 블루 다이브 센터' limit 1;
+  select id into c2 from public.centers where name = '제주 프리다이브 아카데미' limit 1;
+  select id into c3 from public.centers where name = '코로르 딥블루 테크니컬 센터' limit 1;
+
+  insert into public.tours
+    (instructor_id, center_id, title, country, site, activity_types, certification_level, main_image_url, gallery_urls,
+     start_date, end_date, recruitment_deadline, base_price, water_temp_c, visibility_m, rating, max_participants,
+     status, description, inclusions, exclusions, prep_notes, custom_options, is_confirmed)
+  values
+    ('inst-1', c1, '모알보알 사딘런 스쿠버 투어', '필리핀', '모알보알', array['scuba'], 'ow',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_moalboal_40dd0e3a.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_boat_setup_0117a349.png','https://cdn.enter.pro/resources/uid_100187712/gallery_group_divers_9f03a7bd.png','https://cdn.enter.pro/resources/uid_100187712/gallery_coral_macro_ddd7bad3.png','https://cdn.enter.pro/resources/uid_100187712/gallery_sunset_return_bbd94b9e.png'],
+     current_date + 20, current_date + 25, current_date + 12, 890000, 28, 20, 4.8, 8, 'open',
+     '수백만 마리의 정어리 떼가 만드는 은빛 소용돌이를 눈앞에서 만나는 모알보알 대표 사딘런 투어입니다. 초보자도 안전하게 즐길 수 있도록 강사 1인당 4인 이하로 진행됩니다.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원','공항 픽업 / 샌딩 (해당 투어에 한함)'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','나이트록스(선택사항)','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비','개인 팁'],
+     '개인 마스크/스노클 소지자는 지참해주세요. 수영복, 선크림(리프 세이프 제품 권장), 여벌 옷을 꼭 챙기세요.',
+     '[{"id":"opt-1","name":"싱글차지 (Single Room Charge)","price":150000,"isActive":true},{"id":"opt-2","name":"나이트록스 (Nitrox)","price":30000,"isActive":true},{"id":"opt-3","name":"풀 장비 렌탈 (Full Gear Rental)","price":50000,"isActive":true}]'::jsonb,
+     true),
+    ('inst-3', null, '코모도 만타포인트 어드밴스드 투어', '인도네시아', '코모도', array['scuba'], 'aow',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_komodo_fa103ad3.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_boat_setup_0117a349.png','https://cdn.enter.pro/resources/uid_100187712/gallery_group_divers_9f03a7bd.png'],
+     current_date + 35, current_date + 40, current_date + 25, 1880000, 26, 25, 4.9, 6, 'open',
+     '코모도 국립공원의 강한 조류를 뚫고 만타레이와 함께하는 어드밴스드 다이버 전용 투어. 드리프트 다이빙 경험이 필요합니다.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비'],
+     '드리프트 다이빙 경험 필수. 후드 슈트(3mm 이상), 장갑, 개인 다이브 컴퓨터를 지참해주세요.',
+     '[]'::jsonb, true),
+    ('inst-2', c2, '제주 프리다이빙 입문 클래스', '대한민국', '제주도', array['freediving'], 'basic',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_jeju_6a2b0210.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_group_divers_9f03a7bd.png'],
+     current_date + 10, current_date + 12, current_date + 5, 450000, 19, 12, 4.7, 6, 'open',
+     'AIDA 국가대표 출신 강사와 함께하는 프리다이빙 입문 클래스. 이퀄라이징 기초부터 안전 프로토콜까지 체계적으로 학습합니다.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비'],
+     '수영복, 수건, 방한용 롱슈트(대여 가능)를 준비해주세요. 직전 식사는 최소 2시간 전에 마쳐주세요.',
+     '[]'::jsonb, false),
+    ('inst-3', null, '팔라우 블루코너 마스터 다이브', '팔라우', '코로르', array['scuba'], 'master',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_palau_fb74f8f6.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_coral_macro_ddd7bad3.png'],
+     current_date + 50, current_date + 56, current_date + 35, 2450000, 27, 30, 5.0, 6, 'open',
+     '상어와 대형 어군이 몰려드는 팔라우 최고의 다이브 사이트, 블루코너. 강한 조류 대응 경험이 있는 마스터 다이버만 참가 가능합니다.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비'],
+     '리프훅(Reef Hook) 개인 소지자는 지참 권장. SMB(구조용 부이) 사용 경험 필수.',
+     '[]'::jsonb, true),
+    ('inst-3', c3, '다합 블루홀 테크니컬 투어', '이집트', '다합', array['scuba'], 'master',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_dahab_af3bfd68.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_sunset_return_bbd94b9e.png'],
+     current_date + 60, current_date + 65, current_date + 45, 2100000, 24, 28, 4.9, 4, 'open',
+     '세계적으로 유명한 다합 블루홀의 신비로운 싱크홀을 탐험하는 테크니컬 다이빙 투어.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비'],
+     '테크니컬 다이빙 인증서 지참 필수. 개인 백업 라이트, 여분의 마스크를 챙겨주세요.',
+     '[]'::jsonb, true),
+    ('inst-1', c1, '코타오 비기너 스쿠버 오픈워터', '태국', '코타오', array['scuba'], 'ow',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_kohtao_05734075.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_boat_setup_0117a349.png'],
+     current_date + 15, current_date + 19, current_date + 8, 650000, 29, 18, 4.6, 10, 'open',
+     '다이빙이 처음이라면 여기서 시작하세요. 코타오의 잔잔한 코랄가든에서 진행되는 오픈워터 코스입니다.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비'],
+     '수영복, 선크림(리프 세이프), 여벌 옷을 준비해주세요. 개인 장비가 없어도 전체 렌탈 가능합니다.',
+     '[]'::jsonb, true),
+    ('inst-1', null, '발리 USS 리버티 난파선 투어', '인도네시아', '발리', array['scuba'], 'aow',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_bali_c6c83f10.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_group_divers_9f03a7bd.png'],
+     current_date + 28, current_date + 31, current_date + 18, 980000, 27, 22, 4.8, 8, 'open',
+     '제2차 세계대전 당시 침몰한 리버티호 난파선을 탐험하는 발리 대표 투어. 난파선 다이빙 경험을 추천합니다.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비'],
+     '다이브 컴퓨터 개인 소지자는 지참해주세요. 조류가 있는 지역이니 핀은 스티프한 제품을 추천합니다.',
+     '[]'::jsonb, true),
+    ('inst-2', null, '몰디브 프리다이빙 & 고래상어 투어', '몰디브', '말레 아톨', array['freediving'], 'level2',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_maldives_632abcae.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_sunset_return_bbd94b9e.png'],
+     current_date + 70, current_date + 76, current_date + 55, 3200000, 29, 30, 5.0, 6, 'open',
+     '세계 최대어 고래상어와 나란히 헤엄치는 몰디브 프리다이빙 익스페디션. 프리다이빙 어드밴스드 자격 이상 권장.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비'],
+     '롱핀, 웻슈트(3mm), 수경을 개인 지참 권장. 전날 충분한 수면과 수분 섭취 부탁드립니다.',
+     '[]'::jsonb, true),
+    ('inst-1', c1, '코타오 완료된 오픈워터 투어 (지난 투어)', '태국', '코타오', array['scuba'], 'ow',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_kohtao_05734075.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_boat_setup_0117a349.png'],
+     current_date - 45, current_date - 41, current_date - 50, 650000, 29, 18, 4.7, 10, 'closed',
+     '이미 완료된 코타오 오픈워터 투어입니다.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비'],
+     '수영복, 선크림(리프 세이프), 여벌 옷을 준비해주세요.',
+     '[]'::jsonb, true),
+    ('inst-1', c1, '세부 세부시티 오션 나이트다이브', '필리핀', '세부', array['scuba'], 'aow',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_moalboal_40dd0e3a.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_boat_setup_0117a349.png'],
+     current_date + 3, current_date + 4, current_date + 1, 550000, 28, 15, 4.8, 8, 'open',
+     '세부 앞바다에서 진행되는 나이트다이브 투어. 야행성 해양생물을 관찰할 수 있습니다.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비'],
+     '방수 손전등(다이브 라이트) 개인 지참 필수. 야간 한기 대비 여벌 옷을 챙겨주세요.',
+     '[]'::jsonb, true),
+    ('inst-2', c2, '울릉도 프리다이빙 클리어워터 투어', '대한민국', '울릉도', array['freediving'], 'level1',
+     'https://cdn.enter.pro/resources/uid_100187712/tour_jeju_6a2b0210.png',
+     array['https://cdn.enter.pro/resources/uid_100187712/gallery_group_divers_9f03a7bd.png'],
+     current_date + 1, current_date + 2, current_date - 1, 480000, 20, 25, 4.9, 6, 'open',
+     '청정 해역 울릉도에서 진행되는 프리다이빙 투어. 국내 최고 시야를 자랑합니다.',
+     array['숙박','조식 / 중식 / 석식','보트 이용','인증 강사 가이드','그룹채팅 이용','플랫폼 고객지원'],
+     array['왕복 항공권','여행자 보험','개인 장비 렌탈','추가 다이빙 비용','관광 옵션','주류 및 음료','개인 경비'],
+     '5mm 이상 웻슈트, 수경, 넥워머를 개인 지참 권장. 전날 금주 및 충분한 수분 섭취 필수.',
+     '[]'::jsonb, true);
+end $$;

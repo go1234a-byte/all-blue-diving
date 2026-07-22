@@ -1,0 +1,43 @@
+-- MIMO beauty reservation platform tables
+create table public.mimo_users (
+  uid text primary key,
+  name text not null,
+  phone text,
+  favorites text[] not null default '{}',
+  created_at timestamptz not null default now()
+);
+
+create table public.mimo_salons (
+  id text primary key,
+  name text not null,
+  address text not null,
+  lat double precision not null,
+  lng double precision not null,
+  status boolean not null default true,
+  categories text[] not null default '{}',
+  photos text[] not null default '{}',
+  services jsonb not null default '[]',
+  rating numeric not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create table public.mimo_reservations (
+  reservation_id uuid primary key default gen_random_uuid(),
+  user_id text not null references public.mimo_users(uid) on delete cascade,
+  salon_id text not null references public.mimo_salons(id) on delete cascade,
+  service_name text not null,
+  price numeric not null,
+  start_time timestamptz not null,
+  status text not null default 'pending' check (status in ('pending','confirmed','completed','cancelled')),
+  payment_method text,
+  payment_status text not null default 'unpaid',
+  created_at timestamptz not null default now()
+);
+
+alter table public.mimo_users enable row level security;
+alter table public.mimo_salons enable row level security;
+alter table public.mimo_reservations enable row level security;
+
+create policy mimo_users_public_all on public.mimo_users for all using (true) with check (true);
+create policy mimo_salons_public_select on public.mimo_salons for select using (true);
+create policy mimo_reservations_public_all on public.mimo_reservations for all using (true) with check (true);

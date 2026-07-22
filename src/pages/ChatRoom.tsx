@@ -1,0 +1,93 @@
+import { useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { ArrowLeft, MessageCircleOff } from "lucide-react";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChatThread } from "@/components/chat/ChatThread";
+import { ChatParticipantList } from "@/components/chat/ChatParticipantList";
+import { RoomAssignmentDashboard } from "@/components/chat/RoomAssignmentDashboard";
+import { TourInfoPinnedBanner } from "@/components/chat/TourInfoPinnedBanner";
+import { TourDashboardTab } from "@/components/chat/TourDashboardTab";
+import { TourItineraryTab } from "@/components/chat/TourItineraryTab";
+import { TourMoreInfoTab } from "@/components/chat/TourMoreInfoTab";
+import { useAppData } from "@/contexts/AppDataContext";
+import { useRole } from "@/contexts/RoleContext";
+
+const ChatRoom = () => {
+  const { tourId } = useParams();
+  const { tours, bookings, getInstructorById } = useAppData();
+  const { currentInstructorId, currentDiverId } = useRole();
+  const tour = tours.find((t) => t.id === tourId);
+  const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
+  const [tab, setTab] = useState("dashboard");
+
+  const tourBookings = bookings.filter((b) => b.tourId === tourId);
+  const isInstructor = !!tour && !!currentInstructorId && tour.instructorId === currentInstructorId;
+  const myBooking = tourBookings.find((b) => b.diverId === currentDiverId);
+
+  if (!tour) {
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center gap-3 bg-gradient-surface p-6 text-center">
+        <MessageCircleOff className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">채팅방을 찾을 수 없습니다.</p>
+        <Link to="/chat" className="text-sm font-medium text-primary underline underline-offset-4">
+          채팅 목록으로 돌아가기
+        </Link>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-full bg-gradient-surface pb-20">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/95 px-4 backdrop-blur">
+        <Link to="/chat" className="text-foreground">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="line-clamp-1 text-base font-semibold text-foreground">{tour.title}</h1>
+      </header>
+      <main className="mx-auto w-full max-w-md px-4 py-4 md:max-w-lg">
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="dashboard" className="text-xs">대시보드</TabsTrigger>
+            <TabsTrigger value="chat" className="text-xs">그룹채팅</TabsTrigger>
+            <TabsTrigger value="itinerary" className="text-xs">일정</TabsTrigger>
+            <TabsTrigger value="participants" className="text-xs">참가자</TabsTrigger>
+            <TabsTrigger value="more" className="text-xs">더보기</TabsTrigger>
+          </TabsList>
+          <TabsContent value="dashboard" className="pt-3">
+            <TourDashboardTab tour={tour} bookings={tourBookings} isInstructor={isInstructor} />
+          </TabsContent>
+          <TabsContent value="chat" className="space-y-2 pt-3">
+            <TourInfoPinnedBanner tour={tour} />
+            {tour.instructorNotice && (
+              <div className="rounded-lg border border-primary/40 bg-secondary/60 px-3 py-2 text-xs text-foreground">
+                <span className="font-semibold text-primary">📌 강사 공지 </span>
+                {tour.instructorNotice}
+              </div>
+            )}
+            <ChatThread tourId={tour.id} tour={tour} />
+          </TabsContent>
+          <TabsContent value="itinerary" className="pt-3">
+            <TourItineraryTab tour={tour} isInstructor={isInstructor} />
+          </TabsContent>
+          <TabsContent value="participants" className="space-y-4 pt-3">
+            <ChatParticipantList
+              bookings={tourBookings}
+              instructorId={tour.instructorId}
+              instructorName={instructor?.name}
+              isInstructor={isInstructor}
+            />
+            <RoomAssignmentDashboard bookings={tourBookings} />
+          </TabsContent>
+          <TabsContent value="more" className="pt-3">
+            <TourMoreInfoTab tour={tour} bookings={tourBookings} myBooking={myBooking} isInstructor={isInstructor} />
+          </TabsContent>
+        </Tabs>
+      </main>
+      <BottomNav />
+    </div>
+  );
+};
+
+export default ChatRoom;

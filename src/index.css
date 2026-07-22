@@ -1,0 +1,236 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 200 40% 98%;
+    --foreground: 210 60% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 60% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 60% 8%;
+
+    /* ALL BLUE brand primary: deep ocean navy (#003366 근사) */
+    --primary: 210 100% 20%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 199 89% 48%;
+
+    --secondary: 200 30% 94%;
+    --secondary-foreground: 210 60% 12%;
+
+    --muted: 200 25% 95%;
+    --muted-foreground: 210 15% 45%;
+
+    /* Aqua/cyan accent for CTAs, badges */
+    --accent: 189 94% 43%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 26 40% 14%;
+
+    --success: 152 60% 36%;
+    --success-foreground: 0 0% 100%;
+
+    /* 간편결제 CTA용 코랄 액센트 */
+    --coral: 6 89% 64%;
+    --coral-foreground: 0 0% 100%;
+
+    --border: 200 25% 89%;
+    --input: 200 25% 89%;
+    --ring: 199 89% 48%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 210 60% 8%;
+    --sidebar-foreground: 200 30% 92%;
+    --sidebar-primary: 189 94% 43%;
+    --sidebar-primary-foreground: 210 60% 8%;
+    --sidebar-accent: 210 45% 16%;
+    --sidebar-accent-foreground: 200 30% 92%;
+    --sidebar-border: 210 40% 18%;
+    --sidebar-ring: 189 94% 43%;
+
+    /* ALL BLUE ocean gradients & shadows */
+    --gradient-ocean: linear-gradient(160deg, hsl(210 100% 20%) 0%, hsl(205 90% 14%) 45%, hsl(210 60% 4%) 100%);
+    --gradient-ocean-light: linear-gradient(135deg, hsl(199 89% 48%) 0%, hsl(210 100% 20%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(200 40% 98%) 0%, hsl(200 30% 94%) 100%);
+    --shadow-ocean: 0 20px 50px -15px hsl(210 100% 20% / 0.35);
+    --shadow-ocean-glow: 0 0 40px hsl(199 89% 48% / 0.35);
+  }
+
+  .dark {
+    --background: 210 60% 6%;
+    --foreground: 200 30% 94%;
+
+    --card: 210 55% 9%;
+    --card-foreground: 200 30% 94%;
+
+    --popover: 210 55% 9%;
+    --popover-foreground: 200 30% 94%;
+
+    --primary: 199 89% 48%;
+    --primary-foreground: 210 60% 6%;
+    --primary-glow: 199 89% 60%;
+
+    --secondary: 210 40% 16%;
+    --secondary-foreground: 200 30% 94%;
+
+    --muted: 210 40% 16%;
+    --muted-foreground: 200 15% 65%;
+
+    --accent: 189 94% 48%;
+    --accent-foreground: 210 60% 6%;
+
+    --destructive: 0 62.8% 40%;
+    --destructive-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 26 40% 14%;
+
+    --success: 152 55% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 210 40% 18%;
+    --input: 210 40% 18%;
+    --ring: 199 89% 48%;
+    --sidebar-background: 210 60% 5%;
+    --sidebar-foreground: 200 30% 92%;
+    --sidebar-primary: 189 94% 48%;
+    --sidebar-primary-foreground: 210 60% 6%;
+    --sidebar-accent: 210 45% 14%;
+    --sidebar-accent-foreground: 200 30% 92%;
+    --sidebar-border: 210 40% 16%;
+    --sidebar-ring: 189 94% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ALL BLUE — 카드 상단 얇은 Ocean Gradient 액센트 (premium, minimal, 과하지 않게) */
+.accent-top-ocean {
+  position: relative;
+}
+.accent-top-ocean::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--gradient-ocean-light);
+  z-index: 1;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* MIMO — premium beauty reservation theme (scoped, isolated from ALL BLUE tokens) */
+.mimo-theme {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 20%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 20%;
+
+  --primary: 0 100% 71%;
+  --primary-foreground: 0 0% 100%;
+  --primary-glow: 6 100% 78%;
+
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 20%;
+
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+
+  --accent: 0 100% 71%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+
+  --warning: 38 92% 50%;
+  --warning-foreground: 26 40% 14%;
+
+  --success: 152 60% 36%;
+  --success-foreground: 0 0% 100%;
+
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 0 100% 71%;
+
+  --radius: 1rem;
+
+  --gradient-mimo: linear-gradient(135deg, hsl(0 100% 71%) 0%, hsl(6 100% 78%) 100%);
+  --shadow-mimo: 0 10px 30px -8px hsl(0 0% 0% / 0.12);
+  --shadow-mimo-sm: 0 4px 12px -4px hsl(0 0% 0% / 0.08);
+
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Infinite Dive — standalone retro arcade game theme (scoped, isolated from ALL BLUE/MIMO tokens) */
+.game-theme {
+  --background: 210 60% 4%;
+  --foreground: 200 30% 94%;
+  --card: 210 45% 8%;
+  --card-foreground: 200 30% 94%;
+  --popover: 210 45% 8%;
+  --popover-foreground: 200 30% 94%;
+
+  --primary: 189 94% 50%;
+  --primary-foreground: 210 60% 6%;
+  --primary-glow: 189 94% 65%;
+
+  --secondary: 210 40% 14%;
+  --secondary-foreground: 200 30% 94%;
+
+  --muted: 210 40% 12%;
+  --muted-foreground: 200 15% 60%;
+
+  --accent: 355 100% 71%;
+  --accent-foreground: 210 60% 6%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --warning: 45 100% 55%;
+  --warning-foreground: 26 40% 10%;
+
+  --success: 152 60% 45%;
+  --success-foreground: 0 0% 100%;
+
+  --border: 210 40% 18%;
+  --input: 210 40% 18%;
+  --ring: 189 94% 50%;
+
+  --radius: 0.5rem;
+
+  --game-coral: 0 100% 71%;
+  --game-gold: 46 100% 50%;
+  --gradient-game-chrome: linear-gradient(180deg, hsl(210 30% 14%) 0%, hsl(210 45% 6%) 100%);
+  --shadow-game-glow: 0 0 30px hsl(189 94% 50% / 0.35);
+
+  font-family: "Press Start 2P", "Pretendard", -apple-system, BlinkMacSystemFont, monospace;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  image-rendering: pixelated;
+}

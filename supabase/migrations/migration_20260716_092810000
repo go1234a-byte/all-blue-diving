@@ -1,0 +1,115 @@
+-- ALL BLUE: 강사 신뢰검증 스키마 (instructors, policies, penalties_log)
+-- 참고: 이 프로젝트에는 아직 실제 로그인/인증 시스템이 없으므로(마스터 테스트 툴바로 역할 전환),
+-- 데모 목적상 RLS는 공개 조회(select) + permissive insert/update로 설정한다.
+-- 향후 실 인증(Supabase Auth) 도입 시 반드시 정책을 강화해야 한다.
+
+create table public.instructors (
+  id text primary key,
+  profile_id text,
+  name text not null,
+  avatar_url text,
+  agency text,
+  license_file_names text[] default '{}',
+  signature_data_url text,
+  verified_status boolean not null default false,
+  total_logs integer not null default 0,
+  experience_years integer not null default 0,
+  completion_rate numeric not null default 0,
+  rating numeric not null default 0,
+  penalty_count integer not null default 0,
+  bio text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.instructors enable row level security;
+
+create policy "instructors_public_select" on public.instructors
+  for select using (true);
+
+create policy "instructors_public_insert" on public.instructors
+  for insert with check (true);
+
+create policy "instructors_public_update" on public.instructors
+  for update using (true) with check (true);
+
+create table public.policies (
+  id uuid primary key default gen_random_uuid(),
+  category text not null check (category in ('refund', 'violation', 'enforcement')),
+  sort_order integer not null default 0,
+  title text not null,
+  description text,
+  rate text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.policies enable row level security;
+
+create policy "policies_public_select" on public.policies
+  for select using (true);
+
+create table public.penalties_log (
+  id uuid primary key default gen_random_uuid(),
+  instructor_id text not null references public.instructors(id) on delete cascade,
+  violation_type text not null,
+  description text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.penalties_log enable row level security;
+
+create policy "penalties_log_public_select" on public.penalties_log
+  for select using (true);
+
+create policy "penalties_log_public_insert" on public.penalties_log
+  for insert with check (true);
+
+-- 트리거: penalties_log에 새 위반 기록이 insert되면 해당 강사의 penalty_count를 실시간으로 +1
+create or replace function public.increment_instructor_penalty_count()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.instructors
+  set penalty_count = penalty_count + 1
+  where id = new.instructor_id;
+  return new;
+end;
+$$;
+
+create trigger trg_increment_instructor_penalty_count
+  after insert on public.penalties_log
+  for each row
+  execute function public.increment_instructor_penalty_count();
+
+-- 시드 데이터: 강사 3명 (기존 mock id와 매핑 유지: inst-1/inst-2/inst-3)
+insert into public.instructors
+  (id, profile_id, name, avatar_url, agency, license_file_names, verified_status, total_logs, experience_years, completion_rate, rating, penalty_count, bio)
+values
+  ('inst-1', 'ins-1', '홍길동', 'https://cdn.enter.pro/resources/uid_100187712/instructor_honggildong_3fe5c14a.png', 'PADI MSDT', array['PADI_OWSI_License.pdf'], true, 1240, 8, 98, 4.9, 0, '10년 경력의 PADI 마스터 강사, 필리핀/발리/태국 전문'),
+  ('inst-2', 'ins-2', '김철', 'https://cdn.enter.pro/resources/uid_100187712/instructor_kimcheol_56d5d282.png', 'AIDA Master', array['AIDA_Freediving_License.pdf'], true, 860, 6, 95, 4.7, 0, 'AIDA 프리다이빙 국가대표 출신, 제주/몰디브 전문'),
+  ('inst-3', 'ins-3', '황보준수', 'https://cdn.enter.pro/resources/uid_100187712/instructor_hwangbo_f0e2c6b4.png', 'TDI Tech Instructor', array['TDI_Tech_License.pdf', 'First_Aid_Certificate.pdf'], true, 2100, 12, 100, 5.0, 0, '테크니컬 다이빙 전문 강사, 팔라우/이집트 딥다이브 전문');
+
+-- 패널티 로그 1건 시드 (트리거로 김철의 penalty_count가 자동으로 1 증가)
+insert into public.penalties_log (instructor_id, violation_type, description)
+values ('inst-2', '정산 지연', '2차 정산 요청 서류 제출 지연 (3일)');
+
+-- 정책 시드: 환불 규정 (refund)
+insert into public.policies (category, sort_order, title, description, rate) values
+  ('refund', 1, '출발 7일 전', '전액 환불 가능', '100%'),
+  ('refund', 2, '출발 3일 전', '부분 환불 가능', '50%'),
+  ('refund', 3, '출발 당일', '환불 불가', '0%');
+
+-- 정책 시드: 위반 사항 (violation)
+insert into public.policies (category, sort_order, title, description) values
+  ('violation', 1, '노쇼 (No-Show)', '사전 통보 없이 투어 당일 불참'),
+  ('violation', 2, '강사 임의 교체', '플랫폼 승인 없이 담당 강사를 임의로 교체'),
+  ('violation', 3, '안전장비 누락', '필수 안전장비 미점검 또는 미지참'),
+  ('violation', 4, '허위 정보 게재', '투어 정보 또는 자격증을 허위로 게재'),
+  ('violation', 5, '부적절한 언행', '참가자 또는 강사에 대한 부적절한 언행'),
+  ('violation', 6, '정산 지연', '정당한 사유 없이 정산 절차를 지연');
+
+-- 정책 시드: 제재 단계 (enforcement)
+insert into public.policies (category, sort_order, title, description) values
+  ('enforcement', 1, '제재 단계 안내', '1회 위반 시 경고 및 정산 보류, 2회 위반 시 인증 강사 자격 박탈 및 활동 영구 정지');

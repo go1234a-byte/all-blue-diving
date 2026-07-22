@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 44" width="40" height="44">
+  <defs>
+    <linearGradient id="pin-gradient" x1="6" y1="3" x2="34" y2="41" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0a4d99" />
+      <stop offset="100%" stop-color="#22a8e0" />
+    </linearGradient>
+    <clipPath id="pin-clip">
+      <path d="M20 3C12.27 3 6 9.27 6 17c0 11.5 14 24 14 24s14-12.5 14-24c0-7.73-6.27-14-14-14z" />
+    </clipPath>
+  </defs>
+  <rect x="0" y="1" width="40" height="42" rx="12" fill="#ffffff" />
+  <path d="M20 3C12.27 3 6 9.27 6 17c0 11.5 14 24 14 24s14-12.5 14-24c0-7.73-6.27-14-14-14z" fill="url(#pin-gradient)" />
+  <g clip-path="url(#pin-clip)">
+    <path d="M2 22c2.6-2.4 5.2-2.4 7.8 0s5.2 2.4 7.8 0 5.2-2.4 7.8 0 5.2 2.4 7.8 0" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" fill="none" opacity="0.95" />
+    <path d="M2 27c2.6-2.4 5.2-2.4 7.8 0s5.2 2.4 7.8 0 5.2-2.4 7.8 0 5.2 2.4 7.8 0" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" fill="none" opacity="0.6" />
+  </g>
+</svg>

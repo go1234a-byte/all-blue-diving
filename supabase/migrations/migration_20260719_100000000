@@ -1,0 +1,24 @@
+-- ALL BLUE: 참가자 대시보드(투어별) / 강사 공개 프로필 / 다이버 가입 정보 확장
+
+-- 1) 참가자 대시보드 [대시보드]/[일정] 탭용 투어 필드
+alter table public.tours
+  add column if not exists instructor_notice text,
+  add column if not exists itinerary_days jsonb;
+
+-- 2) 참가자 대시보드 [더보기] 탭용 예약(본인) 필드
+alter table public.bookings
+  add column if not exists flight_info text,
+  add column if not exists passport_info text;
+
+-- 3) 강사 공개 프로필 — 사용 언어
+alter table public.instructors
+  add column if not exists languages text[];
+
+-- 4) 다이버 가입 개선 — C-Card / 로그 수 / 비상연락처 / 보험(선택)
+alter table public.profiles
+  add column if not exists c_card_agency text,
+  add column if not exists c_card_number text,
+  add column if not exists log_count integer,
+  add column if not exists emergency_contact_name text,
+  add column if not exists emergency_contact_phone text,
+  add column if not exists insurance_info text;
