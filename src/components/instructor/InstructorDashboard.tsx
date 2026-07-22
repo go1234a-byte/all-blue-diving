@@ -10,10 +10,30 @@ interface InstructorDashboardProps {
 }
 
 export function InstructorDashboard({ instructorId }: InstructorDashboardProps) {
-  const { getInstructorById, tours, bookings } = useAppData();
+  const { getInstructorById, tours, bookings, toursLoading, instructorsLoading, bookingsLoading } = useAppData();
   const instructor = getInstructorById(instructorId);
   const myTours = tours.filter((t) => t.instructorId === instructorId);
   const myBookingsCount = bookings.filter((b) => myTours.some((t) => t.id === b.tourId)).length;
+
+  // 데이터 로딩 중에는 "0건"처럼 오해를 부르는 값을 보여주지 않고 로딩 상태를 명시한다.
+  // (안 그러면 새로고침 직후 실제로는 투어가 있는데도 잠깐 0으로 보이는 문제가 있었다.)
+  if (toursLoading || instructorsLoading || bookingsLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-3 gap-3">
+          {[0, 1, 2].map((i) => (
+            <Card key={i}>
+              <CardContent className="space-y-2 p-4 text-center">
+                <div className="mx-auto h-3 w-12 animate-pulse rounded bg-secondary" />
+                <div className="mx-auto h-6 w-8 animate-pulse rounded bg-secondary" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <p className="py-4 text-center text-xs text-muted-foreground">불러오는 중...</p>
+      </div>
+    );
+  }
 
   if (!instructor) return null;
 
