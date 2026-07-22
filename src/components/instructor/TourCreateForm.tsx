@@ -66,7 +66,7 @@ function DatePickerField({
             selected={value}
             onSelect={onChange}
             disabled={disablePast ? (d) => isPastDate(toISODate(d)) : undefined}
-            initialFocus
+            autoFocus
           />
         </PopoverContent>
       </Popover>
