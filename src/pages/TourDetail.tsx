@@ -171,6 +171,44 @@ const TourDetail = () => {
           </p>
         </div>
 
+        {/* 2-1) 일자별 일정 (강사가 투어 생성 시 등록한 일정) */}
+        {tour.itineraryDays && tour.itineraryDays.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-foreground">일자별 일정</h3>
+            <div className="space-y-2">
+              {tour.itineraryDays.map((day) => (
+                <div key={day.dayNumber} className="space-y-1.5 rounded-xl border border-border bg-card p-4">
+                  <p className="text-sm font-semibold text-foreground">{day.title}</p>
+                  {day.briefing && (
+                    <p className="break-keep text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">브리핑 </span>
+                      {day.briefing}
+                    </p>
+                  )}
+                  {day.diving && (
+                    <p className="break-keep text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">다이빙 </span>
+                      {day.diving}
+                    </p>
+                  )}
+                  {day.meals && (
+                    <p className="break-keep text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">식사 </span>
+                      {day.meals}
+                    </p>
+                  )}
+                  {day.freeTime && (
+                    <p className="break-keep text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">자유시간 </span>
+                      {day.freeTime}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 3) 예약된 센터 소개 */}
         {diveCenter && <DiveCenterCard diveCenter={diveCenter} />}
         {center && <TourCenterCard center={center} />}
