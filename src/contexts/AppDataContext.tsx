@@ -42,6 +42,7 @@ function mapInstructorRow(row: {
   name: string;
   avatar_url: string | null;
   agency: string | null;
+  level?: string | null;
   license_file_names: string[] | null;
   signature_data_url: string | null;
   verified_status: boolean;
@@ -64,6 +65,7 @@ function mapInstructorRow(row: {
     name: row.name,
     avatarUrl: row.avatar_url ?? undefined,
     agency: row.agency ?? undefined,
+    level: row.level ?? undefined,
     licenseFileNames: row.license_file_names ?? [],
     signatureDataUrl: row.signature_data_url ?? undefined,
     verified: row.verified_status,
@@ -480,6 +482,8 @@ interface AppDataContextValue {
       name?: string;
       phone?: string;
       agency?: string;
+      level?: string;
+      totalLogs?: number;
       bio?: string;
       licenseFileNames?: string[];
       avatarUrl?: string;
@@ -1252,6 +1256,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       name?: string;
       phone?: string;
       agency?: string;
+      level?: string;
+      totalLogs?: number;
       bio?: string;
       licenseFileNames?: string[];
       avatarUrl?: string;
@@ -1259,12 +1265,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   ): Promise<void> => {
     const instructor = instructors.find((i) => i.id === instructorId);
 
-    // instructors 테이블: 이름/소속/자기소개/자격증 파일명/프로필 사진 갱신
+    // instructors 테이블: 이름/소속/레벨/로그수/자기소개/자격증 파일명/프로필 사진 갱신
     await supabase
       .from("instructors")
       .update({
         ...(updates.name !== undefined ? { name: updates.name } : {}),
         ...(updates.agency !== undefined ? { agency: updates.agency } : {}),
+        ...(updates.level !== undefined ? { level: updates.level } : {}),
+        ...(updates.totalLogs !== undefined ? { total_logs: updates.totalLogs } : {}),
         ...(updates.bio !== undefined ? { bio: updates.bio } : {}),
         ...(updates.licenseFileNames !== undefined ? { license_file_names: updates.licenseFileNames } : {}),
         ...(updates.avatarUrl !== undefined ? { avatar_url: updates.avatarUrl } : {}),
@@ -1278,6 +1286,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               ...i,
               ...(updates.name !== undefined ? { name: updates.name } : {}),
               ...(updates.agency !== undefined ? { agency: updates.agency } : {}),
+              ...(updates.level !== undefined ? { level: updates.level } : {}),
+              ...(updates.totalLogs !== undefined ? { totalLogs: updates.totalLogs } : {}),
               ...(updates.bio !== undefined ? { bio: updates.bio } : {}),
               ...(updates.licenseFileNames !== undefined ? { licenseFileNames: updates.licenseFileNames } : {}),
               ...(updates.avatarUrl !== undefined ? { avatarUrl: updates.avatarUrl } : {}),

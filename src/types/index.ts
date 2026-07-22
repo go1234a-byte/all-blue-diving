@@ -38,7 +38,8 @@ export interface InstructorProfile {
   profileId: string;
   name: string;
   avatarUrl?: string;
-  agency?: string;
+  agency?: string; // 다이빙협회 소속 (예: PADI, SSI, CMAS 등)
+  level?: string; // 자격 레벨 (예: Divemaster, OWSI, MSDT, Course Director 등)
   licenseFileNames: string[];
   signatureDataUrl?: string;
   verified: boolean;

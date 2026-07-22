@@ -22,9 +22,11 @@ import { UnderMinDecisionPanel } from "./UnderMinDecisionPanel";
 
 interface InstructorDashboardProps {
   instructorId: string;
+  /** "누적 예약" 카드 클릭 시 예약(정산) 상세 화면으로 이동시키기 위한 콜백. */
+  onViewBookings?: () => void;
 }
 
-export function InstructorDashboard({ instructorId }: InstructorDashboardProps) {
+export function InstructorDashboard({ instructorId, onViewBookings }: InstructorDashboardProps) {
   const { getInstructorById, tours, bookings, toursLoading, instructorsLoading, bookingsLoading, closeTourRecruiting } =
     useAppData();
   const { toast } = useToast();
@@ -59,13 +61,23 @@ export function InstructorDashboard({ instructorId }: InstructorDashboardProps) 
       <UnderMinDecisionPanel instructorId={instructorId} />
 
       <div className="grid grid-cols-3 gap-3">
-        <Card>
+        <Card
+          role="button"
+          tabIndex={0}
+          className="cursor-pointer transition-shadow hover:shadow-ocean"
+          onClick={() => document.getElementById("my-tours-section")?.scrollIntoView({ behavior: "smooth" })}
+        >
           <CardContent className="space-y-1 p-4 text-center">
             <p className="text-xs text-muted-foreground">등록 투어</p>
             <p className="text-2xl font-bold text-primary">{myTours.length}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          role="button"
+          tabIndex={0}
+          className="cursor-pointer transition-shadow hover:shadow-ocean"
+          onClick={onViewBookings}
+        >
           <CardContent className="space-y-1 p-4 text-center">
             <p className="text-xs text-muted-foreground">누적 예약</p>
             <p className="text-2xl font-bold text-primary">{myBookingsCount}</p>
@@ -102,7 +114,7 @@ export function InstructorDashboard({ instructorId }: InstructorDashboardProps) 
         </CardContent>
       </Card>
 
-      <div className="space-y-2">
+      <div id="my-tours-section" className="space-y-2 scroll-mt-4">
         <h3 className="text-sm font-semibold text-foreground">내 투어 목록</h3>
         {myTours.map((tour) => (
           <Card key={tour.id}>

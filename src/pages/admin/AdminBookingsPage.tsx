@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { CancellationReviewQueue } from "@/components/admin/CancellationReviewQueue";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -49,7 +49,16 @@ const AdminBookingsPage = () => {
               }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="line-clamp-1 text-sm font-semibold text-foreground">{tour?.title ?? "-"}</p>
+                {tour ? (
+                  <Link
+                    to={`/tour/${tour.id}`}
+                    className="line-clamp-1 text-sm font-semibold text-foreground underline-offset-2 hover:underline"
+                  >
+                    {tour.title}
+                  </Link>
+                ) : (
+                  <p className="line-clamp-1 text-sm font-semibold text-foreground">-</p>
+                )}
                 <Badge variant={STATUS_VARIANT[booking.status]} className="shrink-0 text-[10px]">
                   {STATUS_LABEL[booking.status]}
                 </Badge>

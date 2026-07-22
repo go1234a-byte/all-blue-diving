@@ -31,6 +31,8 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
   const [name, setName] = useState(instructor.name);
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [agency, setAgency] = useState(instructor.agency ?? "");
+  const [level, setLevel] = useState(instructor.level ?? "");
+  const [totalLogs, setTotalLogs] = useState(String(instructor.totalLogs ?? 0));
   const [bio, setBio] = useState(instructor.bio ?? "");
   const [licenseFileNames, setLicenseFileNames] = useState<string[]>(instructor.licenseFileNames);
   const [avatarUrl, setAvatarUrl] = useState(instructor.avatarUrl ?? "");
@@ -39,6 +41,8 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
     setName(instructor.name);
     setPhone(profile?.phone ?? "");
     setAgency(instructor.agency ?? "");
+    setLevel(instructor.level ?? "");
+    setTotalLogs(String(instructor.totalLogs ?? 0));
     setBio(instructor.bio ?? "");
     setLicenseFileNames(instructor.licenseFileNames);
     setAvatarUrl(instructor.avatarUrl ?? "");
@@ -60,6 +64,8 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
         name: name.trim(),
         phone: phone.trim(),
         agency: agency.trim(),
+        level: level.trim(),
+        totalLogs: Number(totalLogs) || 0,
         bio: bio.trim(),
         licenseFileNames,
         avatarUrl,
@@ -102,6 +108,14 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
             <div>
               <p className="text-muted-foreground">소속</p>
               <p className="font-medium text-foreground">{instructor.agency || "-"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">레벨</p>
+              <p className="font-medium text-foreground">{instructor.level || "-"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">누적 다이빙 로그</p>
+              <p className="font-medium text-foreground">{instructor.totalLogs ?? 0}회</p>
             </div>
             <div className="col-span-2">
               <p className="text-muted-foreground">소개</p>
@@ -155,9 +169,26 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
           </div>
         </div>
 
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>다이빙협회 소속</Label>
+            <Input value={agency} onChange={(e) => setAgency(e.target.value)} placeholder="예: PADI, SSI, CMAS" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>레벨</Label>
+            <Input value={level} onChange={(e) => setLevel(e.target.value)} placeholder="예: MSDT, OWSI" />
+          </div>
+        </div>
+
         <div className="space-y-1.5">
-          <Label>소속 (자격 기관 등)</Label>
-          <Input value={agency} onChange={(e) => setAgency(e.target.value)} placeholder="예: PADI MSDT" />
+          <Label>누적 다이빙 로그 수</Label>
+          <Input
+            type="number"
+            min={0}
+            value={totalLogs}
+            onChange={(e) => setTotalLogs(e.target.value)}
+            placeholder="0"
+          />
         </div>
 
         <div className="space-y-1.5">
