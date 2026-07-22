@@ -28,9 +28,23 @@ const STATUS_VARIANT: Record<SupportTicketStatus, "secondary" | "default" | "out
 
 /** 관리자 고객센터 큐: 1:1 문의 / 분쟁조정 / 신고를 통합 처리한다. 모바일 폭에 맞춘 카드형 목록. */
 export function SupportTicketQueue() {
-  const { supportTickets, updateSupportTicketStatus } = useAppData();
+  const { supportTickets, updateSupportTicketStatus, diverProfiles, instructorProfiles, bookings, getTourById } =
+    useAppData();
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+
+  /** 문의자 아이디로 이름/역할과 가장 최근 이용한 투어를 함께 보여준다. */
+  const resolveUser = (userId: string) => {
+    const diver = diverProfiles.find((p) => p.id === userId);
+    const instructor = instructorProfiles.find((p) => p.id === userId);
+    const name = diver?.name ?? instructor?.name;
+    const roleLabel = diver ? "다이버" : instructor ? "강사" : undefined;
+    const recentBooking = [...bookings]
+      .filter((b) => b.diverId === userId)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
+    const recentTourTitle = recentBooking ? getTourById(recentBooking.tourId)?.title : undefined;
+    return { name, roleLabel, recentTourTitle };
+  };
 
   const handleSave = async (ticketId: string, status: SupportTicketStatus) => {
     setSavingId(ticketId);
@@ -47,7 +61,9 @@ export function SupportTicketQueue() {
 
   return (
     <div className="space-y-2">
-      {supportTickets.map((ticket) => (
+      {supportTickets.map((ticket) => {
+        const { name, roleLabel, recentTourTitle } = resolveUser(ticket.userId);
+        return (
         <div key={ticket.id} className="space-y-2 rounded-xl border border-border bg-card p-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
@@ -61,6 +77,18 @@ export function SupportTicketQueue() {
             <Badge variant={STATUS_VARIANT[ticket.status]} className="shrink-0 text-[10px]">
               {ticket.status}
             </Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 rounded-lg bg-secondary/50 px-2.5 py-1.5 text-[11px]">
+            <span className="font-semibold text-foreground">{name ?? "탈퇴/알 수 없음"}</span>
+            {roleLabel && (
+              <Badge variant="outline" className="px-1.5 py-0 text-[9px]">
+                {roleLabel}
+              </Badge>
+            )}
+            <span className="text-muted-foreground">ID: {ticket.userId}</span>
+            <span className="text-muted-foreground">
+              · 최근 투어: {recentTourTitle ?? "이용 내역 없음"}
+            </span>
           </div>
           {ticket.title && <p className="text-xs font-semibold text-foreground">{ticket.title}</p>}
           <p className="text-xs text-muted-foreground">{ticket.content}</p>
@@ -99,7 +127,8 @@ export function SupportTicketQueue() {
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

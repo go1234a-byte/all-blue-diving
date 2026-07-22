@@ -106,6 +106,29 @@ export function UserTable() {
               </AlertDialogContent>
             </AlertDialog>
           </div>
+          {user.status !== "active" && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="secondary" className="w-full text-xs">
+                  {user.status === "warned" ? "경고 해제" : "활동정지 해제"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{user.name}님을 정상 상태로 되돌리시겠습니까?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {user.status === "warned" ? "경고" : "활동정지"} 처리가 해제되고 &apos;정상&apos; 상태로 변경됩니다.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleStatusChange(user.id, user.name, "active")}>
+                    정상으로 복귀
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       ))}
     </div>

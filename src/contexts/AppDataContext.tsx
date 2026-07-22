@@ -449,6 +449,7 @@ interface AppDataContextValue {
   updateTourItinerary: (tourId: string, days: TourItineraryDay[]) => Promise<void>;
   updateTourMeetingInfo: (tourId: string, meetingPoint: string, meetingTime: string) => Promise<void>;
   setTourAdminStatus: (tourId: string, adminStatus: Tour["adminStatus"]) => Promise<void>;
+  closeTourRecruiting: (tourId: string) => Promise<void>;
   deleteTour: (tourId: string) => Promise<void>;
   updateBookingTravelInfo: (bookingId: string, input: { flightInfo?: string; passportInfo?: string }) => Promise<void>;
   updateDiverProfile: (
@@ -475,7 +476,14 @@ interface AppDataContextValue {
   setInstructorPenalty: (instructorId: string, penaltyCount: number) => Promise<void>;
   updateInstructorProfile: (
     instructorId: string,
-    updates: { name?: string; phone?: string; agency?: string; bio?: string; licenseFileNames?: string[] },
+    updates: {
+      name?: string;
+      phone?: string;
+      agency?: string;
+      bio?: string;
+      licenseFileNames?: string[];
+      avatarUrl?: string;
+    },
   ) => Promise<void>;
   toggleBookmark: (tourId: string) => void;
   isBookmarked: (tourId: string) => boolean;
@@ -498,6 +506,8 @@ interface AppDataContextValue {
   resolveCancellationReview: (bookingId: string, approved: boolean) => Promise<void>;
   addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => ArbitrationMessage;
   addCenter: (input: NewCenterInput) => Promise<Center>;
+  updateCenter: (centerId: string, updates: NewCenterInput) => Promise<void>;
+  deleteCenter: (centerId: string) => Promise<void>;
   addSupportTicket: (input: NewSupportTicketInput) => Promise<SupportTicket>;
   updateSupportTicketStatus: (ticketId: string, status: SupportTicketStatus, adminReply?: string) => Promise<void>;
   addNotice: (input: Omit<Notice, "id" | "createdAt">) => Notice;
@@ -988,6 +998,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     await supabase.from("tours").update({ admin_status: adminStatus ?? null }).eq("id", tourId);
   };
 
+  /** 강사 본인 — 모집중인 투어를 수동으로 마감(모집 종료) 처리한다. */
+  const closeTourRecruiting = async (tourId: string) => {
+    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, status: "closed" } : t)));
+    await supabase.from("tours").update({ status: "closed" }).eq("id", tourId);
+  };
+
   /** 관리자 — 투어를 완전히 삭제한다. 예약 기록을 보존해야 하는 투어는 정지 처리를 권장한다. */
   const deleteTour = async (tourId: string) => {
     setTours((prev) => prev.filter((t) => t.id !== tourId));
@@ -1232,11 +1248,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const updateInstructorProfile = async (
     instructorId: string,
-    updates: { name?: string; phone?: string; agency?: string; bio?: string; licenseFileNames?: string[] },
+    updates: {
+      name?: string;
+      phone?: string;
+      agency?: string;
+      bio?: string;
+      licenseFileNames?: string[];
+      avatarUrl?: string;
+    },
   ): Promise<void> => {
     const instructor = instructors.find((i) => i.id === instructorId);
 
-    // instructors 테이블: 이름/소속/자기소개/자격증 파일명 갱신
+    // instructors 테이블: 이름/소속/자기소개/자격증 파일명/프로필 사진 갱신
     await supabase
       .from("instructors")
       .update({
@@ -1244,6 +1267,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ...(updates.agency !== undefined ? { agency: updates.agency } : {}),
         ...(updates.bio !== undefined ? { bio: updates.bio } : {}),
         ...(updates.licenseFileNames !== undefined ? { license_file_names: updates.licenseFileNames } : {}),
+        ...(updates.avatarUrl !== undefined ? { avatar_url: updates.avatarUrl } : {}),
       })
       .eq("id", instructorId);
 
@@ -1256,6 +1280,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               ...(updates.agency !== undefined ? { agency: updates.agency } : {}),
               ...(updates.bio !== undefined ? { bio: updates.bio } : {}),
               ...(updates.licenseFileNames !== undefined ? { licenseFileNames: updates.licenseFileNames } : {}),
+              ...(updates.avatarUrl !== undefined ? { avatarUrl: updates.avatarUrl } : {}),
             }
           : i,
       ),
@@ -1668,6 +1693,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return fallback;
   };
 
+  /** 관리자 — 이용센터 정보를 수정한다. */
+  const updateCenter = async (centerId: string, updates: NewCenterInput): Promise<void> => {
+    setCenters((prev) => prev.map((c) => (c.id === centerId ? { ...c, ...updates } : c)));
+    await supabase
+      .from("centers")
+      .update({
+        name: updates.name,
+        country: updates.country,
+        address: updates.address,
+        google_map: updates.googleMap,
+        homepage: updates.homepage,
+        instagram: updates.instagram,
+        phone: updates.phone,
+        features: updates.features,
+      })
+      .eq("id", centerId);
+  };
+
+  /** 관리자 — 이용센터를 삭제한다. */
+  const deleteCenter = async (centerId: string): Promise<void> => {
+    setCenters((prev) => prev.filter((c) => c.id !== centerId));
+    await supabase.from("centers").delete().eq("id", centerId);
+  };
+
   /** 1:1 문의 / 분쟁조정 / 신고를 통합 접수한다. */
   const addSupportTicket = async (input: NewSupportTicketInput): Promise<SupportTicket> => {
     const { data, error } = await supabase
@@ -1765,6 +1814,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateTourItinerary,
       updateTourMeetingInfo,
       setTourAdminStatus,
+      closeTourRecruiting,
       deleteTour,
       updateBookingTravelInfo,
       updateDiverProfile,
@@ -1801,6 +1851,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       resolveCancellationReview,
       addArbitrationMessage,
       addCenter,
+      updateCenter,
+      deleteCenter,
       addSupportTicket,
       updateSupportTicketStatus,
       addNotice,

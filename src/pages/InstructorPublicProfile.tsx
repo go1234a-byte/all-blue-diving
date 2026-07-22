@@ -1,14 +1,17 @@
-import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  AlertTriangle,
   ArrowLeft,
   Award,
+  Ban,
   CalendarCheck,
   Clock,
   Globe2,
   Languages,
   MapPin,
   MessageCircleOff,
+  ShieldCheck,
   Star,
   TrendingDown,
   Users,
@@ -16,12 +19,37 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useRole } from "@/contexts/RoleContext";
+import { useToast } from "@/hooks/use-toast";
 import { formatDateKR, formatDateRangeKR, isPastDate } from "@/lib/dates";
 import { maskName } from "@/lib/masking";
 import type { ChatMessage } from "@/types";
+
+/** 2회 경고 누적 시 자동으로 영구정지 처리한다 (AdminInstructorsPage와 동일 기준). */
+const PERMANENT_BAN_THRESHOLD = 2;
 
 /** 응답률/응답속도 — 다이버 메시지 이후 강사가 실제로 답장했는지, 얼마나 빨리 답했는지 채팅 로그로부터 계산. */
 function computeResponseStats(messages: ChatMessage[], instructorProfileId: string) {
@@ -72,8 +100,24 @@ function formatResponseSpeed(hours: number | null): string {
 
 const InstructorPublicProfile = () => {
   const { id } = useParams();
-  const { getInstructorById, tours, bookings, chatMessages, diverProfiles, getReviewsByInstructorId } =
-    useAppData();
+  const navigate = useNavigate();
+  const {
+    getInstructorById,
+    tours,
+    bookings,
+    chatMessages,
+    diverProfiles,
+    instructorProfiles,
+    getReviewsByInstructorId,
+    setInstructorPenalty,
+    setProfileStatus,
+    setTourAdminStatus,
+  } = useAppData();
+  const { role } = useRole();
+  const { toast } = useToast();
+  const isAdmin = role === "admin";
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [endToursToo, setEndToursToo] = useState(true);
 
   const instructor = id ? getInstructorById(id) : undefined;
 
@@ -105,6 +149,52 @@ const InstructorPublicProfile = () => {
     () => Array.from(new Set(myTours.map((t) => t.site))).filter(Boolean),
     [myTours],
   );
+
+  const linkedProfile = instructor ? instructorProfiles.find((p) => p.id === instructor.profileId) : undefined;
+  const isBanned = linkedProfile?.status === "suspended";
+
+  const handleWarn = () => {
+    if (!instructor) return;
+    const next = instructor.penaltyCount + 1;
+    setInstructorPenalty(instructor.id, next);
+    if (next >= PERMANENT_BAN_THRESHOLD) {
+      toast({
+        title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회) — 영구정지 처리되었습니다.`,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회).` });
+    }
+  };
+
+  const handleClearWarning = () => {
+    if (!instructor) return;
+    setInstructorPenalty(instructor.id, 0);
+    toast({ title: `${instructor.name} 강사의 경고를 모두 해제했습니다.` });
+  };
+
+  const handlePermanentBanConfirm = () => {
+    if (!instructor) return;
+    setInstructorPenalty(instructor.id, PERMANENT_BAN_THRESHOLD);
+    setProfileStatus(instructor.profileId, "suspended");
+    if (endToursToo) {
+      upcomingTours.forEach((t) => setTourAdminStatus(t.id, "suspended"));
+    }
+    toast({
+      title: `${instructor.name} 강사를 영구정지 처리했습니다.${
+        endToursToo && upcomingTours.length > 0 ? ` (예정된 투어 ${upcomingTours.length}건도 함께 정지)` : ""
+      }`,
+      variant: "destructive",
+    });
+    setBanDialogOpen(false);
+  };
+
+  const handleReinstate = () => {
+    if (!instructor) return;
+    setInstructorPenalty(instructor.id, 0);
+    setProfileStatus(instructor.profileId, "active");
+    toast({ title: `${instructor.name} 강사의 영구정지를 해제했습니다.` });
+  };
 
   const reviews = instructor ? getReviewsByInstructorId(instructor.id) : [];
   const avgRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
@@ -152,9 +242,9 @@ const InstructorPublicProfile = () => {
     <div className="min-h-full bg-gradient-surface pb-24">
       <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-lg">
-          <Link to="/" className="text-foreground">
+          <button type="button" onClick={() => navigate(-1)} className="text-foreground" aria-label="뒤로가기">
             <ArrowLeft className="h-5 w-5" />
-          </Link>
+          </button>
           <h1 className="line-clamp-1 text-base font-semibold text-foreground">강사 프로필</h1>
         </div>
       </header>
@@ -211,6 +301,106 @@ const InstructorPublicProfile = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* 관리자 전용 — 경고/영구정지 관리 */}
+        {isAdmin && (
+          <Card className="border-destructive/30">
+            <CardContent className="space-y-2.5 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-destructive" />
+                  관리자 관리 도구
+                </h3>
+                <Badge variant={instructor.penaltyCount > 0 ? "destructive" : "outline"} className="text-[10px]">
+                  경고 {instructor.penaltyCount}회
+                </Badge>
+              </div>
+
+              {isBanned ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="w-full text-xs">
+                      영구정지 해제
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{instructor.name} 강사의 영구정지를 해제하시겠습니까?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        해제하면 경고 횟수가 0회로 초기화되고 다시 정상적으로 활동할 수 있습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleReinstate}>해제</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <div className="flex gap-1.5">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-xs"
+                        disabled={instructor.penaltyCount === 0}
+                      >
+                        경고 해제
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{instructor.name} 강사의 경고를 모두 해제하시겠습니까?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          누적된 경고 {instructor.penaltyCount}회가 0회로 초기화됩니다.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>취소</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearWarning}>해제</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="flex-1 text-xs">
+                        경고 부여
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{instructor.name} 강사에게 경고를 주시겠습니까?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          경고 {PERMANENT_BAN_THRESHOLD}회 누적 시 자동으로 영구정지됩니다. 현재 누적 경고:{" "}
+                          {instructor.penaltyCount}회
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>취소</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleWarn}>경고</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="flex-1 gap-1 text-xs"
+                    onClick={() => {
+                      setEndToursToo(true);
+                      setBanDialogOpen(true);
+                    }}
+                  >
+                    <Ban className="h-3.5 w-3.5" />
+                    영구정지
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* 신뢰 지표 */}
         <Card>
@@ -370,6 +560,40 @@ const InstructorPublicProfile = () => {
           )}
         </div>
       </main>
+
+      {isAdmin && (
+        <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{instructor.name} 강사를 영구정지 시키겠습니까?</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              영구정지되면 해당 강사 계정은 즉시 서비스 이용이 제한됩니다. 나중에 다시 해제할 수 있습니다.
+            </p>
+            {upcomingTours.length > 0 && (
+              <label className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs">
+                <Checkbox checked={endToursToo} onCheckedChange={(v) => setEndToursToo(v === true)} className="mt-0.5" />
+                <span className="flex items-start gap-1.5">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning-foreground" />
+                  <span>
+                    예정된 투어 {upcomingTours.length}건도 함께 정지 처리합니다. 체크 해제 시 정지 처리 없이 강사
+                    계정만 영구정지됩니다.
+                  </span>
+                </span>
+              </label>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBanDialogOpen(false)}>
+                취소
+              </Button>
+              <Button variant="destructive" onClick={handlePermanentBanConfirm}>
+                영구정지
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
       <BottomNav />
     </div>
   );

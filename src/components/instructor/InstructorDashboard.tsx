@@ -1,7 +1,21 @@
+import { Link } from "react-router-dom";
 import { CalendarClock, ShieldAlert, Star, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
 import { UnderMinDecisionPanel } from "./UnderMinDecisionPanel";
 
@@ -10,7 +24,9 @@ interface InstructorDashboardProps {
 }
 
 export function InstructorDashboard({ instructorId }: InstructorDashboardProps) {
-  const { getInstructorById, tours, bookings, toursLoading, instructorsLoading, bookingsLoading } = useAppData();
+  const { getInstructorById, tours, bookings, toursLoading, instructorsLoading, bookingsLoading, closeTourRecruiting } =
+    useAppData();
+  const { toast } = useToast();
   const instructor = getInstructorById(instructorId);
   const myTours = tours.filter((t) => t.instructorId === instructorId);
   const myBookingsCount = bookings.filter((b) => myTours.some((t) => t.id === b.tourId)).length;
@@ -89,23 +105,53 @@ export function InstructorDashboard({ instructorId }: InstructorDashboardProps) 
         <h3 className="text-sm font-semibold text-foreground">내 투어 목록</h3>
         {myTours.map((tour) => (
           <Card key={tour.id}>
-            <CardContent className="flex items-center gap-3 p-3">
-              <img
-                src={tour.mainImageUrl}
-                alt={tour.title}
-                crossOrigin="anonymous"
-                className="h-12 w-12 shrink-0 rounded-md object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="line-clamp-1 text-sm font-medium text-foreground">{tour.title}</p>
-                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <CalendarClock className="h-3 w-3" />
-                  모집마감 {formatDateKR(tour.recruitmentDeadline)}
-                </p>
-              </div>
-              <Badge variant={tour.status === "open" ? "default" : "secondary"}>
-                {tour.status === "open" ? "모집중" : "마감"}
-              </Badge>
+            <CardContent className="space-y-2 p-3">
+              <Link to={`/tour/${tour.id}`} className="flex items-center gap-3">
+                <img
+                  src={tour.mainImageUrl}
+                  alt={tour.title}
+                  crossOrigin="anonymous"
+                  className="h-12 w-12 shrink-0 rounded-md object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-1 text-sm font-medium text-foreground">{tour.title}</p>
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <CalendarClock className="h-3 w-3" />
+                    모집마감 {formatDateKR(tour.recruitmentDeadline)}
+                  </p>
+                </div>
+                <Badge variant={tour.status === "open" ? "default" : "secondary"}>
+                  {tour.status === "open" ? "모집중" : "마감"}
+                </Badge>
+              </Link>
+              {tour.status === "open" && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="w-full text-xs">
+                      모집마감
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>&quot;{tour.title}&quot; 투어 모집을 지금 마감하시겠습니까?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        모집을 마감하면 신규 예약을 더 이상 받을 수 없습니다. 이 작업은 되돌릴 수 없습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={async () => {
+                          await closeTourRecruiting(tour.id);
+                          toast({ title: `"${tour.title}" 투어 모집을 마감했습니다.` });
+                        }}
+                      >
+                        모집마감
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </CardContent>
           </Card>
         ))}

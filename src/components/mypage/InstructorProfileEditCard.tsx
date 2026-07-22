@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FileCheck2, Pencil, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
   const [agency, setAgency] = useState(instructor.agency ?? "");
   const [bio, setBio] = useState(instructor.bio ?? "");
   const [licenseFileNames, setLicenseFileNames] = useState<string[]>(instructor.licenseFileNames);
+  const [avatarUrl, setAvatarUrl] = useState(instructor.avatarUrl ?? "");
 
   const resetForm = () => {
     setName(instructor.name);
@@ -37,6 +39,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
     setAgency(instructor.agency ?? "");
     setBio(instructor.bio ?? "");
     setLicenseFileNames(instructor.licenseFileNames);
+    setAvatarUrl(instructor.avatarUrl ?? "");
   };
 
   const handleCancel = () => {
@@ -57,6 +60,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
         agency: agency.trim(),
         bio: bio.trim(),
         licenseFileNames,
+        avatarUrl,
       });
       toast({ title: "정보가 저장되었습니다" });
       setEditing(false);
@@ -111,6 +115,24 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
     <Card>
       <CardContent className="space-y-3 p-4">
         <h3 className="text-sm font-semibold text-foreground">내 정보 수정</h3>
+
+        <div className="flex items-center gap-3">
+          <Avatar className="h-16 w-16 border border-border">
+            <AvatarImage src={avatarUrl || undefined} alt={name} crossOrigin="anonymous" />
+            <AvatarFallback className="bg-primary text-lg text-primary-foreground">{name[0]}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 space-y-1">
+            <Label>프로필 사진</Label>
+            <FileDropzone
+              label="사진 선택"
+              accept="image/*"
+              onFilesChange={(files) => {
+                if (files.length === 0) return;
+                setAvatarUrl(URL.createObjectURL(files[0]));
+              }}
+            />
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">

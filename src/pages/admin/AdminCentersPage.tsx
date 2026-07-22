@@ -1,9 +1,89 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
+import type { Center } from "@/types";
+
+interface CenterFormState {
+  name: string;
+  country: string;
+  address: string;
+  googleMap: string;
+  homepage: string;
+  instagram: string;
+  phone: string;
+}
+
+function toFormState(center: Center): CenterFormState {
+  return {
+    name: center.name,
+    country: center.country ?? "",
+    address: center.address,
+    googleMap: center.googleMap ?? "",
+    homepage: center.homepage ?? "",
+    instagram: center.instagram ?? "",
+    phone: center.phone ?? "",
+  };
+}
 
 const AdminCentersPage = () => {
-  const { centers } = useAppData();
+  const { centers, updateCenter, deleteCenter } = useAppData();
+  const { toast } = useToast();
+  const [editingCenter, setEditingCenter] = useState<Center | null>(null);
+  const [form, setForm] = useState<CenterFormState | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const openEdit = (center: Center) => {
+    setEditingCenter(center);
+    setForm(toFormState(center));
+  };
+
+  const handleSave = async () => {
+    if (!editingCenter || !form) return;
+    if (!form.name.trim() || !form.address.trim()) {
+      toast({ title: "센터명과 주소는 필수입니다", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateCenter(editingCenter.id, {
+        name: form.name.trim(),
+        country: form.country.trim() || undefined,
+        address: form.address.trim(),
+        googleMap: form.googleMap.trim() || undefined,
+        homepage: form.homepage.trim() || undefined,
+        instagram: form.instagram.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        features: editingCenter.features,
+      });
+      toast({ title: "센터 정보가 저장되었습니다" });
+      setEditingCenter(null);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (center: Center) => {
+    await deleteCenter(center.id);
+    toast({ title: `"${center.name}" 센터를 삭제했습니다.` });
+  };
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -23,12 +103,91 @@ const AdminCentersPage = () => {
                 ))}
               </div>
             )}
+            <div className="flex gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 gap-1 text-xs"
+                onClick={() => openEdit(center)}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                수정
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="ghost" className="flex-1 gap-1 text-xs text-destructive hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                    삭제
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>&quot;{center.name}&quot; 센터를 삭제하시겠습니까?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      삭제하면 되돌릴 수 없습니다. 이 센터를 이용 중인 투어가 있는지 먼저 확인해주세요.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>취소</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleDelete(center)}>삭제</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </CardContent>
         </Card>
       ))}
       {centers.length === 0 && (
         <p className="col-span-full py-10 text-center text-sm text-muted-foreground">등록된 센터가 없습니다.</p>
       )}
+
+      <Dialog open={!!editingCenter} onOpenChange={(open) => !open && setEditingCenter(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>센터 정보 수정</DialogTitle>
+          </DialogHeader>
+          {form && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>센터명</Label>
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>국가</Label>
+                <Input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>주소</Label>
+                <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>전화번호</Label>
+                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>구글맵 링크</Label>
+                <Input value={form.googleMap} onChange={(e) => setForm({ ...form, googleMap: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>홈페이지</Label>
+                <Input value={form.homepage} onChange={(e) => setForm({ ...form, homepage: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>인스타그램</Label>
+                <Input value={form.instagram} onChange={(e) => setForm({ ...form, instagram: e.target.value })} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingCenter(null)} disabled={saving}>
+              취소
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "저장 중..." : "저장"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

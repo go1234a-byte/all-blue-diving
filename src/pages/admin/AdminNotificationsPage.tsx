@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatDateKR } from "@/lib/dates";
@@ -13,8 +14,14 @@ const TYPE_LABEL: Record<InstructorNotificationType, string> = {
 
 /** 모바일 폭에 맞춘 카드형 알림 목록 — 기존 데스크톱 표 대신 사용한다. */
 const AdminNotificationsPage = () => {
-  const { instructorNotifications } = useAppData();
+  const { instructorNotifications, markInstructorNotificationRead } = useAppData();
+  const navigate = useNavigate();
   const sorted = [...instructorNotifications].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+
+  const handleClick = (n: (typeof sorted)[number]) => {
+    if (!n.read) markInstructorNotificationRead(n.id);
+    if (n.tourId) navigate(`/tour/${n.tourId}`);
+  };
 
   return (
     <div className="space-y-2">
@@ -22,7 +29,12 @@ const AdminNotificationsPage = () => {
         <p className="py-8 text-center text-sm text-muted-foreground">알림 내역이 없습니다.</p>
       )}
       {sorted.map((n) => (
-        <div key={n.id} className="space-y-1.5 rounded-xl border border-border bg-card p-3">
+        <button
+          key={n.id}
+          type="button"
+          onClick={() => handleClick(n)}
+          className="block w-full space-y-1.5 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:bg-secondary/40"
+        >
           <div className="flex items-start justify-between gap-2">
             <Badge variant={n.type === "new_booking" ? "secondary" : "destructive"} className="text-[10px]">
               {TYPE_LABEL[n.type]}
@@ -36,7 +48,7 @@ const AdminNotificationsPage = () => {
             <span>{n.diverName ?? "-"}</span>
             <span>{formatDateKR(n.createdAt)}</span>
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );
