@@ -20,7 +20,7 @@ type Status = "verifying" | "success" | "skeleton" | "error";
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { getTourById, getInstructorById, addBooking, getCouponByCode, redeemCoupon } = useAppData();
+  const { getTourById, getInstructorById, addBooking, getCouponByCode, redeemCoupon, bookings } = useAppData();
 
   const [status, setStatus] = useState<Status>("verifying");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -30,11 +30,26 @@ const PaymentSuccess = () => {
   const paymentKey = searchParams.get("paymentKey");
   const orderId = searchParams.get("orderId");
   const amount = searchParams.get("amount");
+  // 테스트 모드(Checkout.tsx의 임시 결제 우회)로 들어온 경우: 서버 검증 없이 이미 생성된 예약을 그대로 보여준다.
+  // TODO: 실제 토스페이먼츠 연동 복구 시 이 mock 분기를 제거할 것.
+  const mockBookingId = searchParams.get("mock") === "1" ? searchParams.get("bookingId") : null;
 
   useEffect(() => {
     // React StrictMode/재렌더링으로 중복 실행되어 결제 승인이 두 번 요청되는 것을 방지한다.
     if (ranRef.current) return;
     ranRef.current = true;
+
+    if (mockBookingId) {
+      const existing = bookings.find((b) => b.id === mockBookingId);
+      if (existing) {
+        setBooking(existing);
+        setStatus("success");
+      } else {
+        setStatus("error");
+        setErrorMessage("예약 정보를 찾을 수 없습니다.");
+      }
+      return;
+    }
 
     (async () => {
       if (!paymentKey || !orderId || !amount) {

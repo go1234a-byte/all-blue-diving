@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { useParams, useLocation, Link } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,11 +12,9 @@ import { TourOptionsSelector } from "@/components/tour/TourOptionsSelector";
 import { PaymentReceiptBreakdown } from "@/components/checkout/PaymentReceiptBreakdown";
 import { CancellationRefundPolicyCard } from "@/components/checkout/CancellationRefundPolicyCard";
 import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
-import { TossPaymentWidget, type TossPaymentWidgetHandle } from "@/components/checkout/TossPaymentWidget";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { computeInvoice, formatKRW, validateAndComputeCouponDiscount } from "@/lib/pricing";
-import { generateOrderId, savePendingBooking, type PendingBookingPayload } from "@/lib/payment";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Gender } from "@/types";
@@ -24,8 +22,9 @@ import type { Gender } from "@/types";
 const Checkout = () => {
   const { tourId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const { getTourById, getCouponByCode } = useAppData();
+  const { getTourById, getCouponByCode, addBooking, redeemCoupon } = useAppData();
   const { profile, currentDiverId } = useRole();
 
   const tour = tourId ? getTourById(tourId) : undefined;
@@ -41,8 +40,6 @@ const Checkout = () => {
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; amount: number } | null>(null);
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
-  const widgetRef = useRef<TossPaymentWidgetHandle>(null);
-  const customerKeyRef = useRef(currentDiverId || `guest-${crypto.randomUUID()}`);
 
   if (!tour) {
     return (
@@ -82,16 +79,12 @@ const Checkout = () => {
     setCouponInput("");
   };
 
+  // TODO: 실제 토스페이먼츠 연동 복구 시 이 함수를 TossPaymentWidget.requestPayment() 흐름으로 되돌릴 것.
+  // 지금은 결제위젯 없이 "결제 완료"로 바로 처리하는 임시(테스트) 모드다.
   const handlePay = async () => {
-    if (!widgetRef.current?.ready) {
-      toast({ title: "결제 수단을 불러오는 중입니다. 잠시 후 다시 시도해주세요.", variant: "destructive" });
-      return;
-    }
-
     setProcessing(true);
     try {
-      const orderId = generateOrderId();
-      const pendingPayload: PendingBookingPayload = {
+      const created = await addBooking({
         tourId: tour.id,
         diverId: currentDiverId || undefined,
         diverName: profile?.name ?? "게스트 다이버",
@@ -103,24 +96,21 @@ const Checkout = () => {
         onSiteBalance: invoice.onSiteBalance,
         couponCode: invoice.couponCode,
         discountAmount: invoice.discountAmount,
+        paymentMethod: "card",
         gender,
         snoring,
         smoking,
-      };
-      savePendingBooking(orderId, pendingPayload);
-
-      // 결제 요청 성공 시 브라우저가 토스페이먼츠 결제창으로 이동하므로 이 아래 코드는 실행되지 않는다.
-      // 예약(Booking) 생성은 결제 승인 리다이렉트(/payment/success)에서 서버 검증 이후에 이루어진다.
-      await widgetRef.current.requestPayment({
-        orderId,
-        orderName: tour.title.slice(0, 100),
-        successUrl: `${window.location.origin}/payment/success`,
-        failUrl: `${window.location.origin}/payment/fail`,
-        customerName: profile?.name,
       });
+
+      if (invoice.couponCode) {
+        const coupon = getCouponByCode(invoice.couponCode);
+        if (coupon) void redeemCoupon(coupon.id);
+      }
+
+      navigate(`/payment/success?mock=1&bookingId=${created.id}`);
     } catch (err) {
       toast({
-        title: "결제 요청에 실패했습니다",
+        title: "예약 생성에 실패했습니다",
         description: err instanceof Error ? err.message : undefined,
         variant: "destructive",
       });
@@ -235,14 +225,12 @@ const Checkout = () => {
 
         <PaymentReceiptBreakdown tourTitle={tour.title} invoice={invoice} />
 
-        <Card>
-          <CardContent className="space-y-3 p-4">
+        <Card className="border-dashed border-primary/40 bg-secondary/30">
+          <CardContent className="space-y-1 p-4">
             <h3 className="text-sm font-semibold text-foreground">결제 수단</h3>
-            <TossPaymentWidget
-              ref={widgetRef}
-              amount={invoice.totalDue}
-              customerKey={customerKeyRef.current}
-            />
+            <p className="text-xs text-muted-foreground">
+              테스트 모드: 실제 결제 연동 전까지 [결제하기]를 누르면 바로 결제 완료로 처리됩니다.
+            </p>
           </CardContent>
         </Card>
 
