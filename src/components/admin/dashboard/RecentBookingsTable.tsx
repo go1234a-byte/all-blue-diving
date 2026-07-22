@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppData } from "@/contexts/AppDataContext";
-import { maskName } from "@/lib/masking";
 import { formatDateKR } from "@/lib/dates";
 import type { BookingStatus, DepositStatus } from "@/types";
 
@@ -63,7 +62,7 @@ export function RecentBookingsTable({ limit = 10 }: RecentBookingsTableProps) {
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {maskName(booking.diverName)} · {formatDateKR(booking.createdAt)}
+                {booking.diverName} · {formatDateKR(booking.createdAt)}
               </p>
               <div className="flex items-center justify-between gap-2">
                 <Badge variant="outline" className="text-[10px]">

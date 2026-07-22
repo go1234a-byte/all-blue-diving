@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAppData } from "@/contexts/AppDataContext";
-import { maskName } from "@/lib/masking";
 import { formatDateKR } from "@/lib/dates";
 
 /**
@@ -40,7 +39,7 @@ export function CancellationReviewQueue() {
                   <p className="line-clamp-1 text-sm font-semibold text-foreground">
                     {tour?.title ?? "알 수 없는 투어"}
                   </p>
-                  <p className="text-xs text-muted-foreground">예약자: {maskName(booking.diverName)}</p>
+                  <p className="text-xs text-muted-foreground">예약자: {booking.diverName}</p>
                 </div>
                 <Badge variant="secondary" className="shrink-0 gap-1 text-[10px]">
                   <AlertTriangle className="h-3 w-3" />

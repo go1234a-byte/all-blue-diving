@@ -22,15 +22,19 @@ const EMPTY_DAY = (dayNumber: number): TourItineraryDay => ({
   freeTime: "",
 });
 
-/** 참가자 대시보드 [일정] 탭 — 일자별 브리핑/다이빙일정/식사/자유시간. */
+/** 참가자 대시보드 [일정] 탭 — 집합 정보 + 일자별 브리핑/다이빙일정/식사/자유시간. */
 export function TourItineraryTab({ tour, isInstructor }: TourItineraryTabProps) {
-  const { updateTourItinerary } = useAppData();
+  const { updateTourItinerary, updateTourMeetingInfo } = useAppData();
   const [editing, setEditing] = useState(false);
   const [days, setDays] = useState<TourItineraryDay[]>(tour.itineraryDays ?? []);
+  const [meetingPoint, setMeetingPoint] = useState(tour.meetingPoint ?? "");
+  const [meetingTime, setMeetingTime] = useState(tour.meetingTime ?? "");
   const [saving, setSaving] = useState(false);
 
   const startEditing = () => {
     setDays(tour.itineraryDays && tour.itineraryDays.length > 0 ? tour.itineraryDays : [EMPTY_DAY(1)]);
+    setMeetingPoint(tour.meetingPoint ?? "");
+    setMeetingTime(tour.meetingTime ?? "");
     setEditing(true);
   };
 
@@ -44,7 +48,10 @@ export function TourItineraryTab({ tour, isInstructor }: TourItineraryTabProps) 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateTourItinerary(tour.id, days);
+      await Promise.all([
+        updateTourItinerary(tour.id, days),
+        updateTourMeetingInfo(tour.id, meetingPoint.trim(), meetingTime.trim()),
+      ]);
       setEditing(false);
     } finally {
       setSaving(false);
@@ -54,6 +61,18 @@ export function TourItineraryTab({ tour, isInstructor }: TourItineraryTabProps) 
   if (editing) {
     return (
       <div className="space-y-3">
+        <Card>
+          <CardContent className="grid grid-cols-2 gap-3 p-3">
+            <div className="space-y-1">
+              <Label className="text-xs">집합 장소</Label>
+              <Input value={meetingPoint} onChange={(e) => setMeetingPoint(e.target.value)} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">집합 시간</Label>
+              <Input value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} className="h-8 text-sm" />
+            </div>
+          </CardContent>
+        </Card>
         {days.map((day, index) => (
           <Card key={index}>
             <CardContent className="space-y-2 p-3">
@@ -138,6 +157,26 @@ export function TourItineraryTab({ tour, isInstructor }: TourItineraryTabProps) 
             {savedDays.length > 0 ? "일정 수정" : "일정 등록"}
           </Button>
         </div>
+      )}
+
+      {(tour.meetingPoint || tour.meetingTime) && (
+        <Card>
+          <CardContent className="space-y-1 p-4 text-sm">
+            <p className="font-semibold text-foreground">집합 정보</p>
+            {tour.meetingPoint && (
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">장소 </span>
+                {tour.meetingPoint}
+              </p>
+            )}
+            {tour.meetingTime && (
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">시간 </span>
+                {tour.meetingTime}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {savedDays.length === 0 ? (

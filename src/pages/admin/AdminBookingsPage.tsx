@@ -2,7 +2,6 @@ import { useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { CancellationReviewQueue } from "@/components/admin/CancellationReviewQueue";
 import { useAppData } from "@/contexts/AppDataContext";
-import { maskName } from "@/lib/masking";
 import { formatDateKR } from "@/lib/dates";
 import { formatKRW } from "@/lib/pricing";
 import type { BookingStatus, DepositStatus } from "@/types";
@@ -57,7 +56,7 @@ const AdminBookingsPage = () => {
               </div>
               <p className="font-mono text-[11px] text-muted-foreground">{booking.id}</p>
               <p className="text-xs text-muted-foreground">
-                {maskName(booking.diverName)} · {formatDateKR(booking.createdAt)}
+                {booking.diverName} · {formatDateKR(booking.createdAt)}
               </p>
               <div className="flex items-center justify-between gap-2">
                 <Badge variant="outline" className="text-[10px]">

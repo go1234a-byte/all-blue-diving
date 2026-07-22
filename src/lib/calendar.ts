@@ -71,15 +71,11 @@ function escapeIcsText(text: string): string {
   return text.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
 }
 
-/**
- * .ics 파일 문자열을 생성해 브라우저 다운로드를 트리거한다.
- * Apple Calendar / Outlook / 대부분의 캘린더 앱에서 바로 열 수 있는 표준 iCalendar 포맷.
- */
-export function downloadIcsFile(event: CalendarEventData, fileName = "allblue-tour.ics"): void {
+function buildIcsString(event: CalendarEventData): string {
   const now = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   const uid = `allblue-${Date.now()}@allblue.pro`;
 
-  const ics = [
+  return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//ALL BLUE//Tour Booking//KR",
@@ -94,6 +90,31 @@ export function downloadIcsFile(event: CalendarEventData, fileName = "allblue-to
     "END:VEVENT",
     "END:VCALENDAR",
   ].join("\r\n");
+}
+
+/** iOS(아이폰/아이패드) Safari 여부. iPadOS 13+는 데스크톱 UA를 흉내내므로 터치포인트로도 함께 판별한다. */
+function isIOSDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /iP(hone|od|ad)/.test(ua) || (ua.includes("Macintosh") && navigator.maxTouchPoints > 1);
+}
+
+/**
+ * .ics 파일을 생성해 캘린더 앱으로 전달한다. Apple Calendar / Outlook / 대부분의 캘린더 앱에서
+ * 바로 열 수 있는 표준 iCalendar 포맷.
+ *
+ * iOS Safari는 Blob 객체 URL + <a download> 방식의 다운로드를 신뢰성 있게 처리하지 못해
+ * (링크를 눌러도 아무 반응이 없거나 새 탭만 열리는 문제) "구글 캘린더는 되는데 애플은 안 된다"는
+ * 문제의 원인이었다. iOS에서는 대신 data: URI로 직접 이동시켜 Safari가 text/calendar 콘텐츠를
+ * 인식해 "캘린더에 추가" 바텀시트를 띄우도록 한다.
+ */
+export function downloadIcsFile(event: CalendarEventData, fileName = "allblue-tour.ics"): void {
+  const ics = buildIcsString(event);
+
+  if (isIOSDevice()) {
+    window.location.href = `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}`;
+    return;
+  }
 
   const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);

@@ -1,22 +1,33 @@
 import type { Booking, InstructorProfile, Payout, Profile, Report, SupportTicket, Tour } from "@/types";
 import { formatKRW } from "@/lib/pricing";
 
-/** 오늘(자정 기준) ISO 날짜 문자열. */
+/**
+ * Date를 "브라우저 로컬 시간대" 기준 YYYY-MM-DD로 변환한다.
+ * (이전에는 setHours(0,0,0,0) 후 toISOString()으로 변환했는데, toISOString()은 항상 UTC 기준이라
+ * 한국(KST, UTC+9)에서는 자정~오전 9시 사이에 날짜가 하루 전으로 밀리는 버그가 있었다. 이 때문에
+ * "오늘 가입자"·"오늘 예약건수" 등 대시보드의 모든 "오늘" 집계가 실제와 어긋났다.)
+ */
+function toLocalDateKey(input: Date | string): string {
+  const d = typeof input === "string" ? new Date(input) : input;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** 오늘(로컬 기준) 날짜 문자열. */
 function todayISO(): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
+  return toLocalDateKey(new Date());
 }
 
 function daysAgoISO(days: number): string {
   const d = new Date();
-  d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
+  return toLocalDateKey(d);
 }
 
 function isSameDate(iso: string, targetIso: string): boolean {
-  return iso.slice(0, 10) === targetIso;
+  return toLocalDateKey(iso) === targetIso;
 }
 
 function isWithinLastNDays(iso: string, days: number): boolean {
@@ -64,9 +75,8 @@ export function computeTourKpi(tours: Tour[]) {
 
 function daysFromNowISO(days: number): string {
   const d = new Date();
-  d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return toLocalDateKey(d);
 }
 
 /** 카드 3: 이번달 매출 / 전월 대비 증감률 */
