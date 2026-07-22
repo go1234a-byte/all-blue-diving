@@ -49,6 +49,10 @@ const TourDetail = () => {
     ? bookings.find((b) => b.tourId === tour.id && b.diverId === currentDiverId && b.status !== "cancelled")
     : undefined;
   const confirmedCount = bookings.filter((b) => b.tourId === tour.id && b.status === "confirmed").length;
+  const selectedOptionsTotal = tour.customOptions
+    .filter((o) => o.isActive && selectedOptionIds.includes(o.id))
+    .reduce((sum, o) => sum + o.price, 0);
+  const displayTotal = tour.basePrice + selectedOptionsTotal;
 
   const handleBookNow = () => {
     if (!isLoggedIn) {
@@ -166,8 +170,10 @@ const TourDetail = () => {
 
       <div className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-md items-center justify-between gap-4 border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:max-w-lg">
         <div>
-          <p className="text-xs text-muted-foreground">1인 기준</p>
-          <p className="text-lg font-bold text-primary">{formatKRW(tour.basePrice)}</p>
+          <p className="text-xs text-muted-foreground">
+            1인 기준{selectedOptionsTotal > 0 ? " · 옵션 포함" : ""}
+          </p>
+          <p className="text-lg font-bold text-primary">{formatKRW(displayTotal)}</p>
         </div>
         <Button size="lg" onClick={handleBookNow}>
           예약하기

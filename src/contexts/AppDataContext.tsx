@@ -142,6 +142,7 @@ function mapTourRow(row: any): Tour {
     id: row.id,
     instructorId: row.instructor_id,
     centerId: row.center_id ?? undefined,
+    createdAt: row.created_at ?? new Date().toISOString(),
     title: row.title,
     country: row.country,
     site: row.site,
@@ -941,6 +942,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     // 실패 시 로컬 폴백 (데모 안정성 확보)
     const fallback: Tour = {
       id: nextId("tour"),
+      createdAt: new Date().toISOString(),
       status: "open",
       rating: 0,
       isConfirmed: true,

@@ -17,11 +17,13 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { cn } from "@/lib/utils";
 import type { ActivityType } from "@/types";
 
-type SortOption = "cheapest" | "rating";
+type SortOption = "newest" | "cheapest" | "expensive" | "rating";
 type ViewMode = "list" | "map";
 
 const SORT_LABELS: Record<SortOption, string> = {
-  cheapest: "최저가순",
+  newest: "최신순",
+  cheapest: "가격 낮은순",
+  expensive: "가격 높은순",
   rating: "평점순",
 };
 
@@ -59,7 +61,9 @@ const Search = () => {
       .filter((t) => activities.length === 0 || t.activityTypes.some((a) => activities.includes(a)))
       .filter((t) => t.basePrice >= filters.priceRange[0] && t.basePrice <= filters.priceRange[1])
       .sort((a, b) => {
+        if (sort === "newest") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         if (sort === "cheapest") return a.basePrice - b.basePrice;
+        if (sort === "expensive") return b.basePrice - a.basePrice;
         return b.rating - a.rating;
       });
   }, [tours, query, monthsParam, activitiesParam, filters, sort]);

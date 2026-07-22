@@ -119,6 +119,7 @@ export interface Tour {
   id: string;
   instructorId: string;
   centerId?: string;
+  createdAt: string; // ISO datetime, 최신순 정렬에 사용
   title: string;
   country: string;
   site: string;
