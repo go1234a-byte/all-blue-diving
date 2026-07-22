@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:prod": "vite build",
     "build:dev": "NODE_ENV=development vite build --mode development",
     "check": "pnpm lint && pnpm exec tsc --noEmit",
     "lint": "eslint .",
