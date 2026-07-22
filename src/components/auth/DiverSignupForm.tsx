@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAppData } from "@/contexts/AppDataContext";
 import type { Gender } from "@/types";
 
 interface DiverSignupFormProps {
@@ -14,6 +15,7 @@ interface DiverSignupFormProps {
 
 export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
   const { toast } = useToast();
+  const { registerDiverProfile } = useAppData();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -88,6 +90,24 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         toast({ title: "프로필 생성에 실패했습니다", description: profileError.message, variant: "destructive" });
         return;
       }
+
+      // Supabase에는 저장됐지만 앱 메모리(diverProfiles)에는 반영이 안 돼 있으므로,
+      // 새로고침 없이도 마이페이지 등에서 방금 입력한 정보가 바로 보이도록 즉시 로컬 상태에 반영한다.
+      registerDiverProfile({
+        id: data.user.id,
+        role: "diver",
+        name,
+        phone,
+        gender,
+        status: "active",
+        createdAt: new Date().toISOString(),
+        cCardAgency: cCardAgency || undefined,
+        cCardNumber: cCardNumber || undefined,
+        logCount: logCount ? Number(logCount) : undefined,
+        emergencyContactName,
+        emergencyContactPhone,
+        insuranceInfo: insuranceInfo || undefined,
+      });
 
       toast({ title: "일반 다이버 회원가입이 완료되었습니다!", description: "환영합니다! 홈 화면으로 이동합니다." });
       onSuccess();

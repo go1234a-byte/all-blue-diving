@@ -452,6 +452,7 @@ interface AppDataContextValue {
   addBooking: (input: NewBookingInput) => Promise<Booking>;
   addInstructorSignup: (input: NewInstructorSignupInput) => Promise<InstructorProfile>;
   addDiverSignup: (input: NewDiverSignupInput) => Profile;
+  registerDiverProfile: (profile: Profile) => void;
   setProfileStatus: (profileId: string, status: Profile["status"]) => void;
   setPayoutStatus: (payoutId: string, status: Payout["status"]) => Promise<void>;
   addReport: (input: Omit<Report, "id" | "createdAt" | "status">) => Promise<void>;
@@ -1254,6 +1255,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return profile;
   };
 
+  // 다이버 회원가입(DiverSignupForm)은 Supabase `profiles` 테이블에 직접 insert하기 때문에
+  // 이 훅의 diverProfiles 로컬 상태에는 반영되지 않는다. 가입 직후 새로고침 없이도
+  // 마이페이지 등에서 방금 입력한 정보(C-Card/비상연락처/보험 등)가 바로 보이도록,
+  // 가입 성공 시 이 함수로 새 프로필을 로컬 상태에도 즉시 반영한다.
+  const registerDiverProfile = (profile: Profile) => {
+    setDiverProfiles((prev) =>
+      prev.some((p) => p.id === profile.id) ? prev.map((p) => (p.id === profile.id ? profile : p)) : [...prev, profile],
+    );
+  };
+
   const setProfileStatus = (profileId: string, status: Profile["status"]) => {
     setDiverProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, status } : p)));
     setInstructorProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, status } : p)));
@@ -1709,6 +1720,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addBooking,
       addInstructorSignup,
       addDiverSignup,
+      registerDiverProfile,
       setProfileStatus,
       setPayoutStatus,
       addReport,
