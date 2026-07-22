@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,56 +42,38 @@ export function RecentBookingsTable({ limit = 10 }: RecentBookingsTableProps) {
           전체보기
         </Button>
       </CardHeader>
-      <CardContent className="overflow-x-auto p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>예약번호</TableHead>
-              <TableHead>투어명</TableHead>
-              <TableHead>예약자</TableHead>
-              <TableHead>예약일</TableHead>
-              <TableHead>결제상태</TableHead>
-              <TableHead>예약상태</TableHead>
-              <TableHead>강사</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {recent.map((booking) => {
-              const tour = getTourById(booking.tourId);
-              const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
-              return (
-                <TableRow
-                  key={booking.id}
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/admin/bookings?highlight=${booking.id}`)}
-                >
-                  <TableCell className="font-mono text-xs">{booking.id}</TableCell>
-                  <TableCell className="max-w-[160px] truncate text-sm">{tour?.title ?? "-"}</TableCell>
-                  <TableCell className="text-sm">{maskName(booking.diverName)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDateKR(booking.createdAt)}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px]">
-                      {DEPOSIT_LABEL[booking.depositStatus]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={STATUS_VARIANT[booking.status]} className="text-[10px]">
-                      {STATUS_LABEL[booking.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{instructor?.name ?? "-"}</TableCell>
-                </TableRow>
-              );
-            })}
-            {recent.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
-                  예약 내역이 없습니다.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <CardContent className="space-y-2 p-3 pt-1">
+        {recent.length === 0 && (
+          <p className="py-6 text-center text-sm text-muted-foreground">예약 내역이 없습니다.</p>
+        )}
+        {recent.map((booking) => {
+          const tour = getTourById(booking.tourId);
+          const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
+          return (
+            <button
+              key={booking.id}
+              type="button"
+              onClick={() => navigate(`/admin/bookings?highlight=${booking.id}`)}
+              className="w-full space-y-1.5 rounded-lg border border-border p-3 text-left transition-colors hover:bg-secondary/40"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="line-clamp-1 text-sm font-semibold text-foreground">{tour?.title ?? "-"}</p>
+                <Badge variant={STATUS_VARIANT[booking.status]} className="shrink-0 text-[10px]">
+                  {STATUS_LABEL[booking.status]}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {maskName(booking.diverName)} · {formatDateKR(booking.createdAt)}
+              </p>
+              <div className="flex items-center justify-between gap-2">
+                <Badge variant="outline" className="text-[10px]">
+                  {DEPOSIT_LABEL[booking.depositStatus]}
+                </Badge>
+                <span className="text-[11px] text-muted-foreground">담당 {instructor?.name ?? "-"}</span>
+              </div>
+            </button>
+          );
+        })}
       </CardContent>
     </Card>
   );
