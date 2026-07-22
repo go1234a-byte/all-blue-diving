@@ -9,8 +9,9 @@ import { isChatAccessible } from "@/lib/chatRetention";
 import { formatDateKR } from "@/lib/dates";
 import type { Tour } from "@/types";
 
+// role은 MasterRole("public"|"instructor"|"admin")이며 다이버는 "public"으로 매핑된다.
 const EMPTY_MESSAGE: Record<string, string> = {
-  diver: "예약한 투어가 없습니다. 투어를 예약하면 그룹채팅이 열립니다.",
+  public: "예약한 투어가 없습니다. 투어를 예약하면 그룹채팅이 열립니다.",
   instructor: "개설한 투어가 없습니다. 투어를 개설하면 그룹채팅이 열립니다.",
   admin: "등록된 투어가 없습니다.",
 };
@@ -43,7 +44,7 @@ const ChatList = () => {
   // 플랫폼 고객센터(1:1 문의/분쟁조정/신고)도 투어 그룹채팅과 같은 "채팅" 탭 안에서
   // 하나의 목록으로 합쳐서 보여준다. 다이버에게만 노출한다.
   const myTickets =
-    role === "diver" && currentDiverId
+    role === "public" && currentDiverId
       ? supportTickets
           .filter((t) => t.userId === currentDiverId)
           .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
@@ -54,7 +55,7 @@ const ChatList = () => {
     <div className="min-h-full bg-gradient-surface pb-20">
       <AppHeader title="채팅" />
       <main className="mx-auto w-full max-w-md space-y-2 px-4 py-4 md:max-w-lg">
-        {role === "diver" && (
+        {role === "public" && (
           <Link
             to="/support"
             className="flex items-center gap-3 rounded-xl border border-primary/30 bg-secondary/40 p-3 transition-colors hover:bg-secondary"

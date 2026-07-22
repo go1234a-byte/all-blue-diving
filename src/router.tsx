@@ -17,6 +17,7 @@ import SupportChat from "./pages/SupportChat";
 import InstructorArbitrationRoom from "./pages/InstructorArbitrationRoom";
 import AdminArbitrationRoom from "./pages/AdminArbitrationRoom";
 import { AdminLayout } from "./components/admin/layout/AdminLayout";
+import AdminHomePage from "./pages/admin/AdminHomePage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminToursPage from "./pages/admin/AdminToursPage";
 import AdminBookingsPage from "./pages/admin/AdminBookingsPage";
@@ -32,6 +33,7 @@ import AdminCouponsPage from "./pages/admin/AdminCouponsPage";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import AdminManualPage from "./pages/admin/AdminManualPage";
+import AdminMorePage from "./pages/admin/AdminMorePage";
 import { RequireRole } from "./components/auth/RequireRole";
 import { RootLayout } from "./components/layout/RootLayout";
 import { MimoRootLayout } from "./components/mimo/layout/MimoRootLayout";
@@ -85,6 +87,7 @@ export const routers = [
           {
             element: <AdminLayout />,
             children: [
+              { path: "home", name: "admin-home", element: <AdminHomePage /> },
               { index: true, name: "admin-dashboard", element: <AdminDashboardPage /> },
               { path: "tours", name: "admin-tours", element: <AdminToursPage /> },
               { path: "bookings", name: "admin-bookings", element: <AdminBookingsPage /> },
@@ -100,6 +103,7 @@ export const routers = [
               { path: "analytics", name: "admin-analytics", element: <AdminAnalyticsPage /> },
               { path: "settings", name: "admin-settings", element: <AdminSettingsPage /> },
               { path: "manual", name: "admin-manual", element: <AdminManualPage /> },
+              { path: "more", name: "admin-more", element: <AdminMorePage /> },
             ],
           },
           { path: "arbitration/:instructorId", name: "admin-arbitration", element: <AdminArbitrationRoom /> },

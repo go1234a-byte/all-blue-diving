@@ -1,5 +1,15 @@
 import { NavLink } from "react-router-dom";
-import { Home, CalendarCheck, Heart, MessageCircle, UserRound, LayoutDashboard } from "lucide-react";
+import {
+  Home,
+  CalendarCheck,
+  Heart,
+  MessageCircle,
+  UserRound,
+  LayoutDashboard,
+  Users,
+  Wallet,
+  MoreHorizontal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/contexts/RoleContext";
 
@@ -20,13 +30,31 @@ const INSTRUCTOR_NAV_ITEMS = [
   { to: "/mypage", label: "마이페이지", icon: UserRound, end: false },
 ];
 
+// 관리자는 좌측 사이드바(15개 메뉴) 대신 핵심 5개 + 더보기로 구성한다.
+// "홈"은 오늘 요약, "대시보드"는 기존 상세 지표 페이지(/admin) 그대로다.
+const ADMIN_NAV_ITEMS = [
+  { to: "/admin/home", label: "홈", icon: Home, end: true },
+  { to: "/admin", label: "대시보드", icon: LayoutDashboard, end: true },
+  { to: "/admin/instructors", label: "강사관리", icon: Users, end: false },
+  { to: "/admin/users", label: "회원관리", icon: UserRound, end: false },
+  { to: "/admin/payouts", label: "정산관리", icon: Wallet, end: false },
+  { to: "/admin/more", label: "더보기", icon: MoreHorizontal, end: false },
+];
+
+const GRID_COLS_CLASS: Record<number, string> = {
+  4: "grid-cols-4",
+  5: "grid-cols-5",
+  6: "grid-cols-6",
+};
+
 export function BottomNav() {
   const { role } = useRole();
-  const NAV_ITEMS = role === "instructor" ? INSTRUCTOR_NAV_ITEMS : DIVER_NAV_ITEMS;
+  const NAV_ITEMS =
+    role === "admin" ? ADMIN_NAV_ITEMS : role === "instructor" ? INSTRUCTOR_NAV_ITEMS : DIVER_NAV_ITEMS;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 backdrop-blur md:max-w-lg">
-      <div className={cn("grid", NAV_ITEMS.length === 5 ? "grid-cols-5" : "grid-cols-4")}>
+      <div className={cn("grid", GRID_COLS_CLASS[NAV_ITEMS.length] ?? "grid-cols-4")}>
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
