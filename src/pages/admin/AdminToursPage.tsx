@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Eye, ExternalLink, Lock, PauseCircle, PlayCircle, Trash2 } from "lucide-react";
+import { Eye, ExternalLink, Lock, PlayCircle, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,49 +61,27 @@ function TourStatusActions({ tour, bookingCount, onStatusChange, onDelete }: Tou
             </AlertDialogContent>
           </AlertDialog>
         ) : (
-          <>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs">
-                  <PauseCircle className="h-3.5 w-3.5" />
-                  보류
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>&quot;{tour.title}&quot; 투어를 보류하시겠습니까?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    보류하면 검토가 끝날 때까지 검색 노출과 신규 예약이 일시적으로 막힙니다. 언제든 다시 재개할 수 있습니다.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onStatusChange(tour, "held")}>보류</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="destructive" className="flex-1 gap-1 text-xs">
-                  <Lock className="h-3.5 w-3.5" />
-                  정지
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>&quot;{tour.title}&quot; 투어를 정지시키겠습니까?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    정지하면 검색 노출이 즉시 제거되고 신규 예약도 차단됩니다. 이 작업은 나중에 다시 해제할 수 있습니다.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onStatusChange(tour, "suspended")}>정지</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive" className="flex-1 gap-1 text-xs">
+                <Lock className="h-3.5 w-3.5" />
+                정지
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>&quot;{tour.title}&quot; 투어를 정지시키겠습니까?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  정지하면 검색 노출이 즉시 제거되고 신규 예약도 차단됩니다. 다시 정상화하려면 &quot;재개&quot;를,
+                  완전히 없애려면 아래 &quot;투어 삭제&quot;를 사용하세요.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onStatusChange(tour, "suspended")}>정지</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
 
