@@ -13,6 +13,7 @@ import { PushNotificationToggle } from "@/components/mypage/PushNotificationTogg
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { formatDateKR, isPastDate } from "@/lib/dates";
+import { handleImageFallback } from "@/lib/image";
 
 export function InstructorMyPageView() {
   const { getInstructorById, getInstructorProfileById, tours } = useAppData();
@@ -33,7 +34,7 @@ export function InstructorMyPageView() {
         <CardContent className="space-y-3 p-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-14 w-14 border border-border">
-              <AvatarImage src={instructor.avatarUrl} alt={instructor.name} crossOrigin="anonymous" />
+              <AvatarImage src={instructor.avatarUrl} alt={instructor.name} />
               <AvatarFallback className="bg-primary text-lg text-primary-foreground">
                 {instructor.name[0]}
               </AvatarFallback>
@@ -91,7 +92,7 @@ export function InstructorMyPageView() {
                     <img
                       src={tour.mainImageUrl}
                       alt={tour.title}
-                      crossOrigin="anonymous"
+                      onError={handleImageFallback}
                       className="h-12 w-12 shrink-0 rounded-md object-cover"
                     />
                     <div className="min-w-0 flex-1">
@@ -116,7 +117,7 @@ export function InstructorMyPageView() {
                     <img
                       src={tour.mainImageUrl}
                       alt={tour.title}
-                      crossOrigin="anonymous"
+                      onError={handleImageFallback}
                       className="h-12 w-12 shrink-0 rounded-md object-cover"
                     />
                     <div className="min-w-0 flex-1">

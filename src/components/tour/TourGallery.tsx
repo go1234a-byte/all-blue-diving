@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { handleImageFallback } from "@/lib/image";
 
 interface TourGalleryProps {
   mainImageUrl: string;
@@ -17,7 +18,7 @@ export function TourGallery({ mainImageUrl, galleryUrls, title }: TourGalleryPro
         <img
           src={images[active]}
           alt={title}
-          crossOrigin="anonymous"
+          onError={handleImageFallback}
           className="h-full w-full object-cover"
         />
       </div>
@@ -32,7 +33,7 @@ export function TourGallery({ mainImageUrl, galleryUrls, title }: TourGalleryPro
               active === i ? "border-primary" : "border-transparent opacity-70",
             )}
           >
-            <img src={url} alt="" crossOrigin="anonymous" className="h-full w-full object-cover" />
+            <img src={url} alt="" onError={handleImageFallback} className="h-full w-full object-cover" />
           </button>
         ))}
       </div>

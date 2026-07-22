@@ -32,7 +32,7 @@ function ChatHeaderSummary({
     <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
       <Link to={`/instructor/${instructorId}/profile`} className="flex min-w-0 flex-1 items-center gap-2">
         <Avatar className="h-8 w-8 shrink-0 border border-border">
-          <AvatarImage src={instructor?.avatarUrl} alt={instructor?.name} crossOrigin="anonymous" />
+          <AvatarImage src={instructor?.avatarUrl} alt={instructor?.name} />
           <AvatarFallback className="bg-primary text-primary-foreground">
             {instructor?.name?.[0] ?? "강"}
           </AvatarFallback>

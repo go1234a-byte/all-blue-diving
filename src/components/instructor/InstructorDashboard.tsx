@@ -17,6 +17,7 @@ import {
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
+import { handleImageFallback } from "@/lib/image";
 import { UnderMinDecisionPanel } from "./UnderMinDecisionPanel";
 
 interface InstructorDashboardProps {
@@ -110,7 +111,7 @@ export function InstructorDashboard({ instructorId }: InstructorDashboardProps) 
                 <img
                   src={tour.mainImageUrl}
                   alt={tour.title}
-                  crossOrigin="anonymous"
+                  onError={handleImageFallback}
                   className="h-12 w-12 shrink-0 rounded-md object-cover"
                 />
                 <div className="min-w-0 flex-1">

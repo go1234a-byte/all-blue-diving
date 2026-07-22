@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatKRW } from "@/lib/pricing";
+import { handleImageFallback } from "@/lib/image";
 import type { BookingStatus } from "@/types";
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
@@ -40,7 +41,7 @@ const MyBookings = () => {
                   <img
                     src={tour.mainImageUrl}
                     alt={tour.title}
-                    crossOrigin="anonymous"
+                    onError={handleImageFallback}
                     className="h-16 w-16 shrink-0 rounded-lg object-cover"
                   />
                   <div className="min-w-0 flex-1 space-y-1">

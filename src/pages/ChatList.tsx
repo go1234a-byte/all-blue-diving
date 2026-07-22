@@ -7,6 +7,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { isChatAccessible } from "@/lib/chatRetention";
 import { formatDateKR } from "@/lib/dates";
+import { handleImageFallback } from "@/lib/image";
 import type { Tour } from "@/types";
 
 // role은 MasterRole("public"|"instructor"|"admin")이며 다이버는 "public"으로 매핑된다.
@@ -105,7 +106,7 @@ const ChatList = () => {
               <img
                 src={tour.mainImageUrl}
                 alt={tour.title}
-                crossOrigin="anonymous"
+                onError={handleImageFallback}
                 className="h-14 w-14 shrink-0 rounded-lg object-cover"
               />
               <div className="min-w-0 flex-1 space-y-0.5">

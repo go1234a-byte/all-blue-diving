@@ -258,7 +258,7 @@ const InstructorPublicProfile = () => {
             </div>
             <div className="flex items-center gap-3">
               <Avatar className="h-16 w-16 border border-border">
-                <AvatarImage src={instructor.avatarUrl} alt={instructor.name} crossOrigin="anonymous" />
+                <AvatarImage src={instructor.avatarUrl} alt={instructor.name} />
                 <AvatarFallback className="bg-primary text-xl font-bold text-primary-foreground">
                   {instructor.name[0]}
                 </AvatarFallback>

@@ -32,7 +32,7 @@ export function InstructorTrustCard({ instructor }: InstructorTrustCardProps) {
 
         <div className="flex items-center gap-3">
           <Avatar className="h-14 w-14 border border-border">
-            <AvatarImage src={instructor.avatarUrl} alt={instructor.name} crossOrigin="anonymous" />
+            <AvatarImage src={instructor.avatarUrl} alt={instructor.name} />
             <AvatarFallback className="bg-primary text-lg font-bold text-primary-foreground">
               {instructor.name[0]}
             </AvatarFallback>

@@ -120,7 +120,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
 
         <div className="flex items-center gap-3">
           <Avatar className="h-16 w-16 border border-border">
-            <AvatarImage src={avatarUrl || undefined} alt={name} crossOrigin="anonymous" />
+            <AvatarImage src={avatarUrl || undefined} alt={name} />
             <AvatarFallback className="bg-primary text-lg text-primary-foreground">{name[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-1">

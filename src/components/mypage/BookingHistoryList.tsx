@@ -12,6 +12,7 @@ import { PaymentReceiptBreakdown } from "@/components/checkout/PaymentReceiptBre
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatKRW } from "@/lib/pricing";
 import { formatDateRangeKR, hoursSince } from "@/lib/dates";
+import { handleImageFallback } from "@/lib/image";
 import type { Booking } from "@/types";
 
 interface BookingHistoryListProps {
@@ -128,7 +129,7 @@ export function BookingHistoryList({ diverId }: BookingHistoryListProps) {
                   <img
                     src={tour.mainImageUrl}
                     alt={tour.title}
-                    crossOrigin="anonymous"
+                    onError={handleImageFallback}
                     className="h-14 w-14 shrink-0 rounded-lg object-cover"
                   />
                   <div className="min-w-0 flex-1 space-y-1">

@@ -37,7 +37,7 @@ export function InstructorApplicationQueue() {
         <Card key={instructor.id}>
           <CardContent className="flex items-center gap-3 p-3">
             <Avatar className="h-10 w-10 border border-border">
-              <AvatarImage src={instructor.avatarUrl} alt={instructor.name} crossOrigin="anonymous" />
+              <AvatarImage src={instructor.avatarUrl} alt={instructor.name} />
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {maskName(instructor.name)[0]}
               </AvatarFallback>

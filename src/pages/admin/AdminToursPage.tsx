@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDateRangeKR } from "@/lib/dates";
 import { formatKRW } from "@/lib/pricing";
 import { CERTIFICATION_LABELS } from "@/lib/constants";
+import { handleImageFallback } from "@/lib/image";
 import type { Tour } from "@/types";
 
 const ADMIN_STATUS_LABEL: Record<NonNullable<Tour["adminStatus"]>, string> = {
@@ -211,7 +212,7 @@ const AdminToursPage = () => {
               <img
                 src={detailTour.mainImageUrl}
                 alt={detailTour.title}
-                crossOrigin="anonymous"
+                onError={handleImageFallback}
                 className="h-40 w-full rounded-lg object-cover"
               />
               <div className="flex flex-wrap items-center gap-2">
