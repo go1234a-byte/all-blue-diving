@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   BellRing,
   Building2,
@@ -22,6 +23,7 @@ interface ActivityItem {
   detail: string;
   createdAt: string;
   tone: "default" | "destructive" | "warning" | "success";
+  to: string; // 클릭 시 이동할 관리자 페이지 경로
 }
 
 function relativeTime(iso: string): string {
@@ -59,6 +61,7 @@ export function RecentActivityFeed() {
           detail: tour?.title ?? b.tourId,
           createdAt: b.cancelRequestedAt ?? b.createdAt,
           tone: "destructive",
+          to: "/admin/bookings",
         });
       } else {
         list.push({
@@ -68,6 +71,7 @@ export function RecentActivityFeed() {
           detail: tour?.title ?? b.tourId,
           createdAt: b.createdAt,
           tone: "default",
+          to: "/admin/bookings",
         });
       }
       if (b.status === "cancel_pending_review") {
@@ -78,6 +82,7 @@ export function RecentActivityFeed() {
           detail: tour?.title ?? b.tourId,
           createdAt: b.cancelRequestedAt ?? b.createdAt,
           tone: "warning",
+          to: "/admin/bookings",
         });
       }
     }
@@ -90,6 +95,7 @@ export function RecentActivityFeed() {
         detail: `${r.targetName} · ${r.violationType}`,
         createdAt: r.createdAt,
         tone: "destructive",
+        to: "/admin/reports",
       });
     }
 
@@ -101,6 +107,7 @@ export function RecentActivityFeed() {
         detail: t.title ?? t.content.slice(0, 20),
         createdAt: t.createdAt,
         tone: "default",
+        to: "/admin/support",
       });
     }
 
@@ -113,6 +120,7 @@ export function RecentActivityFeed() {
           detail: i.name,
           createdAt: i.pledgeSignedAt ?? new Date().toISOString(),
           tone: "default",
+          to: "/admin/instructors",
         });
       }
     }
@@ -125,6 +133,7 @@ export function RecentActivityFeed() {
         detail: c.name,
         createdAt: c.createdAt,
         tone: "success",
+        to: "/admin/centers",
       });
     }
 
@@ -137,6 +146,7 @@ export function RecentActivityFeed() {
           detail: `${p.instructorId} · ${p.bookingId}`,
           createdAt: new Date().toISOString(),
           tone: "success",
+          to: "/admin/payouts",
         });
       }
     }
@@ -159,14 +169,18 @@ export function RecentActivityFeed() {
           items.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.id} className="flex items-start gap-2 text-xs">
+              <Link
+                key={item.id}
+                to={item.to}
+                className="-mx-1 flex items-start gap-2 rounded-md px-1 py-1 text-xs transition-colors hover:bg-secondary/60"
+              >
                 <Icon className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", TONE_CLASSES[item.tone])} />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-foreground">{item.label}</p>
                   <p className="truncate text-[11px] text-muted-foreground">{item.detail}</p>
                 </div>
                 <span className="shrink-0 text-[10px] text-muted-foreground">{relativeTime(item.createdAt)}</span>
-              </div>
+              </Link>
             );
           })
         )}
