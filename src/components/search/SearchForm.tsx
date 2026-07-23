@@ -7,6 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -65,6 +71,9 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
     initial?.priceRange ?? DEFAULT_FILTERS.priceRange,
   );
   const [sort, setSort] = useState<SortOption>(initial?.sort ?? "newest");
+  // "투어 검색하기"를 누르면 액티비티 종류/가격 범위/정렬을 고르는 팝업이 뜨고,
+  // 그 안에서 최종 "검색하기"를 눌러야 실제 검색이 실행된다.
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
   const allSuggestions = useMemo<Suggestion[]>(() => {
     const seen = new Set<string>();
@@ -182,69 +191,91 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
         <MonthMultiSelect value={months} onChange={setMonths} />
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">액티비티 종류</Label>
-        <div className="grid h-10 grid-cols-2 items-center gap-3">
-          <label className="flex items-center gap-1.5 text-sm">
-            <Checkbox
-              checked={activityTypes.includes("scuba")}
-              onCheckedChange={() => toggleActivity("scuba")}
-            />
-            스쿠버다이빙
-          </label>
-          <label className="flex items-center gap-1.5 text-sm">
-            <Checkbox
-              checked={activityTypes.includes("freediving")}
-              onCheckedChange={() => toggleActivity("freediving")}
-            />
-            프리다이빙
-          </label>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs text-muted-foreground">가격 범위</Label>
-          <span className="text-xs font-medium text-foreground">
-            {formatKRW(priceRange[0])} - {formatKRW(priceRange[1])}
-          </span>
-        </div>
-        <Slider
-          min={0}
-          max={3500000}
-          step={50000}
-          value={priceRange}
-          onValueChange={(v) => setPriceRange(v as [number, number])}
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">정렬</Label>
-        <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
-          <SelectTrigger className="h-10 w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(SORT_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>
-                {v}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <Button
         className="w-full gap-2"
         size={compact ? "default" : "lg"}
         onClick={() => {
           setShowSuggestions(false);
-          runSearch(query);
+          setFilterDialogOpen(true);
         }}
       >
         <SearchIcon className="h-4 w-4" />
         투어 검색하기
       </Button>
+
+      <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>상세 조건 선택</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 pt-1">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">액티비티 종류</Label>
+              <div className="grid h-10 grid-cols-2 items-center gap-3">
+                <label className="flex items-center gap-1.5 text-sm">
+                  <Checkbox
+                    checked={activityTypes.includes("scuba")}
+                    onCheckedChange={() => toggleActivity("scuba")}
+                  />
+                  스쿠버다이빙
+                </label>
+                <label className="flex items-center gap-1.5 text-sm">
+                  <Checkbox
+                    checked={activityTypes.includes("freediving")}
+                    onCheckedChange={() => toggleActivity("freediving")}
+                  />
+                  프리다이빙
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">가격 범위</Label>
+                <span className="text-xs font-medium text-foreground">
+                  {formatKRW(priceRange[0])} - {formatKRW(priceRange[1])}
+                </span>
+              </div>
+              <Slider
+                min={0}
+                max={3500000}
+                step={50000}
+                value={priceRange}
+                onValueChange={(v) => setPriceRange(v as [number, number])}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">정렬 (가격 낮은순 ↔ 높은순 양방향 선택 가능)</Label>
+              <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+                <SelectTrigger className="h-10 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(SORT_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              className="w-full gap-2"
+              size="lg"
+              onClick={() => {
+                setFilterDialogOpen(false);
+                runSearch(query);
+              }}
+            >
+              <SearchIcon className="h-4 w-4" />
+              검색하기
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
