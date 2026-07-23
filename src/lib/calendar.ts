@@ -101,53 +101,24 @@ function isIOSDevice(): boolean {
 
 /**
  * .ics 파일을 생성해 캘린더 앱으로 전달한다. Apple Calendar / Outlook / 대부분의 캘린더 앱에서
- * 바로 열 수 있는 표준 iCalendar 포맷.
+ * 바로 열 수 있는 표준 iCalendar 포맷. webcal:// 원클릭 연동(buildAppleCalendarUrl)이 지원되지
+ * 않는 환경(윈도우 등)을 위한 파일 저장 대체 수단으로 남겨둔다.
  *
  * iOS Safari는 Blob 객체 URL + <a download> 방식의 다운로드를 신뢰성 있게 처리하지 못해
  * (링크를 눌러도 아무 반응이 없거나 새 탭만 열리는 문제) "구글 캘린더는 되는데 애플은 안 된다"는
- * 문제의 원인이었다.
- *
- * 시도 1: data: URI로 최상위 페이지를 이동 → WebKit이 보안 정책상(피싱 방지) data: URI 최상위
- *   네비게이션을 차단해 실패.
- * 시도 2: Blob URL을 새 탭으로 열기(window.open) → 실기기 테스트 결과 여전히 실패. iOS Safari는
- *   window.open으로 연 새 탭이 원래 탭에서 만든 blob: URL 레지스트리에 접근하지 못하는 경우가
- *   있어(교차 브라우징 컨텍스트 제약) 새 탭이 빈 화면으로 뜨거나 아무 반응이 없을 수 있다.
- * 시도 3(현재): iOS/모바일에서는 Web Share API(navigator.share)를 최우선으로 사용한다. .ics
- *   파일을 File 객체로 만들어 공유 시트를 띄우면, 사용자가 그 시트에서 "캘린더에 추가" 또는
- *   "캘린더로 저장"을 선택해 표준 방식으로 처리한다 — 새 탭/blob 접근 문제 자체가 없는 네이티브
- *   OS 경로다. navigator.share를 쓸 수 없는 환경(구형 iOS, 공유 API 미지원 브라우저)에서는 현재
- *   탭을 blob: URL로 직접 이동시키는 방식(window.open 없이)으로 폴백한다.
+ * 문제의 원인이었다. iOS에서는 대신 data: URI로 직접 이동시켜 Safari가 text/calendar 콘텐츠를
+ * 인식해 "캘린더에 추가" 바텀시트를 띄우도록 한다.
  */
-export async function downloadIcsFile(event: CalendarEventData, fileName = "allblue-tour.ics"): Promise<void> {
+export function downloadIcsFile(event: CalendarEventData, fileName = "allblue-tour.ics"): void {
   const ics = buildIcsString(event);
-  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-
-  if (isIOSDevice() && typeof navigator !== "undefined" && "share" in navigator) {
-    try {
-      const file = new File([blob], fileName, { type: "text/calendar" });
-      const canShareFiles =
-        typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] });
-      if (canShareFiles) {
-        await navigator.share({ files: [file], title: event.title });
-        return;
-      }
-    } catch (err) {
-      // 사용자가 공유 시트를 취소한 경우(AbortError)는 정상 흐름이므로 조용히 종료한다.
-      if (err instanceof Error && err.name === "AbortError") return;
-      // 그 외 공유 실패 시에는 아래 blob 이동 폴백으로 넘어간다.
-    }
-  }
-
-  const url = URL.createObjectURL(blob);
 
   if (isIOSDevice()) {
-    // 새 탭(window.open) 없이 현재 탭에서 곧바로 blob: URL로 이동한다.
-    // iOS Safari가 text/calendar MIME 타입을 인식해 "캘린더에 추가" 화면을 띄운다.
-    window.location.href = url;
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    window.location.href = `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}`;
     return;
   }
 
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
@@ -168,4 +139,34 @@ export function buildGoogleCalendarUrl(event: CalendarEventData): string {
     details: event.description,
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/** UTF-8 문자열을 base64url(패딩 없음)로 인코딩한다 (한글 등 멀티바이트 문자를 안전하게 URL에 담기 위함). */
+function utf8ToBase64Url(input: string): string {
+  const bytes = new TextEncoder().encode(input);
+  let binary = "";
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/**
+ * ics API 호스트. Enter Cloud(Supabase) Edge Function으로 시도했다가, 그 게이트웨이가
+ * Authorization 헤더 없는 요청(= webcal:// 직접 접속)을 전부 막는 걸 확인해서 프론트엔드와
+ * 같은 Vercel 프로젝트의 서버리스 함수(/api/ics)로 옮겼다. 같은 배포라 별도 인증 게이트웨이가
+ * 없어 webcal:// 링크가 그대로 통과한다.
+ */
+const ICS_API_HOST =
+  typeof window !== "undefined" && window.location.host ? window.location.host : "all-blue-diving.vercel.app";
+
+/**
+ * Apple Calendar에 파일 다운로드 없이 "바로" 추가되는 링크를 만든다 (구글 캘린더 버튼과 동일한
+ * 원클릭 경험). webcal://은 macOS/iOS가 내부적으로 해당 주소를 https로 가져와서 Calendar 앱에
+ * 바로 넘겨주는 표준 스킴이다. 실제 일정 데이터는 파일 서버에 저장하지 않고 쿼리 파라미터로만
+ * 전달하며, /api/ics가 그 값을 그대로 iCalendar 포맷으로 바꿔 응답한다.
+ */
+export function buildAppleCalendarUrl(event: CalendarEventData): string {
+  const payload = utf8ToBase64Url(JSON.stringify(event));
+  return `webcal://${ICS_API_HOST}/api/ics?d=${payload}`;
 }
