@@ -41,18 +41,14 @@ export function SupportTicketQueue({ types, emptyMessage }: SupportTicketQueuePr
 
   const filteredTickets = types ? supportTickets.filter((t) => types.includes(t.type)) : supportTickets;
 
-  /** 문의자 아이디로 이름/연락처/역할과 가장 최근 이용한 투어를 함께 보여준다. */
+  /** 문의자 아이디로 이름/연락처/역할을 보여준다. */
   const resolveUser = (userId: string) => {
     const diver = diverProfiles.find((p) => p.id === userId);
     const instructor = instructorProfiles.find((p) => p.id === userId);
     const name = diver?.name ?? instructor?.name;
     const phone = diver?.phone ?? instructor?.phone;
     const roleLabel = diver ? "다이버" : instructor ? "강사" : undefined;
-    const recentBooking = [...bookings]
-      .filter((b) => b.diverId === userId)
-      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
-    const recentTourTitle = recentBooking ? getTourById(recentBooking.tourId)?.title : undefined;
-    return { name, phone, roleLabel, recentTourTitle };
+    return { name, phone, roleLabel };
   };
 
   const handleSave = async (ticketId: string, status: SupportTicketStatus) => {
@@ -75,7 +71,12 @@ export function SupportTicketQueue({ types, emptyMessage }: SupportTicketQueuePr
   return (
     <div className="space-y-2">
       {filteredTickets.map((ticket) => {
-        const { name, phone, roleLabel, recentTourTitle } = resolveUser(ticket.userId);
+        const { name, phone, roleLabel } = resolveUser(ticket.userId);
+        // 접수 시 선택한 bookingId를 통해 실제로 문의/신고 대상이 된 투어를 찾는다.
+        // (전에는 해당 회원의 "최근 이용 투어"를 임의로 보여줬는데, 이 건과 무관한 투어일 수 있어
+        //  접수 시 연결된 예약을 기준으로 정확한 투어를 보여주도록 수정했다.)
+        const relatedBooking = ticket.bookingId ? bookings.find((b) => b.id === ticket.bookingId) : undefined;
+        const relatedTour = relatedBooking ? getTourById(relatedBooking.tourId) : undefined;
         return (
         <div key={ticket.id} className="space-y-2 rounded-xl border border-border bg-card p-3">
           <div className="flex items-start justify-between gap-2">
@@ -100,8 +101,11 @@ export function SupportTicketQueue({ types, emptyMessage }: SupportTicketQueuePr
             )}
             {phone && <span className="text-muted-foreground">{phone}</span>}
             <span className="text-muted-foreground">ID: {ticket.userId}</span>
-            <span className="text-muted-foreground">
-              · 최근 투어: {recentTourTitle ?? "이용 내역 없음"}
+          </div>
+          <div className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px]">
+            <span className="font-semibold text-foreground">관련 투어</span>
+            <span className={relatedTour ? "text-foreground" : "text-muted-foreground"}>
+              {relatedTour ? relatedTour.title : "선택된 투어 없음"}
             </span>
           </div>
           {ticket.title && <p className="text-xs font-semibold text-foreground">{ticket.title}</p>}

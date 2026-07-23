@@ -83,19 +83,23 @@ export function SupportTicketForm({ type, userId }: SupportTicketFormProps) {
 
   return (
     <div className="space-y-3">
-      {(type === "dispute") && (
+      {/* 관리자가 접수 건이 어떤 투어와 관련된 것인지 알 수 있도록, 분쟁조정뿐 아니라
+          1:1 문의/신고에서도 관련 투어(예약)를 선택할 수 있게 한다. */}
+      {myBookings.length > 0 && (
         <div className="space-y-1.5">
-          <Label>예약번호 선택</Label>
+          <Label>
+            관련 투어 선택{type === "dispute" ? "" : " (해당되는 경우 선택해주세요)"}
+          </Label>
           <Select value={bookingId} onValueChange={setBookingId}>
             <SelectTrigger>
-              <SelectValue placeholder="예약 선택" />
+              <SelectValue placeholder="투어를 선택해주세요" />
             </SelectTrigger>
             <SelectContent>
               {myBookings.map((b) => {
                 const tour = getTourById(b.tourId);
                 return (
                   <SelectItem key={b.id} value={b.id}>
-                    {tour?.title ?? b.id} ({b.id})
+                    {tour?.title ?? b.id}
                   </SelectItem>
                 );
               })}
@@ -104,7 +108,7 @@ export function SupportTicketForm({ type, userId }: SupportTicketFormProps) {
         </div>
       )}
 
-      {type === "dispute" && selectedTour && (
+      {selectedTour && (
         <div className="rounded-lg bg-secondary/50 px-3 py-2 text-xs text-muted-foreground">
           투어: <span className="font-medium text-foreground">{selectedTour.title}</span>
         </div>
