@@ -149,6 +149,7 @@ function mapTourRow(row: any): Tour {
     country: row.country,
     site: row.site,
     activityTypes: row.activity_types ?? [],
+    minLogCount: row.min_log_count ?? undefined,
     certificationLevel: row.certification_level,
     mainImageUrl: row.main_image_url,
     galleryUrls: row.gallery_urls ?? [],
@@ -337,6 +338,7 @@ interface NewTourInput {
   country: string;
   site: string;
   activityTypes: Tour["activityTypes"];
+  minLogCount?: number;
   certificationLevel: Tour["certificationLevel"];
   mainImageUrl: string;
   galleryUrls: string[];
@@ -369,6 +371,7 @@ interface UpdateTourInput {
   country?: string;
   site?: string;
   activityTypes?: Tour["activityTypes"];
+  minLogCount?: number;
   certificationLevel?: Tour["certificationLevel"];
   mainImageUrl?: string;
   galleryUrls?: string[];
@@ -516,6 +519,7 @@ interface AppDataContextValue {
       agency?: string;
       level?: string;
       totalLogs?: number;
+      experienceYears?: number;
       bio?: string;
       licenseFileNames?: string[];
       avatarUrl?: string;
@@ -969,6 +973,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         country: input.country,
         site: input.site,
         activity_types: input.activityTypes,
+        min_log_count: input.minLogCount ?? null,
         certification_level: input.certificationLevel,
         main_image_url: input.mainImageUrl,
         gallery_urls: input.galleryUrls,
@@ -1038,6 +1043,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (patch.country !== undefined) dbPatch.country = patch.country;
     if (patch.site !== undefined) dbPatch.site = patch.site;
     if (patch.activityTypes !== undefined) dbPatch.activity_types = patch.activityTypes;
+    if (patch.minLogCount !== undefined) dbPatch.min_log_count = patch.minLogCount ?? null;
     if (patch.certificationLevel !== undefined) dbPatch.certification_level = patch.certificationLevel;
     if (patch.mainImageUrl !== undefined) dbPatch.main_image_url = patch.mainImageUrl;
     if (patch.galleryUrls !== undefined) dbPatch.gallery_urls = patch.galleryUrls;
@@ -1331,6 +1337,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       agency?: string;
       level?: string;
       totalLogs?: number;
+      experienceYears?: number;
       bio?: string;
       licenseFileNames?: string[];
       avatarUrl?: string;
@@ -1346,6 +1353,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ...(updates.agency !== undefined ? { agency: updates.agency } : {}),
         ...(updates.level !== undefined ? { level: updates.level } : {}),
         ...(updates.totalLogs !== undefined ? { total_logs: updates.totalLogs } : {}),
+        ...(updates.experienceYears !== undefined ? { experience_years: updates.experienceYears } : {}),
         ...(updates.bio !== undefined ? { bio: updates.bio } : {}),
         ...(updates.licenseFileNames !== undefined ? { license_file_names: updates.licenseFileNames } : {}),
         ...(updates.avatarUrl !== undefined ? { avatar_url: updates.avatarUrl } : {}),
@@ -1361,6 +1369,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               ...(updates.agency !== undefined ? { agency: updates.agency } : {}),
               ...(updates.level !== undefined ? { level: updates.level } : {}),
               ...(updates.totalLogs !== undefined ? { totalLogs: updates.totalLogs } : {}),
+              ...(updates.experienceYears !== undefined ? { experienceYears: updates.experienceYears } : {}),
               ...(updates.bio !== undefined ? { bio: updates.bio } : {}),
               ...(updates.licenseFileNames !== undefined ? { licenseFileNames: updates.licenseFileNames } : {}),
               ...(updates.avatarUrl !== undefined ? { avatarUrl: updates.avatarUrl } : {}),

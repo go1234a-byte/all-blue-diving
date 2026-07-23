@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { FileCheck2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { FileCheck2, Pencil } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
@@ -88,20 +90,28 @@ export function InstructorMyPageView() {
             ) : (
               recruitingTours.map((tour) => (
                 <Card key={tour.id}>
-                  <CardContent className="flex items-center gap-3 p-3">
-                    <img
-                      src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
-                      alt={tour.title}
-                      onError={handleImageFallback}
-                      className="h-12 w-12 shrink-0 rounded-md object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-1 text-sm font-medium text-foreground">{tour.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        모집마감 {formatDateKR(tour.recruitmentDeadline)}
-                      </p>
-                    </div>
-                    <Badge>모집중</Badge>
+                  <CardContent className="space-y-2 p-3">
+                    <Link to={`/tour/${tour.id}`} className="flex items-center gap-3">
+                      <img
+                        src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
+                        alt={tour.title}
+                        onError={handleImageFallback}
+                        className="h-12 w-12 shrink-0 rounded-md object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-sm font-medium text-foreground">{tour.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          모집마감 {formatDateKR(tour.recruitmentDeadline)}
+                        </p>
+                      </div>
+                      <Badge>모집중</Badge>
+                    </Link>
+                    <Button asChild size="sm" variant="outline" className="w-full gap-1 text-xs">
+                      <Link to={`/instructor/tours/${tour.id}/edit`}>
+                        <Pencil className="h-3.5 w-3.5" />
+                        투어 정보 수정
+                      </Link>
+                    </Button>
                   </CardContent>
                 </Card>
               ))
@@ -113,19 +123,21 @@ export function InstructorMyPageView() {
             ) : (
               completedTours.map((tour) => (
                 <Card key={tour.id}>
-                  <CardContent className="flex items-center gap-3 p-3">
-                    <img
-                      src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
-                      alt={tour.title}
-                      onError={handleImageFallback}
-                      className="h-12 w-12 shrink-0 rounded-md object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-1 text-sm font-medium text-foreground">{tour.title}</p>
-                      <p className="text-xs text-muted-foreground">{formatDateKR(tour.endDate)} 종료</p>
-                    </div>
-                    <Badge variant="secondary">완료</Badge>
-                  </CardContent>
+                  <Link to={`/tour/${tour.id}`}>
+                    <CardContent className="flex items-center gap-3 p-3">
+                      <img
+                        src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
+                        alt={tour.title}
+                        onError={handleImageFallback}
+                        className="h-12 w-12 shrink-0 rounded-md object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-sm font-medium text-foreground">{tour.title}</p>
+                        <p className="text-xs text-muted-foreground">{formatDateKR(tour.endDate)} 종료</p>
+                      </div>
+                      <Badge variant="secondary">완료</Badge>
+                    </CardContent>
+                  </Link>
                 </Card>
               ))
             )}

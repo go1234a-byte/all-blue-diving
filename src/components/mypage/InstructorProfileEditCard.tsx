@@ -33,6 +33,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
   const [agency, setAgency] = useState(instructor.agency ?? "");
   const [level, setLevel] = useState(instructor.level ?? "");
   const [totalLogs, setTotalLogs] = useState(String(instructor.totalLogs ?? 0));
+  const [experienceYears, setExperienceYears] = useState(String(instructor.experienceYears ?? 0));
   const [bio, setBio] = useState(instructor.bio ?? "");
   const [licenseFileNames, setLicenseFileNames] = useState<string[]>(instructor.licenseFileNames);
   const [avatarUrl, setAvatarUrl] = useState(instructor.avatarUrl ?? "");
@@ -43,6 +44,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
     setAgency(instructor.agency ?? "");
     setLevel(instructor.level ?? "");
     setTotalLogs(String(instructor.totalLogs ?? 0));
+    setExperienceYears(String(instructor.experienceYears ?? 0));
     setBio(instructor.bio ?? "");
     setLicenseFileNames(instructor.licenseFileNames);
     setAvatarUrl(instructor.avatarUrl ?? "");
@@ -66,6 +68,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
         agency: agency.trim(),
         level: level.trim(),
         totalLogs: Number(totalLogs) || 0,
+        experienceYears: Number(experienceYears) || 0,
         bio: bio.trim(),
         licenseFileNames,
         avatarUrl,
@@ -116,6 +119,10 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
             <div>
               <p className="text-muted-foreground">누적 다이빙 로그</p>
               <p className="font-medium text-foreground">{instructor.totalLogs ?? 0}회</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">경력</p>
+              <p className="font-medium text-foreground">{instructor.experienceYears ?? 0}년</p>
             </div>
             <div className="col-span-2">
               <p className="text-muted-foreground">소개</p>
@@ -180,15 +187,27 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label>누적 다이빙 로그 수</Label>
-          <Input
-            type="number"
-            min={0}
-            value={totalLogs}
-            onChange={(e) => setTotalLogs(e.target.value)}
-            placeholder="0"
-          />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>누적 다이빙 로그 수</Label>
+            <Input
+              type="number"
+              min={0}
+              value={totalLogs}
+              onChange={(e) => setTotalLogs(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>경력 (년)</Label>
+            <Input
+              type="number"
+              min={0}
+              value={experienceYears}
+              onChange={(e) => setExperienceYears(e.target.value)}
+              placeholder="예: 5"
+            />
+          </div>
         </div>
 
         <div className="space-y-1.5">

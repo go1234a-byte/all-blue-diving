@@ -48,6 +48,7 @@ export function KpiCardGrid() {
           { label: "다이버", value: `${signupsKpi.diverCount}명` },
           { label: "강사", value: `${signupsKpi.instructorCount}명` },
         ]}
+        footerNote={signupsKpi.names.length > 0 ? signupsKpi.names.join(", ") : "오늘 가입한 회원이 없습니다"}
         to="/admin/users"
       />
       <KpiCard

@@ -1,6 +1,7 @@
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Search from "./pages/Search";
 import TourDetail from "./pages/TourDetail";
 import Checkout from "./pages/Checkout";
@@ -58,6 +59,7 @@ export const routers = [
     children: [
       { index: true, name: "home", element: <Index /> },
       { path: "auth", name: "auth", element: <Auth /> },
+      { path: "reset-password", name: "reset-password", element: <ResetPassword /> },
       { path: "search", name: "search", element: <Search /> },
       { path: "tour/:tourId", name: "tour-detail", element: <TourDetail /> },
       { path: "checkout/:tourId", name: "checkout", element: <Checkout /> },

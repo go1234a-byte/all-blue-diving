@@ -133,6 +133,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
   const [country, setCountry] = useState<string>(tour.country);
   const [site, setSite] = useState<string>(tour.site);
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>(tour.activityTypes);
+  const [minLogCount, setMinLogCount] = useState(tour.minLogCount != null ? String(tour.minLogCount) : "");
   const [certificationLevel, setCertificationLevel] = useState<CertificationLevel>(tour.certificationLevel);
   const [basePrice, setBasePrice] = useState(String(tour.basePrice));
   const [maxParticipants, setMaxParticipants] = useState(String(tour.maxParticipants));
@@ -345,6 +346,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
         country,
         site,
         activityTypes,
+        minLogCount: minLogCount ? Number(minLogCount) : undefined,
         certificationLevel,
         mainImageUrl: mainUrl,
         galleryUrls,
@@ -424,7 +426,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label>액티비티 종류</Label>
-          <div className="flex h-10 items-center gap-4">
+          <div className="flex h-10 flex-wrap items-center gap-3">
             <label className="flex items-center gap-1.5 text-sm">
               <Checkbox checked={activityTypes.includes("scuba")} onCheckedChange={() => toggleActivity("scuba")} />
               스쿠버다이빙
@@ -432,6 +434,10 @@ export function TourEditForm({ tour }: TourEditFormProps) {
             <label className="flex items-center gap-1.5 text-sm">
               <Checkbox checked={activityTypes.includes("freediving")} onCheckedChange={() => toggleActivity("freediving")} />
               프리다이빙
+            </label>
+            <label className="flex items-center gap-1.5 text-sm">
+              <Checkbox checked={activityTypes.includes("liveaboard")} onCheckedChange={() => toggleActivity("liveaboard")} />
+              리브어보드
             </label>
           </div>
         </div>
@@ -459,6 +465,17 @@ export function TourEditForm({ tour }: TourEditFormProps) {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>참가 조건 · 최소 보유 로그 수 (선택)</Label>
+        <Input
+          type="number"
+          min={0}
+          value={minLogCount}
+          onChange={(e) => setMinLogCount(e.target.value)}
+          placeholder="예: 리브어보드 투어라면 50 (미입력 시 조건 없음)"
+        />
       </div>
 
       <div className="space-y-1.5">

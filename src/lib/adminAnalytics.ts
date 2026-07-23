@@ -115,13 +115,19 @@ export function computeSettlementKpi(payouts: Payout[]) {
   return { pendingAmount, pendingCount: pending.length, scheduledAmount, scheduledCount: scheduledThisWeek.length };
 }
 
-/** 카드: 오늘 가입자 수 (다이버 + 강사 합산) */
+/** 카드: 오늘 가입자 수 (다이버 + 강사 합산) + 실제로 누구인지 바로 확인할 수 있는 이름 목록 */
 export function computeTodaySignupsKpi(diverProfiles: Profile[], instructorProfiles: Profile[]) {
   const today = todayISO();
-  const diverCount = diverProfiles.filter((p) => isSameDate(p.createdAt, today)).length;
-  const instructorCount = instructorProfiles.filter((p) => isSameDate(p.createdAt, today)).length;
+  const todaysDivers = diverProfiles.filter((p) => isSameDate(p.createdAt, today));
+  const todaysInstructors = instructorProfiles.filter((p) => isSameDate(p.createdAt, today));
+  const diverCount = todaysDivers.length;
+  const instructorCount = todaysInstructors.length;
+  const names = [
+    ...todaysDivers.map((p) => `${p.name}(다이버)`),
+    ...todaysInstructors.map((p) => `${p.name}(강사)`),
+  ];
 
-  return { total: diverCount + instructorCount, diverCount, instructorCount };
+  return { total: diverCount + instructorCount, diverCount, instructorCount, names };
 }
 
 /** 카드 5: 활동 강사 수 / 신규 강사 / 인증 대기 */

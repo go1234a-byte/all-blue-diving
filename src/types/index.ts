@@ -2,7 +2,7 @@
 
 export type UserRole = "public" | "diver" | "instructor" | "admin";
 
-export type ActivityType = "scuba" | "freediving";
+export type ActivityType = "scuba" | "freediving" | "liveaboard";
 
 export type ScubaCertLevel = "ow" | "aow" | "rescue" | "master" | "inst";
 
@@ -126,6 +126,8 @@ export interface Tour {
   country: string;
   site: string;
   activityTypes: ActivityType[];
+  /** 리브어보드 등 참가 조건으로 요구하는 최소 보유 로그 수 (없으면 조건 없음). */
+  minLogCount?: number;
   certificationLevel: CertificationLevel;
   mainImageUrl: string;
   galleryUrls: string[];

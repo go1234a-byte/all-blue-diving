@@ -108,6 +108,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   const [country, setCountry] = useState<string>("");
   const [site, setSite] = useState<string>("");
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
+  const [minLogCount, setMinLogCount] = useState("");
   const [certificationLevel, setCertificationLevel] = useState<CertificationLevel>("ow");
   const [basePrice, setBasePrice] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("6");
@@ -321,6 +322,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         country,
         site,
         activityTypes,
+        minLogCount: minLogCount ? Number(minLogCount) : undefined,
         certificationLevel,
         mainImageUrl: mainUrl,
         galleryUrls,
@@ -394,7 +396,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label>액티비티 종류</Label>
-          <div className="flex h-10 items-center gap-4">
+          <div className="flex h-10 flex-wrap items-center gap-3">
             <label className="flex items-center gap-1.5 text-sm">
               <Checkbox checked={activityTypes.includes("scuba")} onCheckedChange={() => toggleActivity("scuba")} />
               스쿠버다이빙
@@ -402,6 +404,10 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
             <label className="flex items-center gap-1.5 text-sm">
               <Checkbox checked={activityTypes.includes("freediving")} onCheckedChange={() => toggleActivity("freediving")} />
               프리다이빙
+            </label>
+            <label className="flex items-center gap-1.5 text-sm">
+              <Checkbox checked={activityTypes.includes("liveaboard")} onCheckedChange={() => toggleActivity("liveaboard")} />
+              리브어보드
             </label>
           </div>
         </div>
@@ -429,6 +435,17 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>참가 조건 · 최소 보유 로그 수 (선택)</Label>
+        <Input
+          type="number"
+          min={0}
+          value={minLogCount}
+          onChange={(e) => setMinLogCount(e.target.value)}
+          placeholder="예: 리브어보드 투어라면 50 (미입력 시 조건 없음)"
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-3">

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bookmark, Star } from "lucide-react";
+import { Bookmark, Star, Users } from "lucide-react";
 import type { Tour } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,12 +19,14 @@ interface TourCardProps {
 const ACTIVITY_LABEL: Record<string, string> = {
   scuba: "스쿠버다이빙",
   freediving: "프리다이빙",
+  liveaboard: "리브어보드",
 };
 
 export function TourCard({ tour }: TourCardProps) {
-  const { getInstructorById, isBookmarked, toggleBookmark } = useAppData();
+  const { getInstructorById, isBookmarked, toggleBookmark, bookings } = useAppData();
   const instructor = getInstructorById(tour.instructorId);
   const bookmarked = isBookmarked(tour.id);
+  const confirmedCount = bookings.filter((b) => b.tourId === tour.id && b.status === "confirmed").length;
 
   return (
     <Link to={`/tour/${tour.id}`}>
@@ -42,6 +44,11 @@ export function TourCard({ tour }: TourCardProps) {
                 {ACTIVITY_LABEL[type]}
               </Badge>
             ))}
+            {tour.minLogCount != null && tour.minLogCount > 0 && (
+              <Badge variant="outline" className="border-none bg-background/85 text-foreground backdrop-blur">
+                로그수 {tour.minLogCount}회 이상
+              </Badge>
+            )}
           </div>
           <div className="absolute right-2 top-2 flex items-center gap-1.5">
             <div className="flex items-center gap-1 rounded-full bg-background/85 px-2 py-1 text-xs font-semibold text-foreground backdrop-blur">
@@ -57,7 +64,9 @@ export function TourCard({ tour }: TourCardProps) {
               className="flex h-7 w-7 items-center justify-center rounded-full bg-background/85 backdrop-blur"
               aria-label="찜하기"
             >
-              <Bookmark className={cn("h-3.5 w-3.5", bookmarked ? "text-primary" : "text-foreground")} />
+              <Bookmark
+                className={cn("h-3.5 w-3.5", bookmarked ? "fill-primary text-primary" : "text-foreground")}
+              />
             </button>
           </div>
         </div>
@@ -67,7 +76,15 @@ export function TourCard({ tour }: TourCardProps) {
               {tour.country} · {tour.site}
             </div>
             <h3 className="line-clamp-1 text-sm font-semibold text-foreground">{tour.title}</h3>
-            <div className="text-xs text-muted-foreground">{formatDateRangeKR(tour.startDate, tour.endDate)}</div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-foreground">
+                {formatDateRangeKR(tour.startDate, tour.endDate)}
+              </span>
+              <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                <Users className="h-3 w-3" />
+                {confirmedCount}/{tour.maxParticipants}명
+              </span>
+            </div>
           </div>
 
           {instructor && (

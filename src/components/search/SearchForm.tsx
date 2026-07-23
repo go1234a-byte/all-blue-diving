@@ -212,7 +212,7 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
           <div className="space-y-5 pt-1">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">액티비티 종류</Label>
-              <div className="grid h-10 grid-cols-2 items-center gap-3">
+              <div className="grid h-auto grid-cols-2 items-center gap-3">
                 <label className="flex items-center gap-1.5 text-sm">
                   <Checkbox
                     checked={activityTypes.includes("scuba")}
@@ -226,6 +226,13 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
                     onCheckedChange={() => toggleActivity("freediving")}
                   />
                   프리다이빙
+                </label>
+                <label className="flex items-center gap-1.5 text-sm">
+                  <Checkbox
+                    checked={activityTypes.includes("liveaboard")}
+                    onCheckedChange={() => toggleActivity("liveaboard")}
+                  />
+                  리브어보드
                 </label>
               </div>
             </div>

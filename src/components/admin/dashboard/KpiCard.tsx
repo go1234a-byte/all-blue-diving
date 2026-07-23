@@ -15,6 +15,8 @@ interface KpiCardProps {
   metrics: KpiCardMetric[];
   to?: string;
   tone?: "default" | "warning" | "destructive";
+  /** 카드 하단에 누구인지(이름 등) 요약해서 보여주고 싶을 때 사용. 예: 오늘 가입자 이름 목록. */
+  footerNote?: string;
 }
 
 const TONE_CLASSES: Record<NonNullable<KpiCardProps["tone"]>, string> = {
@@ -24,7 +26,7 @@ const TONE_CLASSES: Record<NonNullable<KpiCardProps["tone"]>, string> = {
 };
 
 /** 관리자 Dashboard 상단 KPI 카드 — 숫자가 먼저 보이도록 구성, 클릭 시 상세 페이지 이동. */
-export function KpiCard({ title, icon: Icon, primaryValue, metrics, to, tone = "default" }: KpiCardProps) {
+export function KpiCard({ title, icon: Icon, primaryValue, metrics, to, tone = "default", footerNote }: KpiCardProps) {
   const navigate = useNavigate();
 
   return (
@@ -50,6 +52,11 @@ export function KpiCard({ title, icon: Icon, primaryValue, metrics, to, tone = "
             </div>
           ))}
         </div>
+        {footerNote && (
+          <p className="line-clamp-2 border-t border-border/60 pt-1.5 text-[10px] leading-snug text-muted-foreground">
+            {footerNote}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

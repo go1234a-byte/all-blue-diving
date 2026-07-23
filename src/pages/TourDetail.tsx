@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 const ACTIVITY_LABEL: Record<string, string> = {
   scuba: "스쿠버다이빙",
   freediving: "프리다이빙",
+  liveaboard: "리브어보드",
 };
 
 const TourDetail = () => {
@@ -131,6 +132,9 @@ const TourDetail = () => {
               </Badge>
             ))}
             <Badge variant="secondary">{CERTIFICATION_LABELS[tour.certificationLevel]}</Badge>
+            {tour.minLogCount != null && tour.minLogCount > 0 && (
+              <Badge variant="outline">로그수 {tour.minLogCount}회 이상</Badge>
+            )}
           </div>
           <h2 className="text-xl font-bold text-foreground">{tour.title}</h2>
           <p className="text-sm text-muted-foreground">{tour.country} · {tour.site}</p>
