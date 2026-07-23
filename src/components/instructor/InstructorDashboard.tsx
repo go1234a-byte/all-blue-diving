@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarClock, ShieldAlert, Star, TrendingUp } from "lucide-react";
+import { CalendarClock, Pencil, ShieldAlert, Star, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -137,34 +137,42 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
                   {tour.status === "open" ? "모집중" : "마감"}
                 </Badge>
               </Link>
-              {tour.status === "open" && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="outline" className="w-full text-xs">
-                      모집마감
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>&quot;{tour.title}&quot; 투어 모집을 지금 마감하시겠습니까?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        모집을 마감하면 신규 예약을 더 이상 받을 수 없습니다. 이 작업은 되돌릴 수 없습니다.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>취소</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={async () => {
-                          await closeTourRecruiting(tour.id);
-                          toast({ title: `"${tour.title}" 투어 모집을 마감했습니다.` });
-                        }}
-                      >
+              <div className="flex gap-1.5">
+                <Button asChild size="sm" variant="outline" className="flex-1 gap-1 text-xs">
+                  <Link to={`/instructor/tours/${tour.id}/edit`}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    수정
+                  </Link>
+                </Button>
+                {tour.status === "open" && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="flex-1 text-xs">
                         모집마감
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>&quot;{tour.title}&quot; 투어 모집을 지금 마감하시겠습니까?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          모집을 마감하면 신규 예약을 더 이상 받을 수 없습니다. 이 작업은 되돌릴 수 없습니다.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>취소</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={async () => {
+                            await closeTourRecruiting(tour.id);
+                            toast({ title: `"${tour.title}" 투어 모집을 마감했습니다.` });
+                          }}
+                        >
+                          모집마감
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}

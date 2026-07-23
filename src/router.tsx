@@ -12,6 +12,7 @@ import ChatList from "./pages/ChatList";
 import ChatRoom from "./pages/ChatRoom";
 import MyPage from "./pages/MyPage";
 import InstructorConsole from "./pages/InstructorConsole";
+import TourEditPage from "./pages/TourEditPage";
 import InstructorPublicProfile from "./pages/InstructorPublicProfile";
 import SupportChat from "./pages/SupportChat";
 import InstructorArbitrationRoom from "./pages/InstructorArbitrationRoom";
@@ -77,6 +78,7 @@ export const routers = [
         element: <RequireRole allow={["instructor"]} />,
         children: [
           { index: true, name: "instructor-console", element: <InstructorConsole /> },
+          { path: "tours/:tourId/edit", name: "instructor-tour-edit", element: <TourEditPage /> },
           { path: "arbitration", name: "instructor-arbitration", element: <InstructorArbitrationRoom /> },
         ],
       },
