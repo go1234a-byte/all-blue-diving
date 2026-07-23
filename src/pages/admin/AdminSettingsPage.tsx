@@ -5,7 +5,11 @@ import { CANCELLATION_POLICY_LINES, CANCELLATION_POLICY_NOTE } from "@/lib/refun
 
 const AdminSettingsPage = () => {
   const { getByCategory } = usePolicies();
-  const enforcementPolicies = getByCategory("enforcement");
+  // "enforcement" 레거시 카테고리가 비어 있으면(마이그레이션 완료 후) instructor 카테고리를 사용한다.
+  const instructorEnforcementPolicies = getByCategory("enforcement_instructor").length
+    ? getByCategory("enforcement_instructor")
+    : getByCategory("enforcement");
+  const diverEnforcementPolicies = getByCategory("enforcement_diver");
 
   return (
     <div className="space-y-4">
@@ -33,13 +37,25 @@ const AdminSettingsPage = () => {
 
       <Card className="accent-top-ocean">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">제재 정책</CardTitle>
+          <CardTitle className="text-sm font-semibold">강사 제재 정책</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1.5 text-sm text-muted-foreground">
-          {enforcementPolicies.map((p) => (
+          {instructorEnforcementPolicies.map((p) => (
             <p key={p.id}>{p.title}{p.description ? ` — ${p.description}` : ""}</p>
           ))}
-          {enforcementPolicies.length === 0 && <p>등록된 제재 정책이 없습니다.</p>}
+          {instructorEnforcementPolicies.length === 0 && <p>등록된 제재 정책이 없습니다.</p>}
+        </CardContent>
+      </Card>
+
+      <Card className="accent-top-ocean">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold">다이버 제재 정책</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1.5 text-sm text-muted-foreground">
+          {diverEnforcementPolicies.map((p) => (
+            <p key={p.id}>{p.title}{p.description ? ` — ${p.description}` : ""}</p>
+          ))}
+          {diverEnforcementPolicies.length === 0 && <p>등록된 제재 정책이 없습니다.</p>}
         </CardContent>
       </Card>
 

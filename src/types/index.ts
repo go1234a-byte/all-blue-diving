@@ -361,7 +361,16 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-export type PolicyCategory = "refund" | "violation" | "enforcement";
+// "violation"/"enforcement"는 과거(마이그레이션 이전) 강사 전용 정책의 레거시 카테고리로,
+// 새 데이터는 diver/instructor로 명확히 구분된 카테고리를 사용한다.
+export type PolicyCategory =
+  | "refund"
+  | "violation"
+  | "enforcement"
+  | "violation_diver"
+  | "enforcement_diver"
+  | "violation_instructor"
+  | "enforcement_instructor";
 
 export interface Policy {
   id: string;
