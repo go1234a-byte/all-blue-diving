@@ -247,7 +247,7 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">정렬 (가격 낮은순 ↔ 높은순 양방향 선택 가능)</Label>
+              <Label className="text-xs text-muted-foreground">정렬</Label>
               <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
                 <SelectTrigger className="h-10 w-full">
                   <SelectValue />
