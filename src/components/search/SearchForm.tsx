@@ -5,15 +5,36 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MonthMultiSelect } from "@/components/search/MonthMultiSelect";
+import { DEFAULT_FILTERS } from "@/components/search/FilterSidebar";
 import { COUNTRIES_SITES } from "@/lib/constants";
 import { useAppData } from "@/contexts/AppDataContext";
+import { formatKRW } from "@/lib/pricing";
 import type { ActivityType } from "@/types";
+
+export type SortOption = "newest" | "cheapest" | "expensive" | "rating";
+
+const SORT_LABELS: Record<SortOption, string> = {
+  newest: "최신순",
+  cheapest: "가격 낮은순",
+  expensive: "가격 높은순",
+  rating: "평점순",
+};
 
 export interface SearchFormValues {
   query: string;
   months: number[];
   activityTypes: ActivityType[];
+  priceRange: [number, number];
+  sort: SortOption;
 }
 
 interface SearchFormProps {
@@ -40,6 +61,10 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>(
     initial?.activityTypes ?? [],
   );
+  const [priceRange, setPriceRange] = useState<[number, number]>(
+    initial?.priceRange ?? DEFAULT_FILTERS.priceRange,
+  );
+  const [sort, setSort] = useState<SortOption>(initial?.sort ?? "newest");
 
   const allSuggestions = useMemo<Suggestion[]>(() => {
     const seen = new Set<string>();
@@ -86,6 +111,9 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
     if (q.trim()) params.set("q", q.trim());
     if (months.length) params.set("months", months.join(","));
     if (activityTypes.length) params.set("activities", activityTypes.join(","));
+    if (priceRange[0] !== DEFAULT_FILTERS.priceRange[0]) params.set("minPrice", String(priceRange[0]));
+    if (priceRange[1] !== DEFAULT_FILTERS.priceRange[1]) params.set("maxPrice", String(priceRange[1]));
+    if (sort !== "newest") params.set("sort", sort);
     navigate(`/search?${params.toString()}`);
   };
 
@@ -172,6 +200,38 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
             프리다이빙
           </label>
         </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-muted-foreground">가격 범위</Label>
+          <span className="text-xs font-medium text-foreground">
+            {formatKRW(priceRange[0])} - {formatKRW(priceRange[1])}
+          </span>
+        </div>
+        <Slider
+          min={0}
+          max={3500000}
+          step={50000}
+          value={priceRange}
+          onValueChange={(v) => setPriceRange(v as [number, number])}
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">정렬</Label>
+        <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+          <SelectTrigger className="h-10 w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(SORT_LABELS).map(([k, v]) => (
+              <SelectItem key={k} value={k}>
+                {v}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Button

@@ -12,11 +12,11 @@ interface MonthMultiSelectProps {
   onChange: (months: number[]) => void;
 }
 
-// 현재 실제 월부터 12개월 표시 (Skyscanner 스타일 다중 월 선택)
+// 현재 실제 월부터 올해 12월까지만 표시 (연도를 넘어가는 다음 해 월은 노출하지 않음)
 export function MonthMultiSelect({ value, onChange }: MonthMultiSelectProps) {
   const [open, setOpen] = useState(false);
   const start = currentMonthIndex();
-  const months = Array.from({ length: 12 }, (_, i) => (start + i) % 12);
+  const months = Array.from({ length: 12 - start }, (_, i) => start + i);
 
   const toggle = (month: number) => {
     onChange(value.includes(month) ? value.filter((m) => m !== month) : [...value, month]);

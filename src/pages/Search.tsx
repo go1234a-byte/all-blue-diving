@@ -27,12 +27,29 @@ const SORT_LABELS: Record<SortOption, string> = {
   rating: "평점순",
 };
 
+const SORT_OPTIONS: SortOption[] = ["newest", "cheapest", "expensive", "rating"];
+
 const Search = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { tours } = useAppData();
-  const [sort, setSort] = useState<SortOption>("cheapest");
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  // 홈 화면 검색 폼에서 넘어온 정렬/가격 범위 값이 있으면 그대로 초기값으로 사용한다.
+  const [sort, setSort] = useState<SortOption>(() => {
+    const fromParam = searchParams.get("sort");
+    return fromParam && (SORT_OPTIONS as string[]).includes(fromParam)
+      ? (fromParam as SortOption)
+      : "cheapest";
+  });
+  const [filters, setFilters] = useState<FilterState>(() => {
+    const minParam = searchParams.get("minPrice");
+    const maxParam = searchParams.get("maxPrice");
+    return {
+      priceRange: [
+        minParam ? Number(minParam) : DEFAULT_FILTERS.priceRange[0],
+        maxParam ? Number(maxParam) : DEFAULT_FILTERS.priceRange[1],
+      ],
+    };
+  });
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const query = searchParams.get("q")?.trim() ?? "";
