@@ -1,5 +1,5 @@
 import { AlertOctagon, Bell, BellRing, CheckCircle2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ interface InstructorNotificationCenterProps {
  * InstructorNotification 레코드를 구독해 목록으로 노출한다.
  */
 export function InstructorNotificationCenter({ instructorId }: InstructorNotificationCenterProps) {
+  const navigate = useNavigate();
   const { instructorNotifications, markInstructorNotificationRead } = useAppData();
   const myNotifications = instructorNotifications.filter((n) => n.instructorId === instructorId);
   const unreadCount = myNotifications.filter((n) => !n.read).length;
@@ -67,8 +68,14 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
             return (
               <Card
                 key={notification.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(`/tour/${notification.tourId}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") navigate(`/tour/${notification.tourId}`);
+                }}
                 className={cn(
-                  "border-primary/30",
+                  "cursor-pointer border-primary/30 transition-shadow hover:shadow-ocean",
                   isWarning && "border-2 border-destructive bg-destructive/10",
                   !isWarning && !notification.read && "border-2 border-primary/60 bg-secondary/40",
                 )}
@@ -145,7 +152,13 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                     <span className="text-[10px] text-muted-foreground">{formatDateKR(notification.createdAt)}</span>
                     <div className="flex items-center gap-1.5">
                       {isPenalty && (
-                        <Button size="sm" variant="destructive" className="h-6 gap-1 text-[10px]" asChild>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-6 gap-1 text-[10px]"
+                          onClick={(e) => e.stopPropagation()}
+                          asChild
+                        >
                           <Link to="/instructor/arbitration">이의 제기</Link>
                         </Button>
                       )}
@@ -154,7 +167,10 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                           size="sm"
                           variant="ghost"
                           className="h-6 gap-1 text-[10px]"
-                          onClick={() => markInstructorNotificationRead(notification.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markInstructorNotificationRead(notification.id);
+                          }}
                         >
                           <CheckCircle2 className="h-3 w-3" />
                           확인 완료

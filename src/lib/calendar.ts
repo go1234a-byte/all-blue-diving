@@ -107,22 +107,43 @@ function isIOSDevice(): boolean {
  * (링크를 눌러도 아무 반응이 없거나 새 탭만 열리는 문제) "구글 캘린더는 되는데 애플은 안 된다"는
  * 문제의 원인이었다.
  *
- * 이전에는 iOS에서 data: URI로 최상위 페이지를 이동시키는 방식으로 우회했지만, WebKit이 보안
- * 정책상 data: URI로의 최상위 네비게이션을 차단하면서(피싱 방지 목적) 버튼을 눌러도 아무 반응이
- * 없는 동일한 증상이 재발했다. 지금은 Blob URL을 새 탭으로 직접 열어(window.open), Safari가
- * text/calendar MIME 타입을 인식해 "캘린더에 추가" 화면을 띄우도록 한다. 팝업이 차단된 경우에는
- * 현재 탭 이동으로 한 번 더 시도한다.
+ * 시도 1: data: URI로 최상위 페이지를 이동 → WebKit이 보안 정책상(피싱 방지) data: URI 최상위
+ *   네비게이션을 차단해 실패.
+ * 시도 2: Blob URL을 새 탭으로 열기(window.open) → 실기기 테스트 결과 여전히 실패. iOS Safari는
+ *   window.open으로 연 새 탭이 원래 탭에서 만든 blob: URL 레지스트리에 접근하지 못하는 경우가
+ *   있어(교차 브라우징 컨텍스트 제약) 새 탭이 빈 화면으로 뜨거나 아무 반응이 없을 수 있다.
+ * 시도 3(현재): iOS/모바일에서는 Web Share API(navigator.share)를 최우선으로 사용한다. .ics
+ *   파일을 File 객체로 만들어 공유 시트를 띄우면, 사용자가 그 시트에서 "캘린더에 추가" 또는
+ *   "캘린더로 저장"을 선택해 표준 방식으로 처리한다 — 새 탭/blob 접근 문제 자체가 없는 네이티브
+ *   OS 경로다. navigator.share를 쓸 수 없는 환경(구형 iOS, 공유 API 미지원 브라우저)에서는 현재
+ *   탭을 blob: URL로 직접 이동시키는 방식(window.open 없이)으로 폴백한다.
  */
-export function downloadIcsFile(event: CalendarEventData, fileName = "allblue-tour.ics"): void {
+export async function downloadIcsFile(event: CalendarEventData, fileName = "allblue-tour.ics"): Promise<void> {
   const ics = buildIcsString(event);
   const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+
+  if (isIOSDevice() && typeof navigator !== "undefined" && "share" in navigator) {
+    try {
+      const file = new File([blob], fileName, { type: "text/calendar" });
+      const canShareFiles =
+        typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] });
+      if (canShareFiles) {
+        await navigator.share({ files: [file], title: event.title });
+        return;
+      }
+    } catch (err) {
+      // 사용자가 공유 시트를 취소한 경우(AbortError)는 정상 흐름이므로 조용히 종료한다.
+      if (err instanceof Error && err.name === "AbortError") return;
+      // 그 외 공유 실패 시에는 아래 blob 이동 폴백으로 넘어간다.
+    }
+  }
+
   const url = URL.createObjectURL(blob);
 
   if (isIOSDevice()) {
-    const opened = window.open(url, "_blank");
-    if (!opened) {
-      window.location.href = url;
-    }
+    // 새 탭(window.open) 없이 현재 탭에서 곧바로 blob: URL로 이동한다.
+    // iOS Safari가 text/calendar MIME 타입을 인식해 "캘린더에 추가" 화면을 띄운다.
+    window.location.href = url;
     setTimeout(() => URL.revokeObjectURL(url), 30000);
     return;
   }

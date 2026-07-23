@@ -18,7 +18,7 @@ export function CalendarSyncButtons({ event }: CalendarSyncButtonsProps) {
       <Button
         variant="outline"
         className="h-auto w-full min-w-0 gap-2 whitespace-normal py-2.5"
-        onClick={() => downloadIcsFile(event)}
+        onClick={() => void downloadIcsFile(event)}
       >
         <Download className="h-4 w-4 shrink-0" />
         <span className="break-keep text-sm leading-snug tracking-tight">Apple/기타 캘린더 (.ics)</span>

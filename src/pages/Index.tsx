@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Megaphone } from "lucide-react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { SplashScreen } from "@/components/SplashScreen";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -18,10 +18,14 @@ const Index = () => {
   );
   const { role, authLoading } = useRole();
   const { tours: allTours, notices } = useAppData();
+  const location = useLocation();
+  // 강사가 하단 네비게이션의 "투어 홈"을 직접 눌러 이동한 경우에는 state로 표시되어 있어
+  // 아래 자동 리다이렉트를 건너뛰고 이 화면을 그대로 보여준다.
+  const instructorBrowsing = (location.state as { instructorBrowsing?: boolean } | null)?.instructorBrowsing === true;
 
   // 로그인 역할에 따라 첫 화면을 분기한다: 강사는 대시보드, 관리자는 관리자 홈,
   // 비회원/다이버만 이 투어 홈 화면을 그대로 본다.
-  if (!authLoading && role === "instructor") {
+  if (!authLoading && role === "instructor" && !instructorBrowsing) {
     return <Navigate to="/instructor" replace />;
   }
   if (!authLoading && role === "admin") {
