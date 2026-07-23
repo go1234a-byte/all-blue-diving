@@ -34,8 +34,8 @@ const DIVER_NAV_ITEMS: NavItem[] = [
 // "투어 홈"은 Index.tsx의 역할 기반 자동 리다이렉트(강사 → /instructor) 대상 경로와 동일한 "/"를
 // 가리키므로, 강사가 직접 눌러 이동했다는 것을 state로 표시해 Index.tsx가 리다이렉트를 건너뛰게 한다.
 const INSTRUCTOR_NAV_ITEMS: NavItem[] = [
-  { to: "/instructor", label: "대시보드", icon: LayoutDashboard, end: true },
   { to: "/", label: "투어 홈", icon: Home, end: true, state: { instructorBrowsing: true } },
+  { to: "/instructor", label: "대시보드", icon: LayoutDashboard, end: true },
   { to: "/chat", label: "채팅", icon: MessageCircle, end: false },
   { to: "/mypage", label: "마이페이지", icon: UserRound, end: false },
 ];
