@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { InstructorMiniScoreboard } from "@/components/tour/InstructorMiniScoreboard";
 import { useAppData } from "@/contexts/AppDataContext";
-import { formatKRW } from "@/lib/pricing";
+import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
@@ -114,7 +114,7 @@ export function TourCard({ tour }: TourCardProps) {
             </div>
           )}
 
-          <div className="pt-0.5 text-base font-bold text-primary">{formatKRW(tour.basePrice)}~</div>
+          <div className="pt-0.5 text-base font-bold text-primary">{formatKRW(applyPlatformFee(tour.basePrice))}~</div>
         </CardContent>
       </Card>
     </Link>

@@ -15,7 +15,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
 import { CERTIFICATION_LABELS } from "@/lib/constants";
-import { formatKRW } from "@/lib/pricing";
+import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { calculateAge, formatDateKR, formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +55,9 @@ const TourDetail = () => {
   const selectedOptionsTotal = tour.customOptions
     .filter((o) => o.isActive && selectedOptionIds.includes(o.id))
     .reduce((sum, o) => sum + o.price, 0);
-  const displayTotal = tour.basePrice + selectedOptionsTotal;
+  // 결제 화면(computeInvoice)과 동일하게 [투어 금액 소계]에 플랫폼 이용 수수료 10%를 더해서 보여준다.
+  // 이렇게 해야 투어 카드/상세에서 본 가격과 실제 체크아웃 결제 금액이 정확히 일치한다.
+  const displayTotal = applyPlatformFee(tour.basePrice + selectedOptionsTotal);
   const isBookingBlocked = Boolean(tour.adminStatus);
   const alreadyBooked = Boolean(myBooking);
 
@@ -299,7 +301,7 @@ const TourDetail = () => {
       <div className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-md items-center justify-between gap-4 border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:max-w-lg">
         <div>
           <p className="text-xs text-muted-foreground">
-            1인 기준{selectedOptionsTotal > 0 ? " · 옵션 포함" : ""}
+            1인 기준 · 수수료 포함{selectedOptionsTotal > 0 ? " · 옵션 포함" : ""}
           </p>
           <p className="text-lg font-bold text-primary">{formatKRW(displayTotal)}</p>
         </div>

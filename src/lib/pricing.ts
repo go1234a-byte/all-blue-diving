@@ -88,3 +88,12 @@ export function computeSettlement(basePrice: number, optionsCost = 0): Settlemen
 export function formatKRW(amount: number): string {
   return `${amount.toLocaleString("ko-KR")}원`;
 }
+
+/**
+ * 투어 카드/상세 화면 등에서 "손님이 실제로 결제하게 될 금액"을 미리 보여주기 위한 헬퍼.
+ * 체크아웃에서 computeInvoice가 계산하는 [소계 + 플랫폼 이용 수수료(10%)]와 동일한 방식으로,
+ * 둘러보는 시점부터 최종 결제 금액과 일치하는 가격을 보여준다.
+ */
+export function applyPlatformFee(amount: number): number {
+  return amount + Math.round(amount * PLATFORM_FEE_RATE);
+}

@@ -4,7 +4,7 @@ import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { getSiteCoordinate } from "@/lib/siteCoordinates";
-import { formatKRW } from "@/lib/pricing";
+import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import type { Tour } from "@/types";
 
 interface TourMapViewProps {
@@ -86,7 +86,7 @@ export function TourMapView({ tours }: TourMapViewProps) {
                       className="block rounded-md px-1.5 py-1 text-xs text-foreground hover:bg-secondary"
                     >
                       <span className="line-clamp-1 font-medium">{tour.title}</span>
-                      <span className="text-[11px] text-muted-foreground">{formatKRW(tour.basePrice)}~</span>
+                      <span className="text-[11px] text-muted-foreground">{formatKRW(applyPlatformFee(tour.basePrice))}~</span>
                     </Link>
                   ))}
                 </div>
