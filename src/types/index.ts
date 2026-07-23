@@ -24,6 +24,7 @@ export interface Profile {
   createdAt: string;
   snoring?: boolean;
   smoking?: boolean;
+  birthDate?: string; // 생년월일(YYYY-MM-DD), 나이 계산용
   // 다이버 가입 시 추가 정보 (안전/책임 목적)
   cCardAgency?: string; // 자격증 발급 기관 (PADI/SSI 등)
   cCardNumber?: string; // 자격증 번호

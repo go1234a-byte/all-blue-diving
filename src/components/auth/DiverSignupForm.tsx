@@ -21,6 +21,7 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState<Gender>("male");
+  const [birthDate, setBirthDate] = useState("");
   const [cCardAgency, setCCardAgency] = useState("");
   const [cCardNumber, setCCardNumber] = useState("");
   const [logCount, setLogCount] = useState("");
@@ -78,6 +79,7 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         name,
         phone,
         gender,
+        birth_date: birthDate || null,
         c_card_agency: cCardAgency || null,
         c_card_number: cCardNumber || null,
         log_count: logCount ? Number(logCount) : null,
@@ -99,6 +101,7 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         name,
         phone,
         gender,
+        birthDate: birthDate || undefined,
         status: "active",
         createdAt: new Date().toISOString(),
         cCardAgency: cCardAgency || undefined,
@@ -151,16 +154,22 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
           placeholder="010-0000-0000"
         />
       </div>
-      <div className="space-y-1.5">
-        <Label>성별</Label>
-        <RadioGroup value={gender} onValueChange={(v) => setGender(v as Gender)} className="flex gap-4">
-          <label className="flex items-center gap-1.5 text-sm">
-            <RadioGroupItem value="male" /> 남성
-          </label>
-          <label className="flex items-center gap-1.5 text-sm">
-            <RadioGroupItem value="female" /> 여성
-          </label>
-        </RadioGroup>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1.5">
+          <Label>성별</Label>
+          <RadioGroup value={gender} onValueChange={(v) => setGender(v as Gender)} className="flex h-10 items-center gap-4">
+            <label className="flex items-center gap-1.5 text-sm">
+              <RadioGroupItem value="male" /> 남성
+            </label>
+            <label className="flex items-center gap-1.5 text-sm">
+              <RadioGroupItem value="female" /> 여성
+            </label>
+          </RadioGroup>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="diver-birth-date">생년월일</Label>
+          <Input id="diver-birth-date" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+        </div>
       </div>
 
       <div className="space-y-3 rounded-lg border border-border bg-secondary/30 p-3">

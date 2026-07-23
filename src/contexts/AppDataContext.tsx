@@ -488,6 +488,7 @@ interface AppDataContextValue {
   updateDiverProfile: (
     diverId: string,
     updates: {
+      birthDate?: string;
       cCardAgency?: string;
       cCardNumber?: string;
       logCount?: number;
@@ -738,6 +739,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           createdAt: row.created_at,
           snoring: row.snoring ?? false,
           smoking: row.smoking ?? false,
+          birthDate: row.birth_date ?? undefined,
           cCardAgency: row.c_card_agency ?? undefined,
           cCardNumber: row.c_card_number ?? undefined,
           logCount: row.log_count ?? undefined,
@@ -1103,6 +1105,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateDiverProfile = async (
     diverId: string,
     updates: {
+      birthDate?: string;
       cCardAgency?: string;
       cCardNumber?: string;
       logCount?: number;
@@ -1117,6 +1120,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     await supabase
       .from("profiles")
       .update({
+        ...(updates.birthDate !== undefined ? { birth_date: updates.birthDate } : {}),
         ...(updates.cCardAgency !== undefined ? { c_card_agency: updates.cCardAgency } : {}),
         ...(updates.cCardNumber !== undefined ? { c_card_number: updates.cCardNumber } : {}),
         ...(updates.logCount !== undefined ? { log_count: updates.logCount } : {}),

@@ -59,3 +59,15 @@ export function currentMonthIndex(): number {
 export function hoursSince(iso: string): number {
   return (Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60);
 }
+
+/** 생년월일(YYYY-MM-DD)로부터 만 나이를 계산한다. */
+export function calculateAge(birthDateIso: string): number {
+  const birth = new Date(birthDateIso);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
+}

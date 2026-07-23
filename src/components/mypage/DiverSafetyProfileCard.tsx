@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { calculateAge } from "@/lib/dates";
 import type { Profile } from "@/types";
 
 interface DiverSafetyProfileCardProps {
@@ -18,12 +19,16 @@ interface DiverSafetyProfileCardProps {
  * 다이버 마이페이지의 "다이빙 자격 · 비상연락처 · 보험 정보" 카드.
  * 가입 시 입력한 C-Card/로그수/비상연락처/보험 정보를 이후에도 직접 수정할 수 있게 한다.
  * 참가자 대시보드 [더보기] 탭의 "마이페이지에서 수정하기" 링크가 도착하는 곳이기도 하다.
+ *
+ * 생년월일은 가입 시 입력을 안 받던 기존 회원들을 위해 여기서도 채워 넣을 수 있게 했다 —
+ * 강사가 투어 참가자 목록에서 나이를 확인하려면 이 값이 있어야 한다.
  */
 export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileCardProps) {
   const { updateDiverProfile } = useAppData();
   const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [birthDate, setBirthDate] = useState(profile?.birthDate ?? "");
   const [cCardAgency, setCCardAgency] = useState(profile?.cCardAgency ?? "");
   const [cCardNumber, setCCardNumber] = useState(profile?.cCardNumber ?? "");
   const [logCount, setLogCount] = useState(profile?.logCount != null ? String(profile.logCount) : "");
@@ -32,6 +37,7 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
   const [insuranceInfo, setInsuranceInfo] = useState(profile?.insuranceInfo ?? "");
 
   const resetForm = () => {
+    setBirthDate(profile?.birthDate ?? "");
     setCCardAgency(profile?.cCardAgency ?? "");
     setCCardNumber(profile?.cCardNumber ?? "");
     setLogCount(profile?.logCount != null ? String(profile.logCount) : "");
@@ -53,6 +59,7 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
     setSaving(true);
     try {
       await updateDiverProfile(diverId, {
+        birthDate: birthDate || undefined,
         cCardAgency: cCardAgency.trim(),
         cCardNumber: cCardNumber.trim(),
         logCount: logCount ? Number(logCount) : undefined,
@@ -88,6 +95,12 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
             <div>
+              <p className="text-muted-foreground">생년월일 · 나이</p>
+              <p className="font-medium text-foreground">
+                {profile?.birthDate ? `${profile.birthDate} (${calculateAge(profile.birthDate)}세)` : "-"}
+              </p>
+            </div>
+            <div>
               <p className="text-muted-foreground">C-Card</p>
               <p className="font-medium text-foreground">
                 {profile?.cCardAgency ? `${profile.cCardAgency} ${profile.cCardNumber ?? ""}`.trim() : "-"}
@@ -121,6 +134,11 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
     <Card>
       <CardContent className="space-y-3 p-4">
         <h3 className="text-sm font-semibold text-foreground">다이빙 자격 · 비상연락처 · 보험 수정</h3>
+
+        <div className="space-y-1.5">
+          <Label>생년월일</Label>
+          <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+        </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">

@@ -16,7 +16,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
 import { CERTIFICATION_LABELS } from "@/lib/constants";
 import { formatKRW } from "@/lib/pricing";
-import { formatDateKR, formatDateRangeKR } from "@/lib/dates";
+import { calculateAge, formatDateKR, formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 const ACTIVITY_LABEL: Record<string, string> = {
@@ -27,9 +27,9 @@ const ACTIVITY_LABEL: Record<string, string> = {
 const TourDetail = () => {
   const { tourId } = useParams();
   const navigate = useNavigate();
-  const { getTourById, getInstructorById, getDiveCenterByInstructorId, getCenterById, isBookmarked, toggleBookmark, bookings } =
+  const { getTourById, getInstructorById, getDiveCenterByInstructorId, getCenterById, isBookmarked, toggleBookmark, bookings, diverProfiles } =
     useAppData();
-  const { isLoggedIn, currentDiverId } = useRole();
+  const { isLoggedIn, currentDiverId, currentInstructorId } = useRole();
   const { toast } = useToast();
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
 
@@ -159,6 +159,49 @@ const TourDetail = () => {
             모집 마감일: {formatDateKR(tour.recruitmentDeadline)}까지
           </div>
         </div>
+
+        {/* 담당 강사 본인이 자신의 투어를 볼 때만: 누가 예약했는지 이름/나이/성별/흡연·코골이 여부를 보여준다. */}
+        {tour.instructorId === currentInstructorId && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-foreground">
+              참가자 목록 ({confirmedCount}/{tour.maxParticipants}명)
+            </h3>
+            <div className="space-y-1.5">
+              {bookings
+                .filter((b) => b.tourId === tour.id && b.status === "confirmed")
+                .map((b) => {
+                  const diverProfile = diverProfiles.find((p) => p.id === b.diverId);
+                  const age = diverProfile?.birthDate ? calculateAge(diverProfile.birthDate) : undefined;
+                  return (
+                    <div
+                      key={b.id}
+                      className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                    >
+                      <span className="font-medium text-foreground">
+                        {b.diverName}
+                        {age != null ? ` ${age}세` : ""} · {b.gender === "male" ? "남" : "여"}
+                      </span>
+                      <span className="flex gap-1">
+                        {b.smoking && (
+                          <Badge variant="outline" className="text-[10px]">
+                            흡연
+                          </Badge>
+                        )}
+                        {b.snoring && (
+                          <Badge variant="outline" className="text-[10px]">
+                            코골이
+                          </Badge>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              {confirmedCount === 0 && (
+                <p className="text-xs text-muted-foreground">아직 예약한 참가자가 없습니다.</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 1) 담당 강사 프로필 */}
         <InstructorTrustCard instructor={instructor} />
