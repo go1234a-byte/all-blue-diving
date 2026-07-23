@@ -66,6 +66,8 @@ const ChatRoom = () => {
   const [tab, setTab] = useState("dashboard");
 
   const tourBookings = bookings.filter((b) => b.tourId === tourId);
+  // 취소한 참가자는 채팅방 참가자 목록/룸 배정에서 더 이상 보이면 안 되므로 별도로 걸러둔다.
+  const activeTourBookings = tourBookings.filter((b) => b.status !== "cancelled");
   const isInstructor = !!tour && !!currentInstructorId && tour.instructorId === currentInstructorId;
   const myBooking = tourBookings.find((b) => b.diverId === currentDiverId);
 
@@ -95,7 +97,7 @@ const ChatRoom = () => {
           <ChatHeaderSummary
             instructor={instructor}
             instructorId={tour.instructorId}
-            confirmedCount={tourBookings.filter((b) => b.status === "confirmed").length}
+            confirmedCount={activeTourBookings.filter((b) => b.status === "confirmed").length}
             maxParticipants={tour.maxParticipants}
           />
           <TourInfoPinnedBanner tour={tour} />
@@ -129,22 +131,22 @@ const ChatRoom = () => {
             <TabsTrigger value="more" className="text-xs">더보기</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard" className="pt-3">
-            <TourDashboardTab tour={tour} bookings={tourBookings} isInstructor={isInstructor} />
+            <TourDashboardTab tour={tour} bookings={activeTourBookings} isInstructor={isInstructor} />
           </TabsContent>
           <TabsContent value="itinerary" className="pt-3">
             <TourItineraryTab tour={tour} isInstructor={isInstructor} />
           </TabsContent>
           <TabsContent value="participants" className="space-y-4 pt-3">
             <ChatParticipantList
-              bookings={tourBookings}
+              bookings={activeTourBookings}
               instructorId={tour.instructorId}
               instructorName={instructor?.name}
               isInstructor={isInstructor}
             />
-            <RoomAssignmentDashboard bookings={tourBookings} />
+            <RoomAssignmentDashboard bookings={activeTourBookings} />
           </TabsContent>
           <TabsContent value="more" className="pt-3">
-            <TourMoreInfoTab tour={tour} bookings={tourBookings} myBooking={myBooking} isInstructor={isInstructor} />
+            <TourMoreInfoTab tour={tour} bookings={activeTourBookings} myBooking={myBooking} isInstructor={isInstructor} />
           </TabsContent>
         </Tabs>
       </main>

@@ -35,6 +35,7 @@ import { maskName } from "@/lib/masking";
 import { supabase } from "@/integrations/supabase/client";
 
 const BOOKMARK_STORAGE_KEY = "allblue-bookmarked-tours";
+const INSTRUCTOR_BOOKMARK_STORAGE_KEY = "allblue-bookmarked-instructors";
 
 function mapInstructorRow(row: {
   id: string;
@@ -467,6 +468,7 @@ interface AppDataContextValue {
   reports: Report[];
   chatMessages: ChatMessage[];
   bookmarkedTourIds: string[];
+  bookmarkedInstructorIds: string[];
   reviews: Review[];
   inquiries: Inquiry[];
   instructorNotifications: InstructorNotification[];
@@ -527,6 +529,8 @@ interface AppDataContextValue {
   ) => Promise<void>;
   toggleBookmark: (tourId: string) => void;
   isBookmarked: (tourId: string) => boolean;
+  toggleInstructorBookmark: (instructorId: string) => void;
+  isInstructorBookmarked: (instructorId: string) => boolean;
   addInquiry: (input: NewInquiryInput) => Promise<Inquiry>;
   addReview: (input: NewReviewInput) => Promise<Review>;
   getReviewByBookingId: (bookingId: string) => Review | undefined;
@@ -617,6 +621,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       return [];
     }
   });
+  const [bookmarkedInstructorIds, setBookmarkedInstructorIds] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = window.localStorage.getItem(INSTRUCTOR_BOOKMARK_STORAGE_KEY);
+      return stored ? (JSON.parse(stored) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
 
   /**
    * 담당 강사(instructorId → instructors.profileId)에게 실제 OS 푸시를 시도한다.
@@ -652,6 +665,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     window.localStorage.setItem(BOOKMARK_STORAGE_KEY, JSON.stringify(bookmarkedTourIds));
   }, [bookmarkedTourIds]);
+
+  useEffect(() => {
+    window.localStorage.setItem(INSTRUCTOR_BOOKMARK_STORAGE_KEY, JSON.stringify(bookmarkedInstructorIds));
+  }, [bookmarkedInstructorIds]);
 
   // Enter Cloud(Supabase) `centers` 테이블에서 이용센터 목록을 가져온다.
   useEffect(() => {
@@ -1142,6 +1159,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const addBooking = async (input: NewBookingInput): Promise<Booking> => {
+    // 로그인한 다이버가 같은 투어에 중복으로 예약하는 것을 막는다 (취소된 예약은 제외 — 취소 후 재예약은 허용).
+    if (input.diverId) {
+      const duplicate = bookings.some(
+        (b) => b.tourId === input.tourId && b.diverId === input.diverId && b.status !== "cancelled",
+      );
+      if (duplicate) {
+        throw new Error("이미 이 투어에 예약하셨습니다. 중복으로 예약할 수 없습니다.");
+      }
+    }
     const diverId = input.diverId ?? nextId("guest-diver");
     const { data, error } = await supabase
       .from("bookings")
@@ -1481,6 +1507,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const isBookmarked = (tourId: string) => bookmarkedTourIds.includes(tourId);
+
+  const toggleInstructorBookmark = (instructorId: string) => {
+    setBookmarkedInstructorIds((prev) =>
+      prev.includes(instructorId) ? prev.filter((id) => id !== instructorId) : [...prev, instructorId],
+    );
+  };
+
+  const isInstructorBookmarked = (instructorId: string) => bookmarkedInstructorIds.includes(instructorId);
 
   const addInquiry = async (input: NewInquiryInput): Promise<Inquiry> => {
     const { data, error } = await supabase
@@ -1890,6 +1924,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       reports,
       chatMessages,
       bookmarkedTourIds,
+      bookmarkedInstructorIds,
       reviews,
       inquiries,
       instructorNotifications,
@@ -1925,6 +1960,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateInstructorProfile,
       toggleBookmark,
       isBookmarked,
+      toggleInstructorBookmark,
+      isInstructorBookmarked,
       addInquiry,
       addReview,
       getReviewByBookingId,
@@ -1970,6 +2007,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       reports,
       chatMessages,
       bookmarkedTourIds,
+      bookmarkedInstructorIds,
       reviews,
       inquiries,
       instructorNotifications,

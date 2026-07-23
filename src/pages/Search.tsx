@@ -43,17 +43,18 @@ const Search = () => {
   const [filters, setFilters] = useState<FilterState>(() => {
     const minParam = searchParams.get("minPrice");
     const maxParam = searchParams.get("maxPrice");
+    const monthsParam = searchParams.get("months");
     return {
       priceRange: [
         minParam ? Number(minParam) : DEFAULT_FILTERS.priceRange[0],
         maxParam ? Number(maxParam) : DEFAULT_FILTERS.priceRange[1],
       ],
+      months: monthsParam ? monthsParam.split(",").map(Number) : [],
     };
   });
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const query = searchParams.get("q")?.trim() ?? "";
-  const monthsParam = searchParams.get("months");
   const activitiesParam = searchParams.get("activities");
 
   const clearQuery = () => {
@@ -63,7 +64,7 @@ const Search = () => {
   };
 
   const filteredTours = useMemo(() => {
-    const months = monthsParam ? monthsParam.split(",").map(Number) : [];
+    const months = filters.months;
     const activities = (activitiesParam ? activitiesParam.split(",") : []) as ActivityType[];
     const q = query.toLowerCase();
     return tours
@@ -84,7 +85,7 @@ const Search = () => {
         if (sort === "expensive") return b.basePrice - a.basePrice;
         return b.rating - a.rating;
       });
-  }, [tours, query, monthsParam, activitiesParam, filters, sort]);
+  }, [tours, query, activitiesParam, filters, sort]);
 
   return (
     <div className="min-h-full bg-gradient-surface pb-10">

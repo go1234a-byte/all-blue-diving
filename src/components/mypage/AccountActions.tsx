@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, UserX } from "lucide-react";
+import { LogIn, LogOut, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 /** 마이페이지 공용 계정 관리 액션 — 로그아웃 / 회원 탈퇴(6개월 재가입 제한 안내). */
 export function AccountActions() {
   const navigate = useNavigate();
-  const { logout } = useRole();
+  const { logout, isLoggedIn } = useRole();
   const { toast } = useToast();
   const [deleting, setDeleting] = useState(false);
 
@@ -60,6 +60,15 @@ export function AccountActions() {
       setDeleting(false);
     }
   };
+
+  if (!isLoggedIn) {
+    return (
+      <Button className="w-full gap-2" onClick={() => navigate("/auth")}>
+        <LogIn className="h-4 w-4" />
+        로그인
+      </Button>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row">

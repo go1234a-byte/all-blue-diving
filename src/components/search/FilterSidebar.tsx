@@ -1,9 +1,11 @@
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { formatKRW } from "@/lib/pricing";
+import { MonthMultiSelect } from "@/components/search/MonthMultiSelect";
 
 export interface FilterState {
   priceRange: [number, number];
+  months: number[];
 }
 
 interface FilterSidebarProps {
@@ -15,6 +17,11 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
   return (
     <aside className="space-y-6 rounded-2xl border border-border bg-card p-4">
       <h3 className="text-sm font-semibold text-foreground">상세 필터</h3>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">출발 월 (복수 선택 가능)</Label>
+        <MonthMultiSelect value={filters.months} onChange={(months) => onChange({ ...filters, months })} />
+      </div>
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -37,4 +44,5 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
 
 export const DEFAULT_FILTERS: FilterState = {
   priceRange: [0, 3500000],
+  months: [],
 };

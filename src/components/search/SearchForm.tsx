@@ -115,15 +115,23 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
     );
   };
 
-  const runSearch = (q: string) => {
+  const runSearch = (q: string, monthsOverride?: number[]) => {
+    const effectiveMonths = monthsOverride ?? months;
     const params = new URLSearchParams();
     if (q.trim()) params.set("q", q.trim());
-    if (months.length) params.set("months", months.join(","));
+    if (effectiveMonths.length) params.set("months", effectiveMonths.join(","));
     if (activityTypes.length) params.set("activities", activityTypes.join(","));
     if (priceRange[0] !== DEFAULT_FILTERS.priceRange[0]) params.set("minPrice", String(priceRange[0]));
     if (priceRange[1] !== DEFAULT_FILTERS.priceRange[1]) params.set("maxPrice", String(priceRange[1]));
     if (sort !== "newest") params.set("sort", sort);
     navigate(`/search?${params.toString()}`);
+  };
+
+  // 출발 월은 다른 상세 조건(액티비티/가격/정렬)과 달리 고르는 즉시 결과를 보여준다 —
+  // "8월 선택 → 8월 투어만 보이고, 이어서 9월도 선택 → 8월+9월 투어가 함께 보이는" 즉각 반응 방식.
+  const handleMonthsChange = (nextMonths: number[]) => {
+    setMonths(nextMonths);
+    runSearch(query, nextMonths);
   };
 
   const handleSelectSuggestion = (s: Suggestion) => {
@@ -188,7 +196,7 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
 
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">출발 월 (복수 선택 가능)</Label>
-        <MonthMultiSelect value={months} onChange={setMonths} />
+        <MonthMultiSelect value={months} onChange={handleMonthsChange} />
       </div>
 
       <Button

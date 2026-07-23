@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Award,
   Ban,
+  Bookmark,
   CalendarCheck,
   Clock,
   Globe2,
@@ -46,6 +47,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateKR, formatDateRangeKR, isPastDate } from "@/lib/dates";
 import { maskName } from "@/lib/masking";
+import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types";
 
 /** 2회 경고 누적 시 자동으로 영구정지 처리한다 (AdminInstructorsPage와 동일 기준). */
@@ -112,6 +114,8 @@ const InstructorPublicProfile = () => {
     setInstructorPenalty,
     setProfileStatus,
     setTourAdminStatus,
+    toggleInstructorBookmark,
+    isInstructorBookmarked,
   } = useAppData();
   const { role } = useRole();
   const { toast } = useToast();
@@ -245,7 +249,22 @@ const InstructorPublicProfile = () => {
           <button type="button" onClick={() => navigate(-1)} className="text-foreground" aria-label="뒤로가기">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="line-clamp-1 text-base font-semibold text-foreground">강사 프로필</h1>
+          <h1 className="line-clamp-1 flex-1 text-base font-semibold text-foreground">강사 프로필</h1>
+          {instructor && (
+            <button
+              type="button"
+              onClick={() => toggleInstructorBookmark(instructor.id)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-secondary"
+              aria-label="강사 찜하기"
+            >
+              <Bookmark
+                className={cn(
+                  "h-5 w-5",
+                  isInstructorBookmarked(instructor.id) ? "fill-primary text-primary" : "text-foreground",
+                )}
+              />
+            </button>
+          )}
         </div>
       </header>
 

@@ -57,6 +57,7 @@ const TourDetail = () => {
     .reduce((sum, o) => sum + o.price, 0);
   const displayTotal = tour.basePrice + selectedOptionsTotal;
   const isBookingBlocked = Boolean(tour.adminStatus);
+  const alreadyBooked = Boolean(myBooking);
 
   const handleBookNow = () => {
     if (isBookingBlocked) {
@@ -65,6 +66,10 @@ const TourDetail = () => {
         description: "현재 예약을 받을 수 없는 투어입니다.",
         variant: "destructive",
       });
+      return;
+    }
+    if (alreadyBooked) {
+      toast({ title: "이미 예약한 투어예요", description: "같은 투어는 중복으로 예약할 수 없습니다." });
       return;
     }
     if (!isLoggedIn) {
@@ -298,8 +303,8 @@ const TourDetail = () => {
           </p>
           <p className="text-lg font-bold text-primary">{formatKRW(displayTotal)}</p>
         </div>
-        <Button size="lg" onClick={handleBookNow} disabled={isBookingBlocked}>
-          {isBookingBlocked ? "예약 불가" : "예약하기"}
+        <Button size="lg" onClick={handleBookNow} disabled={isBookingBlocked || alreadyBooked}>
+          {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
         </Button>
       </div>
     </div>

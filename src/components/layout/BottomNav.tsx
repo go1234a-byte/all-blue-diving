@@ -25,7 +25,7 @@ const DIVER_NAV_ITEMS: NavItem[] = [
   { to: "/", label: "홈", icon: Home, end: true },
   { to: "/my-bookings", label: "내 예약", icon: CalendarCheck, end: false },
   { to: "/chat", label: "채팅", icon: MessageCircle, end: false },
-  { to: "/favorites", label: "찜한 투어", icon: Heart, end: false },
+  { to: "/favorites", label: "위시리스트", icon: Heart, end: false },
   { to: "/mypage", label: "마이페이지", icon: UserRound, end: false },
 ];
 
