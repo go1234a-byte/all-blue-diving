@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Megaphone } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { SplashScreen } from "@/components/SplashScreen";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -8,6 +8,7 @@ import { SearchForm } from "@/components/search/SearchForm";
 import { TourCard } from "@/components/search/TourCard";
 import { Logo } from "@/components/brand/Logo";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useRole } from "@/contexts/RoleContext";
 
 const SPLASH_SESSION_KEY = "allblue-splash-shown";
 
@@ -15,7 +16,18 @@ const Index = () => {
   const [splashDone, setSplashDone] = useState(
     () => typeof window !== "undefined" && window.sessionStorage.getItem(SPLASH_SESSION_KEY) === "true",
   );
+  const { role, authLoading } = useRole();
   const { tours: allTours, notices } = useAppData();
+
+  // 로그인 역할에 따라 첫 화면을 분기한다: 강사는 대시보드, 관리자는 관리자 홈,
+  // 비회원/다이버만 이 투어 홈 화면을 그대로 본다.
+  if (!authLoading && role === "instructor") {
+    return <Navigate to="/instructor" replace />;
+  }
+  if (!authLoading && role === "admin") {
+    return <Navigate to="/admin/home" replace />;
+  }
+
   // 관리자가 정지/보류 처리한 투어는 다이버에게 노출하지 않는다.
   const tours = allTours.filter((t) => !t.adminStatus);
   const pinnedNotice = notices.find((n) => n.pinned);
