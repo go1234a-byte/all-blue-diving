@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Eye, ExternalLink, Lock, PlayCircle, Trash2 } from "lucide-react";
+import {
+  Eye,
+  ExternalLink,
+  LayoutDashboard,
+  Lock,
+  MessageCircle,
+  PlayCircle,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,13 +24,14 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CancelBookingDialog } from "@/components/mypage/CancelBookingDialog";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateRangeKR } from "@/lib/dates";
 import { formatKRW } from "@/lib/pricing";
 import { CERTIFICATION_LABELS } from "@/lib/constants";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
-import type { Tour } from "@/types";
+import type { Booking, Tour } from "@/types";
 
 const ADMIN_STATUS_LABEL: Record<NonNullable<Tour["adminStatus"]>, string> = {
   suspended: "정지됨",
@@ -119,6 +129,7 @@ const AdminToursPage = () => {
   const { tours, getInstructorById, bookings, setTourAdminStatus, deleteTour } = useAppData();
   const { toast } = useToast();
   const [detailTour, setDetailTour] = useState<Tour | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
 
   const handleAdminStatusChange = (tour: Tour, adminStatus: Tour["adminStatus"]) => {
     setTourAdminStatus(tour.id, adminStatus);
@@ -265,12 +276,64 @@ const AdminToursPage = () => {
                 </div>
               )}
 
+              <div className="grid grid-cols-2 gap-1.5">
+                <Button asChild size="sm" variant="outline" className="gap-1.5 text-xs">
+                  <Link to={`/chat/${detailTour.id}`}>
+                    <LayoutDashboard className="h-3.5 w-3.5" />
+                    투어 대시보드 보기
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="gap-1.5 text-xs">
+                  <Link to={`/chat/${detailTour.id}?view=chat`}>
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    채팅방 보기
+                  </Link>
+                </Button>
+              </div>
               <Button asChild size="sm" variant="ghost" className="w-full gap-1.5 text-xs">
                 <Link to={`/tour/${detailTour.id}`} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-3.5 w-3.5" />
                   실제 투어 상세 페이지 새 탭에서 열기
                 </Link>
               </Button>
+
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-foreground">
+                  참가자 목록 ({detailBookings.filter((b) => b.status !== "cancelled").length}명)
+                </p>
+                {detailBookings.filter((b) => b.status !== "cancelled").length === 0 ? (
+                  <p className="text-xs text-muted-foreground">참가자가 없습니다.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {detailBookings
+                      .filter((b) => b.status !== "cancelled")
+                      .map((booking) => (
+                        <div
+                          key={booking.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border px-2.5 py-1.5 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-foreground">{booking.diverName}</p>
+                            <p className="text-muted-foreground">
+                              {booking.status === "confirmed" ? "예약 확정" : "취소 검토중"}
+                              {booking.roomNo ? ` · ${booking.roomNo}호실` : ""}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 shrink-0 gap-1 px-2 text-[11px] text-destructive hover:text-destructive"
+                            onClick={() => setCancelTarget(booking)}
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                            예약 취소
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
 
               <TourStatusActions
                 tour={detailTour}
@@ -285,6 +348,15 @@ const AdminToursPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {detailTour && cancelTarget && (
+        <CancelBookingDialog
+          open={!!cancelTarget}
+          onOpenChange={(open) => !open && setCancelTarget(null)}
+          booking={cancelTarget}
+          tour={detailTour}
+        />
+      )}
     </div>
   );
 };

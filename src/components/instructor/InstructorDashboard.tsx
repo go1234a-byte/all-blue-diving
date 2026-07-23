@@ -119,7 +119,7 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
         {myTours.map((tour) => (
           <Card key={tour.id}>
             <CardContent className="space-y-2 p-3">
-              <Link to={`/tour/${tour.id}`} className="flex items-center gap-3">
+              <Link to={`/chat/${tour.id}`} className="flex items-center gap-3">
                 <img
                   src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
                   alt={tour.title}

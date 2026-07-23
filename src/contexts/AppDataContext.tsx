@@ -546,6 +546,7 @@ interface AppDataContextValue {
   redeemCoupon: (couponId: string) => Promise<void>;
   markInstructorNotificationRead: (notificationId: string) => void;
   cancelBooking: (bookingId: string, reason: string) => Promise<{ refundRate: number; refundAmount: number }>;
+  updateBookingRoom: (bookingId: string, roomNo: string | null) => Promise<void>;
   submitCancellationForReview: (bookingId: string, reason: string, evidenceFileNames: string[]) => Promise<void>;
   resolveCancellationReview: (bookingId: string, approved: boolean) => Promise<void>;
   addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => ArbitrationMessage;
@@ -1696,6 +1697,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return { refundRate, refundAmount };
   };
 
+  /** 강사가 방을 배정/수정할 때 사용. roomNo를 null로 넘기면 배정 해제(미배정으로 되돌림). */
+  const updateBookingRoom = async (bookingId: string, roomNo: string | null) => {
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, roomNo: roomNo ?? undefined } : b)));
+    await supabase.from("bookings").update({ room_no: roomNo }).eq("id", bookingId);
+  };
+
   /** 천재지변/의료 사유 등 즉시 환불이 아닌 운영팀 심사가 필요한 취소 요청을 접수한다. */
   const submitCancellationForReview = async (bookingId: string, reason: string, evidenceFileNames: string[]) => {
     const cancelRequestedAt = new Date().toISOString();
@@ -1977,6 +1984,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       redeemCoupon,
       markInstructorNotificationRead,
       cancelBooking,
+      updateBookingRoom,
       submitCancellationForReview,
       resolveCancellationReview,
       addArbitrationMessage,

@@ -91,7 +91,7 @@ export function InstructorMyPageView() {
               recruitingTours.map((tour) => (
                 <Card key={tour.id}>
                   <CardContent className="space-y-2 p-3">
-                    <Link to={`/tour/${tour.id}`} className="flex items-center gap-3">
+                    <Link to={`/chat/${tour.id}`} className="flex items-center gap-3">
                       <img
                         src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
                         alt={tour.title}
@@ -123,7 +123,7 @@ export function InstructorMyPageView() {
             ) : (
               completedTours.map((tour) => (
                 <Card key={tour.id}>
-                  <Link to={`/tour/${tour.id}`}>
+                  <Link to={`/chat/${tour.id}`}>
                     <CardContent className="flex items-center gap-3 p-3">
                       <img
                         src={tour.mainImageUrl || IMAGE_PLACEHOLDER}

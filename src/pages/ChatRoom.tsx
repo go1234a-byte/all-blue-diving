@@ -60,7 +60,7 @@ const ChatRoom = () => {
   // 대시보드/일정/참가자/더보기 탭은 "내 예약"에서 투어카드를 눌러 들어왔을 때만 노출한다.
   const chatOnly = searchParams.get("view") === "chat";
   const { tours, bookings, getInstructorById } = useAppData();
-  const { currentInstructorId, currentDiverId } = useRole();
+  const { role, currentInstructorId, currentDiverId } = useRole();
   const tour = tours.find((t) => t.id === tourId);
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
   const [tab, setTab] = useState("dashboard");
@@ -68,7 +68,9 @@ const ChatRoom = () => {
   const tourBookings = bookings.filter((b) => b.tourId === tourId);
   // 취소한 참가자는 채팅방 참가자 목록/룸 배정에서 더 이상 보이면 안 되므로 별도로 걸러둔다.
   const activeTourBookings = tourBookings.filter((b) => b.status !== "cancelled");
-  const isInstructor = !!tour && !!currentInstructorId && tour.instructorId === currentInstructorId;
+  // 담당 강사 본인이거나, 관리자 계정이면 참가자 실명 확인/방 배정 수정/예약 취소 등 강사와 동일한 권한을 준다.
+  const isTourOwnerInstructor = !!tour && !!currentInstructorId && tour.instructorId === currentInstructorId;
+  const isInstructor = isTourOwnerInstructor || role === "admin";
   const myBooking = tourBookings.find((b) => b.diverId === currentDiverId);
 
   if (!tour) {
@@ -142,8 +144,9 @@ const ChatRoom = () => {
               instructorId={tour.instructorId}
               instructorName={instructor?.name}
               isInstructor={isInstructor}
+              tour={tour}
             />
-            <RoomAssignmentDashboard bookings={activeTourBookings} />
+            <RoomAssignmentDashboard bookings={activeTourBookings} isInstructor={isInstructor} />
           </TabsContent>
           <TabsContent value="more" className="pt-3">
             <TourMoreInfoTab tour={tour} bookings={activeTourBookings} myBooking={myBooking} isInstructor={isInstructor} />
