@@ -22,6 +22,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/support": "문의 관리",
   "/admin/reports": "신고 관리",
   "/admin/notifications": "알림 관리",
+  "/admin/activity": "전체 알림",
   "/admin/notices": "공지 관리",
   "/admin/coupons": "쿠폰 관리",
   "/admin/analytics": "통계 분석",

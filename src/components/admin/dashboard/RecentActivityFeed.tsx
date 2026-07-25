@@ -1,158 +1,14 @@
-import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import {
-  BellRing,
-  Building2,
-  CalendarPlus,
-  CalendarX,
-  CircleDollarSign,
-  Flag,
-  MessageCircle,
-  ShieldCheck,
-  Undo2,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { BellRing } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAppData } from "@/contexts/AppDataContext";
 import { cn } from "@/lib/utils";
+import { ACTIVITY_TONE_CLASSES, relativeTime, useAdminActivityFeed } from "@/hooks/useAdminActivityFeed";
 
-interface ActivityItem {
-  id: string;
-  icon: LucideIcon;
-  label: string;
-  detail: string;
-  createdAt: string;
-  tone: "default" | "destructive" | "warning" | "success";
-  to: string; // 클릭 시 이동할 관리자 페이지 경로
-}
-
-function relativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "방금 전";
-  if (minutes < 60) return `${minutes}분 전`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  const days = Math.floor(hours / 24);
-  return `${days}일 전`;
-}
-
-const TONE_CLASSES: Record<ActivityItem["tone"], string> = {
-  default: "text-primary",
-  destructive: "text-destructive",
-  warning: "text-warning",
-  success: "text-success",
-};
+const RECENT_ITEMS_LIMIT = 8;
 
 /** 실시간 운영 - 최근 알림: 예약발생/취소/환불요청/신고접수/문의접수/강사인증요청/센터승인요청/정산완료 통합 피드. */
 export function RecentActivityFeed() {
-  const { bookings, reports, supportTickets, instructors, centers, payouts, getTourById } = useAppData();
-
-  const items = useMemo<ActivityItem[]>(() => {
-    const list: ActivityItem[] = [];
-
-    for (const b of bookings) {
-      const tour = getTourById(b.tourId);
-      if (b.status === "cancelled") {
-        list.push({
-          id: `booking-cancel-${b.id}`,
-          icon: CalendarX,
-          label: "예약 취소",
-          detail: tour?.title ?? b.tourId,
-          createdAt: b.cancelRequestedAt ?? b.createdAt,
-          tone: "destructive",
-          to: "/admin/bookings",
-        });
-      } else {
-        list.push({
-          id: `booking-${b.id}`,
-          icon: CalendarPlus,
-          label: "예약 발생",
-          detail: tour?.title ?? b.tourId,
-          createdAt: b.createdAt,
-          tone: "default",
-          to: "/admin/bookings",
-        });
-      }
-      if (b.status === "cancel_pending_review") {
-        list.push({
-          id: `refund-${b.id}`,
-          icon: Undo2,
-          label: "환불 요청",
-          detail: tour?.title ?? b.tourId,
-          createdAt: b.cancelRequestedAt ?? b.createdAt,
-          tone: "warning",
-          to: "/admin/bookings",
-        });
-      }
-    }
-
-    for (const r of reports) {
-      list.push({
-        id: `report-${r.id}`,
-        icon: Flag,
-        label: "신고 접수",
-        detail: `${r.targetName} · ${r.violationType}`,
-        createdAt: r.createdAt,
-        tone: "destructive",
-        to: "/admin/reports",
-      });
-    }
-
-    for (const t of supportTickets) {
-      list.push({
-        id: `ticket-${t.id}`,
-        icon: MessageCircle,
-        label: "문의 접수",
-        detail: t.title ?? t.content.slice(0, 20),
-        createdAt: t.createdAt,
-        tone: "default",
-        to: "/admin/support",
-      });
-    }
-
-    for (const i of instructors) {
-      if (!i.verified) {
-        list.push({
-          id: `inst-verify-${i.id}`,
-          icon: ShieldCheck,
-          label: "강사 인증 요청",
-          detail: i.name,
-          createdAt: i.pledgeSignedAt ?? new Date().toISOString(),
-          tone: "default",
-          to: "/admin/instructors",
-        });
-      }
-    }
-
-    for (const c of centers) {
-      list.push({
-        id: `center-${c.id}`,
-        icon: Building2,
-        label: "센터 승인 요청",
-        detail: c.name,
-        createdAt: c.createdAt,
-        tone: "success",
-        to: "/admin/centers",
-      });
-    }
-
-    for (const p of payouts) {
-      if (p.status === "released") {
-        list.push({
-          id: `payout-${p.id}`,
-          icon: CircleDollarSign,
-          label: "정산 완료",
-          detail: `${p.instructorId} · ${p.bookingId}`,
-          createdAt: new Date().toISOString(),
-          tone: "success",
-          to: "/admin/payouts",
-        });
-      }
-    }
-
-    return list.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 8);
-  }, [bookings, reports, supportTickets, instructors, centers, payouts, getTourById]);
+  const items = useAdminActivityFeed().slice(0, RECENT_ITEMS_LIMIT);
 
   return (
     <Card className="accent-top-ocean">
@@ -161,7 +17,7 @@ export function RecentActivityFeed() {
           <BellRing className="h-4 w-4 text-primary" />
           최근 알림
         </CardTitle>
-        <Link to="/admin/notifications" className="text-xs font-medium text-primary hover:underline">
+        <Link to="/admin/activity" className="text-xs font-medium text-primary hover:underline">
           전체보기
         </Link>
       </CardHeader>
@@ -177,7 +33,7 @@ export function RecentActivityFeed() {
                 to={item.to}
                 className="-mx-1 flex items-start gap-2 rounded-md px-1 py-1 text-xs transition-colors hover:bg-secondary/60"
               >
-                <Icon className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", TONE_CLASSES[item.tone])} />
+                <Icon className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", ACTIVITY_TONE_CLASSES[item.tone])} />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-foreground">{item.label}</p>
                   <p className="truncate text-[11px] text-muted-foreground">{item.detail}</p>

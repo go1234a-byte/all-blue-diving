@@ -31,6 +31,7 @@ import AdminUserDetailPage from "./pages/admin/AdminUserDetailPage";
 import AdminSupportPage from "./pages/admin/AdminSupportPage";
 import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
+import AdminActivityPage from "./pages/admin/AdminActivityPage";
 import AdminNoticesPage from "./pages/admin/AdminNoticesPage";
 import AdminCouponsPage from "./pages/admin/AdminCouponsPage";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
@@ -104,6 +105,7 @@ export const routers = [
               { path: "support", name: "admin-support", element: <AdminSupportPage /> },
               { path: "reports", name: "admin-reports", element: <AdminReportsPage /> },
               { path: "notifications", name: "admin-notifications", element: <AdminNotificationsPage /> },
+              { path: "activity", name: "admin-activity", element: <AdminActivityPage /> },
               { path: "notices", name: "admin-notices", element: <AdminNoticesPage /> },
               { path: "coupons", name: "admin-coupons", element: <AdminCouponsPage /> },
               { path: "analytics", name: "admin-analytics", element: <AdminAnalyticsPage /> },
