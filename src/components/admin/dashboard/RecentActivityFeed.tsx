@@ -156,11 +156,14 @@ export function RecentActivityFeed() {
 
   return (
     <Card className="accent-top-ocean">
-      <CardHeader className="pb-2">
+      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
           <BellRing className="h-4 w-4 text-primary" />
           최근 알림
         </CardTitle>
+        <Link to="/admin/notifications" className="text-xs font-medium text-primary hover:underline">
+          전체보기
+        </Link>
       </CardHeader>
       <CardContent className="space-y-2">
         {items.length === 0 ? (
