@@ -70,6 +70,20 @@ export const TOUR_EXCLUSIONS = [
   "개인 팁",
 ];
 
+/** 투어 특징 태그 프리셋 — 투어 카드/상세에 배지로 노출되는 다이빙 테마/특징. 강사가 직접 입력도 가능. */
+export const TOUR_TAG_OPTIONS = [
+  "마크로다이빙",
+  "조류다이빙",
+  "난파선다이빙",
+  "동굴다이빙",
+  "야간다이빙",
+  "드리프트다이빙",
+  "상어다이빙",
+  "만타레이",
+  "사진촬영",
+  "초보환영",
+] as const;
+
 /** 강사 투어 개설 시 기본으로 제공되는 표준 유료 옵션 (지역별 가격 상이, 강사가 직접 설정) */
 export const STANDARD_TOUR_OPTION_DEFS = [
   { name: "싱글차지 (Single Room Charge)", defaultPrice: 150000 },

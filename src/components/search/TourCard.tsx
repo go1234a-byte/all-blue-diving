@@ -49,6 +49,11 @@ export function TourCard({ tour }: TourCardProps) {
                 로그수 {tour.minLogCount}회 이상
               </Badge>
             )}
+            {(tour.tags ?? []).slice(0, 2).map((tag) => (
+              <Badge key={tag} variant="outline" className="border-none bg-background/85 text-foreground backdrop-blur">
+                {tag}
+              </Badge>
+            ))}
           </div>
           <div className="absolute right-2 top-2 flex items-center gap-1.5">
             <div className="flex items-center gap-1 rounded-full bg-background/85 px-2 py-1 text-xs font-semibold text-foreground backdrop-blur">

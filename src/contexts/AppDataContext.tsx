@@ -151,6 +151,7 @@ function mapTourRow(row: any): Tour {
     site: row.site,
     activityTypes: row.activity_types ?? [],
     minLogCount: row.min_log_count ?? undefined,
+    tags: row.tags ?? [],
     certificationLevel: row.certification_level,
     mainImageUrl: row.main_image_url,
     galleryUrls: row.gallery_urls ?? [],
@@ -340,6 +341,7 @@ interface NewTourInput {
   site: string;
   activityTypes: Tour["activityTypes"];
   minLogCount?: number;
+  tags?: string[];
   certificationLevel: Tour["certificationLevel"];
   mainImageUrl: string;
   galleryUrls: string[];
@@ -373,6 +375,7 @@ interface UpdateTourInput {
   site?: string;
   activityTypes?: Tour["activityTypes"];
   minLogCount?: number;
+  tags?: string[];
   certificationLevel?: Tour["certificationLevel"];
   mainImageUrl?: string;
   galleryUrls?: string[];
@@ -992,6 +995,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         site: input.site,
         activity_types: input.activityTypes,
         min_log_count: input.minLogCount ?? null,
+        tags: input.tags ?? [],
         certification_level: input.certificationLevel,
         main_image_url: input.mainImageUrl,
         gallery_urls: input.galleryUrls,
@@ -1061,6 +1065,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (patch.country !== undefined) dbPatch.country = patch.country;
     if (patch.site !== undefined) dbPatch.site = patch.site;
     if (patch.activityTypes !== undefined) dbPatch.activity_types = patch.activityTypes;
+    if (patch.tags !== undefined) dbPatch.tags = patch.tags;
     if (patch.minLogCount !== undefined) dbPatch.min_log_count = patch.minLogCount ?? null;
     if (patch.certificationLevel !== undefined) dbPatch.certification_level = patch.certificationLevel;
     if (patch.mainImageUrl !== undefined) dbPatch.main_image_url = patch.mainImageUrl;

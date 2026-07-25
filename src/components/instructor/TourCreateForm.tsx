@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,7 @@ import {
   FREEDIVING_CERT_LABELS,
   TOUR_INCLUSIONS,
   TOUR_EXCLUSIONS,
+  TOUR_TAG_OPTIONS,
   STANDARD_TOUR_OPTION_DEFS,
 } from "@/lib/constants";
 import { formatDateKR, isPastDate, toISODate } from "@/lib/dates";
@@ -109,6 +111,8 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   const [site, setSite] = useState<string>("");
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [minLogCount, setMinLogCount] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [customTagInput, setCustomTagInput] = useState("");
   const [certificationLevel, setCertificationLevel] = useState<CertificationLevel>("ow");
   const [basePrice, setBasePrice] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("6");
@@ -252,6 +256,21 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
     setActivityTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
   };
 
+  const toggleTag = (tag: string) => {
+    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  };
+
+  const addCustomTag = () => {
+    const trimmed = customTagInput.trim();
+    if (!trimmed || tags.includes(trimmed)) return;
+    setTags((prev) => [...prev, trimmed]);
+    setCustomTagInput("");
+  };
+
+  const removeTag = (tag: string) => {
+    setTags((prev) => prev.filter((t) => t !== tag));
+  };
+
   const showScubaLevels = activityTypes.length === 0 || activityTypes.includes("scuba");
   const showFreedivingLevels = activityTypes.length === 0 || activityTypes.includes("freediving");
 
@@ -323,6 +342,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         site,
         activityTypes,
         minLogCount: minLogCount ? Number(minLogCount) : undefined,
+        tags,
         certificationLevel,
         mainImageUrl: mainUrl,
         galleryUrls,
@@ -446,6 +466,51 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
           onChange={(e) => setMinLogCount(e.target.value)}
           placeholder="예: 리브어보드 투어라면 50 (미입력 시 조건 없음)"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label>투어 특징 태그 (선택)</Label>
+        <p className="text-xs text-muted-foreground">투어 카드에 스쿠버다이빙 등 액티비티 종류와 함께 표시됩니다.</p>
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+          {TOUR_TAG_OPTIONS.map((tagOption) => (
+            <label key={tagOption} className="flex items-center gap-1.5 text-xs text-foreground">
+              <Checkbox checked={tags.includes(tagOption)} onCheckedChange={() => toggleTag(tagOption)} />
+              {tagOption}
+            </label>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Input
+            value={customTagInput}
+            onChange={(e) => setCustomTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustomTag();
+              }
+            }}
+            placeholder="직접 입력 (예: 몰디브 만타 시즌)"
+            className="h-8 flex-1 text-xs"
+          />
+          <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={addCustomTag}>
+            <Plus className="h-3.5 w-3.5" />
+            추가
+          </Button>
+        </div>
+        {tags.filter((t) => !(TOUR_TAG_OPTIONS as readonly string[]).includes(t)).length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {tags
+              .filter((t) => !(TOUR_TAG_OPTIONS as readonly string[]).includes(t))
+              .map((t) => (
+                <Badge key={t} variant="secondary" className="gap-1 pr-1 text-[10px]">
+                  {t}
+                  <button type="button" onClick={() => removeTag(t)} aria-label={`${t} 제거`}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-3">
