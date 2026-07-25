@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, MessageCircleOff, Users } from "lucide-react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChatThread } from "@/components/chat/ChatThread";
 import { ChatParticipantList } from "@/components/chat/ChatParticipantList";
@@ -22,11 +23,13 @@ function ChatHeaderSummary({
   instructorId,
   confirmedCount,
   maxParticipants,
+  onOpenParticipants,
 }: {
   instructor?: InstructorProfile;
   instructorId: string;
   confirmedCount: number;
   maxParticipants: number;
+  onOpenParticipants: () => void;
 }) {
   return (
     <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
@@ -45,10 +48,14 @@ function ChatHeaderSummary({
           <p className="text-xs text-muted-foreground">담당 강사 · 프로필 보기</p>
         </div>
       </Link>
-      <div className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
+      <button
+        type="button"
+        onClick={onOpenParticipants}
+        className="flex shrink-0 items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary/70"
+      >
         <Users className="h-3.5 w-3.5" />
         {confirmedCount}/{maxParticipants}명
-      </div>
+      </button>
     </div>
   );
 }
@@ -64,6 +71,7 @@ const ChatRoom = () => {
   const tour = tours.find((t) => t.id === tourId);
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
   const [tab, setTab] = useState("dashboard");
+  const [participantsOpen, setParticipantsOpen] = useState(false);
 
   const tourBookings = bookings.filter((b) => b.tourId === tourId);
   // 취소한 참가자는 채팅방 참가자 목록/룸 배정에서 더 이상 보이면 안 되므로 별도로 걸러둔다.
@@ -101,6 +109,7 @@ const ChatRoom = () => {
             instructorId={tour.instructorId}
             confirmedCount={activeTourBookings.filter((b) => b.status === "confirmed").length}
             maxParticipants={tour.maxParticipants}
+            onOpenParticipants={() => setParticipantsOpen(true)}
           />
           <TourInfoPinnedBanner tour={tour} />
           {tour.instructorNotice && (
@@ -111,6 +120,24 @@ const ChatRoom = () => {
           )}
           <ChatThread tourId={tour.id} tour={tour} />
         </main>
+        <Sheet open={participantsOpen} onOpenChange={setParticipantsOpen}>
+          <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle>참가자 목록</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
+              {/* 강사(및 관리자)는 실명을 그대로 보고, 다이버는 담당 강사 이름만 실명이고
+                  다른 참가자 이름은 중간 글자를 *로 가려서(예: 김*태) 확인한다. */}
+              <ChatParticipantList
+                bookings={activeTourBookings}
+                instructorId={tour.instructorId}
+                instructorName={instructor?.name}
+                isInstructor={isInstructor}
+                tour={tour}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
         <BottomNav />
       </div>
     );
