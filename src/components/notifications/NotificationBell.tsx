@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AlertOctagon, Bell, BellRing } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
@@ -14,13 +16,15 @@ import { cn } from "@/lib/utils";
 export function NotificationBell() {
   const { role, isLoggedIn, currentDiverId, currentInstructorId } = useRole();
   const { tours, bookings, instructorNotifications, markInstructorNotificationRead } = useAppData();
+  const navigate = useNavigate();
+  const [instructorPopoverOpen, setInstructorPopoverOpen] = useState(false);
 
   if (role === "instructor") {
     const myNotifications = instructorNotifications.filter((n) => n.instructorId === currentInstructorId);
     const unreadCount = myNotifications.filter((n) => !n.read).length;
 
     return (
-      <Popover>
+      <Popover open={instructorPopoverOpen} onOpenChange={setInstructorPopoverOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
@@ -59,15 +63,27 @@ export function NotificationBell() {
                 return (
                   <div
                     key={notification.id}
+                    role="button"
+                    tabIndex={0}
                     className={cn(
-                      "space-y-1 rounded-lg border p-2.5",
+                      "cursor-pointer space-y-1 rounded-lg border p-2.5 transition-colors hover:bg-secondary/70",
                       isWarning
                         ? "border-destructive bg-destructive/10"
                         : !notification.read
                           ? "border-primary/50 bg-secondary/50"
                           : "border-border",
                     )}
-                    onClick={() => !notification.read && markInstructorNotificationRead(notification.id)}
+                    onClick={() => {
+                      if (!notification.read) markInstructorNotificationRead(notification.id);
+                      setInstructorPopoverOpen(false);
+                      navigate(`/tour/${notification.tourId}`);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter" && e.key !== " ") return;
+                      if (!notification.read) markInstructorNotificationRead(notification.id);
+                      setInstructorPopoverOpen(false);
+                      navigate(`/tour/${notification.tourId}`);
+                    }}
                   >
                     <p
                       className={cn(
