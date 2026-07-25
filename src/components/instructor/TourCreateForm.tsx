@@ -391,25 +391,32 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label>국가</Label>
-          <Select value={country} onValueChange={(v) => { setCountry(v); setSite(""); }}>
-            <SelectTrigger><SelectValue placeholder="국가 선택" /></SelectTrigger>
-            <SelectContent>
-              {Object.keys(COUNTRIES_SITES).map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input
+            list="tour-country-options"
+            value={country}
+            onChange={(e) => { setCountry(e.target.value); setSite(""); }}
+            placeholder="국가 검색 또는 직접 입력"
+          />
+          <datalist id="tour-country-options">
+            {Object.keys(COUNTRIES_SITES).map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
         </div>
         <div className="space-y-1.5">
           <Label>다이브 사이트</Label>
-          <Select value={site} onValueChange={setSite} disabled={!country}>
-            <SelectTrigger><SelectValue placeholder="사이트 선택" /></SelectTrigger>
-            <SelectContent>
-              {sites.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input
+            list="tour-site-options"
+            value={site}
+            onChange={(e) => setSite(e.target.value)}
+            disabled={!country}
+            placeholder="사이트 검색 또는 직접 입력"
+          />
+          <datalist id="tour-site-options">
+            {sites.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
         </div>
       </div>
 
