@@ -1,4 +1,5 @@
 import { Lock, Unlock } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -20,6 +21,8 @@ const STATUS_VARIANT: Record<PayoutStatus, "default" | "secondary" | "destructiv
 /** 모바일 폭에 맞춘 카드형 정산 목록 — 기존 데스크톱 표 대신 사용한다. */
 export function PayoutManagement() {
   const { payouts, instructors, setPayoutStatus } = useAppData();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
 
   return (
     <div className="space-y-2">
@@ -29,7 +32,12 @@ export function PayoutManagement() {
       {payouts.map((payout) => {
         const instructor = instructors.find((i) => i.id === payout.instructorId);
         return (
-          <div key={payout.id} className="space-y-2 rounded-xl border border-border bg-card p-3">
+          <div
+            key={payout.id}
+            className={`space-y-2 rounded-xl border p-3 ${
+              payout.id === highlightId ? "border-primary bg-secondary/60" : "border-border bg-card"
+            }`}
+          >
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-semibold text-foreground">{instructor?.name ?? "-"}</p>
               <Badge variant={STATUS_VARIANT[payout.status]} className="shrink-0 text-[10px]">

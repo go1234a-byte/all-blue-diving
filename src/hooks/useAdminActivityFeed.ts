@@ -62,7 +62,7 @@ export function useAdminActivityFeed(): AdminActivityItem[] {
           detail: tour?.title ?? b.tourId,
           createdAt: b.cancelRequestedAt ?? b.createdAt,
           tone: "destructive",
-          to: "/admin/bookings",
+          to: `/admin/bookings?highlight=${b.id}`,
         });
       } else {
         list.push({
@@ -72,7 +72,7 @@ export function useAdminActivityFeed(): AdminActivityItem[] {
           detail: tour?.title ?? b.tourId,
           createdAt: b.createdAt,
           tone: "default",
-          to: "/admin/bookings",
+          to: `/admin/bookings?highlight=${b.id}`,
         });
       }
       if (b.status === "cancel_pending_review") {
@@ -83,7 +83,7 @@ export function useAdminActivityFeed(): AdminActivityItem[] {
           detail: tour?.title ?? b.tourId,
           createdAt: b.cancelRequestedAt ?? b.createdAt,
           tone: "warning",
-          to: "/admin/bookings",
+          to: `/admin/bookings?highlight=${b.id}`,
         });
       }
     }
@@ -96,7 +96,7 @@ export function useAdminActivityFeed(): AdminActivityItem[] {
         detail: `${r.targetName} · ${r.violationType}`,
         createdAt: r.createdAt,
         tone: "destructive",
-        to: "/admin/reports",
+        to: `/admin/reports?highlight=${r.id}`,
       });
     }
 
@@ -108,7 +108,7 @@ export function useAdminActivityFeed(): AdminActivityItem[] {
         detail: t.title ?? t.content.slice(0, 20),
         createdAt: t.createdAt,
         tone: "default",
-        to: "/admin/support",
+        to: `/admin/support?highlight=${t.id}`,
       });
     }
 
@@ -121,7 +121,7 @@ export function useAdminActivityFeed(): AdminActivityItem[] {
           detail: i.name,
           createdAt: i.pledgeSignedAt ?? new Date().toISOString(),
           tone: "default",
-          to: "/admin/instructors",
+          to: `/instructor/${i.id}/profile`,
         });
       }
     }
@@ -134,7 +134,7 @@ export function useAdminActivityFeed(): AdminActivityItem[] {
         detail: c.name,
         createdAt: c.createdAt,
         tone: "success",
-        to: "/admin/centers",
+        to: `/admin/centers?highlight=${c.id}`,
       });
     }
 
@@ -147,7 +147,7 @@ export function useAdminActivityFeed(): AdminActivityItem[] {
           detail: `${p.instructorId} · ${p.bookingId}`,
           createdAt: new Date().toISOString(),
           tone: "success",
-          to: "/admin/payouts",
+          to: `/admin/payouts?highlight=${p.id}`,
         });
       }
     }

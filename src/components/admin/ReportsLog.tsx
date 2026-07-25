@@ -1,5 +1,6 @@
 import { ReviewModerationQueue, AllReviewsAdminPanel } from "@/components/admin/ReviewModerationQueue";
 import { SupportTicketQueue } from "@/components/admin/SupportTicketQueue";
+import { UserReportQueue } from "@/components/admin/UserReportQueue";
 
 /** 모바일 폭에 맞춘 카드형 신고 목록 — 기존 데스크톱 표 대신 사용한다. */
 export function ReportsLog() {
@@ -7,6 +8,14 @@ export function ReportsLog() {
     <div className="space-y-5">
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-foreground">회원 신고 접수 내역</h3>
+        <p className="text-xs text-muted-foreground">
+          신고 사유와 상세 설명을 확인하고 처리 완료로 표시할 수 있습니다.
+        </p>
+        <UserReportQueue />
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-foreground">신고 유형 문의</h3>
         <p className="text-xs text-muted-foreground">
           문의관리와 동일하게 신고자 이름/연락처/ID/접수일시가 함께 표시됩니다.
         </p>

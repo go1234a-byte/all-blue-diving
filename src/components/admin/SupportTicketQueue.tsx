@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +39,8 @@ export function SupportTicketQueue({ types, emptyMessage }: SupportTicketQueuePr
     useAppData();
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
 
   const filteredTickets = types ? supportTickets.filter((t) => types.includes(t.type)) : supportTickets;
 
@@ -78,7 +81,12 @@ export function SupportTicketQueue({ types, emptyMessage }: SupportTicketQueuePr
         const relatedBooking = ticket.bookingId ? bookings.find((b) => b.id === ticket.bookingId) : undefined;
         const relatedTour = relatedBooking ? getTourById(relatedBooking.tourId) : undefined;
         return (
-        <div key={ticket.id} className="space-y-2 rounded-xl border border-border bg-card p-3">
+        <div
+          key={ticket.id}
+          className={`space-y-2 rounded-xl border p-3 ${
+            ticket.id === highlightId ? "border-primary bg-secondary/60" : "border-border bg-card"
+          }`}
+        >
           <div className="flex items-start justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-sm font-medium text-foreground">{TYPE_LABEL[ticket.type]}</span>

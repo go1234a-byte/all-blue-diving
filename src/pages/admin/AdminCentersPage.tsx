@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -56,6 +57,8 @@ function toFormState(center: Center): CenterFormState {
 const AdminCentersPage = () => {
   const { centers, addCenter, updateCenter, deleteCenter } = useAppData();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
   const [editingCenter, setEditingCenter] = useState<Center | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<CenterFormState | null>(null);
@@ -121,7 +124,14 @@ const AdminCentersPage = () => {
         새 센터 추가
       </Button>
       {centers.map((center) => (
-        <Card key={center.id} className="accent-top-ocean">
+        <Card
+          key={center.id}
+          className={
+            center.id === highlightId
+              ? "accent-top-ocean border-primary bg-secondary/60"
+              : "accent-top-ocean"
+          }
+        >
           <CardContent className="space-y-2 p-4">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-semibold text-foreground">{center.name}</p>
