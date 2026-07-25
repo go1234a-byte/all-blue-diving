@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { FileDropzone } from "@/components/auth/FileDropzone";
 import { CenterFormSection } from "@/components/instructor/CenterFormSection";
+import { SuggestInput } from "@/components/instructor/SuggestInput";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { uploadImageFile, uploadImageFiles } from "@/lib/uploadImage";
@@ -421,32 +422,22 @@ export function TourEditForm({ tour }: TourEditFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label>국가</Label>
-          <Input
-            list="tour-country-options"
+          <SuggestInput
             value={country}
-            onChange={(e) => { setCountry(e.target.value); setSite(""); }}
+            onChange={(v) => { setCountry(v); setSite(""); }}
+            options={Object.keys(COUNTRIES_SITES)}
             placeholder="국가 검색 또는 직접 입력"
           />
-          <datalist id="tour-country-options">
-            {Object.keys(COUNTRIES_SITES).map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
         </div>
         <div className="space-y-1.5">
           <Label>다이브 사이트</Label>
-          <Input
-            list="tour-site-options"
+          <SuggestInput
             value={site}
-            onChange={(e) => setSite(e.target.value)}
+            onChange={setSite}
+            options={sites}
             disabled={!country}
             placeholder="사이트 검색 또는 직접 입력"
           />
-          <datalist id="tour-site-options">
-            {sites.map((s) => (
-              <option key={s} value={s} />
-            ))}
-          </datalist>
         </div>
       </div>
 
