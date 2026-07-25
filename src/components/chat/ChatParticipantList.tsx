@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, ShieldCheck, User, XCircle } from "lucide-react";
+import { AlertTriangle, MessageCircleQuestion, ShieldCheck, User, XCircle } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CancelBookingDialog } from "@/components/mypage/CancelBookingDialog";
+import { InquiryDialog } from "@/components/mypage/InquiryDialog";
 import { maskName } from "@/lib/masking";
 import { calculateAge } from "@/lib/dates";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -14,9 +15,11 @@ interface ChatParticipantListProps {
   bookings: Booking[];
   instructorId?: string;
   instructorName?: string;
-  /** 현재 보고 있는 사람이 이 투어의 담당 강사(또는 관리자)인지 여부 — 참가자 실명/취소 버튼 노출 여부를 결정한다. */
+  /** 현재 보고 있는 사람이 이 투어의 담당 강사(또는 관리자)인지 여부 — 참가자 실명 노출 여부를 결정한다. */
   isInstructor: boolean;
-  /** 강사/관리자가 예약을 취소할 때 환불율 계산에 필요한 투어 정보. */
+  /** 관리자인지 여부. 관리자는 예약을 직접 취소할 수 있고, 담당 강사는 취소 대신 플랫폼에 문의를 넣는다. */
+  isAdmin?: boolean;
+  /** 관리자가 예약을 취소할 때 환불율 계산에 필요한 투어 정보. */
   tour?: Tour;
 }
 
@@ -32,10 +35,12 @@ export function ChatParticipantList({
   instructorId,
   instructorName,
   isInstructor,
+  isAdmin = false,
   tour,
 }: ChatParticipantListProps) {
   const { diverProfiles } = useAppData();
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
+  const [inquiryTarget, setInquiryTarget] = useState<Booking | null>(null);
 
   // 같은 다이버가 예약을 두 번 이상 한 경우(중복예약 방지 기능 도입 전 발생한 과거 기록 등) 눈에 띄게 표시한다.
   const diverIdCounts = new Map<string, number>();
@@ -114,16 +119,29 @@ export function ChatParticipantList({
                 </div>
               )}
               {isInstructor && tour && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 gap-1 px-1.5 text-[11px] text-destructive hover:text-destructive"
-                  onClick={() => setCancelTarget(booking)}
-                >
-                  <XCircle className="h-3 w-3" />
-                  예약 취소
-                </Button>
+                isAdmin ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 gap-1 px-1.5 text-[11px] text-destructive hover:text-destructive"
+                    onClick={() => setCancelTarget(booking)}
+                  >
+                    <XCircle className="h-3 w-3" />
+                    예약 취소
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+                    onClick={() => setInquiryTarget(booking)}
+                  >
+                    <MessageCircleQuestion className="h-3 w-3" />
+                    플랫폼에 문의하기
+                  </Button>
+                )
               )}
             </div>
           </div>
@@ -141,6 +159,17 @@ export function ChatParticipantList({
           onOpenChange={(open) => !open && setCancelTarget(null)}
           booking={cancelTarget}
           tour={tour}
+        />
+      )}
+      {tour && inquiryTarget && (
+        <InquiryDialog
+          open={!!inquiryTarget}
+          onOpenChange={(open) => !open && setInquiryTarget(null)}
+          tourId={tour.id}
+          bookingId={inquiryTarget.id}
+          diverId={inquiryTarget.diverId}
+          defaultCategory="환불/취소 문의"
+          description="참가자 예약 취소/변경 요청은 담당 운영팀이 확인 후 처리해드립니다."
         />
       )}
     </div>

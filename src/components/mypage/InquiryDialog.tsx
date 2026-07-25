@@ -26,12 +26,24 @@ interface InquiryDialogProps {
   tourId: string;
   bookingId: string;
   diverId: string;
+  /** 다이버가 자기 예약을 문의할 때는 기본값(안전사고 신고) 그대로, 강사가 참가자 관련 문의를 넣을 때는 "환불/취소 문의"로 미리 선택해둔다. */
+  defaultCategory?: InquiryCategory;
+  /** 상황에 맞는 안내 문구로 교체할 수 있다 (기본은 다이버용 안내 문구). */
+  description?: string;
 }
 
-export function InquiryDialog({ open, onOpenChange, tourId, bookingId, diverId }: InquiryDialogProps) {
+export function InquiryDialog({
+  open,
+  onOpenChange,
+  tourId,
+  bookingId,
+  diverId,
+  defaultCategory,
+  description,
+}: InquiryDialogProps) {
   const { addInquiry } = useAppData();
   const { toast } = useToast();
-  const [category, setCategory] = useState<InquiryCategory>(INQUIRY_CATEGORIES[0]);
+  const [category, setCategory] = useState<InquiryCategory>(defaultCategory ?? INQUIRY_CATEGORIES[0]);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -57,7 +69,7 @@ export function InquiryDialog({ open, onOpenChange, tourId, bookingId, diverId }
         <DialogHeader>
           <DialogTitle>플랫폼에 문의하기</DialogTitle>
           <DialogDescription>
-            투어 완료 후 48시간 이내에만 접수 가능합니다. 안전사고, 강사 관련 문제는 신속히 처리됩니다.
+            {description ?? "투어 완료 후 48시간 이내에만 접수 가능합니다. 안전사고, 강사 관련 문제는 신속히 처리됩니다."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">

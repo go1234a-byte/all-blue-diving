@@ -133,6 +133,7 @@ const ChatRoom = () => {
                 instructorId={tour.instructorId}
                 instructorName={instructor?.name}
                 isInstructor={isInstructor}
+                isAdmin={role === "admin"}
                 tour={tour}
               />
             </div>
@@ -171,6 +172,7 @@ const ChatRoom = () => {
               instructorId={tour.instructorId}
               instructorName={instructor?.name}
               isInstructor={isInstructor}
+              isAdmin={role === "admin"}
               tour={tour}
             />
             <RoomAssignmentDashboard bookings={activeTourBookings} isInstructor={isInstructor} />
