@@ -26,7 +26,9 @@ const Index = () => {
   }
 
   // 관리자가 정지/보류 처리한 투어는 다이버에게 노출하지 않는다.
-  const tours = allTours.filter((t) => !t.adminStatus);
+  // 모집 마감되었거나(최소 인원 미달로 취소된 경우 포함) 관리자가 정지/보류 처리한 투어는
+  // 홈 화면 "모집중인 투어" 목록에서 제외한다 — 더 이상 예약을 받을 수 없기 때문.
+  const tours = allTours.filter((t) => !t.adminStatus && t.status === "open");
   const pinnedNotice = notices.find((n) => n.pinned);
 
   return (

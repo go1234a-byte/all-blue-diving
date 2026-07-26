@@ -1,12 +1,18 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FaqChatPanel } from "@/components/support/FaqChatPanel";
 import { SupportTicketForm } from "@/components/support/SupportTicketForm";
+import { MyInquiriesList } from "@/components/support/MyInquiriesList";
+import { cn } from "@/lib/utils";
 import { useRole } from "@/contexts/RoleContext";
+
+type InquiryView = "write" | "history";
 
 const SupportChat = () => {
   const { currentDiverId } = useRole();
+  const [inquiryView, setInquiryView] = useState<InquiryView>("write");
 
   return (
     <div className="flex min-h-full flex-col bg-gradient-surface">
@@ -28,8 +34,34 @@ const SupportChat = () => {
           <TabsContent value="faq" className="pt-4">
             <FaqChatPanel />
           </TabsContent>
-          <TabsContent value="inquiry" className="pt-4">
-            <SupportTicketForm type="inquiry" userId={currentDiverId} />
+          <TabsContent value="inquiry" className="space-y-4 pt-4">
+            <div className="grid grid-cols-2 gap-2 rounded-lg bg-secondary/50 p-1 text-sm font-medium">
+              <button
+                type="button"
+                onClick={() => setInquiryView("write")}
+                className={cn(
+                  "rounded-md py-1.5 transition-colors",
+                  inquiryView === "write" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+                )}
+              >
+                문의하기
+              </button>
+              <button
+                type="button"
+                onClick={() => setInquiryView("history")}
+                className={cn(
+                  "rounded-md py-1.5 transition-colors",
+                  inquiryView === "history" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+                )}
+              >
+                내 문의 보기
+              </button>
+            </div>
+            {inquiryView === "write" ? (
+              <SupportTicketForm type="inquiry" userId={currentDiverId} />
+            ) : (
+              <MyInquiriesList userId={currentDiverId} />
+            )}
           </TabsContent>
           <TabsContent value="dispute" className="pt-4">
             <SupportTicketForm type="dispute" userId={currentDiverId} />

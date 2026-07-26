@@ -886,6 +886,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               underMinPolicy: decision,
               underMinDecisionPending: false,
               isConfirmed: decision === "cancel" ? false : t.isConfirmed,
+              // 취소 결정 시 모집 상태도 확실히 "마감"으로 고정한다 — 자동 마감 로직이 이미 처리한 상태이지만,
+              // 실제 예약 가능 여부(TourDetail)와 홈/검색 노출이 이 값에 의존하므로 이중으로 보장한다.
+              status: decision === "cancel" ? "closed" : t.status,
             }
           : t,
       ),
@@ -895,7 +898,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .update({
         under_min_policy: decision,
         under_min_decision_pending: false,
-        ...(decision === "cancel" ? { is_confirmed: false } : {}),
+        ...(decision === "cancel" ? { is_confirmed: false, status: "closed" } : {}),
       })
       .eq("id", tourId);
 

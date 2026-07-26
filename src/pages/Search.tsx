@@ -69,6 +69,7 @@ const Search = () => {
     const q = query.toLowerCase();
     return tours
       .filter((t) => !t.adminStatus) // 관리자가 정지/보류 처리한 투어는 검색 결과에서 제외한다.
+      .filter((t) => t.status === "open") // 모집 마감(최소 인원 미달로 취소된 경우 포함)된 투어는 검색 결과에서 제외한다.
       .filter(
         (t) =>
           !q ||

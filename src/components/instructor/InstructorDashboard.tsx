@@ -133,8 +133,10 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
                     모집마감 {formatDateKR(tour.recruitmentDeadline)}
                   </p>
                 </div>
-                <Badge variant={tour.status === "open" ? "default" : "secondary"}>
-                  {tour.status === "open" ? "모집중" : "마감"}
+                <Badge
+                  variant={!tour.isConfirmed ? "destructive" : tour.status === "open" ? "default" : "secondary"}
+                >
+                  {!tour.isConfirmed ? "취소됨" : tour.status === "open" ? "모집중" : "마감"}
                 </Badge>
               </Link>
               <div className="flex gap-1.5">

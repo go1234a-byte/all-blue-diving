@@ -58,13 +58,21 @@ const TourDetail = () => {
   // 결제 화면(computeInvoice)과 동일하게 [투어 금액 소계]에 플랫폼 이용 수수료 10%를 더해서 보여준다.
   // 이렇게 해야 투어 카드/상세에서 본 가격과 실제 체크아웃 결제 금액이 정확히 일치한다.
   const displayTotal = applyPlatformFee(tour.basePrice + selectedOptionsTotal);
-  const isBookingBlocked = Boolean(tour.adminStatus);
+  // 관리자가 정지/보류 처리했거나, 모집이 마감된 투어(최소 인원 미달로 취소된 경우 포함)는
+  // 더 이상 예약을 받을 수 없다. tour.status는 instructor 콘솔뿐 아니라 실제 예약 가능 여부에도 반영해야 한다.
+  const isBookingBlocked = Boolean(tour.adminStatus) || tour.status === "closed";
   const alreadyBooked = Boolean(myBooking);
 
   const handleBookNow = () => {
     if (isBookingBlocked) {
       toast({
-        title: tour.adminStatus === "suspended" ? "정지된 투어예요" : "보류중인 투어예요",
+        title: tour.adminStatus === "suspended"
+          ? "정지된 투어예요"
+          : tour.adminStatus === "held"
+          ? "보류중인 투어예요"
+          : !tour.isConfirmed
+          ? "취소된 투어예요"
+          : "마감된 투어예요",
         description: "현재 예약을 받을 수 없는 투어입니다.",
         variant: "destructive",
       });
@@ -115,7 +123,11 @@ const TourDetail = () => {
             <span>
               {tour.adminStatus === "suspended"
                 ? "관리자에 의해 정지된 투어입니다. 예약을 받을 수 없습니다."
-                : "관리자 검토로 보류중인 투어입니다. 검토가 끝날 때까지 예약을 받을 수 없습니다."}
+                : tour.adminStatus === "held"
+                ? "관리자 검토로 보류중인 투어입니다. 검토가 끝날 때까지 예약을 받을 수 없습니다."
+                : !tour.isConfirmed
+                ? "모집 마감 후 최소 인원 미달로 취소된 투어입니다. 예약을 받을 수 없습니다."
+                : "모집이 마감된 투어입니다. 더 이상 예약을 받을 수 없습니다."}
             </span>
           </div>
         )}
