@@ -896,14 +896,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           : t,
       ),
     );
-    void supabase
-      .from("tours")
-      .update({
-        under_min_policy: decision,
-        under_min_decision_pending: false,
-        ...(decision === "cancel" ? { is_confirmed: false, status: "closed" } : {}),
-      })
-      .eq("id", tourId);
+    {
+      const { error } = await supabase
+        .from("tours")
+        .update({
+          under_min_policy: decision,
+          under_min_decision_pending: false,
+          ...(decision === "cancel" ? { is_confirmed: false, status: "closed" } : {}),
+        })
+        .eq("id", tourId);
+      // 이 저장이 실패하면 새로고침 시 결정 대기 패널이 다시 나타나는 문제가 재현되므로,
+      // 원인 파악을 위해 반드시 콘솔에 에러를 남긴다.
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error("[resolveUnderMinDecision] tours 업데이트 실패:", error);
+      }
+    }
 
     const confirmedBookings = bookings.filter((b) => b.tourId === tourId && b.status === "confirmed");
 
