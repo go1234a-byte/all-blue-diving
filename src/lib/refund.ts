@@ -2,11 +2,19 @@ import type { Tour } from "@/types";
 
 /**
  * ALL BLUE 공식 취소 및 환불 규정 (본 파일이 유일한 소스):
- * - 출발 30일 전까지: 100% 환불 (출발 확정 전 · 60일 전 · 30일 전 구간을 통합)
+ * - 출발 30일 전까지: 100% 환불
  * - 출발 15일 전까지: 50% 환불
  * - 출발 7일 전까지: 30% 환불
  * - 출발 7일 미만 / 노쇼: 환불 불가 (0%)
  * - 의료·천재지변 등 불가피한 사유: 증빙서류 제출 후 운영팀 심사
+ *
+ * 주의: tour.isConfirmed(출발 확정 여부)는 이 환불율 계산에 관여하지 않는다.
+ * 최소 인원 미달로 강사가 "투어 취소(전액환불)"를 확정하면 isConfirmed가 false가 되는데,
+ * 이때 남아있던 확정 예약은 resolveUnderMinDecision()이 그 자리에서 즉시 100% 환불로
+ * 직접 처리한다(이 파일의 함수를 거치지 않음). 과거에는 "isConfirmed === false면 무조건
+ * 100% 환불" 예외가 있었는데, 이 필드가 "이미 취소된 투어" 표시로도 함께 쓰이면서
+ * 출발 임박(예: 6일 전) 시점에 다이버가 단순 변심으로 취소해도 100% 환불되어버리는
+ * 문제가 있었다. 그래서 잔여일수 기준 정책만 그대로 적용하도록 정리했다.
  */
 export const CANCELLATION_POLICY_LINES = [
   "• 출발 30일 전까지 : 100% 환불",
@@ -33,13 +41,10 @@ export function computeDaysRemaining(startDateIso: string): number {
 }
 
 /**
- * 투어 상태와 잔여일수에 따른 환불율(0~1)을 계산한다.
- * - 출발 미확정(isConfirmed === false) 투어는 무조건 100% 환불.
- * - 출발 30일 전까지는 확정 여부와 무관하게 100% 환불.
+ * 잔여일수에 따른 환불율(0~1)을 계산한다. 위 CANCELLATION_POLICY_LINES와 동일한 기준이며,
+ * tour.isConfirmed 값과 무관하게 항상 출발일까지 남은 일수만으로 판단한다.
  */
 export function computeRefundRate(tour: Pick<Tour, "isConfirmed" | "startDate">): number {
-  if (!tour.isConfirmed) return 1.0;
-
   const daysRemaining = computeDaysRemaining(tour.startDate);
 
   if (daysRemaining >= 30) return 1.0;
@@ -54,7 +59,6 @@ export function computeRefundAmount(totalPaid: number, refundRate: number): numb
 
 /** 출발 7일 미만 + 불가피한 사유 선택 시 즉시 환불 대신 운영팀 심사로 전환한다. */
 export function isForceMajeureReviewCase(tour: Pick<Tour, "isConfirmed" | "startDate">, reason: string): boolean {
-  if (!tour.isConfirmed) return false;
   const daysRemaining = computeDaysRemaining(tour.startDate);
   return daysRemaining < 7 && reason === FORCE_MAJEURE_REASON;
 }
