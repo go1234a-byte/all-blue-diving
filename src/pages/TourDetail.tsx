@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TourGallery } from "@/components/tour/TourGallery";
 import { InstructorTrustCard } from "@/components/tour/InstructorTrustCard";
+import { TourFlightInfoCard } from "@/components/tour/TourFlightInfoCard";
 import { DiveCenterCard } from "@/components/tour/DiveCenterCard";
 import { TourCenterCard } from "@/components/tour/TourCenterCard";
 import { InclusionsExclusionsCard } from "@/components/tour/InclusionsExclusionsCard";
@@ -228,6 +229,9 @@ const TourDetail = () => {
 
         {/* 1) 담당 강사 프로필 */}
         <InstructorTrustCard instructor={instructor} />
+
+        {/* 1-1) 항공편 정보 (강사가 입력한 경우에만 노출) */}
+        <TourFlightInfoCard flightInfo={tour.flightInfo} />
 
         {/* 2) 투어 소개 */}
         <div className="space-y-2">

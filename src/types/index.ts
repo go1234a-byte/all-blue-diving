@@ -161,6 +161,21 @@ export interface Tour {
   meetingTime: string; // 집합 시간 (투어 생성 시 필수 입력)
   /** 관리자가 투어를 검토 후 정지(즉시 예약 차단, 검색 노출 제거)하거나 보류(임시 비공개)한 상태. 없으면 정상. */
   adminStatus?: "suspended" | "held";
+  /** 항공편 정보 (강사가 투어 등록 시 선택 입력). 투어 상세 화면에 강사 프로필 바로 아래 노출된다. */
+  flightInfo?: TourFlightInfo;
+}
+
+/** 항공편 한 편(가는 편 또는 오는 편)의 공항·시간 정보. 모두 자유 입력 텍스트(선택 사항). */
+export interface TourFlightSegment {
+  airport?: string; // 출발 공항/장소
+  departureTime?: string; // 출발 일시
+  arrivalTime?: string; // 도착 일시
+}
+
+/** 투어의 가는 편 / 오는 편 항공편 정보. */
+export interface TourFlightInfo {
+  outbound?: TourFlightSegment; // 가는 편
+  inbound?: TourFlightSegment; // 오는 편
 }
 
 export const UNDER_MIN_PARTICIPANTS_POLICIES = ["proceed", "cancel"] as const;

@@ -130,6 +130,12 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   const [deadline, setDeadline] = useState<Date>();
   const [meetingPoint, setMeetingPoint] = useState("");
   const [meetingTime, setMeetingTime] = useState("");
+  const [outboundAirport, setOutboundAirport] = useState("");
+  const [outboundDepartureTime, setOutboundDepartureTime] = useState("");
+  const [outboundArrivalTime, setOutboundArrivalTime] = useState("");
+  const [returnAirport, setReturnAirport] = useState("");
+  const [returnDepartureTime, setReturnDepartureTime] = useState("");
+  const [returnArrivalTime, setReturnArrivalTime] = useState("");
   const [itineraryDays, setItineraryDays] = useState<TourItineraryDay[]>([EMPTY_ITINERARY_DAY(1)]);
   const [mainImage, setMainImage] = useState<File[]>([]);
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
@@ -366,6 +372,18 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         pledgeSignatureDataUrl: pledgeSignature,
         meetingPoint: meetingPoint.trim(),
         meetingTime: meetingTime.trim(),
+        flightInfo: {
+          outbound: {
+            airport: outboundAirport.trim() || undefined,
+            departureTime: outboundDepartureTime.trim() || undefined,
+            arrivalTime: outboundArrivalTime.trim() || undefined,
+          },
+          inbound: {
+            airport: returnAirport.trim() || undefined,
+            departureTime: returnDepartureTime.trim() || undefined,
+            arrivalTime: returnArrivalTime.trim() || undefined,
+          },
+        },
         itineraryDays,
       });
 
@@ -534,6 +552,51 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
               value={meetingTime}
               onChange={(e) => setMeetingTime(e.target.value)}
               placeholder="예: 출발일 오전 9시"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3 rounded-xl border border-border p-3">
+        <Label>항공편 정보 (선택)</Label>
+        <p className="text-xs text-muted-foreground">참가자들이 항공권을 맞춰 예매할 수 있도록 가는 편/오는 편 일정을 안내해주세요.</p>
+        <div className="space-y-2 rounded-lg bg-secondary/40 p-3">
+          <p className="text-xs font-semibold text-foreground">가는 편</p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Input
+              value={outboundAirport}
+              onChange={(e) => setOutboundAirport(e.target.value)}
+              placeholder="출발 공항 (예: 인천공항)"
+            />
+            <Input
+              value={outboundDepartureTime}
+              onChange={(e) => setOutboundDepartureTime(e.target.value)}
+              placeholder="출발 시간 (예: 7/10 09:00)"
+            />
+            <Input
+              value={outboundArrivalTime}
+              onChange={(e) => setOutboundArrivalTime(e.target.value)}
+              placeholder="도착 시간 (예: 7/10 13:30)"
+            />
+          </div>
+        </div>
+        <div className="space-y-2 rounded-lg bg-secondary/40 p-3">
+          <p className="text-xs font-semibold text-foreground">오는 편</p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Input
+              value={returnAirport}
+              onChange={(e) => setReturnAirport(e.target.value)}
+              placeholder="출발 공항 (예: 세부 막탄공항)"
+            />
+            <Input
+              value={returnDepartureTime}
+              onChange={(e) => setReturnDepartureTime(e.target.value)}
+              placeholder="출발 시간 (예: 7/13 15:00)"
+            />
+            <Input
+              value={returnArrivalTime}
+              onChange={(e) => setReturnArrivalTime(e.target.value)}
+              placeholder="도착 시간 (예: 7/13 21:00)"
             />
           </div>
         </div>

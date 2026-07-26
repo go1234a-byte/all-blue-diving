@@ -182,6 +182,7 @@ function mapTourRow(row: any): Tour {
     adminStatus: (row.admin_status ?? undefined) as Tour["adminStatus"],
     meetingPoint: row.meeting_point ?? "",
     meetingTime: row.meeting_time ?? "",
+    flightInfo: (row.flight_info ?? undefined) as Tour["flightInfo"],
   };
 }
 
@@ -365,6 +366,7 @@ interface NewTourInput {
   meetingPoint: string;
   meetingTime: string;
   itineraryDays: TourItineraryDay[];
+  flightInfo?: Tour["flightInfo"];
 }
 
 /** 강사가 기존 투어를 수정할 때 사용하는 부분 업데이트 입력. 지정한 필드만 갱신한다. */
@@ -393,6 +395,7 @@ interface UpdateTourInput {
   meetingPoint?: string;
   meetingTime?: string;
   itineraryDays?: TourItineraryDay[];
+  flightInfo?: Tour["flightInfo"];
 }
 
 interface NewCenterInput {
@@ -1022,6 +1025,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         meeting_point: input.meetingPoint,
         meeting_time: input.meetingTime,
         itinerary_days: input.itineraryDays,
+        flight_info: input.flightInfo ?? null,
       })
       .select()
       .single();
@@ -1087,6 +1091,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (patch.meetingPoint !== undefined) dbPatch.meeting_point = patch.meetingPoint;
     if (patch.meetingTime !== undefined) dbPatch.meeting_time = patch.meetingTime;
     if (patch.itineraryDays !== undefined) dbPatch.itinerary_days = patch.itineraryDays;
+    if (patch.flightInfo !== undefined) dbPatch.flight_info = patch.flightInfo ?? null;
 
     const { error } = await supabase.from("tours").update(dbPatch as never).eq("id", tourId);
     if (error) throw error;
