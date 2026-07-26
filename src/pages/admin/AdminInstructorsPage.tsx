@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { InstructorApplicationQueue } from "@/components/mypage/InstructorApplicationQueue";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -24,10 +26,14 @@ const PERMANENT_BAN_THRESHOLD = 2;
 const AdminInstructorsPage = () => {
   const { instructors, tours, instructorProfiles, setInstructorPenalty, setProfileStatus } = useAppData();
   const { toast } = useToast();
+  // 강사별 "경고 부여" 사유 입력 임시 상태 (다이얼로그를 열어둔 강사 id를 key로 사용)
+  const [warnReasonDrafts, setWarnReasonDrafts] = useState<Record<string, string>>({});
 
   const handleWarn = (instructorId: string, instructorName: string, currentPenalty: number) => {
     const next = currentPenalty + 1;
-    setInstructorPenalty(instructorId, next);
+    const reason = warnReasonDrafts[instructorId]?.trim() || undefined;
+    setInstructorPenalty(instructorId, next, reason);
+    setWarnReasonDrafts((prev) => ({ ...prev, [instructorId]: "" }));
     if (next >= PERMANENT_BAN_THRESHOLD) {
       toast({
         title: `${instructorName} 강사에게 경고를 부여했습니다 (${next}회) — 영구정지 처리되었습니다.`,
@@ -166,6 +172,14 @@ const AdminInstructorsPage = () => {
                           {instructor.penaltyCount}회
                         </AlertDialogDescription>
                       </AlertDialogHeader>
+                      <Textarea
+                        placeholder="패널티 사유를 입력하세요 (강사 프로필에 함께 표시됩니다)"
+                        value={warnReasonDrafts[instructor.id] ?? ""}
+                        onChange={(e) =>
+                          setWarnReasonDrafts((prev) => ({ ...prev, [instructor.id]: e.target.value }))
+                        }
+                        className="text-xs"
+                      />
                       <AlertDialogFooter>
                         <AlertDialogCancel>취소</AlertDialogCancel>
                         <AlertDialogAction

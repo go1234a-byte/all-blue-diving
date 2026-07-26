@@ -58,6 +58,13 @@ export function InstructorTrustCard({ instructor }: InstructorTrustCardProps) {
 
         <InstructorMiniScoreboard instructor={instructor} />
 
+        {instructor.penaltyCount > 0 && (
+          <p className="rounded-lg bg-destructive/10 p-2 text-[11px] text-destructive">
+            <span className="font-semibold">패널티 사유 </span>
+            {instructor.penaltyReason ?? "사유가 등록되지 않았습니다."}
+          </p>
+        )}
+
         <Link
           to={`/instructor/${instructor.id}/profile`}
           className="flex items-center justify-center gap-1 text-xs font-medium text-primary underline-offset-4 hover:underline"

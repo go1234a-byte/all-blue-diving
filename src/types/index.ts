@@ -54,6 +54,7 @@ export interface InstructorProfile {
   completionRate: number; // 0-100
   rating: number; // 0-5
   penaltyCount: number;
+  penaltyReason?: string; // 가장 최근 패널티 부여 사유 (강사 프로필에 함께 노출)
   bio: string;
   languages?: string[]; // 사용 언어 (공개 프로필 표시용)
 }

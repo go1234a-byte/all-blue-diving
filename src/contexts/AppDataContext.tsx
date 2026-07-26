@@ -57,6 +57,7 @@ function mapInstructorRow(row: {
   completion_rate: number;
   rating: number;
   penalty_count: number;
+  penalty_reason?: string | null;
   bio: string | null;
   languages?: string[] | null;
 }): InstructorProfile {
@@ -80,6 +81,7 @@ function mapInstructorRow(row: {
     completionRate: Number(row.completion_rate),
     rating: Number(row.rating),
     penaltyCount: row.penalty_count,
+    penaltyReason: row.penalty_reason ?? undefined,
     bio: row.bio ?? "",
     languages: row.languages ?? undefined,
   };
@@ -518,7 +520,7 @@ interface AppDataContextValue {
   resolveReport: (reportId: string) => Promise<void>;
   addChatMessage: (input: Omit<ChatMessage, "id" | "createdAt">) => Promise<void>;
   setInstructorVerified: (instructorId: string, verified: boolean, verifiedBy?: string) => Promise<void>;
-  setInstructorPenalty: (instructorId: string, penaltyCount: number) => Promise<void>;
+  setInstructorPenalty: (instructorId: string, penaltyCount: number, reason?: string) => Promise<void>;
   updateInstructorProfile: (
     instructorId: string,
     updates: {
@@ -1365,9 +1367,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
    * 관리자 — 강사에게 경고를 주거나(+1) 경고를 해제한다(0으로 초기화).
    * 누적 경고가 2회 이상이 되면 연결된 계정(profiles)을 자동으로 영구정지 처리한다.
    */
-  const setInstructorPenalty = async (instructorId: string, penaltyCount: number): Promise<void> => {
-    await supabase.from("instructors").update({ penalty_count: penaltyCount }).eq("id", instructorId);
-    setInstructors((prev) => prev.map((i) => (i.id === instructorId ? { ...i, penaltyCount } : i)));
+  const setInstructorPenalty = async (
+    instructorId: string,
+    penaltyCount: number,
+    reason?: string,
+  ): Promise<void> => {
+    // 경고를 해제(0회)할 때는 사유도 함께 비운다. 경고를 새로 부여할 때만 사유를 저장한다.
+    const penaltyReason = penaltyCount > 0 ? reason : undefined;
+    await supabase
+      .from("instructors")
+      .update({ penalty_count: penaltyCount, penalty_reason: penaltyReason ?? null })
+      .eq("id", instructorId);
+    setInstructors((prev) =>
+      prev.map((i) => (i.id === instructorId ? { ...i, penaltyCount, penaltyReason } : i)),
+    );
 
     if (penaltyCount >= 2) {
       const instructor = instructors.find((i) => i.id === instructorId);

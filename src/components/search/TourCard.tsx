@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
-import { InstructorMiniScoreboard } from "@/components/tour/InstructorMiniScoreboard";
 import { useAppData } from "@/contexts/AppDataContext";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { formatDateRangeKR } from "@/lib/dates";
@@ -115,7 +114,6 @@ export function TourCard({ tour }: TourCardProps) {
                   {instructor.verified && <VerifiedBadge className="mt-0.5" />}
                 </div>
               </div>
-              <InstructorMiniScoreboard instructor={instructor} />
             </div>
           )}
 

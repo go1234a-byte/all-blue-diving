@@ -34,7 +34,7 @@ export function ReviewList({ tourId }: ReviewListProps) {
 
   if (reviews.length === 0) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 rounded-xl border border-border bg-card p-4">
         <h3 className="text-sm font-semibold text-foreground">후기 및 평점</h3>
         <p className="py-6 text-center text-sm text-muted-foreground">아직 등록된 후기가 없습니다.</p>
       </div>
@@ -51,7 +51,7 @@ export function ReviewList({ tourId }: ReviewListProps) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">후기 및 평점</h3>
         <div className="flex items-center gap-1 text-sm">

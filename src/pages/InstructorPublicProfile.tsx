@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -122,6 +123,8 @@ const InstructorPublicProfile = () => {
   const isAdmin = role === "admin";
   const [banDialogOpen, setBanDialogOpen] = useState(false);
   const [endToursToo, setEndToursToo] = useState(true);
+  // "경고 부여" 사유 입력 임시 상태
+  const [warnReasonDraft, setWarnReasonDraft] = useState("");
 
   const instructor = id ? getInstructorById(id) : undefined;
 
@@ -160,7 +163,8 @@ const InstructorPublicProfile = () => {
   const handleWarn = () => {
     if (!instructor) return;
     const next = instructor.penaltyCount + 1;
-    setInstructorPenalty(instructor.id, next);
+    setInstructorPenalty(instructor.id, next, warnReasonDraft.trim() || undefined);
+    setWarnReasonDraft("");
     if (next >= PERMANENT_BAN_THRESHOLD) {
       toast({
         title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회) — 영구정지 처리되었습니다.`,
@@ -321,6 +325,21 @@ const InstructorPublicProfile = () => {
           </CardContent>
         </Card>
 
+        {/* 안전 패널티 유무 — 다이버/강사 등 모든 방문자에게 노출 (패널티가 있는 경우에만 표시) */}
+        {instructor.penaltyCount > 0 && (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="space-y-1 p-4">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-destructive">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                안전 패널티 누적 {instructor.penaltyCount}회
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {instructor.penaltyReason ? `사유: ${instructor.penaltyReason}` : "사유가 등록되지 않았습니다."}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* 관리자 전용 — 경고/영구정지 관리 */}
         {isAdmin && (
           <Card className="border-destructive/30">
@@ -396,6 +415,12 @@ const InstructorPublicProfile = () => {
                           {instructor.penaltyCount}회
                         </AlertDialogDescription>
                       </AlertDialogHeader>
+                      <Textarea
+                        placeholder="패널티 사유를 입력하세요 (강사 프로필에 함께 표시됩니다)"
+                        value={warnReasonDraft}
+                        onChange={(e) => setWarnReasonDraft(e.target.value)}
+                        className="text-xs"
+                      />
                       <AlertDialogFooter>
                         <AlertDialogCancel>취소</AlertDialogCancel>
                         <AlertDialogAction onClick={handleWarn}>경고</AlertDialogAction>
