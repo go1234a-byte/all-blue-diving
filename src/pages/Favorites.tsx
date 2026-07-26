@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TourCard } from "@/components/search/TourCard";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { useAppData } from "@/contexts/AppDataContext";
+import { isTourBookable } from "@/lib/tourBooking";
 
 /** 위시리스트의 "찜한 강사" 카드 — 검색 결과의 TourCard와 톤을 맞춘 간단한 요약 카드. */
 function BookmarkedInstructorCard({ instructorId }: { instructorId: string }) {
@@ -59,7 +60,8 @@ function BookmarkedInstructorCard({ instructorId }: { instructorId: string }) {
 
 const Favorites = () => {
   const { tours, bookmarkedTourIds, bookmarkedInstructorIds } = useAppData();
-  const bookmarkedTours = tours.filter((t) => bookmarkedTourIds.includes(t.id));
+  // 찜한 이후 마감/취소/정지되어 더 이상 예약할 수 없게 된 투어는 위시리스트에서 노출하지 않는다.
+  const bookmarkedTours = tours.filter((t) => bookmarkedTourIds.includes(t.id) && isTourBookable(t));
 
   return (
     <div className="min-h-full bg-gradient-surface pb-20">

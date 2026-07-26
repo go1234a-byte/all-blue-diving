@@ -108,7 +108,18 @@ const TourDetail = () => {
           <h1 className="line-clamp-1 flex-1 text-base font-semibold text-foreground">{tour.title}</h1>
           <button
             type="button"
-            onClick={() => toggleBookmark(tour.id)}
+            onClick={() => {
+              // 이미 찜한 상태(해제)는 항상 허용하되, 예약 불가능한 투어는 새로 찜하지 못하게 막는다.
+              if (!bookmarked && isBookingBlocked) {
+                toast({
+                  title: "찜할 수 없는 투어예요",
+                  description: "예약이 마감/취소되었거나 정지된 투어는 위시리스트에 담을 수 없습니다.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              toggleBookmark(tour.id);
+            }}
             className="text-foreground"
             aria-label="찜하기"
           >

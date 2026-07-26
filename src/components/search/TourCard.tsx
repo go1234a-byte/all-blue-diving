@@ -6,10 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
+import { isTourBookable } from "@/lib/tourBooking";
 
 interface TourCardProps {
   tour: Tour;
@@ -23,8 +25,10 @@ const ACTIVITY_LABEL: Record<string, string> = {
 
 export function TourCard({ tour }: TourCardProps) {
   const { getInstructorById, isBookmarked, toggleBookmark, bookings, tours } = useAppData();
+  const { toast } = useToast();
   const instructor = getInstructorById(tour.instructorId);
   const bookmarked = isBookmarked(tour.id);
+  const bookable = isTourBookable(tour);
   const confirmedCount = bookings.filter((b) => b.tourId === tour.id && b.status === "confirmed").length;
   // 강사의 경력/로그 수와 등록한 총 투어 수(진행 투어)를 투어 카드의 강사 정보에 함께 보여준다.
   const instructorTourCount = instructor ? tours.filter((t) => t.instructorId === instructor.id).length : 0;
@@ -65,6 +69,15 @@ export function TourCard({ tour }: TourCardProps) {
               type="button"
               onClick={(e) => {
                 e.preventDefault();
+                // 이미 찜한 상태(해제)는 항상 허용하되, 예약 불가능한 투어는 새로 찜하지 못하게 막는다.
+                if (!bookmarked && !bookable) {
+                  toast({
+                    title: "찜할 수 없는 투어예요",
+                    description: "예약이 마감/취소되었거나 정지된 투어는 위시리스트에 담을 수 없습니다.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
                 toggleBookmark(tour.id);
               }}
               className="flex h-7 w-7 items-center justify-center rounded-full bg-background/85 backdrop-blur"
