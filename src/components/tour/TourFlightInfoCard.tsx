@@ -46,7 +46,7 @@ export function TourFlightInfoCard({ flightInfo }: TourFlightInfoCardProps) {
 
   return (
     <div className="space-y-2 rounded-xl border border-border bg-card p-4">
-      <h3 className="text-sm font-semibold text-foreground">항공편 정보</h3>
+      <h3 className="text-sm font-semibold text-foreground">강사 항공편 정보</h3>
       <div className="space-y-2">
         {hasOutbound && (
           <div className="flex items-start gap-2">

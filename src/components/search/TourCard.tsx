@@ -22,10 +22,12 @@ const ACTIVITY_LABEL: Record<string, string> = {
 };
 
 export function TourCard({ tour }: TourCardProps) {
-  const { getInstructorById, isBookmarked, toggleBookmark, bookings } = useAppData();
+  const { getInstructorById, isBookmarked, toggleBookmark, bookings, tours } = useAppData();
   const instructor = getInstructorById(tour.instructorId);
   const bookmarked = isBookmarked(tour.id);
   const confirmedCount = bookings.filter((b) => b.tourId === tour.id && b.status === "confirmed").length;
+  // 강사의 경력/로그 수와 등록한 총 투어 수(진행 투어)를 투어 카드의 강사 정보에 함께 보여준다.
+  const instructorTourCount = instructor ? tours.filter((t) => t.instructorId === instructor.id).length : 0;
 
   return (
     <Link to={`/tour/${tour.id}`}>
@@ -112,6 +114,18 @@ export function TourCard({ tour }: TourCardProps) {
                     )}
                   </div>
                   {instructor.verified && <VerifiedBadge className="mt-0.5" />}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="rounded-lg bg-background/60 px-2 py-1.5 text-center">
+                  <p className="text-[9px] text-muted-foreground">경력/로그</p>
+                  <p className="text-[11px] font-semibold text-foreground">
+                    {instructor.experienceYears}년 · Log {instructor.totalLogs.toLocaleString()}+
+                  </p>
+                </div>
+                <div className="rounded-lg bg-background/60 px-2 py-1.5 text-center">
+                  <p className="text-[9px] text-muted-foreground">진행 투어</p>
+                  <p className="text-[11px] font-semibold text-foreground">{instructorTourCount}회</p>
                 </div>
               </div>
             </div>
