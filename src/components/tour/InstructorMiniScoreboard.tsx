@@ -1,20 +1,21 @@
-import { AlertTriangle, Award, TrendingUp } from "lucide-react";
+import { Award, CalendarCheck, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { InstructorProfile } from "@/types";
 
 interface InstructorMiniScoreboardProps {
   instructor: InstructorProfile;
+  /** 이 강사가 등록한 투어 총 개수. 안전 패널티는 여기서 노출하지 않고
+   *  강사 프로필 더보기(InstructorPublicProfile) 화면에서만 사유와 함께 보여준다. */
+  tourCount: number;
   className?: string;
 }
 
 /**
  * 강사 신뢰검증 3열 마이크로 스코어보드.
- * [경력/로그] [투어 완료율] [안전 패널티 이력]
- * 패널티 건수가 0을 초과하면 즉시 눈에 띄도록 연한 붉은 톤으로 강조한다.
+ * [경력/로그] [투어 완료율] [진행 투어]
+ * 안전 패널티는 이 카드가 아니라 "강사 프로필 더보기"에 들어갔을 때만 사유와 함께 노출한다.
  */
-export function InstructorMiniScoreboard({ instructor, className }: InstructorMiniScoreboardProps) {
-  const hasPenalty = instructor.penaltyCount > 0;
-
+export function InstructorMiniScoreboard({ instructor, tourCount, className }: InstructorMiniScoreboardProps) {
   return (
     <div className={cn("grid grid-cols-3 gap-1.5", className)}>
       <div className="flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary px-1.5 py-2 text-center">
@@ -36,29 +37,10 @@ export function InstructorMiniScoreboard({ instructor, className }: InstructorMi
         </span>
       </div>
 
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center gap-0.5 rounded-lg px-1.5 py-2 text-center",
-          hasPenalty ? "bg-destructive/10" : "bg-secondary",
-        )}
-      >
-        <AlertTriangle className={cn("h-3.5 w-3.5", hasPenalty ? "text-destructive" : "text-primary")} />
-        <span
-          className={cn(
-            "text-[10px] font-medium leading-tight",
-            hasPenalty ? "text-destructive" : "text-muted-foreground",
-          )}
-        >
-          안전 패널티
-        </span>
-        <span
-          className={cn(
-            "text-[11px] font-bold leading-tight",
-            hasPenalty ? "text-destructive" : "text-foreground",
-          )}
-        >
-          누적 {instructor.penaltyCount}회
-        </span>
+      <div className="flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary px-1.5 py-2 text-center">
+        <CalendarCheck className="h-3.5 w-3.5 text-primary" />
+        <span className="text-[10px] font-medium leading-tight text-muted-foreground">진행 투어</span>
+        <span className="text-[11px] font-bold leading-tight text-foreground">{tourCount}회</span>
       </div>
     </div>
   );

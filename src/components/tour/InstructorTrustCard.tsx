@@ -13,12 +13,15 @@ interface InstructorTrustCardProps {
 }
 
 export function InstructorTrustCard({ instructor }: InstructorTrustCardProps) {
-  const { getReviewsByInstructorId } = useAppData();
+  const { getReviewsByInstructorId, tours } = useAppData();
   const instructorReviews = getReviewsByInstructorId(instructor.id);
   const avgRating =
     instructorReviews.length > 0
       ? instructorReviews.reduce((sum, r) => sum + r.rating, 0) / instructorReviews.length
       : 0;
+  // 안전 패널티는 여기서 노출하지 않고, 그 자리에 이 강사가 등록한 총 투어 수(진행 투어)를 보여준다.
+  // 패널티 유무/사유는 "강사 프로필 더보기"(InstructorPublicProfile)에 들어갔을 때만 확인할 수 있다.
+  const tourCount = tours.filter((t) => t.instructorId === instructor.id).length;
 
   return (
     <Card className="border-primary/20 bg-gradient-surface">
@@ -56,14 +59,7 @@ export function InstructorTrustCard({ instructor }: InstructorTrustCardProps) {
           </div>
         </div>
 
-        <InstructorMiniScoreboard instructor={instructor} />
-
-        {instructor.penaltyCount > 0 && (
-          <p className="rounded-lg bg-destructive/10 p-2 text-[11px] text-destructive">
-            <span className="font-semibold">패널티 사유 </span>
-            {instructor.penaltyReason ?? "사유가 등록되지 않았습니다."}
-          </p>
-        )}
+        <InstructorMiniScoreboard instructor={instructor} tourCount={tourCount} />
 
         <Link
           to={`/instructor/${instructor.id}/profile`}
