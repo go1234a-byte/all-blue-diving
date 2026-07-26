@@ -120,7 +120,7 @@ export function TourCard({ tour }: TourCardProps) {
                 <div className="rounded-lg bg-background/60 px-2 py-1.5 text-center">
                   <p className="text-[9px] text-muted-foreground">경력/로그</p>
                   <p className="text-[11px] font-semibold text-foreground">
-                    {instructor.experienceYears}년 · Log {instructor.totalLogs.toLocaleString()}+
+                    {instructor.experienceYears}년/{instructor.totalLogs.toLocaleString()}+
                   </p>
                 </div>
                 <div className="rounded-lg bg-background/60 px-2 py-1.5 text-center">
