@@ -1,4 +1,4 @@
-import { ChevronRight, Star } from "lucide-react";
+import { Bookmark, ChevronRight, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { InstructorMiniScoreboard } from "@/components/tour/InstructorMiniScoreboard";
 import { useAppData } from "@/contexts/AppDataContext";
+import { cn } from "@/lib/utils";
 import type { InstructorProfile } from "@/types";
 
 interface InstructorTrustCardProps {
@@ -13,7 +14,7 @@ interface InstructorTrustCardProps {
 }
 
 export function InstructorTrustCard({ instructor }: InstructorTrustCardProps) {
-  const { getReviewsByInstructorId, tours } = useAppData();
+  const { getReviewsByInstructorId, tours, toggleInstructorBookmark, isInstructorBookmarked } = useAppData();
   const instructorReviews = getReviewsByInstructorId(instructor.id);
   const avgRating =
     instructorReviews.length > 0
@@ -30,7 +31,22 @@ export function InstructorTrustCard({ instructor }: InstructorTrustCardProps) {
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             담당 강사 신뢰 인증
           </h4>
-          {instructor.verified && <VerifiedBadge size="md" />}
+          <div className="flex items-center gap-1.5">
+            {instructor.verified && <VerifiedBadge size="md" />}
+            <button
+              type="button"
+              onClick={() => toggleInstructorBookmark(instructor.id)}
+              className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-secondary"
+              aria-label="강사 찜하기"
+            >
+              <Bookmark
+                className={cn(
+                  "h-4 w-4",
+                  isInstructorBookmarked(instructor.id) ? "fill-primary text-primary" : "text-muted-foreground",
+                )}
+              />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

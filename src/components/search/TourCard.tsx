@@ -24,7 +24,8 @@ const ACTIVITY_LABEL: Record<string, string> = {
 };
 
 export function TourCard({ tour }: TourCardProps) {
-  const { getInstructorById, isBookmarked, toggleBookmark, bookings, tours } = useAppData();
+  const { getInstructorById, isBookmarked, toggleBookmark, bookings, tours, toggleInstructorBookmark, isInstructorBookmarked } =
+    useAppData();
   const { toast } = useToast();
   const instructor = getInstructorById(tour.instructorId);
   const bookmarked = isBookmarked(tour.id);
@@ -128,6 +129,22 @@ export function TourCard({ tour }: TourCardProps) {
                   </div>
                   {instructor.verified && <VerifiedBadge className="mt-0.5" />}
                 </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleInstructorBookmark(instructor.id);
+                  }}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full hover:bg-background/60"
+                  aria-label="강사 찜하기"
+                >
+                  <Bookmark
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      isInstructorBookmarked(instructor.id) ? "fill-primary text-primary" : "text-muted-foreground",
+                    )}
+                  />
+                </button>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 <div className="rounded-lg bg-background/60 px-2 py-1.5 text-center">
