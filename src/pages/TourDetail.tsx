@@ -234,7 +234,7 @@ const TourDetail = () => {
         <TourFlightInfoCard flightInfo={tour.flightInfo} />
 
         {/* 2) 투어 소개 */}
-        <div className="space-y-2">
+        <div className="space-y-2 rounded-xl border border-border bg-card p-4">
           <h3 className="text-sm font-semibold text-foreground">투어 소개</h3>
           <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
             {tour.description}
