@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { FileCheck2, Pencil, X } from "lucide-react";
+import { FileCheck2, Pencil, Plus, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FileDropzone } from "@/components/auth/FileDropzone";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { INSTRUCTOR_LANGUAGE_OPTIONS, INSTRUCTOR_SPECIALTY_OPTIONS } from "@/lib/constants";
 import { uploadImageFile } from "@/lib/uploadImage";
 import type { InstructorProfile, Profile } from "@/types";
 
@@ -37,6 +40,43 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
   const [bio, setBio] = useState(instructor.bio ?? "");
   const [licenseFileNames, setLicenseFileNames] = useState<string[]>(instructor.licenseFileNames);
   const [avatarUrl, setAvatarUrl] = useState(instructor.avatarUrl ?? "");
+  const [languages, setLanguages] = useState<string[]>(instructor.languages ?? []);
+  const [customLanguageInput, setCustomLanguageInput] = useState("");
+  const [specialtyTags, setSpecialtyTags] = useState<string[]>(instructor.specialtyTags ?? []);
+  const [customSpecialtyInput, setCustomSpecialtyInput] = useState("");
+  const [teachingPhilosophy, setTeachingPhilosophy] = useState(instructor.teachingPhilosophy ?? "");
+  const [favoriteDiving, setFavoriteDiving] = useState(instructor.favoriteDiving ?? "");
+  const [snsInstagram, setSnsInstagram] = useState(instructor.snsInstagram ?? "");
+  const [snsYoutube, setSnsYoutube] = useState(instructor.snsYoutube ?? "");
+  const [snsFacebook, setSnsFacebook] = useState(instructor.snsFacebook ?? "");
+  const [snsBlog, setSnsBlog] = useState(instructor.snsBlog ?? "");
+  const [snsHomepage, setSnsHomepage] = useState(instructor.snsHomepage ?? "");
+
+  const toggleLanguage = (lang: string) => {
+    setLanguages((prev) => (prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]));
+  };
+  const addCustomLanguage = () => {
+    const trimmed = customLanguageInput.trim();
+    if (!trimmed || languages.includes(trimmed)) return;
+    setLanguages((prev) => [...prev, trimmed]);
+    setCustomLanguageInput("");
+  };
+  const removeLanguage = (lang: string) => {
+    setLanguages((prev) => prev.filter((l) => l !== lang));
+  };
+
+  const toggleSpecialtyTag = (tag: string) => {
+    setSpecialtyTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  };
+  const addCustomSpecialtyTag = () => {
+    const trimmed = customSpecialtyInput.trim();
+    if (!trimmed || specialtyTags.includes(trimmed)) return;
+    setSpecialtyTags((prev) => [...prev, trimmed]);
+    setCustomSpecialtyInput("");
+  };
+  const removeSpecialtyTag = (tag: string) => {
+    setSpecialtyTags((prev) => prev.filter((t) => t !== tag));
+  };
 
   const resetForm = () => {
     setName(instructor.name);
@@ -48,6 +88,17 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
     setBio(instructor.bio ?? "");
     setLicenseFileNames(instructor.licenseFileNames);
     setAvatarUrl(instructor.avatarUrl ?? "");
+    setLanguages(instructor.languages ?? []);
+    setCustomLanguageInput("");
+    setSpecialtyTags(instructor.specialtyTags ?? []);
+    setCustomSpecialtyInput("");
+    setTeachingPhilosophy(instructor.teachingPhilosophy ?? "");
+    setFavoriteDiving(instructor.favoriteDiving ?? "");
+    setSnsInstagram(instructor.snsInstagram ?? "");
+    setSnsYoutube(instructor.snsYoutube ?? "");
+    setSnsFacebook(instructor.snsFacebook ?? "");
+    setSnsBlog(instructor.snsBlog ?? "");
+    setSnsHomepage(instructor.snsHomepage ?? "");
   };
 
   const handleCancel = () => {
@@ -72,6 +123,15 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
         bio: bio.trim(),
         licenseFileNames,
         avatarUrl,
+        languages,
+        specialtyTags,
+        teachingPhilosophy: teachingPhilosophy.trim(),
+        favoriteDiving: favoriteDiving.trim(),
+        snsInstagram: snsInstagram.trim(),
+        snsYoutube: snsYoutube.trim(),
+        snsFacebook: snsFacebook.trim(),
+        snsBlog: snsBlog.trim(),
+        snsHomepage: snsHomepage.trim(),
       });
       toast({ title: "정보가 저장되었습니다" });
       setEditing(false);
@@ -127,6 +187,44 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
             <div className="col-span-2">
               <p className="text-muted-foreground">소개</p>
               <p className="whitespace-pre-line font-medium text-foreground">{instructor.bio || "-"}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-muted-foreground">전문 분야</p>
+              {instructor.specialtyTags && instructor.specialtyTags.length > 0 ? (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {instructor.specialtyTags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="text-[10px]">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="font-medium text-foreground">-</p>
+              )}
+            </div>
+            <div className="col-span-2">
+              <p className="text-muted-foreground">사용 언어</p>
+              <p className="font-medium text-foreground">
+                {instructor.languages && instructor.languages.length > 0 ? instructor.languages.join(", ") : "-"}
+              </p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-muted-foreground">교육 철학</p>
+              <p className="whitespace-pre-line font-medium text-foreground">{instructor.teachingPhilosophy || "-"}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-muted-foreground">좋아하는 다이빙</p>
+              <p className="whitespace-pre-line font-medium text-foreground">{instructor.favoriteDiving || "-"}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-muted-foreground">SNS</p>
+              <p className="font-medium text-foreground">
+                {[instructor.snsInstagram, instructor.snsYoutube, instructor.snsFacebook, instructor.snsBlog, instructor.snsHomepage].filter(
+                  Boolean,
+                ).length > 0
+                  ? "등록됨"
+                  : "-"}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -213,6 +311,124 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
         <div className="space-y-1.5">
           <Label>소개</Label>
           <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="다이버들에게 보여질 자기소개를 입력해주세요" />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>교육 철학 (선택)</Label>
+          <Textarea
+            value={teachingPhilosophy}
+            onChange={(e) => setTeachingPhilosophy(e.target.value)}
+            rows={2}
+            placeholder="다이빙을 가르칠 때 중요하게 생각하는 것을 적어주세요"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>좋아하는 다이빙 (선택)</Label>
+          <Textarea
+            value={favoriteDiving}
+            onChange={(e) => setFavoriteDiving(e.target.value)}
+            rows={2}
+            placeholder="예: 고요한 새벽 다이빙, 마크로 생물 관찰 등"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>전문 분야 (선택)</Label>
+          <p className="text-xs text-muted-foreground">강사 프로필에 배지 형태로 노출됩니다.</p>
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            {INSTRUCTOR_SPECIALTY_OPTIONS.map((tagOption) => (
+              <label key={tagOption} className="flex items-center gap-1.5 text-xs text-foreground">
+                <Checkbox checked={specialtyTags.includes(tagOption)} onCheckedChange={() => toggleSpecialtyTag(tagOption)} />
+                {tagOption}
+              </label>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Input
+              value={customSpecialtyInput}
+              onChange={(e) => setCustomSpecialtyInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addCustomSpecialtyTag();
+                }
+              }}
+              placeholder="직접 입력 (예: 딥다이빙)"
+              className="h-8 flex-1 text-xs"
+            />
+            <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={addCustomSpecialtyTag}>
+              <Plus className="h-3.5 w-3.5" />
+              추가
+            </Button>
+          </div>
+          {specialtyTags.filter((t) => !(INSTRUCTOR_SPECIALTY_OPTIONS as readonly string[]).includes(t)).length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {specialtyTags
+                .filter((t) => !(INSTRUCTOR_SPECIALTY_OPTIONS as readonly string[]).includes(t))
+                .map((t) => (
+                  <Badge key={t} variant="secondary" className="gap-1 pr-1 text-[10px]">
+                    {t}
+                    <button type="button" onClick={() => removeSpecialtyTag(t)} aria-label={`${t} 제거`}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>사용 언어 (선택)</Label>
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            {INSTRUCTOR_LANGUAGE_OPTIONS.map((langOption) => (
+              <label key={langOption} className="flex items-center gap-1.5 text-xs text-foreground">
+                <Checkbox checked={languages.includes(langOption)} onCheckedChange={() => toggleLanguage(langOption)} />
+                {langOption}
+              </label>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Input
+              value={customLanguageInput}
+              onChange={(e) => setCustomLanguageInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addCustomLanguage();
+                }
+              }}
+              placeholder="직접 입력 (예: 태국어)"
+              className="h-8 flex-1 text-xs"
+            />
+            <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={addCustomLanguage}>
+              <Plus className="h-3.5 w-3.5" />
+              추가
+            </Button>
+          </div>
+          {languages.filter((l) => !(INSTRUCTOR_LANGUAGE_OPTIONS as readonly string[]).includes(l)).length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {languages
+                .filter((l) => !(INSTRUCTOR_LANGUAGE_OPTIONS as readonly string[]).includes(l))
+                .map((l) => (
+                  <Badge key={l} variant="secondary" className="gap-1 pr-1 text-[10px]">
+                    {l}
+                    <button type="button" onClick={() => removeLanguage(l)} aria-label={`${l} 제거`}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>SNS 링크 (선택)</Label>
+          <Input value={snsInstagram} onChange={(e) => setSnsInstagram(e.target.value)} placeholder="Instagram URL" />
+          <Input value={snsYoutube} onChange={(e) => setSnsYoutube(e.target.value)} placeholder="YouTube URL" />
+          <Input value={snsFacebook} onChange={(e) => setSnsFacebook(e.target.value)} placeholder="Facebook URL" />
+          <Input value={snsBlog} onChange={(e) => setSnsBlog(e.target.value)} placeholder="블로그 URL" />
+          <Input value={snsHomepage} onChange={(e) => setSnsHomepage(e.target.value)} placeholder="홈페이지 URL" />
         </div>
 
         <div className="space-y-1.5">

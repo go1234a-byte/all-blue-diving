@@ -84,6 +84,21 @@ export const TOUR_TAG_OPTIONS = [
   "초보환영",
 ] as const;
 
+/** 강사 프로필 - 전문 분야 태그 프리셋 (강사 브랜드 페이지에 배지 형태로 노출). */
+export const INSTRUCTOR_SPECIALTY_OPTIONS = [
+  "고래상어",
+  "난파선",
+  "수중사진",
+  "상어다이빙",
+  "나이트다이빙",
+  "프리다이빙",
+  "거북이",
+  "리브어보드",
+] as const;
+
+/** 강사 프로필 - 사용 가능 언어 프리셋. */
+export const INSTRUCTOR_LANGUAGE_OPTIONS = ["한국어", "영어", "일본어", "중국어", "스페인어"] as const;
+
 /** 강사 투어 개설 시 기본으로 제공되는 표준 유료 옵션 (지역별 가격 상이, 강사가 직접 설정) */
 export const STANDARD_TOUR_OPTION_DEFS = [
   { name: "싱글차지 (Single Room Charge)", defaultPrice: 150000 },

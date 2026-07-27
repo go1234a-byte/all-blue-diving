@@ -8,14 +8,21 @@ import {
   Bookmark,
   CalendarCheck,
   Clock,
+  Facebook,
   Globe2,
+  Images,
+  Instagram,
   Languages,
+  Link2,
   MapPin,
   MessageCircleOff,
+  Newspaper,
+  Repeat,
   ShieldCheck,
   Star,
   TrendingDown,
   Users,
+  Youtube,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -215,6 +222,24 @@ const InstructorPublicProfile = () => {
     return Math.round((cancelled / myBookings.length) * 100);
   }, [myBookings]);
 
+  // 재예약률 — 이 강사의 투어를 확정 예약한 적 있는 다이버 중, 2회 이상 예약한 다이버의 비율.
+  const rebookingRate = useMemo(() => {
+    const confirmed = myBookings.filter((b) => b.status === "confirmed");
+    const byDiver = new Map<string, number>();
+    confirmed.forEach((b) => byDiver.set(b.diverId, (byDiver.get(b.diverId) ?? 0) + 1));
+    if (byDiver.size === 0) return null;
+    const repeatDivers = Array.from(byDiver.values()).filter((count) => count > 1).length;
+    return Math.round((repeatDivers / byDiver.size) * 100);
+  }, [myBookings]);
+
+  // 갤러리 — 이 강사의 투어 대표/갤러리 사진(강사 업로드)과 후기 사진(회원 업로드)을 한 데 모아 보여준다.
+  const galleryImages = useMemo(() => {
+    const tourPhotos = myTours.flatMap((t) => [t.mainImageUrl, ...(t.galleryUrls ?? [])]).filter(Boolean);
+    const reviewPhotos = reviews.flatMap((r) => r.photos ?? []);
+    return Array.from(new Set([...tourPhotos, ...reviewPhotos])).slice(0, 30);
+  }, [myTours, reviews]);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
   const { responseRate, avgResponseHours } = useMemo(() => {
     if (!instructor) return { responseRate: null, avgResponseHours: null };
     const myMessages = chatMessages.filter((m) => myTourIds.has(m.tourId));
@@ -295,16 +320,33 @@ const InstructorPublicProfile = () => {
                     </Badge>
                   )}
                 </div>
+                {(instructor.agency || instructor.level) && (
+                  <p className="text-xs font-medium text-primary">
+                    {[instructor.agency, instructor.level].filter(Boolean).join(" ")}
+                  </p>
+                )}
                 {reviews.length > 0 && (
                   <p className="flex items-center gap-1 pt-0.5 text-xs font-medium text-foreground">
                     <Star className="h-3.5 w-3.5 fill-warning text-warning" />
                     {avgRating.toFixed(1)} · 후기 {reviews.length}개
                   </p>
                 )}
+                <p className="pt-0.5 text-xs text-muted-foreground">
+                  {instructor.totalLogs.toLocaleString()}+ Dives · {myTours.length} Tours · {instructor.experienceYears}년 경력
+                </p>
               </div>
             </div>
             {instructor.bio && (
               <p className="whitespace-pre-line break-keep text-sm text-muted-foreground">{instructor.bio}</p>
+            )}
+            {instructor.specialtyTags && instructor.specialtyTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {instructor.specialtyTags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="text-[10px]">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
             )}
             {instructor.languages && instructor.languages.length > 0 && (
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -321,6 +363,51 @@ const InstructorPublicProfile = () => {
                   {activeSites.length > 0 && `활동 지역: ${activeSites.join(", ")}`}
                 </span>
               </p>
+            )}
+            {(instructor.snsInstagram || instructor.snsYoutube || instructor.snsFacebook || instructor.snsBlog || instructor.snsHomepage) && (
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                {instructor.snsInstagram && (
+                  <a href={instructor.snsInstagram} target="_blank" rel="noreferrer" aria-label="Instagram" className="text-muted-foreground hover:text-primary">
+                    <Instagram className="h-4 w-4" />
+                  </a>
+                )}
+                {instructor.snsYoutube && (
+                  <a href={instructor.snsYoutube} target="_blank" rel="noreferrer" aria-label="YouTube" className="text-muted-foreground hover:text-primary">
+                    <Youtube className="h-4 w-4" />
+                  </a>
+                )}
+                {instructor.snsFacebook && (
+                  <a href={instructor.snsFacebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="text-muted-foreground hover:text-primary">
+                    <Facebook className="h-4 w-4" />
+                  </a>
+                )}
+                {instructor.snsBlog && (
+                  <a href={instructor.snsBlog} target="_blank" rel="noreferrer" aria-label="블로그" className="text-muted-foreground hover:text-primary">
+                    <Newspaper className="h-4 w-4" />
+                  </a>
+                )}
+                {instructor.snsHomepage && (
+                  <a href={instructor.snsHomepage} target="_blank" rel="noreferrer" aria-label="홈페이지" className="text-muted-foreground hover:text-primary">
+                    <Link2 className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            )}
+            {(instructor.teachingPhilosophy || instructor.favoriteDiving) && (
+              <div className="space-y-1.5 rounded-lg bg-secondary/40 p-2.5">
+                {instructor.teachingPhilosophy && (
+                  <p className="text-xs text-foreground">
+                    <span className="font-semibold text-primary">교육 철학 </span>
+                    {instructor.teachingPhilosophy}
+                  </p>
+                )}
+                {instructor.favoriteDiving && (
+                  <p className="text-xs text-foreground">
+                    <span className="font-semibold text-primary">좋아하는 다이빙 </span>
+                    {instructor.favoriteDiving}
+                  </p>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -472,6 +559,13 @@ const InstructorPublicProfile = () => {
               </span>
             </div>
             <div className="flex flex-col items-center gap-0.5 rounded-lg bg-secondary px-2 py-3 text-center">
+              <Repeat className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground">재예약률</span>
+              <span className="text-sm font-bold text-foreground">
+                {rebookingRate === null ? "-" : `${rebookingRate}%`}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5 rounded-lg bg-secondary px-2 py-3 text-center">
               <Globe2 className="h-4 w-4 text-primary" />
               <span className="text-[10px] text-muted-foreground">채팅 응답률</span>
               <span className="text-sm font-bold text-foreground">
@@ -548,6 +642,28 @@ const InstructorPublicProfile = () => {
             </div>
           )}
         </div>
+
+        {/* 갤러리 — 투어 사진(강사 업로드) + 후기 사진(회원 업로드)을 모아 보여준다 */}
+        {galleryImages.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Images className="h-4 w-4 text-primary" />
+              갤러리
+            </h3>
+            <div className="grid grid-cols-3 gap-1">
+              {galleryImages.map((url, i) => (
+                <button
+                  key={url + i}
+                  type="button"
+                  onClick={() => setLightboxUrl(url)}
+                  className="aspect-square overflow-hidden rounded-md bg-secondary"
+                >
+                  <img src={url} alt={`갤러리 사진 ${i + 1}`} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 후기 */}
         <div className="space-y-2">
@@ -637,6 +753,12 @@ const InstructorPublicProfile = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
+        <DialogContent className="max-w-md p-1 sm:max-w-lg">
+          {lightboxUrl && <img src={lightboxUrl} alt="갤러리 확대" className="max-h-[80vh] w-full rounded-md object-contain" />}
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>

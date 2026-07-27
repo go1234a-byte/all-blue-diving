@@ -60,6 +60,14 @@ function mapInstructorRow(row: {
   penalty_reason?: string | null;
   bio: string | null;
   languages?: string[] | null;
+  specialty_tags?: string[] | null;
+  teaching_philosophy?: string | null;
+  favorite_diving?: string | null;
+  sns_instagram?: string | null;
+  sns_youtube?: string | null;
+  sns_facebook?: string | null;
+  sns_blog?: string | null;
+  sns_homepage?: string | null;
 }): InstructorProfile {
   return {
     id: row.id,
@@ -84,6 +92,14 @@ function mapInstructorRow(row: {
     penaltyReason: row.penalty_reason ?? undefined,
     bio: row.bio ?? "",
     languages: row.languages ?? undefined,
+    specialtyTags: row.specialty_tags ?? undefined,
+    teachingPhilosophy: row.teaching_philosophy ?? undefined,
+    favoriteDiving: row.favorite_diving ?? undefined,
+    snsInstagram: row.sns_instagram ?? undefined,
+    snsYoutube: row.sns_youtube ?? undefined,
+    snsFacebook: row.sns_facebook ?? undefined,
+    snsBlog: row.sns_blog ?? undefined,
+    snsHomepage: row.sns_homepage ?? undefined,
   };
 }
 
@@ -533,6 +549,15 @@ interface AppDataContextValue {
       bio?: string;
       licenseFileNames?: string[];
       avatarUrl?: string;
+      languages?: string[];
+      specialtyTags?: string[];
+      teachingPhilosophy?: string;
+      favoriteDiving?: string;
+      snsInstagram?: string;
+      snsYoutube?: string;
+      snsFacebook?: string;
+      snsBlog?: string;
+      snsHomepage?: string;
     },
   ) => Promise<void>;
   toggleBookmark: (tourId: string) => void;
@@ -1402,6 +1427,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       bio?: string;
       licenseFileNames?: string[];
       avatarUrl?: string;
+      languages?: string[];
+      specialtyTags?: string[];
+      teachingPhilosophy?: string;
+      favoriteDiving?: string;
+      snsInstagram?: string;
+      snsYoutube?: string;
+      snsFacebook?: string;
+      snsBlog?: string;
+      snsHomepage?: string;
     },
   ): Promise<void> => {
     const instructor = instructors.find((i) => i.id === instructorId);
@@ -1418,6 +1452,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ...(updates.bio !== undefined ? { bio: updates.bio } : {}),
         ...(updates.licenseFileNames !== undefined ? { license_file_names: updates.licenseFileNames } : {}),
         ...(updates.avatarUrl !== undefined ? { avatar_url: updates.avatarUrl } : {}),
+        ...(updates.languages !== undefined ? { languages: updates.languages } : {}),
+        ...(updates.specialtyTags !== undefined ? { specialty_tags: updates.specialtyTags } : {}),
+        ...(updates.teachingPhilosophy !== undefined ? { teaching_philosophy: updates.teachingPhilosophy } : {}),
+        ...(updates.favoriteDiving !== undefined ? { favorite_diving: updates.favoriteDiving } : {}),
+        ...(updates.snsInstagram !== undefined ? { sns_instagram: updates.snsInstagram } : {}),
+        ...(updates.snsYoutube !== undefined ? { sns_youtube: updates.snsYoutube } : {}),
+        ...(updates.snsFacebook !== undefined ? { sns_facebook: updates.snsFacebook } : {}),
+        ...(updates.snsBlog !== undefined ? { sns_blog: updates.snsBlog } : {}),
+        ...(updates.snsHomepage !== undefined ? { sns_homepage: updates.snsHomepage } : {}),
       })
       .eq("id", instructorId);
 
@@ -1434,6 +1477,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               ...(updates.bio !== undefined ? { bio: updates.bio } : {}),
               ...(updates.licenseFileNames !== undefined ? { licenseFileNames: updates.licenseFileNames } : {}),
               ...(updates.avatarUrl !== undefined ? { avatarUrl: updates.avatarUrl } : {}),
+              ...(updates.languages !== undefined ? { languages: updates.languages } : {}),
+              ...(updates.specialtyTags !== undefined ? { specialtyTags: updates.specialtyTags } : {}),
+              ...(updates.teachingPhilosophy !== undefined ? { teachingPhilosophy: updates.teachingPhilosophy } : {}),
+              ...(updates.favoriteDiving !== undefined ? { favoriteDiving: updates.favoriteDiving } : {}),
+              ...(updates.snsInstagram !== undefined ? { snsInstagram: updates.snsInstagram } : {}),
+              ...(updates.snsYoutube !== undefined ? { snsYoutube: updates.snsYoutube } : {}),
+              ...(updates.snsFacebook !== undefined ? { snsFacebook: updates.snsFacebook } : {}),
+              ...(updates.snsBlog !== undefined ? { snsBlog: updates.snsBlog } : {}),
+              ...(updates.snsHomepage !== undefined ? { snsHomepage: updates.snsHomepage } : {}),
             }
           : i,
       ),

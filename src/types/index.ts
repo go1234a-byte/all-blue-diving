@@ -57,6 +57,14 @@ export interface InstructorProfile {
   penaltyReason?: string; // 가장 최근 패널티 부여 사유 (강사 프로필에 함께 노출)
   bio: string;
   languages?: string[]; // 사용 언어 (공개 프로필 표시용)
+  specialtyTags?: string[]; // 전문 분야 태그 (예: 고래상어, 난파선 등) - 강사 브랜드 페이지에 배지로 노출
+  teachingPhilosophy?: string; // 교육 철학
+  favoriteDiving?: string; // 좋아하는 다이빙
+  snsInstagram?: string;
+  snsYoutube?: string;
+  snsFacebook?: string;
+  snsBlog?: string;
+  snsHomepage?: string;
 }
 
 export interface DiveCenter {
