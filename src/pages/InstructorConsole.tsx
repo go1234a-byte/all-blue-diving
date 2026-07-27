@@ -6,7 +6,6 @@ import { InstructorDashboard } from "@/components/instructor/InstructorDashboard
 import { TourCreateForm } from "@/components/instructor/TourCreateForm";
 import { SettlementLedger } from "@/components/instructor/SettlementLedger";
 import { InstructorReviewsPanel } from "@/components/instructor/InstructorReviewsPanel";
-import { InstructorMyPageView } from "@/components/mypage/InstructorMyPageView";
 import { useRole } from "@/contexts/RoleContext";
 
 // 강사 콘솔도 다른 화면과 동일하게 하단 네비게이션을 유지하고, 그 위에 상단 탭으로 세부 메뉴를 이동한다.
@@ -19,12 +18,11 @@ const InstructorConsole = () => {
       <AppHeader title="강사 콘솔" />
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid h-auto w-full grid-cols-5 gap-1 p-1">
+          <TabsList className="grid h-auto w-full grid-cols-4 gap-1 p-1">
             <TabsTrigger value="dashboard" className="px-1 py-1.5 text-xs">대시보드</TabsTrigger>
             <TabsTrigger value="create" className="px-1 py-1.5 text-xs">투어생성</TabsTrigger>
             <TabsTrigger value="reviews" className="px-1 py-1.5 text-xs">리뷰</TabsTrigger>
             <TabsTrigger value="settlement" className="px-1 py-1.5 text-xs">정산</TabsTrigger>
-            <TabsTrigger value="mypage" className="px-1 py-1.5 text-xs">마이페이지</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard" className="pt-4">
             <InstructorDashboard
@@ -40,9 +38,6 @@ const InstructorConsole = () => {
           </TabsContent>
           <TabsContent value="settlement" className="pt-4">
             <SettlementLedger instructorId={currentInstructorId} />
-          </TabsContent>
-          <TabsContent value="mypage" className="pt-4">
-            <InstructorMyPageView />
           </TabsContent>
         </Tabs>
       </main>
