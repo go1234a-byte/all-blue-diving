@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UploadCloud, FileCheck2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,17 @@ export function FileDropzone({
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
+  // 이미지 파일은 파일명 텍스트만으로는 어떤 사진이 올라갔는지 알기 어려우므로,
+  // 실제 이미지 미리보기(썸네일)를 함께 보여준다. 메모리 누수 방지를 위해 목록이 바뀔 때마다 정리한다.
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    const urls = files.map((file) => (file.type.startsWith("image/") ? URL.createObjectURL(file) : ""));
+    setPreviewUrls(urls);
+    return () => {
+      urls.forEach((url) => url && URL.revokeObjectURL(url));
+    };
+  }, [files]);
 
   const applyFiles = (incoming: FileList | null) => {
     if (!incoming) return;
@@ -78,7 +89,15 @@ export function FileDropzone({
               className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-xs"
             >
               <span className="flex items-center gap-1.5 truncate text-secondary-foreground">
-                <FileCheck2 className="h-3.5 w-3.5 shrink-0 text-success" />
+                {previewUrls[index] ? (
+                  <img
+                    src={previewUrls[index]}
+                    alt={file.name}
+                    className="h-8 w-8 shrink-0 rounded object-cover"
+                  />
+                ) : (
+                  <FileCheck2 className="h-3.5 w-3.5 shrink-0 text-success" />
+                )}
                 <span className="truncate">{file.name}</span>
               </span>
               <Button
