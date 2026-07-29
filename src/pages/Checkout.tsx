@@ -19,7 +19,26 @@ import { computeInvoice, formatKRW, validateAndComputeCouponDiscount } from "@/l
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
-import type { Gender } from "@/types";
+import type { CompanionInfo, Gender } from "@/types";
+
+interface ParticipantForm {
+  /** 본인(index 0)은 항상 빈 문자열 — 동반자만 이름을 입력받는다. */
+  name: string;
+  gender: Gender;
+  snoring: boolean;
+  smoking: boolean;
+  drinking: boolean;
+  roomNote: string;
+}
+
+const createBlankParticipant = (): ParticipantForm => ({
+  name: "",
+  gender: "male",
+  snoring: false,
+  smoking: false,
+  drinking: false,
+  roomNote: "",
+});
 
 const Checkout = () => {
   const { tourId } = useParams();
@@ -33,13 +52,26 @@ const Checkout = () => {
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>(
     (location.state as { selectedOptionIds?: string[] } | null)?.selectedOptionIds ?? [],
   );
-  const [gender, setGender] = useState<Gender>("male");
-  const [snoring, setSnoring] = useState(false);
-  const [smoking, setSmoking] = useState(false);
-  const [drinking, setDrinking] = useState(false);
-  const [roomNote, setRoomNote] = useState("");
-  const [participantCount, setParticipantCount] = useState(1);
-  const [companionNames, setCompanionNames] = useState("");
+  const [participantCount, setParticipantCountState] = useState(1);
+  // participants[0] = 예약자 본인, participants[1..] = 동반자. 인원 수(participantCount)와
+  // 항상 길이가 같도록 setParticipantCount()를 통해서만 늘리고 줄인다 — 이미 입력한 값은
+  // 유지한 채로 필요한 만큼만 추가/제거한다.
+  const [participants, setParticipants] = useState<ParticipantForm[]>([createBlankParticipant()]);
+  const setParticipantCount = (updater: number | ((current: number) => number)) => {
+    setParticipantCountState((current) => {
+      const next = typeof updater === "function" ? updater(current) : updater;
+      const clamped = Math.max(1, next);
+      setParticipants((prev) => {
+        if (clamped === prev.length) return prev;
+        if (clamped < prev.length) return prev.slice(0, clamped);
+        return [...prev, ...Array.from({ length: clamped - prev.length }, createBlankParticipant)];
+      });
+      return clamped;
+    });
+  };
+  const updateParticipant = (index: number, patch: Partial<ParticipantForm>) => {
+    setParticipants((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
+  };
   const [processing, setProcessing] = useState(false);
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
   const [confirmedInclusions, setConfirmedInclusions] = useState(false);
@@ -119,6 +151,15 @@ const Checkout = () => {
     }
     setProcessing(true);
     try {
+      const self = participants[0];
+      const companions: CompanionInfo[] = participants.slice(1).map((p) => ({
+        name: p.name.trim(),
+        gender: p.gender,
+        snoring: p.snoring,
+        smoking: p.smoking,
+        drinking: p.drinking,
+        roomNote: p.roomNote.trim() || undefined,
+      }));
       const created = await addBooking({
         tourId: tour.id,
         diverId: currentDiverId || undefined,
@@ -132,13 +173,13 @@ const Checkout = () => {
         couponCode: invoice.couponCode,
         discountAmount: invoice.discountAmount,
         paymentMethod: "card",
-        gender,
-        snoring,
-        smoking,
-        drinking,
-        roomNote: roomNote.trim() || undefined,
+        gender: self.gender,
+        snoring: self.snoring,
+        smoking: self.smoking,
+        drinking: self.drinking,
+        roomNote: self.roomNote.trim() || undefined,
         participantCount,
-        companionNames: participantCount > 1 && companionNames.trim() ? companionNames.trim() : undefined,
+        companions: participantCount > 1 ? companions : undefined,
       });
 
       if (invoice.couponCode) {
@@ -213,58 +254,78 @@ const Checkout = () => {
                 +
               </Button>
             </div>
-            {participantCount > 1 && (
-              <div className="space-y-1.5 pt-1">
-                <Label className="text-xs text-muted-foreground">동반자 이름 (선택, 쉼표로 구분)</Label>
-                <Input
-                  value={companionNames}
-                  onChange={(e) => setCompanionNames(e.target.value)}
-                  placeholder="예: 김철수, 이영희"
-                />
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="space-y-3 p-4">
-            <h3 className="text-sm font-semibold text-foreground">참가자 정보 (룸 배정용, 예약자 본인 기준)</h3>
-            <div className="space-y-1.5">
-              <Label>성별</Label>
-              <RadioGroup value={gender} onValueChange={(v) => setGender(v as Gender)} className="flex gap-4">
-                <label className="flex items-center gap-1.5 text-sm">
-                  <RadioGroupItem value="male" /> 남성
+        {participants.map((p, idx) => (
+          <Card key={idx}>
+            <CardContent className="space-y-3 p-4">
+              <h3 className="text-sm font-semibold text-foreground">
+                참가자 정보 (룸 배정용) · {idx === 0 ? "예약자 본인" : `동반자 ${idx}`}
+              </h3>
+              {idx > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">이름 (선택)</Label>
+                  <Input
+                    value={p.name}
+                    onChange={(e) => updateParticipant(idx, { name: e.target.value })}
+                    placeholder={`동반자 ${idx} 이름 (비워두면 "동반자 ${idx}"로 저장돼요)`}
+                  />
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label>성별</Label>
+                <RadioGroup
+                  value={p.gender}
+                  onValueChange={(v) => updateParticipant(idx, { gender: v as Gender })}
+                  className="flex gap-4"
+                >
+                  <label className="flex items-center gap-1.5 text-sm">
+                    <RadioGroupItem value="male" /> 남성
+                  </label>
+                  <label className="flex items-center gap-1.5 text-sm">
+                    <RadioGroupItem value="female" /> 여성
+                  </label>
+                </RadioGroup>
+              </div>
+              <div className="flex flex-wrap gap-4 pt-1">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={p.snoring}
+                    onChange={(e) => updateParticipant(idx, { snoring: e.target.checked })}
+                  />
+                  코골이 있음
                 </label>
-                <label className="flex items-center gap-1.5 text-sm">
-                  <RadioGroupItem value="female" /> 여성
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={p.smoking}
+                    onChange={(e) => updateParticipant(idx, { smoking: e.target.checked })}
+                  />
+                  흡연자
                 </label>
-              </RadioGroup>
-            </div>
-            <div className="flex flex-wrap gap-4 pt-1">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={snoring} onChange={(e) => setSnoring(e.target.checked)} />
-                코골이 있음
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={smoking} onChange={(e) => setSmoking(e.target.checked)} />
-                흡연자
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={drinking} onChange={(e) => setDrinking(e.target.checked)} />
-                음주
-              </label>
-            </div>
-            <div className="space-y-1.5 pt-1">
-              <Label className="text-xs text-muted-foreground">직접 입력 (선택)</Label>
-              <Textarea
-                value={roomNote}
-                onChange={(e) => setRoomNote(e.target.value)}
-                placeholder="룸 배정 시 참고할 사항을 자유롭게 입력해주세요 (예: 특정 인원과 같은 방 희망 등)"
-                className="min-h-16 text-sm"
-              />
-            </div>
-          </CardContent>
-        </Card>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={p.drinking}
+                    onChange={(e) => updateParticipant(idx, { drinking: e.target.checked })}
+                  />
+                  음주
+                </label>
+              </div>
+              <div className="space-y-1.5 pt-1">
+                <Label className="text-xs text-muted-foreground">직접 입력 (선택)</Label>
+                <Textarea
+                  value={p.roomNote}
+                  onChange={(e) => updateParticipant(idx, { roomNote: e.target.value })}
+                  placeholder="룸 배정 시 참고할 사항을 자유롭게 입력해주세요 (예: 특정 인원과 같은 방 희망 등)"
+                  className="min-h-16 text-sm"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
 
         <InclusionsExclusionsCard inclusions={tour.inclusions} exclusions={tour.exclusions} />
 

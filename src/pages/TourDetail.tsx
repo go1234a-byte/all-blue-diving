@@ -234,26 +234,56 @@ const TourDetail = () => {
                   return (
                     <div
                       key={b.id}
-                      className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                      className="space-y-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm"
                     >
-                      <span className="font-medium text-foreground">
-                        {b.diverName}
-                        {age != null ? ` ${age}세` : ""} · {b.gender === "male" ? "남" : "여"}
-                        {b.participantCount > 1 ? ` · 본인 포함 ${b.participantCount}명` : ""}
-                        {b.companionNames ? ` (동반자: ${b.companionNames})` : ""}
-                      </span>
-                      <span className="flex gap-1">
-                        {b.smoking && (
-                          <Badge variant="outline" className="text-[10px]">
-                            흡연
-                          </Badge>
-                        )}
-                        {b.snoring && (
-                          <Badge variant="outline" className="text-[10px]">
-                            코골이
-                          </Badge>
-                        )}
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-foreground">
+                          {b.diverName}
+                          {age != null ? ` ${age}세` : ""} · {b.gender === "male" ? "남" : "여"}
+                          {b.participantCount > 1 ? ` · 본인 포함 ${b.participantCount}명` : ""}
+                        </span>
+                        <span className="flex gap-1">
+                          {b.smoking && (
+                            <Badge variant="outline" className="text-[10px]">
+                              흡연
+                            </Badge>
+                          )}
+                          {b.snoring && (
+                            <Badge variant="outline" className="text-[10px]">
+                              코골이
+                            </Badge>
+                          )}
+                        </span>
+                      </div>
+                      {/* 동반자별 상세 정보(companions)가 있으면 한 명씩 풀어서 보여주고,
+                          예전 예약처럼 companions 없이 companionNames 텍스트만 있으면 그걸로 대신한다. */}
+                      {b.companions && b.companions.length > 0 ? (
+                        <div className="space-y-1 border-t border-border pt-1.5">
+                          {b.companions.map((c, i) => (
+                            <div key={i} className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>
+                                동반자 {i + 1} · {c.name} · {c.gender === "female" ? "여" : "남"}
+                              </span>
+                              <span className="flex gap-1">
+                                {c.smoking && (
+                                  <Badge variant="outline" className="text-[9px]">
+                                    흡연
+                                  </Badge>
+                                )}
+                                {c.snoring && (
+                                  <Badge variant="outline" className="text-[9px]">
+                                    코골이
+                                  </Badge>
+                                )}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        b.companionNames && (
+                          <p className="text-xs text-muted-foreground">동반자: {b.companionNames}</p>
+                        )
+                      )}
                     </div>
                   );
                 })}

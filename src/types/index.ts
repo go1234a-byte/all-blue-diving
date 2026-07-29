@@ -238,6 +238,17 @@ export type DepositStatus = "pending" | "paid";
 
 export type BookingStatus = "confirmed" | "cancelled" | "cancel_pending_review";
 
+/** 예약 인원 2명 이상일 때, 본인 외 동반자 1명당 룸 배정용 정보. */
+export interface CompanionInfo {
+  /** 동반자 이름 (선택 입력, 비어 있으면 "동반자 N" 형태로 자동 채워짐). */
+  name: string;
+  gender?: Gender;
+  snoring?: boolean;
+  smoking?: boolean;
+  drinking?: boolean;
+  roomNote?: string;
+}
+
 export interface Booking {
   id: string;
   tourId: string;
@@ -270,8 +281,13 @@ export interface Booking {
   passportInfo?: string; // 참가자 대시보드 [더보기] — 여권 정보(만료일 등, 본인/강사만 확인)
   /** 이 예약 1건으로 결제/확정된 인원 수 (본인 포함). 기존 예약은 모두 1명으로 취급한다. */
   participantCount: number;
-  /** 2명 이상 예약 시 본인 외 동반자 이름을 자유 텍스트로 기록 (선택). */
+  /** 2명 이상 예약 시 본인 외 동반자 이름을 자유 텍스트로 기록 (선택).
+   * companions가 있으면 그 이름들을 쉼표로 이어붙인 값이 자동으로 들어간다 — 참가자 목록 등
+   * 기존 화면에서 간단히 표시할 때 쓰고, 각 동반자별 성별/코골이/흡연/음주 등 상세 정보는
+   * companions 배열을 사용한다. */
   companionNames?: string;
+  /** 본인 외 동반자별 상세 참가자 정보 (룸 배정용). 길이는 participantCount - 1과 같다. */
+  companions?: CompanionInfo[];
 }
 
 export const CANCEL_REASONS = [

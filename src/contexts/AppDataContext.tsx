@@ -24,8 +24,7 @@ import type {
   Tour,
   TourItineraryDay,
   TourOption,
-  UnderMinParticipantsPolicy,
-} from "@/types";
+  UnderMinParticipantsPolicy, CompanionInfo,} from "@/types";
 import { MOCK_ADMIN_PROFILE, MOCK_DIVE_CENTERS } from "@/data/mockData";
 import { computeSettlement } from "@/lib/pricing";
 import { computeRefundRate, computeRefundAmount } from "@/lib/refund";
@@ -254,6 +253,7 @@ function mapBookingRow(row: any): Booking {
     passportInfo: row.passport_info ?? undefined,
     participantCount: row.participant_count != null ? Number(row.participant_count) : 1,
     companionNames: row.companion_names ?? undefined,
+    companions: Array.isArray(row.companions) ? (row.companions as CompanionInfo[]) : [],
   };
 }
 
@@ -370,8 +370,11 @@ export interface NewBookingInput {
   roomNote?: string;
   /** 이 예약으로 결제/확정할 인원 수 (본인 포함, 기본 1명). */
   participantCount?: number;
-  /** 2명 이상 예약 시 본인 외 동반자 이름 (선택, 자유 텍스트). */
+  /** 2명 이상 예약 시 본인 외 동반자 이름 (선택, 자유 텍스트) — companions가 있으면 무시되고
+   * 그 이름들로 자동 채워진다. companions 없이 이 값만 넘기는 옛 호출부와의 하위호환용. */
   companionNames?: string;
+  /** 본인 외 동반자별 상세 참가자 정보 (성별/코골이/흡연/음주/직접입력). */
+  companions?: CompanionInfo[];
 }
 
 interface NewTourInput {
@@ -1366,6 +1369,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       }
     }
     const diverId = input.diverId ?? nextId("guest-diver");
+    // companions(동반자별 상세 정보)가 있으면 그 이름들을 이어붙여 companion_names를 자동으로
+    // 채운다 — 참가자 목록 등 기존 화면은 companion_names 텍스트만 읽어도 계속 동작하고,
+    // 각 동반자의 성별/코골이/흡연/음주 등 상세 정보가 필요한 화면은 companions 배열을 쓴다.
+    const normalizedCompanions = (input.companions ?? []).map((c, idx) => ({
+      ...c,
+      name: c.name?.trim() || `동반자 ${idx + 1}`,
+    }));
+    const derivedCompanionNames =
+      normalizedCompanions.length > 0
+        ? normalizedCompanions.map((c) => c.name).join(", ")
+        : (input.companionNames ?? null);
     const { data, error } = await supabase
       .from("bookings")
       .insert({
@@ -1387,7 +1401,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         drinking: input.drinking,
         room_note: input.roomNote ?? null,
         participant_count: requestedCount,
-        companion_names: input.companionNames ?? null,
+        companion_names: derivedCompanionNames,
+        companions: normalizedCompanions,
         deposit_status: "paid",
         status: "confirmed",
       })

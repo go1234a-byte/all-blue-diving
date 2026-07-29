@@ -84,8 +84,23 @@ export function ChatParticipantList({
                 {isInstructor && age != null ? ` ${age}세` : ""}
                 {booking.participantCount > 1 ? ` · 본인 포함 ${booking.participantCount}명` : ""}
               </p>
-              {isInstructor && booking.participantCount > 1 && booking.companionNames && (
-                <p className="text-[11px] text-muted-foreground">동반자: {booking.companionNames}</p>
+              {isInstructor && booking.participantCount > 1 && (
+                booking.companions && booking.companions.length > 0 ? (
+                  <div className="space-y-0.5 rounded-md bg-secondary/40 px-2 py-1">
+                    {booking.companions.map((c, i) => (
+                      <p key={i} className="text-[11px] text-muted-foreground">
+                        동반자 {i + 1} · {c.name} · {c.gender === "female" ? "여" : "남"}
+                        {c.snoring ? " · 코골이" : ""}
+                        {c.smoking ? " · 흡연" : ""}
+                        {c.drinking ? " · 음주" : ""}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  booking.companionNames && (
+                    <p className="text-[11px] text-muted-foreground">동반자: {booking.companionNames}</p>
+                  )
+                )
               )}
               <p className="text-xs text-muted-foreground">
                 {booking.gender === "male" ? "남성" : "여성"}
