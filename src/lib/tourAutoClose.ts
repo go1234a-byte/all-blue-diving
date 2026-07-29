@@ -42,3 +42,6 @@ export function shouldEvaluateAutoClose(
 
 export const MIN_PARTICIPANTS_AUTO_CANCEL_REASON =
   "최소 인원 미달로 인한 투어 자동 취소 (강사 설정 정책에 따름)";
+
+export const ADMIN_FORCED_CLOSURE_REASON =
+  "관리자에 의한 투어 강제 정지로 인한 취소 (전액 환불)";

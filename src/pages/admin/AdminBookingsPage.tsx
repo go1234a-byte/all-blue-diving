@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { CancellationReviewQueue } from "@/components/admin/CancellationReviewQueue";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatDateKR } from "@/lib/dates";
@@ -28,17 +31,37 @@ const AdminBookingsPage = () => {
   const { bookings, getTourById, getInstructorById } = useAppData();
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("highlight");
+  const [query, setQuery] = useState("");
 
   const sorted = [...bookings].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = sorted.filter((booking) => {
+    if (!normalizedQuery) return true;
+    const tour = getTourById(booking.tourId);
+    return (
+      booking.diverName.toLowerCase().includes(normalizedQuery) ||
+      (tour?.title ?? "").toLowerCase().includes(normalizedQuery) ||
+      booking.id.toLowerCase().includes(normalizedQuery)
+    );
+  });
 
   return (
     <div className="space-y-4">
       <CancellationReviewQueue />
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="예약자명 / 투어명 / 예약ID로 검색"
+          className="h-9 pl-8 text-xs"
+        />
+      </div>
       <div className="space-y-2">
-        {sorted.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">예약 내역이 없습니다.</p>
+        {filtered.length === 0 && (
+          <p className="py-8 text-center text-sm text-muted-foreground">조건에 맞는 예약이 없습니다.</p>
         )}
-        {sorted.map((booking) => {
+        {filtered.map((booking) => {
           const tour = getTourById(booking.tourId);
           const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
           return (

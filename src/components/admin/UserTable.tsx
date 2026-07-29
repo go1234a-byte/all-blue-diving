@@ -1,4 +1,5 @@
-import { ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   AlertDialog,
@@ -13,6 +14,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import type { ProfileStatus } from "@/types";
@@ -33,7 +42,20 @@ const STATUS_VARIANT: Record<ProfileStatus, "default" | "secondary" | "destructi
 export function UserTable() {
   const { diverProfiles, instructorProfiles, instructors, setProfileStatus } = useAppData();
   const { toast } = useToast();
-  const allUsers = [...instructorProfiles, ...diverProfiles];
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "diver" | "instructor">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | ProfileStatus>("all");
+  const allUsersRaw = [...instructorProfiles, ...diverProfiles];
+  const normalizedQuery = query.trim().toLowerCase();
+  const allUsers = allUsersRaw.filter((user) => {
+    if (roleFilter !== "all" && user.role !== roleFilter) return false;
+    if (statusFilter !== "all" && user.status !== statusFilter) return false;
+    if (!normalizedQuery) return true;
+    return (
+      user.name.toLowerCase().includes(normalizedQuery) ||
+      (user.phone ?? "").toLowerCase().includes(normalizedQuery)
+    );
+  });
 
   const handleStatusChange = (userId: string, userName: string, status: ProfileStatus) => {
     setProfileStatus(userId, status);
@@ -51,8 +73,42 @@ export function UserTable() {
 
   return (
     <div className="space-y-2">
+      <div className="space-y-2 rounded-xl border border-border bg-card p-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="이름 또는 전화번호로 검색"
+            className="h-8 pl-8 text-xs"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 역할</SelectItem>
+              <SelectItem value="diver">다이버</SelectItem>
+              <SelectItem value="instructor">강사</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 상태</SelectItem>
+              <SelectItem value="active">정상</SelectItem>
+              <SelectItem value="warned">경고</SelectItem>
+              <SelectItem value="suspended">활동정지</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
       {allUsers.length === 0 && (
-        <p className="py-6 text-center text-sm text-muted-foreground">등록된 회원이 없습니다.</p>
+        <p className="py-6 text-center text-sm text-muted-foreground">조건에 맞는 회원이 없습니다.</p>
       )}
       {allUsers.map((user) => {
         const detailLink = detailLinkFor(user);

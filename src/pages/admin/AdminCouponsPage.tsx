@@ -38,6 +38,14 @@ const AdminCouponsPage = () => {
       toast({ title: "쿠폰 코드와 할인 값을 입력해주세요", variant: "destructive" });
       return;
     }
+    if (discountType === "percent" && Number(discountValue) > 100) {
+      toast({ title: "할인율은 100%를 초과할 수 없습니다", variant: "destructive" });
+      return;
+    }
+    if (expiresAt && new Date(expiresAt).getTime() < Date.now()) {
+      toast({ title: "유효기간은 오늘 이후 날짜로 설정해주세요", variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
     try {
       await addCoupon({

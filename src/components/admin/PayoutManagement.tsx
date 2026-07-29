@@ -10,12 +10,14 @@ const STATUS_LABEL: Record<PayoutStatus, string> = {
   scheduled: "정산 예정",
   held: "정산 보류",
   released: "정산 완료",
+  cancelled: "취소됨(환불)",
 };
 
 const STATUS_VARIANT: Record<PayoutStatus, "default" | "secondary" | "destructive"> = {
   scheduled: "secondary",
   held: "destructive",
   released: "default",
+  cancelled: "secondary",
 };
 
 /** 모바일 폭에 맞춘 카드형 정산 목록 — 기존 데스크톱 표 대신 사용한다. */
@@ -54,7 +56,7 @@ export function PayoutManagement() {
                 <p className="font-semibold text-foreground">{formatKRW(payout.secondAmount)}</p>
               </div>
             </div>
-            {payout.status === "held" ? (
+            {payout.status === "held" && (
               <Button
                 size="sm"
                 variant="outline"
@@ -64,17 +66,28 @@ export function PayoutManagement() {
                 <Unlock className="h-3.5 w-3.5" />
                 보류 해제
               </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="destructive"
-                className="w-full gap-1 text-xs"
-                onClick={() => setPayoutStatus(payout.id, "held")}
-                disabled={payout.status === "released"}
-              >
-                <Lock className="h-3.5 w-3.5" />
-                정산 보류
-              </Button>
+            )}
+            {payout.status === "scheduled" && (
+              <div className="flex gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 gap-1 text-xs"
+                  onClick={() => setPayoutStatus(payout.id, "released")}
+                >
+                  <Unlock className="h-3.5 w-3.5" />
+                  즉시 승인
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="flex-1 gap-1 text-xs"
+                  onClick={() => setPayoutStatus(payout.id, "held")}
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  정산 보류
+                </Button>
+              </div>
             )}
           </div>
         );

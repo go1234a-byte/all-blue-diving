@@ -29,7 +29,7 @@ import type {
 import { MOCK_ADMIN_PROFILE, MOCK_DIVE_CENTERS } from "@/data/mockData";
 import { computeSettlement } from "@/lib/pricing";
 import { computeRefundRate, computeRefundAmount } from "@/lib/refund";
-import { shouldEvaluateAutoClose, MIN_PARTICIPANTS_AUTO_CANCEL_REASON } from "@/lib/tourAutoClose";
+import { shouldEvaluateAutoClose, MIN_PARTICIPANTS_AUTO_CANCEL_REASON, ADMIN_FORCED_CLOSURE_REASON } from "@/lib/tourAutoClose";
 import { sendPushToProfile } from "@/lib/push";
 import { maskName } from "@/lib/masking";
 import { supabase } from "@/integrations/supabase/client";
@@ -523,6 +523,7 @@ interface AppDataContextValue {
 
   addTour: (input: NewTourInput) => Promise<Tour>;
   resolveUnderMinDecision: (tourId: string, decision: UnderMinParticipantsPolicy) => Promise<void>;
+  forceCancelTourBookings: (tourId: string) => Promise<number>;
   updateTourNotice: (tourId: string, notice: string) => Promise<void>;
   updateTourItinerary: (tourId: string, days: TourItineraryDay[]) => Promise<void>;
   updateTourMeetingInfo: (tourId: string, meetingPoint: string, meetingTime: string) => Promise<void>;
@@ -1086,6 +1087,66 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         );
       });
     }
+  };
+
+  /**
+   * 관리자가 투어를 강제 정지시킬 때, 이미 확정된 예약을 일괄 전액환불 취소 처리한다.
+   * (관리자 귀책/운영상 사유의 강제 마감이므로 다이버에게 불이익이 없도록 항상 100% 환불)
+   * 반환값: 취소 처리된 예약 건수.
+   */
+  const forceCancelTourBookings = async (tourId: string): Promise<number> => {
+    const tour = tours.find((t) => t.id === tourId);
+    if (!tour) return 0;
+
+    const confirmedBookings = bookings.filter((b) => b.tourId === tourId && b.status === "confirmed");
+    const cancelRequestedAt = new Date().toISOString();
+
+    confirmedBookings.forEach((booking) => {
+      const refundRate = 1.0;
+      const refundAmount = computeRefundAmount(booking.totalPaid, refundRate);
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === booking.id
+            ? {
+                ...b,
+                status: "cancelled",
+                cancelReason: ADMIN_FORCED_CLOSURE_REASON,
+                refundRate,
+                refundAmount,
+                cancelRequestedAt,
+              }
+            : b,
+        ),
+      );
+      void supabase
+        .from("bookings")
+        .update({
+          status: "cancelled",
+          cancel_reason: ADMIN_FORCED_CLOSURE_REASON,
+          refund_rate: refundRate,
+          refund_amount: refundAmount,
+          cancel_requested_at: cancelRequestedAt,
+        })
+        .eq("id", booking.id);
+
+      setPayouts((prev) =>
+        prev.map((p) => (p.bookingId === booking.id && p.status !== "released" ? { ...p, status: "cancelled" } : p)),
+      );
+      void supabase
+        .from("payouts")
+        .update({ status: "cancelled" })
+        .eq("booking_id", booking.id)
+        .neq("status", "released");
+
+      notifyDiverPush(
+        booking.diverId,
+        "투어가 취소되었습니다",
+        `${tour.title} 투어가 운영 사정으로 취소되어 전액 환불됩니다.`,
+        "/mypage",
+      );
+    });
+
+    return confirmedBookings.length;
   };
 
   const addTour = async (input: NewTourInput): Promise<Tour> => {
@@ -2086,6 +2147,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setSupportTickets((prev) =>
       prev.map((t) => (t.id === ticketId ? { ...t, status, adminReply: adminReply ?? t.adminReply } : t)),
     );
+
+    // 관리자 답변이 새로 등록된 경우, 문의를 남긴 사용자에게 답변 완료를 즉시 알려준다.
+    if (adminReply && adminReply.trim()) {
+      const ticket = supportTickets.find((t) => t.id === ticketId);
+      if (ticket) {
+        notifyDiverPush(
+          ticket.userId,
+          "문의하신 내용에 답변이 등록되었습니다",
+          adminReply.length > 60 ? `${adminReply.slice(0, 60)}...` : adminReply,
+          "/mypage",
+        );
+      }
+    }
   };
 
   const getInstructorById = (id: string) => instructors.find((i) => i.id === id);
@@ -2135,6 +2209,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       coupons,
       addTour,
       resolveUnderMinDecision,
+      forceCancelTourBookings,
       updateTourNotice,
       updateTourItinerary,
       updateTourMeetingInfo,

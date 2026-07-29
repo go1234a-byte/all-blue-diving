@@ -251,11 +251,12 @@ function bucketKeyFor(date: Date, granularity: RevenueGranularity): string {
   const m = date.getMonth();
   switch (granularity) {
     case "day":
-      return date.toISOString().slice(0, 10);
+      // toISOString()은 UTC 기준이라 자정~오전 9시(KST) 사이 예약이 하루 전으로 밀리는 버그가 있었음.
+      return toLocalDateKey(date);
     case "week": {
       const firstDay = new Date(date);
       firstDay.setDate(date.getDate() - date.getDay());
-      return firstDay.toISOString().slice(0, 10);
+      return toLocalDateKey(firstDay);
     }
     case "month":
       return `${y}-${String(m + 1).padStart(2, "0")}`;

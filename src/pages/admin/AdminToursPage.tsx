@@ -22,6 +22,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CancelBookingDialog } from "@/components/mypage/CancelBookingDialog";
@@ -41,12 +48,13 @@ const ADMIN_STATUS_LABEL: Record<NonNullable<Tour["adminStatus"]>, string> = {
 interface TourStatusActionsProps {
   tour: Tour;
   bookingCount: number;
+  confirmedCount: number;
   onStatusChange: (tour: Tour, adminStatus: Tour["adminStatus"]) => void;
   onDelete: (tour: Tour, bookingCount: number) => void;
 }
 
 /** 정지/보류/재개/삭제 액션 버튼 묶음. 목록 카드와 상세 다이얼로그 양쪽에서 재사용한다. */
-function TourStatusActions({ tour, bookingCount, onStatusChange, onDelete }: TourStatusActionsProps) {
+function TourStatusActions({ tour, bookingCount, confirmedCount, onStatusChange, onDelete }: TourStatusActionsProps) {
   return (
     <div className="space-y-1.5">
       <div className="flex gap-1.5">
@@ -83,8 +91,11 @@ function TourStatusActions({ tour, bookingCount, onStatusChange, onDelete }: Tou
               <AlertDialogHeader>
                 <AlertDialogTitle>&quot;{tour.title}&quot; 투어를 정지시키겠습니까?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  정지하면 검색 노출이 즉시 제거되고 신규 예약도 차단됩니다. 다시 정상화하려면 &quot;재개&quot;를,
-                  완전히 없애려면 아래 &quot;투어 삭제&quot;를 사용하세요.
+                  정지하면 검색 노출이 즉시 제거되고 신규 예약도 차단됩니다.
+                  {confirmedCount > 0
+                    ? ` 이미 확정된 예약 ${confirmedCount}건은 전액 환불 처리되어 취소됩니다.`
+                    : ""}{" "}
+                  다시 정상화하려면 &quot;재개&quot;를, 완전히 없애려면 아래 &quot;투어 삭제&quot;를 사용하세요.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -126,14 +137,29 @@ function TourStatusActions({ tour, bookingCount, onStatusChange, onDelete }: Tou
 
 /** 모바일 폭에 맞춘 카드형 투어 목록 — 관리자가 투어를 확인하고 정지/보류/재개할 수 있다. */
 const AdminToursPage = () => {
-  const { tours, getInstructorById, bookings, setTourAdminStatus, deleteTour } = useAppData();
+  const { tours, getInstructorById, bookings, setTourAdminStatus, forceCancelTourBookings, deleteTour } =
+    useAppData();
   const { toast } = useToast();
   const [detailTour, setDetailTour] = useState<Tour | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed" | "suspended" | "held">("all");
 
-  const handleAdminStatusChange = (tour: Tour, adminStatus: Tour["adminStatus"]) => {
+  const filteredTours = tours.filter((tour) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "suspended" || statusFilter === "held") return tour.adminStatus === statusFilter;
+    return !tour.adminStatus && tour.status === statusFilter;
+  });
+
+  const handleAdminStatusChange = async (tour: Tour, adminStatus: Tour["adminStatus"]) => {
     setTourAdminStatus(tour.id, adminStatus);
-    if (adminStatus) {
+    if (adminStatus === "suspended") {
+      const cancelledCount = await forceCancelTourBookings(tour.id);
+      toast({
+        title: `"${tour.title}" 투어를 정지 처리했습니다.${
+          cancelledCount > 0 ? ` 확정 예약 ${cancelledCount}건을 전액 환불 취소했습니다.` : ""
+        }`,
+      });
+    } else if (adminStatus) {
       toast({ title: `"${tour.title}" 투어를 ${ADMIN_STATUS_LABEL[adminStatus]} 처리했습니다.` });
     } else {
       toast({ title: `"${tour.title}" 투어를 정상 상태로 재개했습니다.` });
@@ -159,10 +185,24 @@ const AdminToursPage = () => {
 
   return (
     <div className="space-y-2">
-      {tours.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted-foreground">등록된 투어가 없습니다.</p>
+      <div className="rounded-xl border border-border bg-card p-3">
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체 상태</SelectItem>
+            <SelectItem value="open">모집중</SelectItem>
+            <SelectItem value="closed">마감</SelectItem>
+            <SelectItem value="suspended">정지됨</SelectItem>
+            <SelectItem value="held">보류중</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {filteredTours.length === 0 && (
+        <p className="py-8 text-center text-sm text-muted-foreground">조건에 맞는 투어가 없습니다.</p>
       )}
-      {tours.map((tour) => {
+      {filteredTours.map((tour) => {
         const instructor = getInstructorById(tour.instructorId);
         const tourBookings = bookings.filter((b) => b.tourId === tour.id);
         const participantCount = tourBookings.filter((b) => b.status === "confirmed").length;
@@ -206,6 +246,7 @@ const AdminToursPage = () => {
             <TourStatusActions
               tour={tour}
               bookingCount={tourBookings.length}
+              confirmedCount={participantCount}
               onStatusChange={handleAdminStatusChange}
               onDelete={handleDelete}
             />
@@ -338,6 +379,7 @@ const AdminToursPage = () => {
               <TourStatusActions
                 tour={detailTour}
                 bookingCount={detailBookings.length}
+                confirmedCount={detailBookings.filter((b) => b.status === "confirmed").length}
                 onStatusChange={(t, s) => {
                   handleAdminStatusChange(t, s);
                   setDetailTour({ ...t, adminStatus: s });

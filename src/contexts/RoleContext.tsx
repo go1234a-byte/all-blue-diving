@@ -118,6 +118,31 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     };
   }, [session?.user?.id, toast]);
 
+  // 이미 로그인된 상태에서 관리자가 정지 처리를 하면, 세션을 유지한 채(재로그인 전까지) 계속
+  // 이용 가능했던 문제가 있었다 (프로필 상태는 session.user.id가 바뀔 때만 재확인했음).
+  // 활동 중에도 주기적으로 본인 상태를 다시 확인해서, 정지되면 곧바로 강제 로그아웃한다.
+  useEffect(() => {
+    if (!session?.user) return;
+    const intervalId = window.setInterval(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      if ((data as { status?: string } | null)?.status === "suspended") {
+        await supabase.auth.signOut();
+        setSession(null);
+        setProfile(null);
+        toast({
+          title: "이용이 제한된 계정입니다",
+          description: "관리자에 의해 이용이 정지된 계정이에요. 문의사항은 고객센터로 연락해주세요.",
+          variant: "destructive",
+        });
+      }
+    }, 60000);
+    return () => window.clearInterval(intervalId);
+  }, [session?.user, toast]);
+
   // QA 데모용 강사 바인딩: MasterRoleToolbar에서 "강사"를 고르면 실제 프로필이 없으므로
   // 시드된 강사 중 첫 번째를 데모 강사로 바인딩해 대시보드/투어/정산이 비지 않도록 한다.
   useEffect(() => {
