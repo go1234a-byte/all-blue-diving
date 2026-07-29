@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export type MasterRole = "public" | "instructor" | "admin";
 
@@ -42,6 +43,7 @@ const RoleContext = createContext<RoleContextValue | undefined>(undefined);
 const DEV_ROLE_OVERRIDE_KEY = "allblue-dev-role-override";
 
 export function RoleProvider({ children }: { children: ReactNode }) {
+  const { toast } = useToast();
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -91,13 +93,30 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         .eq("id", session.user.id)
         .maybeSingle();
       if (!active) return;
-      setProfile(data as ProfileRow | null);
+      const row = data as ProfileRow | null;
+      // 관리자가 정지(suspended) 처리한 계정은 로그인 상태를 유지시키지 않는다 —
+      // 세션을 즉시 종료해 다른 곳에서와 마찬가지로(RequireRole 등) 접근이 실제로 막히게 한다.
+      if (row?.status === "suspended") {
+        await supabase.auth.signOut();
+        if (active) {
+          setSession(null);
+          setProfile(null);
+          setAuthLoading(false);
+          toast({
+            title: "이용이 제한된 계정입니다",
+            description: "관리자에 의해 이용이 정지된 계정이에요. 문의사항은 고객센터로 연락해주세요.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+      setProfile(row);
       setAuthLoading(false);
     })();
     return () => {
       active = false;
     };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, toast]);
 
   // QA 데모용 강사 바인딩: MasterRoleToolbar에서 "강사"를 고르면 실제 프로필이 없으므로
   // 시드된 강사 중 첫 번째를 데모 강사로 바인딩해 대시보드/투어/정산이 비지 않도록 한다.
