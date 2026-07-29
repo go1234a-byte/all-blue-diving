@@ -581,7 +581,7 @@ interface AppDataContextValue {
   cancelBooking: (bookingId: string, reason: string) => Promise<{ refundRate: number; refundAmount: number }>;
   updateBookingRoom: (bookingId: string, roomNo: string | null) => Promise<void>;
   submitCancellationForReview: (bookingId: string, reason: string, evidenceFileNames: string[]) => Promise<void>;
-  resolveCancellationReview: (bookingId: string, approved: boolean) => Promise<void>;
+  resolveCancellationReview: (bookingId: string, approved: boolean, rejectReason?: string) => Promise<void>;
   addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => ArbitrationMessage;
   addCenter: (input: NewCenterInput) => Promise<Center>;
   updateCenter: (centerId: string, updates: NewCenterInput) => Promise<void>;
@@ -1826,7 +1826,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
    * 관리자 취소 심사 처리: 승인 시 전액 환불 + 정산 롤백 + 강사 페널티 알림 발행,
    * 반려 시 예약을 원상 복구한다.
    */
-  const resolveCancellationReview = async (bookingId: string, approved: boolean) => {
+  const resolveCancellationReview = async (bookingId: string, approved: boolean, rejectReason?: string) => {
     const booking = bookings.find((b) => b.id === bookingId);
     const tour = booking ? tours.find((t) => t.id === booking.tourId) : undefined;
 
@@ -1878,6 +1878,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         prev.map((b) => (b.id === bookingId ? { ...b, status: "confirmed" } : b)),
       );
       await supabase.from("bookings").update({ status: "confirmed" }).eq("id", bookingId);
+
+      // 반려 사유를 다이버에게 즉시 전달한다 (컬럼 미존재로 영구 저장은 아직 불가, 우선 실시간 알림으로 전달).
+      if (booking) {
+        notifyDiverPush(
+          booking.diverId,
+          "취소 신청이 반려되었습니다",
+          rejectReason
+            ? `사유: ${rejectReason}`
+            : "예약이 다시 확정 처리되었습니다. 자세한 사유는 고객센터로 문의해주세요.",
+          "/mypage",
+        );
+      }
     }
   };
 

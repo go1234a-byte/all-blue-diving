@@ -1,8 +1,21 @@
+import { useState } from "react";
 import { AlertTriangle, CheckCircle2, MessagesSquare, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatDateKR } from "@/lib/dates";
 
@@ -14,6 +27,7 @@ import { formatDateKR } from "@/lib/dates";
 export function CancellationReviewQueue() {
   const { bookings, getTourById, resolveCancellationReview, arbitrationMessages } = useAppData();
   const pending = bookings.filter((b) => b.status === "cancel_pending_review");
+  const [rejectReasonDrafts, setRejectReasonDrafts] = useState<Record<string, string>>({});
 
   if (pending.length === 0) {
     return (
@@ -81,15 +95,41 @@ export function CancellationReviewQueue() {
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   중재 결정: 강제 환불 승인
                 </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="flex-1 gap-1 text-xs"
-                  onClick={() => resolveCancellationReview(booking.id, false)}
-                >
-                  <XCircle className="h-3.5 w-3.5" />
-                  중재 결정: 기각
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="secondary" className="flex-1 gap-1 text-xs">
+                      <XCircle className="h-3.5 w-3.5" />
+                      중재 결정: 기각
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>이 취소 신청을 기각하시겠습니까?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        예약이 다시 확정 상태로 복구됩니다. 반려 사유를 입력하면 다이버에게 즉시 알림으로
+                        전달됩니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <Textarea
+                      placeholder="반려 사유를 입력하세요 (다이버에게 전달됩니다)"
+                      value={rejectReasonDrafts[booking.id] ?? ""}
+                      onChange={(e) =>
+                        setRejectReasonDrafts((prev) => ({ ...prev, [booking.id]: e.target.value }))
+                      }
+                      className="text-xs"
+                    />
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() =>
+                          resolveCancellationReview(booking.id, false, rejectReasonDrafts[booking.id])
+                        }
+                      >
+                        기각 확정
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </CardContent>
           </Card>
