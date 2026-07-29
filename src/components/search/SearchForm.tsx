@@ -46,6 +46,10 @@ export interface SearchFormValues {
 interface SearchFormProps {
   initial?: Partial<SearchFormValues>;
   compact?: boolean;
+  /** 출발 월을 부모(홈 화면 등)에서 제어하고 싶을 때 사용. 지정하면 월 선택이
+   *  검색 페이지로 이동하지 않고, 부모가 즉시 자체 목록을 필터링하는 데 쓰인다. */
+  months?: number[];
+  onMonthsChange?: (months: number[]) => void;
 }
 
 interface Suggestion {
@@ -58,12 +62,20 @@ interface Suggestion {
  * 입력 중에는 기존 국가/사이트 목록 + 실제 등록된 투어 데이터를 기반으로
  * 연관 검색어(입력 중)/추천 검색어(입력 전) 드롭다운을 보여준다.
  */
-export function SearchForm({ initial, compact = false }: SearchFormProps) {
+export function SearchForm({
+  initial,
+  compact = false,
+  months: controlledMonthsProp,
+  onMonthsChange,
+}: SearchFormProps) {
   const navigate = useNavigate();
   const { tours } = useAppData();
   const [query, setQuery] = useState(initial?.query ?? "");
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [months, setMonths] = useState<number[]>(initial?.months ?? []);
+  const [internalMonths, setInternalMonths] = useState<number[]>(initial?.months ?? []);
+  // 부모가 months/onMonthsChange를 넘겨주면 그 값을 그대로 쓰고(controlled),
+  // 아니면 컴포넌트 내부 상태를 쓴다(uncontrolled, 기존 동작 유지).
+  const months = controlledMonthsProp ?? internalMonths;
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>(
     initial?.activityTypes ?? [],
   );
@@ -129,9 +141,14 @@ export function SearchForm({ initial, compact = false }: SearchFormProps) {
 
   // 출발 월은 다른 상세 조건(액티비티/가격/정렬)과 달리 고르는 즉시 결과를 보여준다 —
   // "8월 선택 → 8월 투어만 보이고, 이어서 9월도 선택 → 8월+9월 투어가 함께 보이는" 즉각 반응 방식.
+  // 단, 검색 결과 페이지로 이동하지는 않는다 — onMonthsChange가 있으면(홈 화면) 그 자리에서
+  // 바로 목록을 필터링하고, 없으면 이 폼 안의 상태만 갱신한다.
   const handleMonthsChange = (nextMonths: number[]) => {
-    setMonths(nextMonths);
-    runSearch(query, nextMonths);
+    if (onMonthsChange) {
+      onMonthsChange(nextMonths);
+    } else {
+      setInternalMonths(nextMonths);
+    }
   };
 
   const handleSelectSuggestion = (s: Suggestion) => {

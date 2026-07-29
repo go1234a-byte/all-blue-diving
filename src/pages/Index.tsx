@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Megaphone } from "lucide-react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -25,10 +26,16 @@ const Index = () => {
     return <Navigate to="/admin/home" replace />;
   }
 
+  // 홈 화면 검색 폼의 "출발 월" 선택 상태. 여기서 관리해서 월을 고르는 즉시(페이지 이동 없이)
+  // 아래 "모집중인 투어" 목록을 바로 필터링한다. 복수 선택 가능.
+  const [months, setMonths] = useState<number[]>([]);
+
   // 관리자가 정지/보류 처리한 투어는 다이버에게 노출하지 않는다.
   // 모집 마감되었거나(최소 인원 미달로 취소된 경우 포함) 관리자가 정지/보류 처리한 투어는
   // 홈 화면 "모집중인 투어" 목록에서 제외한다 — 더 이상 예약을 받을 수 없기 때문.
-  const tours = allTours.filter((t) => !t.adminStatus && t.status === "open");
+  const tours = allTours
+    .filter((t) => !t.adminStatus && t.status === "open")
+    .filter((t) => months.length === 0 || months.includes(new Date(t.startDate).getMonth()));
   const pinnedNotice = notices.find((n) => n.pinned);
 
   return (
@@ -55,7 +62,7 @@ const Index = () => {
           </Link>
         )}
 
-        <SearchForm />
+        <SearchForm months={months} onMonthsChange={setMonths} />
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">
