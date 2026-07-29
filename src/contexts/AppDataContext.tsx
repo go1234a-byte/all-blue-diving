@@ -1394,17 +1394,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .select()
       .single();
 
-    const booking: Booking = !error && data
-      ? mapBookingRow(data)
-      : {
-          id: nextId("bk"),
-          depositStatus: "paid",
-          status: "confirmed",
-          createdAt: new Date().toISOString(),
-          ...input,
-          diverId,
-          participantCount: requestedCount,
-        };
+    if (error || !data) {
+      // 예약 INSERT가 실패했는데도 로컬에만 존재하는 가짜 예약 객체로 조용히
+      // 넘어가면, 결제자는 "결제 및 예약 완료" 화면을 보지만 실제로는 DB에
+      // 예약이 전혀 남지 않는 심각한 사고로 이어진다(정원에도 반영 안 됨,
+      // 강사도 확인 불가). 반드시 에러를 던져서 Checkout.tsx의 handlePay가
+      // 결제 실패로 처리하고 사용자에게 알리도록 한다.
+      console.error("[addBooking] bookings insert 실패:", error);
+      throw new Error(
+        error?.message
+          ? `예약 저장에 실패했습니다: ${error.message}`
+          : "예약 저장에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
+    }
+    const booking: Booking = mapBookingRow(data);
     setBookings((prev) => [booking, ...prev]);
 
     const tour = tours.find((t) => t.id === input.tourId);
@@ -1422,6 +1425,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         .select()
         .single();
 
+      if (payoutError) {
+        // 정산 레코드 저장 실패는 예약 자체를 무효화하지 않는다(다이버 쪽 예약은
+        // 이미 정상적으로 확정됨) — 다만 이 값이 로컬 전용 fallback으로만
+        // 채워지면 실제 정산 대시보드/CSV에는 절대 나타나지 않으므로, 최소한
+        // 콘솔에는 남겨서 나중에 추적 가능하게 한다.
+        console.error("[addBooking] payouts insert 실패 (예약은 정상 처리됨):", payoutError);
+      }
       const payout: Payout = !payoutError && payoutData
         ? mapPayoutRow(payoutData)
         : {
