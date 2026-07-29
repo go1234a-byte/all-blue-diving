@@ -500,6 +500,7 @@ interface AppDataContextValue {
   instructorsLoading: boolean;
   instructorProfiles: Profile[];
   diverProfiles: Profile[];
+  publicProfiles: Profile[];
   adminProfile: Profile;
   bookings: Booking[];
   bookingsLoading: boolean;
@@ -629,6 +630,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [instructorsLoading, setInstructorsLoading] = useState(true);
   const [instructorProfiles, setInstructorProfiles] = useState<Profile[]>([]);
   const [diverProfiles, setDiverProfiles] = useState<Profile[]>([]);
+  const [publicProfiles, setPublicProfiles] = useState<Profile[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [payouts, setPayouts] = useState<Payout[]>([]);
@@ -836,6 +838,35 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         });
         setDiverProfiles(rows.filter((r) => r.role === "diver").map(toProfile));
         setInstructorProfiles(rows.filter((r) => r.role === "instructor").map(toProfile));
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // `public_profiles` 뷰(이름/역할/상태만 노출되는 안전한 공개용 뷰)에서 전체 사용자를 가져온다.
+  // 전화번호/C카드/비상연락처 등 민감정보는 이 뷰에 포함되지 않으므로, 리뷰 작성자 이름이나
+  // 강사 공개 프로필의 정지 상태처럼 "본인/관리자/담당 강사"가 아니어도 봐야 하는 화면에서 사용한다.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase.from("public_profiles").select("*");
+      if (!active) return;
+      if (!error && data) {
+        setPublicProfiles(
+          (data as { id: string; role: string; name: string; status: string; created_at: string }[]).map((row) => ({
+            id: row.id,
+            role: row.role as Profile["role"],
+            name: row.name,
+            phone: "",
+            gender: "male",
+            status: row.status as Profile["status"],
+            createdAt: row.created_at,
+            snoring: false,
+            smoking: false,
+          })),
+        );
       }
     })();
     return () => {
@@ -2082,6 +2113,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       instructorsLoading,
       instructorProfiles,
       diverProfiles,
+      publicProfiles,
       adminProfile: MOCK_ADMIN_PROFILE,
       bookings,
       bookingsLoading,
@@ -2167,6 +2199,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       instructorsLoading,
       instructorProfiles,
       diverProfiles,
+      publicProfiles,
       bookings,
       bookingsLoading,
       payouts,

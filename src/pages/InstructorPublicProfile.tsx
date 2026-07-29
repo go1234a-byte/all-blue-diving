@@ -116,8 +116,7 @@ const InstructorPublicProfile = () => {
     tours,
     bookings,
     chatMessages,
-    diverProfiles,
-    instructorProfiles,
+    publicProfiles,
     getReviewsByInstructorId,
     setInstructorPenalty,
     setProfileStatus,
@@ -164,7 +163,8 @@ const InstructorPublicProfile = () => {
     [myTours],
   );
 
-  const linkedProfile = instructor ? instructorProfiles.find((p) => p.id === instructor.profileId) : undefined;
+  // 정지 상태 표시는 방문자 누구나 봐야 하므로 이름/역할/상태만 담긴 공개용 프로필(publicProfiles)에서 조회한다.
+  const linkedProfile = instructor ? publicProfiles.find((p) => p.id === instructor.profileId) : undefined;
   const isBanned = linkedProfile?.status === "suspended";
 
   const handleWarn = () => {
@@ -696,7 +696,7 @@ const InstructorPublicProfile = () => {
           ) : (
             <div className="space-y-2">
               {reviews.slice(0, 20).map((review) => {
-                const reviewerName = diverProfiles.find((p) => p.id === review.diverId)?.name;
+                const reviewerName = publicProfiles.find((p) => p.id === review.diverId)?.name;
                 return (
                   <Card key={review.id}>
                     <CardContent className="space-y-1.5 p-3">
