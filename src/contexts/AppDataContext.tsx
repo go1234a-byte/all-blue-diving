@@ -1217,6 +1217,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         throw new Error("이미 이 투어에 예약하셨습니다. 중복으로 예약할 수 없습니다.");
       }
     }
+    // 잔여 정원을 초과해서는 예약할 수 없다. (참고: 여기서의 검사는 클라이언트가 마지막으로 받은
+    // bookings 상태를 기준으로 하므로, 동시에 여러 명이 마지막 한 자리를 두고 경합하는 극단적인
+    // 케이스까지 완전히 막지는 못한다 — 완전한 방지는 DB 트랜잭션/제약조건이 필요하다.)
+    const targetTour = tours.find((t) => t.id === input.tourId);
+    if (targetTour) {
+      const confirmedCount = bookings.filter(
+        (b) => b.tourId === input.tourId && b.status !== "cancelled",
+      ).length;
+      if (confirmedCount >= targetTour.maxParticipants) {
+        throw new Error("모집 정원이 마감되어 더 이상 예약할 수 없습니다.");
+      }
+    }
     const diverId = input.diverId ?? nextId("guest-diver");
     const { data, error } = await supabase
       .from("bookings")

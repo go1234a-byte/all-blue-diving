@@ -59,9 +59,13 @@ const TourDetail = () => {
   // 결제 화면(computeInvoice)과 동일하게 [투어 금액 소계]에 플랫폼 이용 수수료 10%를 더해서 보여준다.
   // 이렇게 해야 투어 카드/상세에서 본 가격과 실제 체크아웃 결제 금액이 정확히 일치한다.
   const displayTotal = applyPlatformFee(tour.basePrice + selectedOptionsTotal);
+  // 정원이 다 찼는데도 status가 아직 "open"으로 남아있는 경우(자동 마감 처리 이전)를 대비해,
+  // 확정 인원이 최대 인원에 도달하면 그 자체로도 예약을 막는다 — 그렇지 않으면 화면상 "N/M명 모집"이
+  // 꽉 찬 걸 보면서도 예약하기 버튼은 계속 눌려서 초과 예약(오버부킹)이 가능했다.
+  const isFull = confirmedCount >= tour.maxParticipants;
   // 관리자가 정지/보류 처리했거나, 모집이 마감된 투어(최소 인원 미달로 취소된 경우 포함)는
   // 더 이상 예약을 받을 수 없다. tour.status는 instructor 콘솔뿐 아니라 실제 예약 가능 여부에도 반영해야 한다.
-  const isBookingBlocked = Boolean(tour.adminStatus) || tour.status === "closed";
+  const isBookingBlocked = Boolean(tour.adminStatus) || tour.status === "closed" || isFull;
   const alreadyBooked = Boolean(myBooking);
 
   const handleBookNow = () => {
