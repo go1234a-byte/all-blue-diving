@@ -63,13 +63,25 @@ function DatePickerField({
   onChange,
   disablePast = true,
   disabled = false,
+  minDate,
+  maxDate,
 }: {
   label: string;
   value?: Date;
   onChange: (d: Date | undefined) => void;
   disablePast?: boolean;
   disabled?: boolean;
+  /** 이 날짜보다 이전은 선택할 수 없다 (예: 종료일은 출발일보다 빠를 수 없음). */
+  minDate?: Date;
+  /** 이 날짜보다 이후는 선택할 수 없다 (예: 모집 마감일은 출발일 이후일 수 없음). */
+  maxDate?: Date;
 }) {
+  const isDateDisabled = (d: Date) => {
+    if (disablePast && isPastDate(toISODate(d))) return true;
+    if (minDate && toISODate(d) < toISODate(minDate)) return true;
+    if (maxDate && toISODate(d) > toISODate(maxDate)) return true;
+    return false;
+  };
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
@@ -90,7 +102,7 @@ function DatePickerField({
             mode="single"
             selected={value}
             onSelect={onChange}
-            disabled={disablePast ? (d) => isPastDate(toISODate(d)) : undefined}
+            disabled={isDateDisabled}
             autoFocus
           />
         </PopoverContent>
@@ -336,6 +348,20 @@ export function TourEditForm({ tour }: TourEditFormProps) {
       });
       return;
     }
+    if (!hasActiveBooking) {
+      if (startDate && endDate && toISODate(endDate) < toISODate(startDate)) {
+        toast({ title: "종료일은 출발일보다 빠를 수 없습니다", variant: "destructive" });
+        return;
+      }
+      if (startDate && deadline && toISODate(deadline) > toISODate(startDate)) {
+        toast({ title: "모집 마감일은 출발일 이후로 설정할 수 없습니다", variant: "destructive" });
+        return;
+      }
+      if (Number(maxParticipants) <= 0) {
+        toast({ title: "모집 정원은 1명 이상이어야 합니다", variant: "destructive" });
+        return;
+      }
+    }
     if (centerMode === "existing" && !selectedCenterId) {
       toast({ title: "이용센터를 선택해주세요", variant: "destructive" });
       return;
@@ -562,8 +588,8 @@ export function TourEditForm({ tour }: TourEditFormProps) {
       <div className="space-y-1.5">
         <div className="grid grid-cols-3 gap-3">
           <DatePickerField label="투어 출발일" value={startDate} onChange={setStartDate} disabled={hasActiveBooking} />
-          <DatePickerField label="투어 종료일" value={endDate} onChange={setEndDate} disabled={hasActiveBooking} />
-          <DatePickerField label="투어모집 마감일" value={deadline} onChange={setDeadline} disabled={hasActiveBooking} />
+          <DatePickerField label="투어 종료일" value={endDate} onChange={setEndDate} disabled={hasActiveBooking} minDate={startDate} />
+          <DatePickerField label="투어모집 마감일" value={deadline} onChange={setDeadline} disabled={hasActiveBooking} maxDate={startDate} />
         </div>
         {hasActiveBooking && <LockedFieldNote />}
       </div>
@@ -698,6 +724,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
             <Label>최대 인원</Label>
             <Input
               type="number"
+              min={1}
               value={maxParticipants}
               onChange={(e) => setMaxParticipants(e.target.value)}
               placeholder="8"
@@ -708,6 +735,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
             <Label>최소 인원</Label>
             <Input
               type="number"
+              min={1}
               value={minParticipants}
               onChange={(e) => setMinParticipants(e.target.value)}
               placeholder="2"
