@@ -45,6 +45,8 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
   // 계정 기본 정보 (기존 필드 유지)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreedTerms, setAgreedTerms] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState<Gender>("male");
@@ -76,6 +78,14 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           });
           return false;
         }
+        if (password !== confirmPassword) {
+          toast({ title: "비밀번호가 일치하지 않습니다", description: "비밀번호와 비밀번호 확인을 다시 확인해주세요.", variant: "destructive" });
+          return false;
+        }
+        if (!agreedTerms) {
+          toast({ title: "이용약관 및 개인정보처리방침에 동의해주세요", variant: "destructive" });
+          return false;
+        }
         return true;
       case 2:
         if (licenseFiles.length === 0) {
@@ -105,6 +115,11 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirmPassword || !agreedTerms) {
+      toast({ title: "계정 정보를 다시 확인해주세요", description: "비밀번호 확인 또는 약관 동의가 완료되지 않았습니다.", variant: "destructive" });
+      setStep(1);
+      return;
+    }
     if (!pledgeSignerName.trim() || !pledgeAgreed || !signature) {
       toast({
         title: "전자 서약을 완료해주세요",
@@ -204,6 +219,20 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
             />
           </div>
           <div className="space-y-1.5">
+            <Label htmlFor="ins-password-confirm">비밀번호 확인</Label>
+            <Input
+              id="ins-password-confirm"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="비밀번호를 한 번 더 입력해주세요"
+              aria-invalid={confirmPassword.length > 0 && confirmPassword !== password}
+            />
+            {confirmPassword.length > 0 && confirmPassword !== password && (
+              <p className="text-xs text-destructive">비밀번호가 일치하지 않습니다.</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="ins-name">이름</Label>
             <Input id="ins-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="홍길동" />
           </div>
@@ -240,6 +269,14 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
             <Label>신분증 사본 업로드 (필수)</Label>
             <FileDropzone label="신분증 사본" accept=".pdf,.jpg,.png" onFilesChange={setIdFiles} />
           </div>
+          <label className="flex items-start gap-2 text-xs text-muted-foreground">
+            <Checkbox
+              checked={agreedTerms}
+              onCheckedChange={(v) => setAgreedTerms(v === true)}
+              className="mt-0.5"
+            />
+            <span>ALL BLUE 이용약관 및 개인정보처리방침에 동의합니다. (필수)</span>
+          </label>
         </div>
       )}
 

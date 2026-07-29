@@ -2,13 +2,32 @@ import { useEffect, useRef, useState } from "react";
 import { UploadCloud, FileCheck2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface FileDropzoneProps {
   label: string;
   multiple?: boolean;
   maxFiles?: number;
   accept?: string;
+  /** 파일 1개당 허용 최대 용량(MB). 기본 10MB. */
+  maxSizeMB?: number;
   onFilesChange: (files: File[]) => void;
+}
+
+/** accept 문자열(".pdf,.jpg,.png" 또는 "image/*" 등)을 기준으로 파일 하나가 허용되는지 검사한다.
+ *  드래그 앤 드롭은 브라우저의 파일 선택창(accept 속성)이 적용되지 않기 때문에,
+ *  드롭/선택 어느 경로로 들어오든 여기서 동일하게 형식을 걸러낸다. */
+function isFileTypeAllowed(file: File, accept?: string): boolean {
+  if (!accept) return true;
+  const tokens = accept.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+  if (tokens.length === 0) return true;
+  const fileName = file.name.toLowerCase();
+  const fileType = (file.type || "").toLowerCase();
+  return tokens.some((token) => {
+    if (token.startsWith(".")) return fileName.endsWith(token);
+    if (token.endsWith("/*")) return fileType.startsWith(token.slice(0, -1));
+    return fileType === token;
+  });
 }
 
 export function FileDropzone({
@@ -16,8 +35,10 @@ export function FileDropzone({
   multiple = false,
   maxFiles = 1,
   accept,
+  maxSizeMB = 10,
   onFilesChange,
 }: FileDropzoneProps) {
+  const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -35,9 +56,29 @@ export function FileDropzone({
 
   const applyFiles = (incoming: FileList | null) => {
     if (!incoming) return;
-    const next = multiple
-      ? [...files, ...Array.from(incoming)].slice(0, maxFiles)
-      : Array.from(incoming).slice(0, 1);
+    const maxBytes = maxSizeMB * 1024 * 1024;
+    const accepted: File[] = [];
+    const rejectedReasons: string[] = [];
+    for (const file of Array.from(incoming)) {
+      if (!isFileTypeAllowed(file, accept)) {
+        rejectedReasons.push(`${file.name} — 지원하지 않는 파일 형식입니다`);
+        continue;
+      }
+      if (file.size > maxBytes) {
+        rejectedReasons.push(`${file.name} — 파일 용량이 ${maxSizeMB}MB를 초과합니다`);
+        continue;
+      }
+      accepted.push(file);
+    }
+    if (rejectedReasons.length > 0) {
+      toast({
+        title: "일부 파일을 추가할 수 없습니다",
+        description: rejectedReasons.join(" / "),
+        variant: "destructive",
+      });
+    }
+    if (accepted.length === 0) return;
+    const next = multiple ? [...files, ...accepted].slice(0, maxFiles) : accepted.slice(0, 1);
     setFiles(next);
     onFilesChange(next);
   };

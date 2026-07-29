@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -18,6 +19,8 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
   const { registerDiverProfile } = useAppData();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreedTerms, setAgreedTerms] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState<Gender>("male");
@@ -34,6 +37,14 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
     e.preventDefault();
     if (!email || !password || !name || !phone) {
       toast({ title: "필수 항목을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast({ title: "비밀번호가 일치하지 않습니다", description: "비밀번호와 비밀번호 확인을 다시 확인해주세요.", variant: "destructive" });
+      return;
+    }
+    if (!agreedTerms) {
+      toast({ title: "이용약관 및 개인정보처리방침에 동의해주세요", variant: "destructive" });
       return;
     }
     if (!emergencyContactName || !emergencyContactPhone) {
@@ -142,6 +153,20 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         />
       </div>
       <div className="space-y-1.5">
+        <Label htmlFor="diver-password-confirm">비밀번호 확인</Label>
+        <Input
+          id="diver-password-confirm"
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder="비밀번호를 한 번 더 입력해주세요"
+          aria-invalid={confirmPassword.length > 0 && confirmPassword !== password}
+        />
+        {confirmPassword.length > 0 && confirmPassword !== password && (
+          <p className="text-xs text-destructive">비밀번호가 일치하지 않습니다.</p>
+        )}
+      </div>
+      <div className="space-y-1.5">
         <Label htmlFor="diver-name">이름</Label>
         <Input id="diver-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="홍길동" />
       </div>
@@ -243,7 +268,16 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={submitting}>
+      <label className="flex items-start gap-2 text-xs text-muted-foreground">
+        <Checkbox
+          checked={agreedTerms}
+          onCheckedChange={(v) => setAgreedTerms(v === true)}
+          className="mt-0.5"
+        />
+        <span>ALL BLUE 이용약관 및 개인정보처리방침에 동의합니다. (필수)</span>
+      </label>
+
+      <Button type="submit" className="w-full" disabled={submitting || !agreedTerms}>
         {submitting ? "가입 처리 중..." : "일반 다이버로 가입하기"}
       </Button>
     </form>
