@@ -15,6 +15,7 @@ import {
   BarChart3,
   Settings,
   BookOpen,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -44,6 +45,7 @@ const MENU_ITEMS = [
   { to: "/admin/analytics", label: "통계 분석", icon: BarChart3, end: false },
   { to: "/admin/settings", label: "시스템 설정", icon: Settings, end: false },
   { to: "/admin/manual", label: "운영 매뉴얼", icon: BookOpen, end: false },
+  { to: "/admin/qa-checklist", label: "QA 체크리스트", icon: ClipboardCheck, end: false },
 ];
 
 export function AdminSidebar() {

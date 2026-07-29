@@ -28,6 +28,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/analytics": "통계 분석",
   "/admin/settings": "시스템 설정",
   "/admin/manual": "운영 매뉴얼",
+  "/admin/qa-checklist": "QA 체크리스트",
   "/admin/more": "더보기",
 };
 

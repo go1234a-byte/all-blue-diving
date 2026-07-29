@@ -38,6 +38,7 @@ import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import AdminManualPage from "./pages/admin/AdminManualPage";
 import AdminMorePage from "./pages/admin/AdminMorePage";
+import AdminQaChecklistPage from "./pages/admin/AdminQaChecklistPage";
 import { RequireRole } from "./components/auth/RequireRole";
 import { RootLayout } from "./components/layout/RootLayout";
 import { MimoRootLayout } from "./components/mimo/layout/MimoRootLayout";
@@ -112,6 +113,7 @@ export const routers = [
               { path: "settings", name: "admin-settings", element: <AdminSettingsPage /> },
               { path: "manual", name: "admin-manual", element: <AdminManualPage /> },
               { path: "more", name: "admin-more", element: <AdminMorePage /> },
+              { path: "qa-checklist", name: "admin-qa-checklist", element: <AdminQaChecklistPage /> },
             ],
           },
           { path: "arbitration/:instructorId", name: "admin-arbitration", element: <AdminArbitrationRoom /> },

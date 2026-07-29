@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpen,
   Bell,
+  ClipboardCheck,
   Building2,
   CalendarCheck,
   ChevronRight,
@@ -29,6 +30,7 @@ const MORE_ITEMS = [
   { to: "/admin/analytics", label: "통계 분석", icon: BarChart3 },
   { to: "/admin/settings", label: "시스템 설정", icon: Settings },
   { to: "/admin/manual", label: "운영 매뉴얼", icon: BookOpen },
+  { to: "/admin/qa-checklist", label: "QA 체크리스트", icon: ClipboardCheck },
 ];
 
 const AdminMorePage = () => {
