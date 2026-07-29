@@ -6,14 +6,17 @@ import type { Invoice } from "@/types";
 interface PaymentReceiptBreakdownProps {
   tourTitle: string;
   invoice: Invoice;
+  /** 이 결제로 확정되는 인원 수 (본인 포함). 2명 이상이면 안내 문구를 함께 보여준다. */
+  participantCount?: number;
 }
 
 /**
  * "최종 결제 영수증 상세 내역" — 체크아웃 성공 팝업과 내 예약 내역 상세 패널에서 공통으로 사용.
  * 투어 기본 금액, 선택 옵션별 금액, 소계, 플랫폼 수수료, 최종 결제 금액을 명시적으로 표기한다.
  */
-export function PaymentReceiptBreakdown({ tourTitle, invoice }: PaymentReceiptBreakdownProps) {
+export function PaymentReceiptBreakdown({ tourTitle, invoice, participantCount }: PaymentReceiptBreakdownProps) {
   const subtotal = invoice.basePrice + invoice.optionsCost;
+  const unitBasePrice = participantCount && participantCount > 1 ? Math.round(invoice.basePrice / participantCount) : undefined;
 
   return (
     <div className="w-full space-y-2.5 rounded-xl border border-primary/30 bg-card p-3 text-left">
@@ -24,8 +27,14 @@ export function PaymentReceiptBreakdown({ tourTitle, invoice }: PaymentReceiptBr
 
       <div className="space-y-1 text-xs">
         <p className="line-clamp-2 break-keep font-medium text-foreground">{tourTitle}</p>
+        {participantCount && participantCount > 1 && (
+          <div className="flex justify-between font-medium text-primary">
+            <span>예약 인원</span>
+            <span>{participantCount}명</span>
+          </div>
+        )}
         <div className="flex justify-between text-muted-foreground">
-          <span>투어 기본 금액</span>
+          <span>투어 기본 금액{unitBasePrice != null ? ` (1인 ${formatKRW(unitBasePrice)} × ${participantCount}명)` : ""}</span>
           <span>{formatKRW(invoice.basePrice)}</span>
         </div>
         {invoice.selectedOptions.map((option) => (

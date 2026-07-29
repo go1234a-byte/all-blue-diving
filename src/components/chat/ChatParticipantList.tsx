@@ -82,7 +82,11 @@ export function ChatParticipantList({
               <p className="text-sm font-medium text-foreground">
                 {isInstructor ? booking.diverName : maskName(booking.diverName)}
                 {isInstructor && age != null ? ` ${age}세` : ""}
+                {booking.participantCount > 1 ? ` · 본인 포함 ${booking.participantCount}명` : ""}
               </p>
+              {isInstructor && booking.participantCount > 1 && booking.companionNames && (
+                <p className="text-[11px] text-muted-foreground">동반자: {booking.companionNames}</p>
+              )}
               <p className="text-xs text-muted-foreground">
                 {booking.gender === "male" ? "남성" : "여성"}
                 {booking.roomNo ? ` · ${booking.roomNo}호실` : ""}

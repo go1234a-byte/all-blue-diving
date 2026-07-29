@@ -205,7 +205,9 @@ const AdminToursPage = () => {
       {filteredTours.map((tour) => {
         const instructor = getInstructorById(tour.instructorId);
         const tourBookings = bookings.filter((b) => b.tourId === tour.id);
-        const participantCount = tourBookings.filter((b) => b.status === "confirmed").length;
+        const participantCount = tourBookings
+          .filter((b) => b.status === "confirmed")
+          .reduce((sum, b) => sum + (b.participantCount || 1), 0);
         return (
           <div key={tour.id} className="space-y-2 rounded-xl border border-border bg-card p-3">
             <div className="flex items-start justify-between gap-2">
@@ -379,7 +381,9 @@ const AdminToursPage = () => {
               <TourStatusActions
                 tour={detailTour}
                 bookingCount={detailBookings.length}
-                confirmedCount={detailBookings.filter((b) => b.status === "confirmed").length}
+                confirmedCount={detailBookings
+                  .filter((b) => b.status === "confirmed")
+                  .reduce((sum, b) => sum + (b.participantCount || 1), 0)}
                 onStatusChange={(t, s) => {
                   handleAdminStatusChange(t, s);
                   setDetailTour({ ...t, adminStatus: s });

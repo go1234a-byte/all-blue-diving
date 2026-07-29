@@ -30,7 +30,9 @@ export function TourCard({ tour }: TourCardProps) {
   const instructor = getInstructorById(tour.instructorId);
   const bookmarked = isBookmarked(tour.id);
   const bookable = isTourBookable(tour);
-  const confirmedCount = bookings.filter((b) => b.tourId === tour.id && b.status === "confirmed").length;
+  const confirmedCount = bookings
+    .filter((b) => b.tourId === tour.id && b.status === "confirmed")
+    .reduce((sum, b) => sum + (b.participantCount || 1), 0);
   // 강사의 경력/로그 수와 등록한 총 투어 수(진행 투어)를 투어 카드의 강사 정보에 함께 보여준다.
   const instructorTourCount = instructor ? tours.filter((t) => t.instructorId === instructor.id).length : 0;
 

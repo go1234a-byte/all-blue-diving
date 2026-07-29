@@ -70,7 +70,9 @@ const TourDetail = () => {
   const myBooking = currentDiverId
     ? bookings.find((b) => b.tourId === tour.id && b.diverId === currentDiverId && b.status !== "cancelled")
     : undefined;
-  const confirmedCount = bookings.filter((b) => b.tourId === tour.id && b.status === "confirmed").length;
+  const confirmedCount = bookings
+    .filter((b) => b.tourId === tour.id && b.status === "confirmed")
+    .reduce((sum, b) => sum + (b.participantCount || 1), 0);
   const selectedOptionsTotal = tour.customOptions
     .filter((o) => o.isActive && selectedOptionIds.includes(o.id))
     .reduce((sum, o) => sum + o.price, 0);
@@ -237,6 +239,8 @@ const TourDetail = () => {
                       <span className="font-medium text-foreground">
                         {b.diverName}
                         {age != null ? ` ${age}세` : ""} · {b.gender === "male" ? "남" : "여"}
+                        {b.participantCount > 1 ? ` · 본인 포함 ${b.participantCount}명` : ""}
+                        {b.companionNames ? ` (동반자: ${b.companionNames})` : ""}
                       </span>
                       <span className="flex gap-1">
                         {b.smoking && (

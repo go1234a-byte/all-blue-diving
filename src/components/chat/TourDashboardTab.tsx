@@ -21,7 +21,9 @@ export function TourDashboardTab({ tour, bookings, isInstructor }: TourDashboard
   const [draft, setDraft] = useState(tour.instructorNotice ?? "");
   const [saving, setSaving] = useState(false);
 
-  const confirmedCount = bookings.filter((b) => b.status === "confirmed").length;
+  const confirmedCount = bookings
+    .filter((b) => b.status === "confirmed")
+    .reduce((sum, b) => sum + (b.participantCount || 1), 0);
 
   const handleSave = async () => {
     setSaving(true);

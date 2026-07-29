@@ -68,9 +68,9 @@ export function UnderMinDecisionPanel({ instructorId }: UnderMinDecisionPanelPro
         </p>
         <div className="space-y-2">
           {pendingTours.map((tour) => {
-            const confirmedCount = bookings.filter(
-              (b) => b.tourId === tour.id && b.status === "confirmed",
-            ).length;
+            const confirmedCount = bookings
+              .filter((b) => b.tourId === tour.id && b.status === "confirmed")
+              .reduce((sum, b) => sum + (b.participantCount || 1), 0);
             const isProcessing = processingTourId === tour.id;
             return (
               <div

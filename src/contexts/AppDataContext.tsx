@@ -252,6 +252,8 @@ function mapBookingRow(row: any): Booking {
     evidenceFileNames: row.evidence_file_names ?? undefined,
     flightInfo: row.flight_info ?? undefined,
     passportInfo: row.passport_info ?? undefined,
+    participantCount: row.participant_count != null ? Number(row.participant_count) : 1,
+    companionNames: row.companion_names ?? undefined,
   };
 }
 
@@ -366,6 +368,10 @@ export interface NewBookingInput {
   smoking: boolean;
   drinking: boolean;
   roomNote?: string;
+  /** 이 예약으로 결제/확정할 인원 수 (본인 포함, 기본 1명). */
+  participantCount?: number;
+  /** 2명 이상 예약 시 본인 외 동반자 이름 (선택, 자유 텍스트). */
+  companionNames?: string;
 }
 
 interface NewTourInput {
@@ -1344,13 +1350,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     // 잔여 정원을 초과해서는 예약할 수 없다. (참고: 여기서의 검사는 클라이언트가 마지막으로 받은
     // bookings 상태를 기준으로 하므로, 동시에 여러 명이 마지막 한 자리를 두고 경합하는 극단적인
     // 케이스까지 완전히 막지는 못한다 — 완전한 방지는 DB 트랜잭션/제약조건이 필요하다.)
+    const requestedCount = Math.max(1, input.participantCount ?? 1);
     const targetTour = tours.find((t) => t.id === input.tourId);
     if (targetTour) {
-      const confirmedCount = bookings.filter(
-        (b) => b.tourId === input.tourId && b.status !== "cancelled",
-      ).length;
-      if (confirmedCount >= targetTour.maxParticipants) {
-        throw new Error("모집 정원이 마감되어 더 이상 예약할 수 없습니다.");
+      const confirmedCount = bookings
+        .filter((b) => b.tourId === input.tourId && b.status !== "cancelled")
+        .reduce((sum, b) => sum + (b.participantCount || 1), 0);
+      if (confirmedCount + requestedCount > targetTour.maxParticipants) {
+        const remaining = Math.max(0, targetTour.maxParticipants - confirmedCount);
+        throw new Error(
+          remaining > 0
+            ? `잔여 정원은 ${remaining}명입니다. 인원 수를 줄여주세요.`
+            : "모집 정원이 마감되어 더 이상 예약할 수 없습니다.",
+        );
       }
     }
     const diverId = input.diverId ?? nextId("guest-diver");
@@ -1374,6 +1386,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         smoking: input.smoking,
         drinking: input.drinking,
         room_note: input.roomNote ?? null,
+        participant_count: requestedCount,
+        companion_names: input.companionNames ?? null,
         deposit_status: "paid",
         status: "confirmed",
       })
@@ -1389,6 +1403,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           createdAt: new Date().toISOString(),
           ...input,
           diverId,
+          participantCount: requestedCount,
         };
     setBookings((prev) => [booking, ...prev]);
 

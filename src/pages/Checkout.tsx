@@ -26,7 +26,7 @@ const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getTourById, getCouponByCode, addBooking, redeemCoupon, toursLoading } = useAppData();
+  const { getTourById, getCouponByCode, addBooking, redeemCoupon, toursLoading, bookings } = useAppData();
   const { profile, currentDiverId } = useRole();
 
   const tour = tourId ? getTourById(tourId) : undefined;
@@ -38,6 +38,8 @@ const Checkout = () => {
   const [smoking, setSmoking] = useState(false);
   const [drinking, setDrinking] = useState(false);
   const [roomNote, setRoomNote] = useState("");
+  const [participantCount, setParticipantCount] = useState(1);
+  const [companionNames, setCompanionNames] = useState("");
   const [processing, setProcessing] = useState(false);
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
   const [confirmedInclusions, setConfirmedInclusions] = useState(false);
@@ -61,12 +63,17 @@ const Checkout = () => {
     );
   }
 
+  const confirmedCount = bookings
+    .filter((b) => b.tourId === tour.id && b.status !== "cancelled")
+    .reduce((sum, b) => sum + (b.participantCount || 1), 0);
+  const remainingSlots = Math.max(0, tour.maxParticipants - confirmedCount);
+
   const selectedOptions = tour.customOptions
     .filter((o) => o.isActive && selectedOptionIds.includes(o.id))
-    .map((o) => ({ name: o.name, price: o.price }));
+    .map((o) => ({ name: o.name, price: o.price * participantCount }));
 
   const invoice = computeInvoice(
-    tour.basePrice,
+    tour.basePrice * participantCount,
     selectedOptions,
     appliedCoupon ?? undefined,
   );
@@ -74,7 +81,7 @@ const Checkout = () => {
   const handleApplyCoupon = () => {
     if (!couponInput.trim()) return;
     const coupon = getCouponByCode(couponInput);
-    const subtotal = tour.basePrice + selectedOptions.reduce((sum, o) => sum + o.price, 0);
+    const subtotal = tour.basePrice * participantCount + selectedOptions.reduce((sum, o) => sum + o.price, 0);
     const result = validateAndComputeCouponDiscount(coupon, subtotal);
     if (!result.valid || !coupon) {
       setAppliedCoupon(null);
@@ -102,6 +109,14 @@ const Checkout = () => {
       });
       return;
     }
+    if (participantCount > remainingSlots) {
+      toast({
+        title: "잔여 정원을 초과했어요",
+        description: `현재 잔여 정원은 ${remainingSlots}명입니다. 인원 수를 줄여주세요.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setProcessing(true);
     try {
       const created = await addBooking({
@@ -122,6 +137,8 @@ const Checkout = () => {
         smoking,
         drinking,
         roomNote: roomNote.trim() || undefined,
+        participantCount,
+        companionNames: participantCount > 1 && companionNames.trim() ? companionNames.trim() : undefined,
       });
 
       if (invoice.couponCode) {
@@ -169,7 +186,49 @@ const Checkout = () => {
 
         <Card>
           <CardContent className="space-y-3 p-4">
-            <h3 className="text-sm font-semibold text-foreground">참가자 정보 (룸 배정용)</h3>
+            <h3 className="text-sm font-semibold text-foreground">예약 인원</h3>
+            <p className="text-xs text-muted-foreground">
+              한 번의 예약으로 본인 포함 여러 명의 자리를 한 번에 결제할 수 있어요. 잔여 정원 {remainingSlots}명.
+            </p>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={() => setParticipantCount((c) => Math.max(1, c - 1))}
+                disabled={participantCount <= 1}
+              >
+                −
+              </Button>
+              <span className="w-10 text-center text-base font-semibold text-foreground">{participantCount}명</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={() => setParticipantCount((c) => Math.min(remainingSlots || 1, c + 1))}
+                disabled={participantCount >= remainingSlots}
+              >
+                +
+              </Button>
+            </div>
+            {participantCount > 1 && (
+              <div className="space-y-1.5 pt-1">
+                <Label className="text-xs text-muted-foreground">동반자 이름 (선택, 쉼표로 구분)</Label>
+                <Input
+                  value={companionNames}
+                  onChange={(e) => setCompanionNames(e.target.value)}
+                  placeholder="예: 김철수, 이영희"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <h3 className="text-sm font-semibold text-foreground">참가자 정보 (룸 배정용, 예약자 본인 기준)</h3>
             <div className="space-y-1.5">
               <Label>성별</Label>
               <RadioGroup value={gender} onValueChange={(v) => setGender(v as Gender)} className="flex gap-4">
@@ -258,7 +317,7 @@ const Checkout = () => {
           </CardContent>
         </Card>
 
-        <PaymentReceiptBreakdown tourTitle={tour.title} invoice={invoice} />
+        <PaymentReceiptBreakdown tourTitle={tour.title} invoice={invoice} participantCount={participantCount} />
 
         <Card className="border-dashed border-primary/40 bg-secondary/30">
           <CardContent className="space-y-1 p-4">
@@ -283,7 +342,7 @@ const Checkout = () => {
           size="lg"
           className="w-full"
           onClick={handlePay}
-          disabled={processing || !agreedToPolicy || !confirmedInclusions}
+          disabled={processing || !agreedToPolicy || !confirmedInclusions || participantCount > remainingSlots || remainingSlots < 1}
         >
           {processing
             ? "결제 처리 중..."

@@ -268,6 +268,10 @@ export interface Booking {
   evidenceFileNames?: string[];
   flightInfo?: string; // 참가자 대시보드 [더보기] — 본인 항공편 정보 (본인/강사만 확인)
   passportInfo?: string; // 참가자 대시보드 [더보기] — 여권 정보(만료일 등, 본인/강사만 확인)
+  /** 이 예약 1건으로 결제/확정된 인원 수 (본인 포함). 기존 예약은 모두 1명으로 취급한다. */
+  participantCount: number;
+  /** 2명 이상 예약 시 본인 외 동반자 이름을 자유 텍스트로 기록 (선택). */
+  companionNames?: string;
 }
 
 export const CANCEL_REASONS = [

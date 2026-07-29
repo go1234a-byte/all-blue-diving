@@ -168,7 +168,9 @@ const PaymentSuccess = () => {
           투어 전액 결제가 완료되었습니다. 현장 지불 잔금은 0원입니다.
         </p>
 
-        {tour && invoice && <PaymentReceiptBreakdown tourTitle={tour.title} invoice={invoice} />}
+        {tour && invoice && (
+          <PaymentReceiptBreakdown tourTitle={tour.title} invoice={invoice} participantCount={booking?.participantCount} />
+        )}
 
         <div className="space-y-1.5 rounded-xl border border-success/30 bg-success/10 p-3 text-left">
           {["포함/불포함 사항 확인 완료", "예약 확정 및 강사 매칭 완료"].map((item) => (

@@ -115,7 +115,9 @@ const ChatRoom = () => {
           <ChatHeaderSummary
             instructor={instructor}
             instructorId={tour.instructorId}
-            confirmedCount={activeTourBookings.filter((b) => b.status === "confirmed").length}
+            confirmedCount={activeTourBookings
+              .filter((b) => b.status === "confirmed")
+              .reduce((sum, b) => sum + (b.participantCount || 1), 0)}
             maxParticipants={tour.maxParticipants}
             onOpenParticipants={() => setParticipantsOpen(true)}
           />

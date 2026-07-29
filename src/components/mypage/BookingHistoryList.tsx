@@ -171,6 +171,7 @@ export function BookingHistoryList({ diverId }: BookingHistoryListProps) {
                       totalDue: booking.totalPaid,
                       onSiteBalance: booking.onSiteBalance,
                     }}
+                    participantCount={booking.participantCount}
                   />
                 )}
 
