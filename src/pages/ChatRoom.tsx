@@ -66,7 +66,7 @@ const ChatRoom = () => {
   // 하단 "채팅" 탭에서 들어온 경우(?view=chat)에는 그룹채팅만 보여주고,
   // 대시보드/일정/참가자/더보기 탭은 "내 예약"에서 투어카드를 눌러 들어왔을 때만 노출한다.
   const chatOnly = searchParams.get("view") === "chat";
-  const { tours, bookings, getInstructorById } = useAppData();
+  const { tours, bookings, getInstructorById, toursLoading } = useAppData();
   const { role, currentInstructorId, currentDiverId } = useRole();
   const tour = tours.find((t) => t.id === tourId);
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
@@ -80,6 +80,14 @@ const ChatRoom = () => {
   const isTourOwnerInstructor = !!tour && !!currentInstructorId && tour.instructorId === currentInstructorId;
   const isInstructor = isTourOwnerInstructor || role === "admin";
   const myBooking = tourBookings.find((b) => b.diverId === currentDiverId);
+
+  if (toursLoading && !tour) {
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center gap-3 bg-gradient-surface p-6 text-center">
+        <p className="text-sm text-muted-foreground">불러오는 중...</p>
+      </div>
+    );
+  }
 
   if (!tour) {
     return (

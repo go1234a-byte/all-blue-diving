@@ -26,7 +26,7 @@ const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getTourById, getCouponByCode, addBooking, redeemCoupon } = useAppData();
+  const { getTourById, getCouponByCode, addBooking, redeemCoupon, toursLoading } = useAppData();
   const { profile, currentDiverId } = useRole();
 
   const tour = tourId ? getTourById(tourId) : undefined;
@@ -44,6 +44,14 @@ const Checkout = () => {
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; amount: number } | null>(null);
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
+
+  if (toursLoading && !tour) {
+    return (
+      <div className="flex min-h-full items-center justify-center p-6 text-sm text-muted-foreground">
+        불러오는 중...
+      </div>
+    );
+  }
 
   if (!tour) {
     return (

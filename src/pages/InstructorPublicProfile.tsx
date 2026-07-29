@@ -123,6 +123,7 @@ const InstructorPublicProfile = () => {
     setTourAdminStatus,
     toggleInstructorBookmark,
     isInstructorBookmarked,
+    instructorsLoading,
   } = useAppData();
   const { role } = useRole();
   const { toast } = useToast();
@@ -269,6 +270,14 @@ const InstructorPublicProfile = () => {
       myInstructorMessages[0].createdAt,
     );
   }, [chatMessages, myTourIds, instructor]);
+
+  if (instructorsLoading && !instructor) {
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center gap-3 bg-gradient-surface p-6 text-center">
+        <p className="text-sm text-muted-foreground">불러오는 중...</p>
+      </div>
+    );
+  }
 
   if (!instructor) {
     return (

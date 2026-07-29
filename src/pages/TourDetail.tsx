@@ -29,8 +29,18 @@ const ACTIVITY_LABEL: Record<string, string> = {
 const TourDetail = () => {
   const { tourId } = useParams();
   const navigate = useNavigate();
-  const { getTourById, getInstructorById, getDiveCenterByInstructorId, getCenterById, isBookmarked, toggleBookmark, bookings, diverProfiles } =
-    useAppData();
+  const {
+    getTourById,
+    getInstructorById,
+    getDiveCenterByInstructorId,
+    getCenterById,
+    isBookmarked,
+    toggleBookmark,
+    bookings,
+    diverProfiles,
+    toursLoading,
+    instructorsLoading,
+  } = useAppData();
   const { isLoggedIn, currentDiverId, currentInstructorId } = useRole();
   const { toast } = useToast();
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
@@ -39,6 +49,14 @@ const TourDetail = () => {
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
   const diveCenter = tour ? getDiveCenterByInstructorId(tour.instructorId) : undefined;
   const center = tour?.centerId ? getCenterById(tour.centerId) : undefined;
+
+  if ((toursLoading || instructorsLoading) && (!tour || !instructor)) {
+    return (
+      <div className="flex min-h-full items-center justify-center p-6 text-sm text-muted-foreground">
+        불러오는 중...
+      </div>
+    );
+  }
 
   if (!tour || !instructor) {
     return (
