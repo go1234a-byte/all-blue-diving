@@ -30,8 +30,12 @@ const AdminInstructorsPage = () => {
   const [warnReasonDrafts, setWarnReasonDrafts] = useState<Record<string, string>>({});
 
   const handleWarn = (instructorId: string, instructorName: string, currentPenalty: number) => {
-    const next = currentPenalty + 1;
     const reason = warnReasonDrafts[instructorId]?.trim() || undefined;
+    if (!reason) {
+      toast({ title: "패널티 사유를 입력해주세요", variant: "destructive" });
+      return;
+    }
+    const next = currentPenalty + 1;
     setInstructorPenalty(instructorId, next, reason);
     setWarnReasonDrafts((prev) => ({ ...prev, [instructorId]: "" }));
     if (next >= PERMANENT_BAN_THRESHOLD) {
@@ -183,6 +187,7 @@ const AdminInstructorsPage = () => {
                       <AlertDialogFooter>
                         <AlertDialogCancel>취소</AlertDialogCancel>
                         <AlertDialogAction
+                          disabled={!warnReasonDrafts[instructor.id]?.trim()}
                           onClick={() => handleWarn(instructor.id, instructor.name, instructor.penaltyCount)}
                         >
                           경고

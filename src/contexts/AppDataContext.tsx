@@ -37,6 +37,22 @@ import { supabase } from "@/integrations/supabase/client";
 const BOOKMARK_STORAGE_KEY = "allblue-bookmarked-tours";
 const INSTRUCTOR_BOOKMARK_STORAGE_KEY = "allblue-bookmarked-instructors";
 
+function mapPenaltyRow(row: {
+  id: string;
+  instructor_id: string;
+  violation_type: string;
+  description: string | null;
+  created_at: string;
+}): Penalty {
+  return {
+    id: row.id,
+    instructorId: row.instructor_id,
+    violationType: row.violation_type as Penalty["violationType"],
+    description: row.description ?? "",
+    createdAt: row.created_at,
+  };
+}
+
 function mapInstructorRow(row: {
   id: string;
   profile_id: string | null;
@@ -616,7 +632,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [payouts, setPayouts] = useState<Payout[]>([]);
-  const [penalties] = useState<Penalty[]>([]);
+  const [penalties, setPenalties] = useState<Penalty[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -690,6 +706,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (!active) return;
       if (!error && data) setInstructors(data.map(mapInstructorRow));
       setInstructorsLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Enter Cloud(Supabase) `penalties_log` 테이블에서 강사 패널티 이력을 가져온다.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("penalties_log")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!active) return;
+      if (!error && data) setPenalties(data.map(mapPenaltyRow));
     })();
     return () => {
       active = false;
@@ -1418,6 +1450,23 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setInstructors((prev) =>
       prev.map((i) => (i.id === instructorId ? { ...i, penaltyCount, penaltyReason } : i)),
     );
+
+    // 새로 경고가 부여될 때(사유가 함께 전달된 경우)만 이력(penalties_log)에 기록한다.
+    // 해제/직접 정지처럼 사유 없이 호출되는 경우는 이력에 남기지 않는다.
+    if (penaltyReason) {
+      const { data, error } = await supabase
+        .from("penalties_log")
+        .insert({
+          instructor_id: instructorId,
+          violation_type: "강사 경고",
+          description: penaltyReason,
+        })
+        .select()
+        .single();
+      if (!error && data) {
+        setPenalties((prev) => [mapPenaltyRow(data), ...prev]);
+      }
+    }
 
     if (penaltyCount >= 2) {
       const instructor = instructors.find((i) => i.id === instructorId);

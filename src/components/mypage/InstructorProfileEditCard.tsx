@@ -135,6 +135,9 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
       });
       toast({ title: "정보가 저장되었습니다" });
       setEditing(false);
+    } catch (error) {
+      console.error(error);
+      toast({ title: "저장에 실패했습니다. 잠시 후 다시 시도해주세요.", variant: "destructive" });
     } finally {
       setSaving(false);
     }

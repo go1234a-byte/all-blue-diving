@@ -19,12 +19,14 @@ const STATUS_LABEL: Record<string, string> = {
   scheduled: "정산 예정",
   held: "정산 보류",
   released: "정산 완료",
+  cancelled: "취소됨(환불)",
 };
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
   scheduled: "secondary",
   held: "destructive",
   released: "default",
+  cancelled: "secondary",
 };
 
 export function SettlementLedger({ instructorId }: SettlementLedgerProps) {
@@ -32,8 +34,13 @@ export function SettlementLedger({ instructorId }: SettlementLedgerProps) {
   const myPayouts = payouts.filter((p) => p.instructorId === instructorId);
   const [selected, setSelected] = useState<Payout | null>(null);
 
-  const totalFirst = myPayouts.reduce((sum, p) => sum + p.firstAmount, 0);
-  const totalSecond = myPayouts.reduce((sum, p) => sum + p.secondAmount, 0);
+  // 환불로 취소된 정산 건은 실제 지급 대상이 아니므로 합계 집계에서 제외한다.
+  const totalFirst = myPayouts
+    .filter((p) => p.status !== "cancelled")
+    .reduce((sum, p) => sum + p.firstAmount, 0);
+  const totalSecond = myPayouts
+    .filter((p) => p.status !== "cancelled")
+    .reduce((sum, p) => sum + p.secondAmount, 0);
 
   const selectedBooking = selected ? bookings.find((b) => b.id === selected.bookingId) : undefined;
   const selectedTour = selectedBooking ? getTourById(selectedBooking.tourId) : undefined;

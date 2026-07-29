@@ -169,8 +169,13 @@ const InstructorPublicProfile = () => {
 
   const handleWarn = () => {
     if (!instructor) return;
+    const reason = warnReasonDraft.trim();
+    if (!reason) {
+      toast({ title: "패널티 사유를 입력해주세요", variant: "destructive" });
+      return;
+    }
     const next = instructor.penaltyCount + 1;
-    setInstructorPenalty(instructor.id, next, warnReasonDraft.trim() || undefined);
+    setInstructorPenalty(instructor.id, next, reason);
     setWarnReasonDraft("");
     if (next >= PERMANENT_BAN_THRESHOLD) {
       toast({
@@ -234,8 +239,15 @@ const InstructorPublicProfile = () => {
 
   // 갤러리 — 이 강사의 투어 대표/갤러리 사진(강사 업로드)과 후기 사진(회원 업로드)을 한 데 모아 보여준다.
   const galleryImages = useMemo(() => {
-    const tourPhotos = myTours.flatMap((t) => [t.mainImageUrl, ...(t.galleryUrls ?? [])]).filter(Boolean);
-    const reviewPhotos = reviews.flatMap((r) => r.photos ?? []);
+    // 최신순 정렬 후 취합 — 투어 사진은 투어 생성일, 후기 사진은 후기 작성일 기준 내림차순.
+    const sortedTours = [...myTours].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    const sortedReviews = [...reviews].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    const tourPhotos = sortedTours.flatMap((t) => [t.mainImageUrl, ...(t.galleryUrls ?? [])]).filter(Boolean);
+    const reviewPhotos = sortedReviews.flatMap((r) => r.photos ?? []);
     return Array.from(new Set([...tourPhotos, ...reviewPhotos])).slice(0, 30);
   }, [myTours, reviews]);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -510,7 +522,9 @@ const InstructorPublicProfile = () => {
                       />
                       <AlertDialogFooter>
                         <AlertDialogCancel>취소</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleWarn}>경고</AlertDialogAction>
+                        <AlertDialogAction disabled={!warnReasonDraft.trim()} onClick={handleWarn}>
+                          경고
+                        </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
