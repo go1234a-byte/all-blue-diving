@@ -61,7 +61,7 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, 
   };
 
   return (
-    <div className="flex h-[calc(100vh-56px)] flex-col overflow-hidden bg-[#050b18]">
+    <div className="flex h-[calc(100dvh-56px)] flex-col overflow-hidden bg-[#050b18]">
       {/* 상단 고정 보안 고지 배너 */}
       <div className="border-b border-white/10 bg-[#0a1428] px-4 py-3">
         <p className="flex items-start gap-2 break-keep text-[11px] leading-relaxed text-primary-glow">
