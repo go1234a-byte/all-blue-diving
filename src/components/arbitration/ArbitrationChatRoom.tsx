@@ -141,7 +141,14 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, 
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onKeyDown={(e) => {
+                // 한글(또는 일본어/중국어) IME로 조합 중일 때 조합을 확정하려고 누르는
+                // Enter까지 "전송"으로 처리되어, 아직 완성되지 않은 글자만 먼저 보내지고
+                // 남은 글자가 다음 Enter에 따로 전송되는 버그가 있었다(예: "에헤" 입력 중
+                // 말풍선이 "에ㅔㅔ"/"ㅔ"처럼 쪼개져서 두 번 전송됨). isComposing이 true인
+                // 동안(조합 확정 Enter)에는 전송하지 않고, 조합이 끝난 뒤의 Enter에서만 보낸다.
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
+              }}
           placeholder="중재 관련 메시지를 입력하세요"
           className="border-white/10 bg-white/5 text-white placeholder:text-white/30"
         />
