@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Send, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ interface ChatThreadProps {
 export function ChatThread({ tourId, tour }: ChatThreadProps) {
   const { chatMessages, addChatMessage } = useAppData();
   const { role, profile } = useRole();
-  const [text, setText] = useState("");
+  const [text, setText] = useState(""); const inputRef = useRef<HTMLInputElement>(null);
 
   const accessible = tour ? isChatAccessible(tour) : true;
   const messages = accessible ? chatMessages.filter((m) => m.tourId === tourId) : [];
@@ -34,7 +34,7 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
       senderRole: currentSenderRole,
       body: text.trim(),
     });
-    setText("");
+    setText(""); inputRef.current?.focus();
   };
 
   return (
@@ -90,7 +90,7 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
             })}
           </div>
           <div className="flex items-center gap-2 border-t border-border p-3">
-            <Input
+            <Input ref={inputRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {
