@@ -117,7 +117,7 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         userId = signInData.user.id;
       }
 
-      const { error: profileError } = await supabase.from("profiles").insert({
+      const profileInsertPayload = {
         id: userId,
         role: "diver",
         name,
@@ -130,11 +130,34 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         emergency_contact_name: emergencyContactName,
         emergency_contact_phone: emergencyContactPhone,
         insurance_info: insuranceInfo || null,
-      });
+      };
+
+      let { error: profileError } = await supabase.from("profiles").insert(profileInsertPayload);
+
+      // 서버 스키마 캐시가 birth_date 컬럼을 아직 인식하지 못해 "Could not find the
+      // 'birth_date' column ... in the schema cache" 에러가 나는 경우(마이그레이션이 실제
+      // 반영 전이거나 캐시 갱신 전), 생년월일 하나 때문에 가입 자체가 막히면 안 되므로
+      // 그 필드만 빼고 한 번 더 시도한다. 나중에 스키마가 정상화되면 마이페이지에서 다시
+      // 입력하면 된다.
+      let birthDateDropped = false;
+      if (profileError && /birth_date/i.test(profileError.message) && /schema cache/i.test(profileError.message)) {
+        console.error("[DiverSignupForm] birth_date 컬럼 스키마 캐시 문제, birth_date 없이 재시도:", profileError);
+        const { birth_date: _omit, ...withoutBirthDate } = profileInsertPayload;
+        const retry = await supabase.from("profiles").insert(withoutBirthDate);
+        profileError = retry.error;
+        birthDateDropped = !profileError;
+      }
 
       if (profileError) {
         toast({ title: "프로필 생성에 실패했습니다", description: profileError.message, variant: "destructive" });
         return;
+      }
+
+      if (birthDateDropped) {
+        toast({
+          title: "생년월일은 이번에 저장되지 않았어요",
+          description: "서버 설정 문제로 생년월일만 빠졌어요. 나머지 가입은 정상 완료됐으니, 나중에 마이페이지에서 다시 입력해주세요.",
+        });
       }
 
       // Supabase에는 저장됐지만 앱 메모리(diverProfiles)에는 반영이 안 돼 있으므로,
