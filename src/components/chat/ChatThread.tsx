@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Send, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,9 +18,20 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
   const { chatMessages, addChatMessage } = useAppData();
   const { role, profile } = useRole();
   const [text, setText] = useState(""); const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const accessible = tour ? isChatAccessible(tour) : true;
   const messages = accessible ? chatMessages.filter((m) => m.tourId === tourId) : [];
+
+  // 채팅방을 열었을 때, 그리고 새 메시지가 도착했을 때 항상 최신 메시지가 보이도록
+  // 메시지 목록을 맨 아래로 자동 스크롤한다. 이게 없으면 오래된 메시지부터 보여서
+  // 사용자가 매번 손으로 끝까지 내려야 최신 대화를 볼 수 있었다.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [messages.length]);
 
   const currentSenderRole = role === "instructor" ? "instructor" : role === "admin" ? "admin" : "diver";
   const currentSenderName = profile?.name ?? (role === "admin" ? "관리자" : "게스트 다이버");
@@ -55,7 +66,7 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
               고정 높이를 무시하고 메시지 개수만큼 계속 늘어나 버려서, overflow-y-auto가
               전혀 작동하지 않고(채팅창 자체가 화면 밖으로 넘어가고) 페이지 전체가 스크롤되는
               문제가 있었다. min-h-0을 줘야 이 안에서만 스크롤되는 채팅창이 된다. */}
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+          <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
             {messages.map((msg) => {
               const mine = msg.senderProfileId === (profile?.id ?? "guest");
               const isStaff = msg.senderRole === "instructor" || msg.senderRole === "admin";
