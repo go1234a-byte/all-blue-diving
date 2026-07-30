@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, MessageCircleOff, Users } from "lucide-react";
+import { ArrowLeft, BedDouble, MessageCircleOff, Users } from "lucide-react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -24,12 +24,14 @@ function ChatHeaderSummary({
   confirmedCount,
   maxParticipants,
   onOpenParticipants,
+  onOpenRoomAssignment,
 }: {
   instructor?: InstructorProfile;
   instructorId: string;
   confirmedCount: number;
   maxParticipants: number;
   onOpenParticipants: () => void;
+  onOpenRoomAssignment: () => void;
 }) {
   return (
     <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
@@ -56,6 +58,14 @@ function ChatHeaderSummary({
         <Users className="h-3.5 w-3.5" />
         {confirmedCount}/{maxParticipants}명
       </button>
+      <button
+        type="button"
+        onClick={onOpenRoomAssignment}
+        className="flex shrink-0 items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary/70"
+      >
+        <BedDouble className="h-3.5 w-3.5" />
+        방배정
+      </button>
     </div>
   );
 }
@@ -73,6 +83,7 @@ const ChatRoom = () => {
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
   const [tab, setTab] = useState("dashboard");
   const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [roomAssignmentOpen, setRoomAssignmentOpen] = useState(false);
 
   const tourBookings = bookings.filter((b) => b.tourId === tourId);
   // 취소한 참가자는 채팅방 참가자 목록/룸 배정에서 더 이상 보이면 안 되므로 별도로 걸러둔다.
@@ -138,6 +149,7 @@ const ChatRoom = () => {
             confirmedCount={getConfirmedParticipantCount(tour.id)}
             maxParticipants={tour.maxParticipants}
             onOpenParticipants={() => setParticipantsOpen(true)}
+            onOpenRoomAssignment={() => setRoomAssignmentOpen(true)}
           />
           <TourInfoPinnedBanner tour={tour} />
           {tour.instructorNotice && (
@@ -164,6 +176,18 @@ const ChatRoom = () => {
                 isAdmin={role === "admin"}
                 tour={tour}
               />
+            </div>
+          </SheetContent>
+        </Sheet>
+        <Sheet open={roomAssignmentOpen} onOpenChange={setRoomAssignmentOpen}>
+          <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle>방배정</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
+              {/* "참가자" 탭(마이페이지에서 투어카드로 들어왔을 때)과 동일한 방배정 화면을
+                  하단 "채팅" 탭으로 들어온 경우에도 그대로 쓸 수 있게 시트로 노출한다. */}
+              <RoomAssignmentDashboard bookings={participantDisplayBookings} isInstructor={isInstructor} />
             </div>
           </SheetContent>
         </Sheet>
