@@ -15,6 +15,7 @@ import { TourMoreInfoTab } from "@/components/chat/TourMoreInfoTab";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
+import { markChatRead } from "@/lib/chatReadState";
 import type { InstructorProfile } from "@/types";
 
 /** 그룹채팅 전용 화면(?view=chat) 상단에 담당 강사 프로필과 참가자 수를 요약해서 보여준다. */
@@ -68,7 +69,7 @@ const ChatRoom = () => {
   const chatOnly = searchParams.get("view") === "chat";
   const { tours, bookings, getInstructorById, toursLoading, getConfirmedParticipantCount, fetchMaskedTourParticipants } =
     useAppData();
-  const { role, currentInstructorId, currentDiverId } = useRole();
+  const { role, currentInstructorId, currentDiverId, profile } = useRole();
   const tour = tours.find((t) => t.id === tourId);
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
   const [tab, setTab] = useState("dashboard");
@@ -100,6 +101,14 @@ const ChatRoom = () => {
   }, [tour?.id, isInstructor, fetchMaskedTourParticipants]);
 
   const participantDisplayBookings = isInstructor ? activeTourBookings : maskedParticipants;
+
+  // 채팅 목록(ChatList)에서 "안 읽음" 뱃지/정렬에 쓸 수 있게, 이 채팅방을 실제로 열어본
+  // 시점을 계정별로 기록해둔다 — 서버에 읽음 상태를 저장하는 컬럼이 없어 클라이언트에서만
+  // 계산하는 구조라, 열람 시점 이후에 남이 보낸 메시지가 있으면 안 읽은 것으로 간주한다.
+  useEffect(() => {
+    if (!tour || !profile?.id) return;
+    markChatRead(profile.id, tour.id);
+  }, [tour?.id, profile?.id]);
 
   if (toursLoading && !tour) {
     return (

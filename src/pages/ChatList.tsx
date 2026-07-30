@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { MessageCircle, MessageCircleQuestion, ShieldAlert } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -5,10 +6,22 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { Badge } from "@/components/ui/badge";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
+import { countUnread } from "@/lib/chatReadState";
 import { isChatAccessible } from "@/lib/chatRetention";
 import { formatDateKR } from "@/lib/dates";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
+import { cn } from "@/lib/utils";
 import type { Tour } from "@/types";
+
+type ChatSortMode = "recent" | "unread" | "departure";
+
+const SORT_OPTIONS: { value: ChatSortMode; label: string }[] = [
+  { value: "recent", label: "최신순" },
+  { value: "unread", label: "안읽음순" },
+  { value: "departure", label: "출발임박순" },
+];
+
+const CHAT_SORT_STORAGE_KEY = "allblue-chat-sort-mode";
 
 // role은 MasterRole("public"|"instructor"|"admin")이며 다이버는 "public"으로 매핑된다.
 const EMPTY_MESSAGE: Record<string, string> = {
@@ -18,8 +31,20 @@ const EMPTY_MESSAGE: Record<string, string> = {
 };
 
 const ChatList = () => {
-  const { role, currentDiverId, currentInstructorId } = useRole();
+  const { role, currentDiverId, currentInstructorId, profile } = useRole();
   const { tours, bookings, chatMessages, supportTickets } = useAppData();
+  const [sortMode, setSortMode] = useState<ChatSortMode>(() => {
+    if (typeof window === "undefined") return "recent";
+    const stored = window.localStorage.getItem(CHAT_SORT_STORAGE_KEY);
+    return stored === "recent" || stored === "unread" || stored === "departure" ? stored : "recent";
+  });
+
+  const changeSortMode = (mode: ChatSortMode) => {
+    setSortMode(mode);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(CHAT_SORT_STORAGE_KEY, mode);
+    }
+  };
 
   let targetTours: Tour[];
   if (role === "instructor") {
@@ -38,9 +63,20 @@ const ChatList = () => {
       const tourMessages = chatMessages.filter((m) => m.tourId === tour.id);
       const lastMessage = tourMessages[tourMessages.length - 1];
       const sortKey = lastMessage?.createdAt ?? tour.startDate;
-      return { tour, lastMessage, sortKey };
+      const unreadCount = countUnread(profile?.id, tour.id, tourMessages);
+      return { tour, lastMessage, sortKey, unreadCount };
     })
-    .sort((a, b) => (a.sortKey < b.sortKey ? 1 : -1));
+    .sort((a, b) => {
+      if (sortMode === "unread") {
+        if (a.unreadCount !== b.unreadCount) return b.unreadCount - a.unreadCount;
+        return a.sortKey < b.sortKey ? 1 : -1;
+      }
+      if (sortMode === "departure") {
+        return a.tour.startDate < b.tour.startDate ? -1 : 1;
+      }
+      // "recent" (기본값): 최근 메시지(없으면 투어 출발일) 기준 최신순.
+      return a.sortKey < b.sortKey ? 1 : -1;
+    });
 
   // 플랫폼 고객센터(1:1 문의/분쟁조정/신고)도 투어 그룹채팅과 같은 "채팅" 탭 안에서
   // 하나의 목록으로 합쳐서 보여준다. 다이버에게만 노출한다.
@@ -90,12 +126,31 @@ const ChatList = () => {
         )}
 
         {rows.length > 0 && (
-          <p className="pt-1 text-xs font-medium text-muted-foreground">투어 그룹채팅</p>
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <p className="text-xs font-medium text-muted-foreground">투어 그룹채팅</p>
+            <div className="flex shrink-0 gap-1">
+              {SORT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => changeSortMode(opt.value)}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                    sortMode === opt.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground hover:bg-secondary/70",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         {rows.length === 0 && (
           <p className="py-16 text-center text-sm text-muted-foreground">{EMPTY_MESSAGE[role]}</p>
         )}
-        {rows.map(({ tour, lastMessage }) => {
+        {rows.map(({ tour, lastMessage, unreadCount }) => {
           const accessible = isChatAccessible(tour);
           return (
             <Link
@@ -112,12 +167,19 @@ const ChatList = () => {
               <div className="min-w-0 flex-1 space-y-0.5">
                 <div className="flex items-center justify-between gap-2">
                   <p className="line-clamp-1 text-sm font-semibold text-foreground">{tour.title}</p>
-                  {!accessible && (
-                    <Badge variant="secondary" className="shrink-0 gap-1 text-[9px]">
-                      <ShieldAlert className="h-2.5 w-2.5" />
-                      보관기간 만료
-                    </Badge>
-                  )}
+                  <div className="flex shrink-0 items-center gap-1">
+                    {unreadCount > 0 && (
+                      <Badge className="h-5 min-w-5 justify-center rounded-full bg-destructive px-1.5 text-[10px] text-destructive-foreground">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </Badge>
+                    )}
+                    {!accessible && (
+                      <Badge variant="secondary" className="shrink-0 gap-1 text-[9px]">
+                        <ShieldAlert className="h-2.5 w-2.5" />
+                        보관기간 만료
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">{tour.country} · {tour.site}</p>
                 {lastMessage ? (
