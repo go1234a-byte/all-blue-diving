@@ -45,7 +45,8 @@ const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getTourById, getCouponByCode, addBooking, redeemCoupon, toursLoading, bookings } = useAppData();
+  const { getTourById, getCouponByCode, addBooking, redeemCoupon, toursLoading, getConfirmedParticipantCount } =
+    useAppData();
   const { profile, currentDiverId } = useRole();
 
   const tour = tourId ? getTourById(tourId) : undefined;
@@ -95,9 +96,10 @@ const Checkout = () => {
     );
   }
 
-  const confirmedCount = bookings
-    .filter((b) => b.tourId === tour.id && b.status !== "cancelled")
-    .reduce((sum, b) => sum + (b.participantCount || 1), 0);
+  // bookings 배열은 RLS 때문에 이 투어의 담당 강사가 아닌 다이버에게는 다른 사람 예약이 안
+  // 보이므로, 잔여 정원은 반드시 공개 집계 뷰 기반 헬퍼로 계산해야 한다(안 그러면 실제로는
+  // 다 찬 투어인데도 예약이 더 들어가서 정원을 초과하게 된다).
+  const confirmedCount = getConfirmedParticipantCount(tour.id);
   const remainingSlots = Math.max(0, tour.maxParticipants - confirmedCount);
 
   const selectedOptions = tour.customOptions

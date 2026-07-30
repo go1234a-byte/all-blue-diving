@@ -510,6 +510,13 @@ interface AppDataContextValue {
   instructorProfiles: Profile[];
   diverProfiles: Profile[];
   publicProfiles: Profile[];
+  /** 투어별 "확정된 예약 참가자 수" 합계 — 이름/성별 등 개인정보 없이 숫자만 담은
+   * public_tour_booking_counts 뷰에서 가져온다. bookings 테이블 자체는 RLS로
+   * 본인/담당 강사/관리자만 조회 가능해서, 그걸로 정원(X/N명)을 계산하면
+   * 게스트나 다른 다이버 눈에는 다른 사람 예약이 안 보여 정원이 실제보다
+   * 적게 표시되고 초과예약 방지도 깨지는 문제가 있었다 — 반드시 이 값을
+   * 통해서 정원을 계산해야 한다 (bookings 배열을 직접 reduce하지 말 것). */
+  getConfirmedParticipantCount: (tourId: string) => number;
   adminProfile: Profile;
   bookings: Booking[];
   bookingsLoading: boolean;
@@ -641,6 +648,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [instructorProfiles, setInstructorProfiles] = useState<Profile[]>([]);
   const [diverProfiles, setDiverProfiles] = useState<Profile[]>([]);
   const [publicProfiles, setPublicProfiles] = useState<Profile[]>([]);
+  const [tourConfirmedCounts, setTourConfirmedCounts] = useState<Record<string, number>>({});
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [payouts, setPayouts] = useState<Payout[]>([]);
@@ -884,6 +892,33 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // `public_tour_booking_counts` 뷰(투어별 확정 참가자 수 합계만 노출하는 안전한 공개
+  // 뷰)에서 정원 표시/초과예약 방지에 쓸 숫자를 가져온다. bookings 테이블 자체는 RLS로
+  // 막혀 있어 이 값 없이는 게스트/다른 다이버에게 정원이 실제보다 적게 보인다.
+  const fetchTourConfirmedCounts = async () => {
+    const { data, error } = await supabase.from("public_tour_booking_counts").select("*");
+    if (!error && data) {
+      const map: Record<string, number> = {};
+      (data as { tour_id: string; confirmed_count: number | string }[]).forEach((row) => {
+        map[row.tour_id] = Number(row.confirmed_count) || 0;
+      });
+      setTourConfirmedCounts(map);
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!active) return;
+      await fetchTourConfirmedCounts();
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const getConfirmedParticipantCount = (tourId: string): number => tourConfirmedCounts[tourId] ?? 0;
+
   // `chat_messages` 테이블 실시간 구독 (투어 그룹채팅)
   useEffect(() => {
     let active = true;
@@ -1096,6 +1131,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         );
       });
     }
+    // "취소" 결정이면 확정 인원이 줄어드니 정원 카운트를 다시 맞춰준다("진행" 결정은 인원이
+    // 그대로라 변화 없지만, 매번 분기하는 것보다 단순하게 항상 다시 조회한다).
+    void fetchTourConfirmedCounts();
   };
 
   /**
@@ -1155,6 +1193,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       );
     });
 
+    void fetchTourConfirmedCounts();
     return confirmedBookings.length;
   };
 
@@ -1350,15 +1389,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         throw new Error("이미 이 투어에 예약하셨습니다. 중복으로 예약할 수 없습니다.");
       }
     }
-    // 잔여 정원을 초과해서는 예약할 수 없다. (참고: 여기서의 검사는 클라이언트가 마지막으로 받은
-    // bookings 상태를 기준으로 하므로, 동시에 여러 명이 마지막 한 자리를 두고 경합하는 극단적인
-    // 케이스까지 완전히 막지는 못한다 — 완전한 방지는 DB 트랜잭션/제약조건이 필요하다.)
+    // 잔여 정원을 초과해서는 예약할 수 없다. (참고: 여기서의 검사는 public_tour_booking_counts
+    // 뷰에서 가져온 "이 투어의 전체 확정 인원 수"를 기준으로 한다 — bookings 배열은 RLS 때문에
+    // 본인/담당 강사/관리자 예약만 보여서 그걸로 계산하면 다른 사람 예약을 놓치게 된다.
+    // 그리고 이 검사도 결국 클라이언트가 마지막으로 받은 값을 기준으로 하므로, 동시에 여러 명이
+    // 마지막 한 자리를 두고 경합하는 극단적인 케이스까지 완전히 막지는 못한다 — 완전한 방지는
+    // DB 트랜잭션/제약조건이 필요하다.)
     const requestedCount = Math.max(1, input.participantCount ?? 1);
     const targetTour = tours.find((t) => t.id === input.tourId);
     if (targetTour) {
-      const confirmedCount = bookings
-        .filter((b) => b.tourId === input.tourId && b.status !== "cancelled")
-        .reduce((sum, b) => sum + (b.participantCount || 1), 0);
+      const confirmedCount = getConfirmedParticipantCount(input.tourId);
       if (confirmedCount + requestedCount > targetTour.maxParticipants) {
         const remaining = Math.max(0, targetTour.maxParticipants - confirmedCount);
         throw new Error(
@@ -1424,6 +1464,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
     const booking: Booking = mapBookingRow(data);
     setBookings((prev) => [booking, ...prev]);
+    // 방금 예약한 인원만큼 정원 카운트를 즉시 반영한다(낙관적 갱신) — 이어서 뷰를 다시
+    // 조회해 실제 DB 값과 어긋나지 않는지도 함께 맞춘다.
+    setTourConfirmedCounts((prev) => ({
+      ...prev,
+      [input.tourId]: (prev[input.tourId] ?? 0) + requestedCount,
+    }));
+    void fetchTourConfirmedCounts();
 
     const tour = tours.find((t) => t.id === input.tourId);
     if (tour) {
@@ -1972,6 +2019,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       ),
     );
     await supabase.from("payouts").update({ status: "cancelled" }).eq("booking_id", bookingId).neq("status", "released");
+    void fetchTourConfirmedCounts();
 
     return { refundRate, refundAmount };
   };
@@ -2030,6 +2078,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ),
       );
       await supabase.from("payouts").update({ status: "cancelled" }).eq("booking_id", bookingId).neq("status", "released");
+      void fetchTourConfirmedCounts();
 
       // 관리자가 [강제 환불 승인]을 실행하는 즉시 담당 강사에게 고위험 페널티 알림을 발행한다.
       if (booking && tour) {
@@ -2228,6 +2277,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       instructorProfiles,
       diverProfiles,
       publicProfiles,
+      getConfirmedParticipantCount,
       adminProfile: MOCK_ADMIN_PROFILE,
       bookings,
       bookingsLoading,
@@ -2315,6 +2365,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       instructorProfiles,
       diverProfiles,
       publicProfiles,
+      tourConfirmedCounts,
       bookings,
       bookingsLoading,
       payouts,

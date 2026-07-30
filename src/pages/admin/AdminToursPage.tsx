@@ -137,8 +137,15 @@ function TourStatusActions({ tour, bookingCount, confirmedCount, onStatusChange,
 
 /** 모바일 폭에 맞춘 카드형 투어 목록 — 관리자가 투어를 확인하고 정지/보류/재개할 수 있다. */
 const AdminToursPage = () => {
-  const { tours, getInstructorById, bookings, setTourAdminStatus, forceCancelTourBookings, deleteTour } =
-    useAppData();
+  const {
+    tours,
+    getInstructorById,
+    bookings,
+    setTourAdminStatus,
+    forceCancelTourBookings,
+    deleteTour,
+    getConfirmedParticipantCount,
+  } = useAppData();
   const { toast } = useToast();
   const [detailTour, setDetailTour] = useState<Tour | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
@@ -205,9 +212,9 @@ const AdminToursPage = () => {
       {filteredTours.map((tour) => {
         const instructor = getInstructorById(tour.instructorId);
         const tourBookings = bookings.filter((b) => b.tourId === tour.id);
-        const participantCount = tourBookings
-          .filter((b) => b.status === "confirmed")
-          .reduce((sum, b) => sum + (b.participantCount || 1), 0);
+        // 관리자는 RLS상 모든 예약을 볼 수 있어 원래도 정확했지만, 다른 화면들과 계산 방식을
+        // 하나로 통일해두기 위해 여기서도 공개 집계 뷰 기반 헬퍼를 쓴다.
+        const participantCount = getConfirmedParticipantCount(tour.id);
         return (
           <div key={tour.id} className="space-y-2 rounded-xl border border-border bg-card p-3">
             <div className="flex items-start justify-between gap-2">
@@ -381,9 +388,7 @@ const AdminToursPage = () => {
               <TourStatusActions
                 tour={detailTour}
                 bookingCount={detailBookings.length}
-                confirmedCount={detailBookings
-                  .filter((b) => b.status === "confirmed")
-                  .reduce((sum, b) => sum + (b.participantCount || 1), 0)}
+                confirmedCount={detailTour ? getConfirmedParticipantCount(detailTour.id) : 0}
                 onStatusChange={(t, s) => {
                   handleAdminStatusChange(t, s);
                   setDetailTour({ ...t, adminStatus: s });

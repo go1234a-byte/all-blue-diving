@@ -26,7 +26,7 @@ interface UnderMinDecisionPanelProps {
  * 강사 대시보드 상단에 노출되어 결정이 필요한 투어를 놓치지 않도록 한다.
  */
 export function UnderMinDecisionPanel({ instructorId }: UnderMinDecisionPanelProps) {
-  const { tours, bookings, resolveUnderMinDecision } = useAppData();
+  const { tours, getConfirmedParticipantCount, resolveUnderMinDecision } = useAppData();
   const [processingTourId, setProcessingTourId] = useState<string | null>(null);
   const [cancelTargetTourId, setCancelTargetTourId] = useState<string | null>(null);
 
@@ -68,9 +68,7 @@ export function UnderMinDecisionPanel({ instructorId }: UnderMinDecisionPanelPro
         </p>
         <div className="space-y-2">
           {pendingTours.map((tour) => {
-            const confirmedCount = bookings
-              .filter((b) => b.tourId === tour.id && b.status === "confirmed")
-              .reduce((sum, b) => sum + (b.participantCount || 1), 0);
+            const confirmedCount = getConfirmedParticipantCount(tour.id);
             const isProcessing = processingTourId === tour.id;
             return (
               <div

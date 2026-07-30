@@ -40,6 +40,7 @@ const TourDetail = () => {
     diverProfiles,
     toursLoading,
     instructorsLoading,
+    getConfirmedParticipantCount,
   } = useAppData();
   const { isLoggedIn, currentDiverId, currentInstructorId } = useRole();
   const { toast } = useToast();
@@ -70,9 +71,10 @@ const TourDetail = () => {
   const myBooking = currentDiverId
     ? bookings.find((b) => b.tourId === tour.id && b.diverId === currentDiverId && b.status !== "cancelled")
     : undefined;
-  const confirmedCount = bookings
-    .filter((b) => b.tourId === tour.id && b.status === "confirmed")
-    .reduce((sum, b) => sum + (b.participantCount || 1), 0);
+  // bookings 배열은 RLS 때문에 이 투어의 담당 강사/관리자가 아니면 다른 사람 예약이 안 보이므로,
+  // 상단에 표시되는 "X/N명 모집" 정원은 반드시 공개 집계 뷰 기반 헬퍼로 계산해야 한다. (아래
+  // 참가자 목록 자체는 담당 강사일 때만 노출되는 영역이라 bookings를 그대로 써도 된다.)
+  const confirmedCount = getConfirmedParticipantCount(tour.id);
   const selectedOptionsTotal = tour.customOptions
     .filter((o) => o.isActive && selectedOptionIds.includes(o.id))
     .reduce((sum, o) => sum + o.price, 0);

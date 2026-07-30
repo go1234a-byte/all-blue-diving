@@ -15,15 +15,15 @@ interface TourDashboardTabProps {
 }
 
 /** 참가자 대시보드 [대시보드] 탭 — 일정 요약, D-Day, 참가자 수, 강사 공지. */
-export function TourDashboardTab({ tour, bookings, isInstructor }: TourDashboardTabProps) {
-  const { updateTourNotice } = useAppData();
+export function TourDashboardTab({ tour, isInstructor }: TourDashboardTabProps) {
+  const { updateTourNotice, getConfirmedParticipantCount } = useAppData();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(tour.instructorNotice ?? "");
   const [saving, setSaving] = useState(false);
 
-  const confirmedCount = bookings
-    .filter((b) => b.status === "confirmed")
-    .reduce((sum, b) => sum + (b.participantCount || 1), 0);
+  // bookings prop은 RLS 때문에 본인/담당 강사/관리자 예약만 담겨 있을 수 있어(다이버가 다른
+  // 참가자의 예약까지는 못 봄), 정원 표시는 반드시 공개 집계 뷰 기반 헬퍼로 계산해야 한다.
+  const confirmedCount = getConfirmedParticipantCount(tour.id);
 
   const handleSave = async () => {
     setSaving(true);

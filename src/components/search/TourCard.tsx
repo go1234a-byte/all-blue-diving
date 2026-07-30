@@ -24,15 +24,22 @@ const ACTIVITY_LABEL: Record<string, string> = {
 };
 
 export function TourCard({ tour }: TourCardProps) {
-  const { getInstructorById, isBookmarked, toggleBookmark, bookings, tours, toggleInstructorBookmark, isInstructorBookmarked } =
-    useAppData();
+  const {
+    getInstructorById,
+    isBookmarked,
+    toggleBookmark,
+    tours,
+    toggleInstructorBookmark,
+    isInstructorBookmarked,
+    getConfirmedParticipantCount,
+  } = useAppData();
   const { toast } = useToast();
   const instructor = getInstructorById(tour.instructorId);
   const bookmarked = isBookmarked(tour.id);
   const bookable = isTourBookable(tour);
-  const confirmedCount = bookings
-    .filter((b) => b.tourId === tour.id && b.status === "confirmed")
-    .reduce((sum, b) => sum + (b.participantCount || 1), 0);
+  // bookings 배열은 RLS 때문에 게스트/다른 다이버에게는 다른 사람 예약이 안 보이므로,
+  // 홈/검색 카드에 표시되는 정원은 반드시 공개 집계 뷰 기반 헬퍼로 계산해야 한다.
+  const confirmedCount = getConfirmedParticipantCount(tour.id);
   // 강사의 경력/로그 수와 등록한 총 투어 수(진행 투어)를 투어 카드의 강사 정보에 함께 보여준다.
   const instructorTourCount = instructor ? tours.filter((t) => t.instructorId === instructor.id).length : 0;
 
