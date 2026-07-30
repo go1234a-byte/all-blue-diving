@@ -90,6 +90,7 @@ export function ChatParticipantList({
                     {booking.companions.map((c, i) => (
                       <p key={i} className="text-[11px] text-muted-foreground">
                         동반자 {i + 1} · {c.name} · {c.gender === "female" ? "여" : "남"}
+                        {c.roomNo ? ` · ${c.roomNo}호실` : ""}
                         {c.snoring ? " · 코골이" : ""}
                         {c.smoking ? " · 흡연" : ""}
                         {c.drinking ? " · 음주" : ""}
