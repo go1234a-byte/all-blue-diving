@@ -47,7 +47,7 @@ const Checkout = () => {
   const { toast } = useToast();
   const { getTourById, getCouponByCode, addBooking, redeemCoupon, toursLoading, getConfirmedParticipantCount } =
     useAppData();
-  const { profile, currentDiverId } = useRole();
+  const { profile, currentDiverId, isLoggedIn, authLoading } = useRole();
 
   const tour = tourId ? getTourById(tourId) : undefined;
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>(
@@ -149,6 +149,30 @@ const Checkout = () => {
         description: `현재 잔여 정원은 ${remainingSlots}명입니다. 인원 수를 줄여주세요.`,
         variant: "destructive",
       });
+      return;
+    }
+    // 로그인 세션은 있어도(isLoggedIn) profiles 조회가 아직 끝나지 않아 currentDiverId가
+    // 비어있는 타이밍(막 회원가입/로그인한 직후)에 결제를 진행하면, addBooking이 실제 로그인
+    // 사용자가 아닌 임시 게스트 id를 만들어 bookings에 insert하게 되고, RLS 정책
+    // (bookings_insert_self: diver_id = auth.uid())에 걸려 "row-level security policy" 에러로
+    // 실패한다 — 여기서 미리 막아서 원인을 알 수 있는 안내로 대체한다.
+    if (!isLoggedIn || !currentDiverId) {
+      toast({
+        title: "로그인이 필요해요",
+        description: authLoading
+          ? "로그인 정보를 확인하는 중이에요. 잠시 후 다시 시도해주세요."
+          : "예약을 완료하려면 로그인 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+      if (!authLoading) {
+        navigate("/auth", {
+          state: {
+            returnTo: `/checkout/${tour.id}`,
+            returnState: { selectedOptionIds },
+            reason: "booking",
+          },
+        });
+      }
       return;
     }
     setProcessing(true);
@@ -405,15 +429,24 @@ const Checkout = () => {
           size="lg"
           className="w-full"
           onClick={handlePay}
-          disabled={processing || !agreedToPolicy || !confirmedInclusions || participantCount > remainingSlots || remainingSlots < 1}
+          disabled={
+            processing ||
+            authLoading ||
+            !agreedToPolicy ||
+            !confirmedInclusions ||
+            participantCount > remainingSlots ||
+            remainingSlots < 1
+          }
         >
           {processing
             ? "결제 처리 중..."
-            : !confirmedInclusions
-              ? "포함/불포함 사항을 확인해주세요"
-              : agreedToPolicy
-                ? `${formatKRW(invoice.totalDue)} 결제하기`
-                : "취소 및 환불 규정에 동의해주세요"}
+            : authLoading
+              ? "로그인 정보 확인 중..."
+              : !confirmedInclusions
+                ? "포함/불포함 사항을 확인해주세요"
+                : agreedToPolicy
+                  ? `${formatKRW(invoice.totalDue)} 결제하기`
+                  : "취소 및 환불 규정에 동의해주세요"}
         </Button>
       </div>
     </div>

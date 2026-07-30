@@ -1455,7 +1455,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         );
       }
     }
-    const diverId = input.diverId ?? nextId("guest-diver");
+    // bookings RLS 정책(bookings_insert_self: diver_id = auth.uid())상 실제 로그인 사용자의
+    // profiles.id가 아니면 어차피 insert가 항상 거부된다. 예전에는 여기서 로컬 전용 가짜
+    // "guest-diver-xxxx" id를 만들어 계속 진행시켰는데, 그러면 결제 화면에서 알 수 없는
+    // "new row violates row-level security policy" 원본 DB 에러를 그대로 보게 되는 문제가
+    // 있었다 — 호출부(Checkout.tsx 등)에서 로그인 여부를 먼저 확인하도록 하고, 여기서는
+    // 명확한 에러로 막아 원인을 바로 알 수 있게 한다.
+    if (!input.diverId) {
+      throw new Error("로그인이 필요합니다. 로그인 후 다시 예약해주세요.");
+    }
+    const diverId = input.diverId;
     // companions(동반자별 상세 정보)가 있으면 그 이름들을 이어붙여 companion_names를 자동으로
     // 채운다 — 참가자 목록 등 기존 화면은 companion_names 텍스트만 읽어도 계속 동작하고,
     // 각 동반자의 성별/코골이/흡연/음주 등 상세 정보가 필요한 화면은 companions 배열을 쓴다.
