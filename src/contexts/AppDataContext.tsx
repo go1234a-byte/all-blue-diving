@@ -517,6 +517,12 @@ interface AppDataContextValue {
    * 적게 표시되고 초과예약 방지도 깨지는 문제가 있었다 — 반드시 이 값을
    * 통해서 정원을 계산해야 한다 (bookings 배열을 직접 reduce하지 말 것). */
   getConfirmedParticipantCount: (tourId: string) => number;
+  /** 채팅방에서 담당 강사/관리자가 아닌 일반 참가자가 다른 참가자 목록을 볼 때 쓰는,
+   * 이름이 이미 마스킹된 상태로 DB에서 내려오는 목록을 가져온다(get_tour_participants_masked
+   * 함수 호출). bookings 배열은 RLS로 본인 예약만 담겨 있어 그대로 쓰면 안 된다. 반환값은
+   * Booking 타입이지만 결제 관련 필드 등은 채팅방 참가자 화면에서 쓰지 않으므로 0/빈값으로
+   * 채워져 있다 — 절대 다른 화면(결제 내역 등)에 재사용하지 말 것. */
+  fetchMaskedTourParticipants: (tourId: string) => Promise<Booking[]>;
   adminProfile: Profile;
   bookings: Booking[];
   bookingsLoading: boolean;
@@ -614,6 +620,9 @@ interface AppDataContextValue {
   markInstructorNotificationRead: (notificationId: string) => void;
   cancelBooking: (bookingId: string, reason: string) => Promise<{ refundRate: number; refundAmount: number }>;
   updateBookingRoom: (bookingId: string, roomNo: string | null) => Promise<void>;
+  /** 동반자(companions 배열 안의 특정 인원) 개인의 방 번호를 배정/수정한다. companions는
+   * jsonb라 컬럼 추가 없이 해당 인덱스의 객체에 roomNo만 채워서 통째로 업데이트한다. */
+  updateCompanionRoom: (bookingId: string, companionIndex: number, roomNo: string | null) => Promise<void>;
   submitCancellationForReview: (bookingId: string, reason: string, evidenceFileNames: string[]) => Promise<void>;
   resolveCancellationReview: (bookingId: string, approved: boolean, rejectReason?: string) => Promise<void>;
   addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => ArbitrationMessage;
@@ -918,6 +927,44 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getConfirmedParticipantCount = (tourId: string): number => tourConfirmedCounts[tourId] ?? 0;
+
+  // 담당 강사/관리자가 아닌 일반 참가자가 채팅방에서 다른 참가자를 보려면, RLS로 제한된
+  // bookings 배열 대신 서버에서 이미 이름을 마스킹해 내려주는 이 함수를 써야 한다. 결제 관련
+  // 필드는 애초에 DB 함수가 내려주지 않으므로(민감 정보라 아예 안 보냄) 0/빈값으로 채워
+  // Booking 타입만 맞춰준다 — 참가자 화면(이름/성별/코골이/방번호)에서만 쓰는 용도다.
+  const fetchMaskedTourParticipants = async (tourId: string): Promise<Booking[]> => {
+    const { data, error } = await supabase.rpc("get_tour_participants_masked", { p_tour_id: tourId });
+    if (error || !data) {
+      console.error("[fetchMaskedTourParticipants] 참가자 목록 조회 실패:", error);
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (data as any[]).map((row) => ({
+      id: row.id,
+      tourId,
+      diverId: row.diver_id,
+      diverName: row.diver_name_masked,
+      basePrice: 0,
+      optionsCost: 0,
+      selectedOptions: Array.isArray(row.selected_options) ? row.selected_options : [],
+      platformFee: 0,
+      totalPaid: 0,
+      onSiteBalance: 0,
+      paymentMethod: "card",
+      gender: row.gender,
+      snoring: !!row.snoring,
+      smoking: !!row.smoking,
+      drinking: !!row.drinking,
+      roomNote: row.room_note ?? undefined,
+      roomNo: row.room_no ?? undefined,
+      depositStatus: "paid",
+      status: row.status,
+      createdAt: "",
+      participantCount: row.participant_count != null ? Number(row.participant_count) : 1,
+      companionNames: undefined,
+      companions: [],
+    }));
+  };
 
   // `chat_messages` 테이블 실시간 구독 (투어 그룹채팅)
   useEffect(() => {
@@ -2030,6 +2077,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     await supabase.from("bookings").update({ room_no: roomNo }).eq("id", bookingId);
   };
 
+  /** 예약 1건에 동반자가 여러 명 있을 때, 동반자 개인의 방 번호만 따로 배정/수정한다.
+   * companions 컬럼이 jsonb라 스키마 변경 없이 배열 안의 해당 인덱스 객체만 갱신해서
+   * 통째로 다시 저장하면 된다. */
+  const updateCompanionRoom = async (bookingId: string, companionIndex: number, roomNo: string | null) => {
+    const target = bookings.find((b) => b.id === bookingId);
+    if (!target) return;
+    const nextCompanions = (target.companions ?? []).map((c, idx) =>
+      idx === companionIndex ? { ...c, roomNo: roomNo ?? undefined } : c,
+    );
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, companions: nextCompanions } : b)));
+    await supabase.from("bookings").update({ companions: nextCompanions }).eq("id", bookingId);
+  };
+
   /** 천재지변/의료 사유 등 즉시 환불이 아닌 운영팀 심사가 필요한 취소 요청을 접수한다. */
   const submitCancellationForReview = async (bookingId: string, reason: string, evidenceFileNames: string[]) => {
     const cancelRequestedAt = new Date().toISOString();
@@ -2278,6 +2338,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       diverProfiles,
       publicProfiles,
       getConfirmedParticipantCount,
+      fetchMaskedTourParticipants,
       adminProfile: MOCK_ADMIN_PROFILE,
       bookings,
       bookingsLoading,
@@ -2341,6 +2402,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       markInstructorNotificationRead,
       cancelBooking,
       updateBookingRoom,
+      updateCompanionRoom,
       submitCancellationForReview,
       resolveCancellationReview,
       addArbitrationMessage,

@@ -247,6 +247,8 @@ export interface CompanionInfo {
   smoking?: boolean;
   drinking?: boolean;
   roomNote?: string;
+  /** 동반자 개인의 방 배정 번호 (companions는 jsonb라 컬럼 추가 없이 바로 저장 가능). */
+  roomNo?: string;
 }
 
 export interface Booking {

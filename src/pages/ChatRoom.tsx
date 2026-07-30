@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, MessageCircleOff, Users } from "lucide-react";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -66,7 +66,8 @@ const ChatRoom = () => {
   // 하단 "채팅" 탭에서 들어온 경우(?view=chat)에는 그룹채팅만 보여주고,
   // 대시보드/일정/참가자/더보기 탭은 "내 예약"에서 투어카드를 눌러 들어왔을 때만 노출한다.
   const chatOnly = searchParams.get("view") === "chat";
-  const { tours, bookings, getInstructorById, toursLoading, getConfirmedParticipantCount } = useAppData();
+  const { tours, bookings, getInstructorById, toursLoading, getConfirmedParticipantCount, fetchMaskedTourParticipants } =
+    useAppData();
   const { role, currentInstructorId, currentDiverId } = useRole();
   const tour = tours.find((t) => t.id === tourId);
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
@@ -80,6 +81,25 @@ const ChatRoom = () => {
   const isTourOwnerInstructor = !!tour && !!currentInstructorId && tour.instructorId === currentInstructorId;
   const isInstructor = isTourOwnerInstructor || role === "admin";
   const myBooking = tourBookings.find((b) => b.diverId === currentDiverId);
+
+  // bookings 배열은 RLS 때문에 본인/담당 강사/관리자 예약만 담겨 있어서, 강사·관리자가
+  // 아닌 일반 참가자에게는 다른 참가자가 안 보이는 문제가 있었다. 강사/관리자는 기존처럼
+  // activeTourBookings(실명 포함)를 그대로 쓰고, 일반 참가자는 서버에서 이름이 이미
+  // 마스킹된 상태로 내려오는 별도 목록을 채팅방 진입 시 가져와서 대신 사용한다.
+  const [maskedParticipants, setMaskedParticipants] = useState<typeof activeTourBookings>([]);
+  useEffect(() => {
+    if (!tour || isInstructor) return;
+    let active = true;
+    (async () => {
+      const rows = await fetchMaskedTourParticipants(tour.id);
+      if (active) setMaskedParticipants(rows);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [tour?.id, isInstructor, fetchMaskedTourParticipants]);
+
+  const participantDisplayBookings = isInstructor ? activeTourBookings : maskedParticipants;
 
   if (toursLoading && !tour) {
     return (
@@ -137,7 +157,7 @@ const ChatRoom = () => {
               {/* 강사(및 관리자)는 실명을 그대로 보고, 다이버는 담당 강사 이름만 실명이고
                   다른 참가자 이름은 중간 글자를 *로 가려서(예: 김*태) 확인한다. */}
               <ChatParticipantList
-                bookings={activeTourBookings}
+                bookings={participantDisplayBookings}
                 instructorId={tour.instructorId}
                 instructorName={instructor?.name}
                 isInstructor={isInstructor}
@@ -176,14 +196,14 @@ const ChatRoom = () => {
           </TabsContent>
           <TabsContent value="participants" className="space-y-4 pt-3">
             <ChatParticipantList
-              bookings={activeTourBookings}
+              bookings={participantDisplayBookings}
               instructorId={tour.instructorId}
               instructorName={instructor?.name}
               isInstructor={isInstructor}
               isAdmin={role === "admin"}
               tour={tour}
             />
-            <RoomAssignmentDashboard bookings={activeTourBookings} isInstructor={isInstructor} />
+            <RoomAssignmentDashboard bookings={participantDisplayBookings} isInstructor={isInstructor} />
           </TabsContent>
           <TabsContent value="more" className="pt-3">
             <TourMoreInfoTab tour={tour} bookings={activeTourBookings} myBooking={myBooking} isInstructor={isInstructor} />
