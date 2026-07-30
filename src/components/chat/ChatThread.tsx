@@ -38,7 +38,7 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
   };
 
   return (
-    <div className="flex h-[calc(100vh-220px)] flex-col rounded-xl border border-border bg-card">
+    <div className="flex h-[calc(100vh-220px)] flex-col overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-start gap-1.5 border-b border-border bg-warning/10 px-3 py-2 text-[11px] text-warning-foreground">
         <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span className="break-keep">{CHAT_RETENTION_NOTICE}</span>
@@ -51,7 +51,11 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
         </div>
       ) : (
         <>
-          <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          {/* min-h-0이 없으면 flex 자식 기본값(min-height: auto) 때문에 이 목록이 부모의
+              고정 높이를 무시하고 메시지 개수만큼 계속 늘어나 버려서, overflow-y-auto가
+              전혀 작동하지 않고(채팅창 자체가 화면 밖으로 넘어가고) 페이지 전체가 스크롤되는
+              문제가 있었다. min-h-0을 줘야 이 안에서만 스크롤되는 채팅창이 된다. */}
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
             {messages.map((msg) => {
               const mine = msg.senderProfileId === (profile?.id ?? "guest");
               const isStaff = msg.senderRole === "instructor" || msg.senderRole === "admin";

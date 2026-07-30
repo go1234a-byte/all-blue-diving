@@ -61,7 +61,7 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, 
   };
 
   return (
-    <div className="flex h-[calc(100vh-56px)] flex-col bg-[#050b18]">
+    <div className="flex h-[calc(100vh-56px)] flex-col overflow-hidden bg-[#050b18]">
       {/* 상단 고정 보안 고지 배너 */}
       <div className="border-b border-white/10 bg-[#0a1428] px-4 py-3">
         <p className="flex items-start gap-2 break-keep text-[11px] leading-relaxed text-primary-glow">
@@ -75,7 +75,10 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, 
       </div>
 
       {/* 메시지 로그 */}
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      {/* min-h-0 없이는 flex 자식이 부모의 고정 높이를 무시하고 내용만큼 계속 늘어나서
+          overflow-y-auto가 작동하지 않는(채팅방 자체가 화면 밖으로 넘어가는) 문제가 있었다 —
+          ChatThread.tsx와 동일한 원인/수정. */}
+      <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.length === 0 && (
           <p className="py-10 text-center text-xs text-white/40">
             아직 대화 내역이 없습니다. 이의신청 관련 내용을 남겨주세요.
