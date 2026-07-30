@@ -38,7 +38,7 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-220px)] flex-col overflow-hidden rounded-xl border border-border bg-card">
+    <div className="flex h-[calc(100svh-220px)] flex-col overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-start gap-1.5 border-b border-border bg-warning/10 px-3 py-2 text-[11px] text-warning-foreground">
         <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span className="break-keep">{CHAT_RETENTION_NOTICE}</span>
