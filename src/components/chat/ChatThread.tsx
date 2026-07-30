@@ -63,7 +63,10 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
                     </AvatarFallback>
                   </Avatar>
                   <div className={cn("max-w-[75%] space-y-1", mine && "items-end text-right")}>
-                    <p className="text-[11px] text-muted-foreground">{msg.senderName}</p>
+                    {/* 카카오톡처럼 내가 보낸 말풍선에는 이름을 표시하지 않는다(누가 봐도 본인
+                        메시지라 안 그러면 오른쪽에 붙는 이름 위치가 애매해 보이는 문제가 있었다).
+                        상대방 메시지에만 이름을 보여준다. */}
+                    {!mine && <p className="text-[11px] text-muted-foreground">{msg.senderName}</p>}
                     <div
                       className={cn(
                         "rounded-2xl px-3 py-2 text-sm",
