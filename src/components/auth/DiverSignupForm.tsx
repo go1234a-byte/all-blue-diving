@@ -79,13 +79,46 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         options: { emailRedirectTo: `${window.location.origin}/` },
       });
 
-      if (error || !data.user) {
-        toast({ title: "회원가입에 실패했습니다", description: error?.message, variant: "destructive" });
-        return;
+      let userId = data?.user?.id;
+
+      if (error || !userId) {
+        // Supabase는 "로그인 계정(auth)은 만들어졌는데 프로필 저장 단계에서 실패해
+        // 프로필 없이 붕 뜬 계정"이 된 경우에도, 같은 이메일로 재가입을 시도하면
+        // 세션 없이 "이미 등록된 사용자" 에러만 던진다 — 이 경우 그대로 실패 처리하면
+        // 그 계정으로는 영영 가입을 못 끝내게 되므로, 방금 입력한 비밀번호로 로그인을
+        // 시도해 본인 계정이 맞는지 확인하고, 맞으면 프로필 생성을 이어서 진행한다.
+        const isAlreadyRegistered = /already registered|already exists/i.test(error?.message ?? "");
+        if (!isAlreadyRegistered) {
+          toast({ title: "회원가입에 실패했습니다", description: error?.message, variant: "destructive" });
+          return;
+        }
+
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError || !signInData.user) {
+          toast({
+            title: "이미 가입된 이메일입니다",
+            description: "이전에 가입을 시도하셨다가 완료되지 않은 계정일 수 있어요. 방금 입력한 비밀번호로 로그인해보시거나, 다른 이메일로 가입해주세요.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", signInData.user.id)
+          .maybeSingle();
+        if (existingProfile) {
+          toast({ title: "이미 가입이 완료된 계정입니다", description: "로그인해서 이용해주세요.", variant: "destructive" });
+          return;
+        }
+
+        // auth 계정은 있지만 프로필이 없는, 직전 시도가 중간에 끊긴 상태 — 프로필 생성만 이어서 진행.
+        userId = signInData.user.id;
       }
 
       const { error: profileError } = await supabase.from("profiles").insert({
-        id: data.user.id,
+        id: userId,
         role: "diver",
         name,
         phone,
@@ -107,7 +140,7 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
       // Supabase에는 저장됐지만 앱 메모리(diverProfiles)에는 반영이 안 돼 있으므로,
       // 새로고침 없이도 마이페이지 등에서 방금 입력한 정보가 바로 보이도록 즉시 로컬 상태에 반영한다.
       registerDiverProfile({
-        id: data.user.id,
+        id: userId,
         role: "diver",
         name,
         phone,

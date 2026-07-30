@@ -155,13 +155,44 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
         options: { emailRedirectTo: `${window.location.origin}/` },
       });
 
-      if (signUpError || !signUpData.user) {
-        toast({ title: "회원가입에 실패했습니다", description: signUpError?.message, variant: "destructive" });
-        return;
+      let userId = signUpData?.user?.id;
+
+      if (signUpError || !userId) {
+        // 다이버 가입폼과 동일한 이유: auth 계정은 생성됐는데 프로필 저장 단계에서
+        // 실패해 프로필 없이 붕 뜬 계정이 된 경우, 같은 이메일 재가입 시도는 세션 없는
+        // "이미 등록된 사용자" 에러만 던진다. 방금 입력한 비밀번호로 로그인해서 본인
+        // 계정이 맞는지 확인 후, 맞으면 프로필 생성을 이어서 진행한다.
+        const isAlreadyRegistered = /already registered|already exists/i.test(signUpError?.message ?? "");
+        if (!isAlreadyRegistered) {
+          toast({ title: "회원가입에 실패했습니다", description: signUpError?.message, variant: "destructive" });
+          return;
+        }
+
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError || !signInData.user) {
+          toast({
+            title: "이미 가입된 이메일입니다",
+            description: "이전에 가입을 시도하셨다가 완료되지 않은 계정일 수 있어요. 방금 입력한 비밀번호로 로그인해보시거나, 다른 이메일로 가입해주세요.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", signInData.user.id)
+          .maybeSingle();
+        if (existingProfile) {
+          toast({ title: "이미 가입이 완료된 계정입니다", description: "로그인해서 이용해주세요.", variant: "destructive" });
+          return;
+        }
+
+        userId = signInData.user.id;
       }
 
       const { error: profileError } = await supabase.from("profiles").insert({
-        id: signUpData.user.id,
+        id: userId,
         role: "instructor",
         name,
         phone,
