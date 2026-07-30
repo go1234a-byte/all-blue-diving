@@ -57,11 +57,16 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
               const isStaff = msg.senderRole === "instructor" || msg.senderRole === "admin";
               return (
                 <div key={msg.id} className={cn("flex gap-2", mine ? "flex-row-reverse" : "flex-row")}>
-                  <Avatar className="h-7 w-7 shrink-0">
-                    <AvatarFallback className={cn(isStaff && "bg-primary text-primary-foreground")}>
-                      {msg.senderName[0]}
-                    </AvatarFallback>
-                  </Avatar>
+                  {/* 내가 보낸 말풍선에는 아바타도 이름과 마찬가지로 표시하지 않는다 —
+                      카카오톡처럼 본인 메시지는 말풍선만 오른쪽에 붙어 있으면 충분하고,
+                      아바타까지 있으면 오히려 위치가 애매해 보인다는 피드백을 반영했다. */}
+                  {!mine && (
+                    <Avatar className="h-7 w-7 shrink-0">
+                      <AvatarFallback className={cn(isStaff && "bg-primary text-primary-foreground")}>
+                        {msg.senderName[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                   <div className={cn("max-w-[75%] space-y-1", mine && "items-end text-right")}>
                     {/* 카카오톡처럼 내가 보낸 말풍선에는 이름을 표시하지 않는다(누가 봐도 본인
                         메시지라 안 그러면 오른쪽에 붙는 이름 위치가 애매해 보이는 문제가 있었다).
