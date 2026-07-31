@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ALL BLUE</string>
+    <string name="title_activity_main">ALL BLUE</string>
+    <string name="package_name">com.allblue.diving</string>
+    <string name="custom_url_scheme">com.allblue.diving</string>
+</resources>
