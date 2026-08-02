@@ -72,7 +72,7 @@ const Index = () => {
         </div>
       </div>
 
-      <main className="mx-auto -mt-6 w-full max-w-md space-y-6 px-4 pb-6 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md space-y-6 px-4 pt-6 pb-6 md:max-w-lg">
         {pinnedNotice && (
           <Link
             to="/support"

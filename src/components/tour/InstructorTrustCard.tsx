@@ -25,7 +25,7 @@ export function InstructorTrustCard({ instructor }: InstructorTrustCardProps) {
   const tourCount = tours.filter((t) => t.instructorId === instructor.id).length;
 
   return (
-    <Card className="border-primary/20 bg-gradient-surface">
+    <Card className="border-primary/20 bg-card">
       <CardContent className="space-y-4 p-4">
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

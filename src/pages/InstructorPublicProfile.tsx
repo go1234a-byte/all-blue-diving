@@ -320,7 +320,7 @@ const InstructorPublicProfile = () => {
 
       <main className="mx-auto w-full max-w-md space-y-4 px-4 py-4 md:max-w-lg">
         {/* 프로필 헤더 */}
-        <Card className="border-primary/20 bg-gradient-surface">
+        <Card className="border-primary/20 bg-card">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-start justify-between">
               {instructor.verified && <VerifiedBadge size="md" />}
