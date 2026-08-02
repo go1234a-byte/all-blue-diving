@@ -1,13 +1,28 @@
 import { useState } from "react";
-import { Megaphone } from "lucide-react";
+import { Megaphone, ShieldCheck, MessageCircle, CalendarCheck, Lock, Users } from "lucide-react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { SearchForm } from "@/components/search/SearchForm";
 import { TourCard } from "@/components/search/TourCard";
-import { Logo } from "@/components/brand/Logo";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
+
+interface Feature {
+  icon: typeof ShieldCheck;
+  title: string;
+  desc: string;
+}
+
+// "ALL BLUE만의 특별함" — 시안 하단 6개 피처 스트립과 동일한 구성.
+const FEATURES: Feature[] = [
+  { icon: Users, title: "신뢰할 수 있는 강사", desc: "인증된 강사진이 함께하는 안전한 투어" },
+  { icon: ShieldCheck, title: "안전 최우선", desc: "철저한 안전 관리 시스템으로 안심 투어" },
+  { icon: MessageCircle, title: "실시간 소통", desc: "강사와 다이버가 실시간으로 소통해요" },
+  { icon: CalendarCheck, title: "간편한 예약", desc: "몇 번의 터치로 간편하게 예약 완료" },
+  { icon: Lock, title: "안전한 결제", desc: "SSL 보안 시스템으로 안전한 결제" },
+  { icon: Users, title: "다이버 커뮤니티", desc: "후기와 정보를 나누는 다이버 공간" },
+];
 
 const Index = () => {
   const { role, authLoading } = useRole();
@@ -41,17 +56,23 @@ const Index = () => {
   return (
     <div className="min-h-full bg-gradient-surface pb-20">
       <AppHeader showLanguage />
-      <main className="mx-auto w-full max-w-md space-y-6 px-4 py-6 md:max-w-lg">
-        <div className="flex flex-col items-center gap-3 pb-1 pt-2 text-center">
-          <Logo size="lg" />
-          <div className="space-y-1">
-            <h1 className="text-xl font-bold text-foreground">모든 바다가 만나는 곳</h1>
-            <p className="text-sm text-muted-foreground">
-              전 세계 스쿠버다이빙 & 프리다이빙 투어를 한 곳에서 비교하고 예약하세요.
-            </p>
-          </div>
-        </div>
 
+      {/* 히어로 — 시안 "홈" 화면의 다크 오션 그라데이션 배경 + 카피 구성을 재현 */}
+      <div className="relative overflow-hidden bg-gradient-ocean px-4 pb-8 pt-8 text-center md:pb-10 md:pt-10">
+        <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
+        <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-lg">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-primary-foreground md:text-3xl">
+            다이빙의 모든 순간,
+            <br />
+            ALL BLUE와 함께
+          </h1>
+          <p className="text-sm text-primary-foreground/70">
+            특별한 바다, 특별한 경험을 찾고 예약할 수 있습니다.
+          </p>
+        </div>
+      </div>
+
+      <main className="mx-auto -mt-6 w-full max-w-md space-y-6 px-4 pb-6 md:max-w-lg">
         {pinnedNotice && (
           <Link
             to="/support"
@@ -72,6 +93,27 @@ const Index = () => {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {tours.map((tour) => (
               <TourCard key={tour.id} tour={tour} />
+            ))}
+          </div>
+        </section>
+
+        {/* ALL BLUE만의 특별함 — 시안 하단 피처 스트립 */}
+        <section className="space-y-3 pt-2">
+          <h2 className="text-base font-semibold text-foreground">ALL BLUE만의 특별함</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {FEATURES.map((f) => (
+              <div
+                key={f.title}
+                className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/15 text-accent">
+                  <f.icon className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">{f.title}</p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{f.desc}</p>
+                </div>
+              </div>
             ))}
           </div>
         </section>

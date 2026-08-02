@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarClock, Pencil, ShieldAlert, Star, TrendingUp } from "lucide-react";
+import { CalendarClock, CalendarCheck, Compass, Pencil, ShieldAlert, Star, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,29 +64,38 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
         <Card
           role="button"
           tabIndex={0}
-          className="cursor-pointer transition-shadow hover:shadow-ocean"
+          className="cursor-pointer transition-shadow hover:shadow-ocean-glow"
           onClick={() => document.getElementById("my-tours-section")?.scrollIntoView({ behavior: "smooth" })}
         >
-          <CardContent className="space-y-1 p-4 text-center">
+          <CardContent className="space-y-2 p-4 text-center">
+            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-accent/15 text-accent">
+              <Compass className="h-4 w-4" />
+            </div>
             <p className="text-xs text-muted-foreground">등록 투어</p>
-            <p className="text-2xl font-bold text-primary">{myTours.length}</p>
+            <p className="text-2xl font-bold text-foreground">{myTours.length}</p>
           </CardContent>
         </Card>
         <Card
           role="button"
           tabIndex={0}
-          className="cursor-pointer transition-shadow hover:shadow-ocean"
+          className="cursor-pointer transition-shadow hover:shadow-ocean-glow"
           onClick={onViewBookings}
         >
-          <CardContent className="space-y-1 p-4 text-center">
+          <CardContent className="space-y-2 p-4 text-center">
+            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <CalendarCheck className="h-4 w-4" />
+            </div>
             <p className="text-xs text-muted-foreground">누적 예약</p>
-            <p className="text-2xl font-bold text-primary">{myBookingsCount}</p>
+            <p className="text-2xl font-bold text-foreground">{myBookingsCount}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="space-y-1 p-4 text-center">
+          <CardContent className="space-y-2 p-4 text-center">
+            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-warning/15 text-warning">
+              <Star className="h-4 w-4" />
+            </div>
             <p className="text-xs text-muted-foreground">평균 평점</p>
-            <p className="text-2xl font-bold text-primary">{instructor.rating.toFixed(1)}</p>
+            <p className="text-2xl font-bold text-foreground">{instructor.rating.toFixed(1)}</p>
           </CardContent>
         </Card>
       </div>
