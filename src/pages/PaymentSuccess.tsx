@@ -94,8 +94,10 @@ const PaymentSuccess = () => {
         setStatus("error");
         setErrorMessage(err instanceof Error ? err.message : "예약 생성 중 오류가 발생했습니다.");
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     })();
+    // ranRef 가드로 마운트당 한 번만 실행되는 효과라 addBooking/bookings/redeemCoupon 등은
+    // 의존성에 넣지 않는다(넣으면 오히려 각 값이 바뀔 때마다 재실행 트리거로 오인될 수 있음).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentKey, orderId, amount]);
 
   if (status === "verifying") {

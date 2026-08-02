@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, MessageSquareWarning, Send, ShieldAlert } from "lucide-react";
+import { Bot, MessageSquareWarning } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Accordion,
@@ -12,11 +11,9 @@ import {
 import { SUPPORT_FAQ_CATEGORIES } from "@/types";
 import { cn } from "@/lib/utils";
 
-type ChatMode = "chatbot" | "live_agent";
-
 interface DisplayMessage {
   id: string;
-  role: "bot" | "system" | "user" | "agent";
+  role: "bot" | "system" | "user";
   body: string;
 }
 
@@ -108,7 +105,7 @@ const FAQ_CATEGORY_ITEMS: Record<(typeof SUPPORT_FAQ_CATEGORIES)[number], { q: s
   기타: [
     {
       q: "기타 문의는 어디로 하나요?",
-      a: "위 카테고리에서 답을 찾지 못하셨다면 아래 '상담원 연결' 버튼을 눌러 문의를 남겨주세요. 24시간 이내에 답변드립니다.",
+      a: "위 카테고리에서 답을 찾지 못하셨다면 아래 '문의 남기기' 버튼을 눌러 1:1 문의를 남겨주세요. 24시간 이내에 답변드립니다.",
     },
   ],
 };
@@ -119,13 +116,19 @@ function nextId(): string {
   return `msg-${idCounter}`;
 }
 
-/** FAQ 챗봇 + 실시간 상담원 전환 패널 (고객센터 "FAQ" 탭 내용). */
-export function FaqChatPanel() {
-  const [mode, setMode] = useState<ChatMode>("chatbot");
+interface FaqChatPanelProps {
+  /** "문의 남기기" 버튼 클릭 시 호출 — 실제 접수가 이뤄지는 1:1 문의 탭으로 이동시킨다.
+      (예전에는 이 버튼을 누르면 아무 데도 접수되지 않는 가짜 실시간 채팅 화면으로만
+      전환되어, 사용자가 입력한 문의 내용이 그대로 사라지는 문제가 있었다.) */
+  onRequestInquiry: () => void;
+}
+
+/** FAQ 챗봇 패널 (고객센터 "FAQ" 탭 내용). 자주 묻는 질문으로 해결되지 않으면
+    실제로 접수되는 1:1 문의 탭으로 안내한다. */
+export function FaqChatPanel({ onRequestInquiry }: FaqChatPanelProps) {
   const [messages, setMessages] = useState<DisplayMessage[]>([
     { id: nextId(), role: "bot", body: "안녕하세요! ALL BLUE 고객센터입니다. 아래 자주 묻는 질문을 선택하시거나, 직접 문의를 남겨주세요." },
   ]);
-  const [text, setText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -141,19 +144,6 @@ export function FaqChatPanel() {
       { id: nextId(), role: "user", body: chip.label },
       { id: nextId(), role: "bot", body: chip.answer },
     ]);
-  };
-
-  const handleEscalate = () => {
-    setMode("live_agent");
-    setMessages([
-      { id: nextId(), role: "system", body: "ALL BLUE 전담 상담원이 연결되었습니다. 문의 사항을 남겨주시면 24시간 이내 답변해 드립니다." },
-    ]);
-  };
-
-  const handleSend = () => {
-    if (!text.trim()) return;
-    setMessages((prev) => [...prev, { id: nextId(), role: "user", body: text.trim() }]);
-    setText("");
   };
 
   return (
@@ -180,22 +170,12 @@ export function FaqChatPanel() {
 
       <div ref={scrollRef} className="max-h-[360px] flex-1 space-y-3 overflow-y-auto rounded-xl border border-border bg-card/60 px-3 py-4">
         {messages.map((msg) => {
-          if (msg.role === "system") {
-            return (
-              <div
-                key={msg.id}
-                className="mx-auto max-w-[90%] break-keep rounded-xl border border-primary/30 bg-secondary/60 px-3 py-2 text-center text-xs font-medium text-foreground"
-              >
-                {msg.body}
-              </div>
-            );
-          }
           const mine = msg.role === "user";
           return (
             <div key={msg.id} className={cn("flex gap-2", mine ? "flex-row-reverse" : "flex-row")}>
               <Avatar className="h-7 w-7 shrink-0">
                 <AvatarFallback className={cn(!mine && "bg-primary text-primary-foreground")}>
-                  {mine ? "나" : msg.role === "agent" ? "상" : <Bot className="h-3.5 w-3.5" />}
+                  {mine ? "나" : <Bot className="h-3.5 w-3.5" />}
                 </AvatarFallback>
               </Avatar>
               <div
@@ -211,61 +191,32 @@ export function FaqChatPanel() {
         })}
       </div>
 
-      {mode === "chatbot" && (
-        <div className="space-y-3 pt-3">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            {FAQ_CHIPS.map((chip) => (
-              <button
-                key={chip.label}
-                type="button"
-                onClick={() => handleFaqClick(chip)}
-                className="break-keep rounded-lg border border-primary/30 bg-secondary/50 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
-          <div className="space-y-1.5">
-            <Button
-              variant="destructive"
-              size="lg"
-              className="w-full gap-2 whitespace-normal break-keep py-3 text-sm"
-              onClick={handleEscalate}
+      <div className="space-y-3 pt-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {FAQ_CHIPS.map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={() => handleFaqClick(chip)}
+              className="break-keep rounded-lg border border-primary/30 bg-secondary/50 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
             >
-              <MessageSquareWarning className="h-4 w-4 shrink-0" />
-              해결이 안 되셨나요? 상담원 연결
-            </Button>
-            <p className="text-center text-[11px] text-muted-foreground">24시간 이내 응답</p>
-          </div>
+              {chip.label}
+            </button>
+          ))}
         </div>
-      )}
-
-      {mode === "live_agent" && (
-        <div className="pt-3">
-          <div className="mb-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-primary" />
-            상담원 연결됨 · 24시간 이내 응답
-          </div>
-          <div className="flex items-center gap-2">
-            <Input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                // 한글(또는 일본어/중국어) IME로 조합 중일 때 조합을 확정하려고 누르는
-                // Enter까지 "전송"으로 처리되어, 아직 완성되지 않은 글자만 먼저 보내지고
-                // 남은 글자가 다음 Enter에 따로 전송되는 버그가 있었다(예: "에헤" 입력 중
-                // 말풍선이 "에ㅔㅔ"/"ㅔ"처럼 쪼개져서 두 번 전송됨). isComposing이 true인
-                // 동안(조합 확정 Enter)에는 전송하지 않고, 조합이 끝난 뒤의 Enter에서만 보낸다.
-                if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
-              }}
-              placeholder="문의 내용을 입력하세요"
-            />
-            <Button size="icon" onClick={handleSend} aria-label="전송">
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="space-y-1.5">
+          <Button
+            variant="destructive"
+            size="lg"
+            className="w-full gap-2 whitespace-normal break-keep py-3 text-sm"
+            onClick={onRequestInquiry}
+          >
+            <MessageSquareWarning className="h-4 w-4 shrink-0" />
+            해결이 안 되셨나요? 문의 남기기
+          </Button>
+          <p className="text-center text-[11px] text-muted-foreground">24시간 이내 응답</p>
         </div>
-      )}
+      </div>
     </div>
   );
 }

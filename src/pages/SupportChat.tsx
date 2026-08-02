@@ -9,10 +9,15 @@ import { cn } from "@/lib/utils";
 import { useRole } from "@/contexts/RoleContext";
 
 type InquiryView = "write" | "history";
+type SupportTab = "faq" | "inquiry" | "dispute" | "report";
 
 const SupportChat = () => {
   const { currentDiverId } = useRole();
   const [inquiryView, setInquiryView] = useState<InquiryView>("write");
+  // FAQ 탭의 "문의 남기기" 버튼을 눌렀을 때 실제로 접수되는 1:1 문의 탭으로 이동시키기 위해
+  // 탭 상태를 여기서 직접 관리한다(기존에는 FAQ 탭 안에서 가짜 실시간 채팅 UI로만 전환되고
+  // 실제로는 어디에도 접수되지 않는 문제가 있었다).
+  const [activeTab, setActiveTab] = useState<SupportTab>("faq");
 
   return (
     <div className="flex min-h-full flex-col bg-gradient-surface">
@@ -24,7 +29,7 @@ const SupportChat = () => {
       </header>
 
       <main className="mx-auto w-full max-w-md flex-1 px-4 py-4 md:max-w-lg">
-        <Tabs defaultValue="faq">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SupportTab)}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="faq" className="text-xs">FAQ</TabsTrigger>
             <TabsTrigger value="inquiry" className="text-xs">1:1 문의</TabsTrigger>
@@ -32,7 +37,12 @@ const SupportChat = () => {
             <TabsTrigger value="report" className="text-xs">신고하기</TabsTrigger>
           </TabsList>
           <TabsContent value="faq" className="pt-4">
-            <FaqChatPanel />
+            <FaqChatPanel
+              onRequestInquiry={() => {
+                setActiveTab("inquiry");
+                setInquiryView("write");
+              }}
+            />
           </TabsContent>
           <TabsContent value="inquiry" className="space-y-4 pt-4">
             <div className="grid grid-cols-2 gap-2 rounded-lg bg-secondary/50 p-1 text-sm font-medium">
