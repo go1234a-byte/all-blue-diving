@@ -13,12 +13,11 @@ interface AppHeaderProps {
 export function AppHeader({ title, showLanguage = false }: AppHeaderProps) {
   const { isLoggedIn } = useRole();
 
-  // "dark" 스코프를 헤더에만 적용해 배경/텍스트/보더 등 전역 토큰이 자동으로
-  // 어두운 배색으로 뒤집히게 한다(NotificationBell/Button 등 하위 컴포넌트 수정 없이
-  // 프리미엄 딥오션 헤더를 적용하기 위한 트릭). bg-gradient-ocean/shadow-ocean은
-  // index.css에 이미 정의된 브랜드 그라데이션·그림자 토큰을 그대로 재사용한다.
+  // 앱 전체가 이제 딥네이비 기본 테마라 별도 다크 스코프 없이도 토큰이 그대로
+  // 어울린다. bg-gradient-ocean/shadow-ocean은 index.css의 브랜드 그라데이션·
+  // 그림자 토큰을 재사용해 헤더에 살짝 더 깊은 그라데이션을 준다.
   return (
-    <header className="dark sticky top-0 z-30 border-b border-white/10 bg-gradient-ocean shadow-ocean">
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-gradient-ocean shadow-ocean">
       <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between px-4 md:max-w-lg">
         <Link to="/" className="flex items-center gap-2">
           {title ? (

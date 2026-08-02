@@ -74,7 +74,9 @@ function AdminTopBar() {
 export function AdminLayout() {
   return (
     <AdminPeriodProvider>
-      <div className="min-h-full bg-gradient-surface pb-20">
+      {/* 소비자 앱은 딥네이비 기본 테마로 바뀌었지만, 운영자용 관리자 화면은
+          데이터를 오래 들여다보는 화면 특성상 기존처럼 밝은 화면을 유지한다. */}
+      <div className="admin-light min-h-full bg-gradient-surface pb-20">
         <AdminTopBar />
         <main className="mx-auto w-full max-w-md space-y-5 px-4 py-4 md:max-w-lg">
           <Outlet />
