@@ -25,6 +25,12 @@ const TONE_CLASSES: Record<NonNullable<KpiCardProps["tone"]>, string> = {
   destructive: "text-destructive",
 };
 
+const TONE_ICON_BG: Record<NonNullable<KpiCardProps["tone"]>, string> = {
+  default: "bg-accent/15 text-accent",
+  warning: "bg-warning/15 text-warning",
+  destructive: "bg-destructive/15 text-destructive",
+};
+
 /** 관리자 Dashboard 상단 KPI 카드 — 숫자가 먼저 보이도록 구성, 클릭 시 상세 페이지 이동. */
 export function KpiCard({ title, icon: Icon, primaryValue, metrics, to, tone = "default", footerNote }: KpiCardProps) {
   const navigate = useNavigate();
@@ -41,7 +47,9 @@ export function KpiCard({ title, icon: Icon, primaryValue, metrics, to, tone = "
       <CardContent className="space-y-3 p-4">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-muted-foreground">{title}</span>
-          <Icon className={cn("h-4 w-4", TONE_CLASSES[tone])} />
+          <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", TONE_ICON_BG[tone])}>
+            <Icon className="h-4 w-4" />
+          </span>
         </div>
         <p className={cn("text-2xl font-bold", TONE_CLASSES[tone])}>{primaryValue}</p>
         <div className="space-y-0.5">

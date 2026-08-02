@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, MapPin, MessageCircle, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, Compass, MapPin, MessageCircle, ShieldCheck, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TourGallery } from "@/components/tour/TourGallery";
@@ -36,6 +36,7 @@ const TourDetail = () => {
     toursLoading,
     instructorsLoading,
     getConfirmedParticipantCount,
+    getReviewsByTourId,
   } = useAppData();
   const { isLoggedIn, currentDiverId, currentInstructorId } = useRole();
   const { toast } = useToast();
@@ -70,6 +71,17 @@ const TourDetail = () => {
   // 상단에 표시되는 "X/N명 모집" 정원은 반드시 공개 집계 뷰 기반 헬퍼로 계산해야 한다. (아래
   // 참가자 목록 자체는 담당 강사일 때만 노출되는 영역이라 bookings를 그대로 써도 된다.)
   const confirmedCount = getConfirmedParticipantCount(tour.id);
+  const tourReviews = getReviewsByTourId(tour.id);
+  const averageRating = tourReviews.length > 0
+    ? tourReviews.reduce((sum, r) => sum + r.rating, 0) / tourReviews.length
+    : 0;
+  // 실제 데이터 기반 하이라이트: 강사가 등록한 특징 태그 + 소규모/전담 강사 케어 등
+  // 항상 참인 사실만 노출한다 (시안 문구를 그대로 베끼지 않고 실제 값으로 채움).
+  const highlightItems: { icon: typeof Compass; label: string; sub: string }[] = [
+    ...(tour.tags ?? []).slice(0, 2).map((tag) => ({ icon: Compass, label: tag, sub: "투어 특징" })),
+    { icon: Users, label: `${instructor.name} 강사 1:1 케어`, sub: "전담 강사 진행" },
+    { icon: ShieldCheck, label: `최대 ${tour.maxParticipants}명 소규모`, sub: "안전 최우선 운영" },
+  ].slice(0, 4);
   const selectedOptionsTotal = tour.customOptions
     .filter((o) => o.isActive && selectedOptionIds.includes(o.id))
     .reduce((sum, o) => sum + o.price, 0);
@@ -189,7 +201,16 @@ const TourDetail = () => {
             )}
           </div>
           <h2 className="text-xl font-bold text-foreground">{tour.title}</h2>
-          <p className="text-sm text-muted-foreground">{tour.country} · {tour.site}</p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            <span>{tour.country} · {tour.site}</span>
+            {tourReviews.length > 0 && (
+              <span className="flex items-center gap-1 text-foreground">
+                <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                <span className="font-semibold">{averageRating.toFixed(1)}</span>
+                <span className="text-xs text-muted-foreground">({tourReviews.length}개 후기)</span>
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 rounded-xl border border-primary/20 bg-card p-4 text-sm">
@@ -213,6 +234,27 @@ const TourDetail = () => {
           )}
           <div className="col-span-2 border-t border-primary/20 pt-2 text-xs text-warning-foreground">
             모집 마감일: {formatDateKR(tour.recruitmentDeadline)}까지
+          </div>
+        </div>
+
+        {/* 투어 하이라이트 — 강사가 등록한 특징 태그 + 소규모/전담 케어 등 실제 데이터 기반 요약 */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">투어 하이라이트</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {highlightItems.map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <div key={i} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-semibold text-foreground">{item.label}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">{item.sub}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

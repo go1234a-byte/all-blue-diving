@@ -9,6 +9,9 @@ import {
 import { BottomNav } from "@/components/layout/BottomNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AdminPeriodProvider, useAdminPeriod, type AdminPeriod } from "@/contexts/AdminPeriodContext";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PAGE_TITLES: Record<string, string> = {
   "/admin/home": "홈",
@@ -48,7 +51,7 @@ function AdminTopBar() {
     (location.pathname.startsWith("/admin/users/") ? "회원 상세" : "관리자 백오피스");
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-border bg-card/95 px-4 backdrop-blur">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-border bg-card/95 px-4 backdrop-blur md:px-6">
       <h1 className="line-clamp-1 text-base font-semibold text-foreground">{title}</h1>
       <div className="flex shrink-0 items-center gap-2">
         <Select value={period} onValueChange={(v) => setPeriod(v as AdminPeriod)}>
@@ -69,19 +72,41 @@ function AdminTopBar() {
   );
 }
 
-// 관리자 페이지도 다이버/강사 화면과 동일하게 모바일 하단 네비게이션(홈/대시보드/강사관리/회원관리/정산관리/더보기)으로
-// 이동한다. 기존 좌측 사이드바(15개 메뉴)는 "더보기" 탭 안의 목록으로 정리했다.
+/**
+ * 관리자 레이아웃 — 화면 폭에 따라 두 가지 형태로 전환한다.
+ * · 데스크톱(md 이상, 768px~): 좌측 고정 사이드바(전체 메뉴) + 상단바 + 콘텐츠.
+ *   시안(관리자 웹 대시보드)에서 요청한 레이아웃이자, 원래 이 프로젝트에 있었던
+ *   AdminSidebar를 그대로 재사용한다(그동안 사용되지 않고 있었음).
+ * · 모바일(768px 미만): 기존처럼 상단바 + 하단 탭 네비게이션.
+ * Outlet(실제 페이지)은 항상 한쪽에서만 렌더링되어 중복 마운트/중복 데이터 로딩이 없다.
+ */
 export function AdminLayout() {
+  const isMobile = useIsMobile();
+
   return (
     <AdminPeriodProvider>
       {/* 소비자 앱은 딥네이비 기본 테마로 바뀌었지만, 운영자용 관리자 화면은
           데이터를 오래 들여다보는 화면 특성상 기존처럼 밝은 화면을 유지한다. */}
-      <div className="admin-light min-h-full bg-gradient-surface pb-20">
-        <AdminTopBar />
-        <main className="mx-auto w-full max-w-md space-y-5 px-4 py-4 md:max-w-lg">
-          <Outlet />
-        </main>
-        <BottomNav />
+      <div className="admin-light min-h-full bg-gradient-surface">
+        {isMobile ? (
+          <div className="pb-20">
+            <AdminTopBar />
+            <main className="mx-auto w-full max-w-md space-y-5 px-4 py-4 md:max-w-lg">
+              <Outlet />
+            </main>
+            <BottomNav />
+          </div>
+        ) : (
+          <SidebarProvider>
+            <AdminSidebar />
+            <SidebarInset>
+              <AdminTopBar />
+              <main className="flex-1 space-y-5 p-6 lg:p-8">
+                <Outlet />
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+        )}
       </div>
     </AdminPeriodProvider>
   );

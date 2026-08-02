@@ -32,6 +32,11 @@ const Index = () => {
   // 아래 자동 리다이렉트를 건너뛰고 이 화면을 그대로 보여준다.
   const instructorBrowsing = (location.state as { instructorBrowsing?: boolean } | null)?.instructorBrowsing === true;
 
+  // 홈 화면 검색 폼의 "출발 월" 선택 상태. 여기서 관리해서 월을 고르는 즉시(페이지 이동 없이)
+  // 아래 "모집중인 투어" 목록을 바로 필터링한다. 복수 선택 가능.
+  // (React Hooks 규칙상 아래 조건부 return들보다 반드시 먼저 호출되어야 한다.)
+  const [months, setMonths] = useState<number[]>([]);
+
   // 로그인 역할에 따라 첫 화면을 분기한다: 강사는 대시보드, 관리자는 관리자 홈,
   // 비회원/다이버만 이 투어 홈 화면을 그대로 본다.
   if (!authLoading && role === "instructor" && !instructorBrowsing) {
@@ -40,10 +45,6 @@ const Index = () => {
   if (!authLoading && role === "admin") {
     return <Navigate to="/admin/home" replace />;
   }
-
-  // 홈 화면 검색 폼의 "출발 월" 선택 상태. 여기서 관리해서 월을 고르는 즉시(페이지 이동 없이)
-  // 아래 "모집중인 투어" 목록을 바로 필터링한다. 복수 선택 가능.
-  const [months, setMonths] = useState<number[]>([]);
 
   // 관리자가 정지/보류 처리한 투어는 다이버에게 노출하지 않는다.
   // 모집 마감되었거나(최소 인원 미달로 취소된 경우 포함) 관리자가 정지/보류 처리한 투어는

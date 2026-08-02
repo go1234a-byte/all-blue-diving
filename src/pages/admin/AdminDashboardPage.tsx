@@ -1,4 +1,5 @@
 import { KpiCardGrid } from "@/components/admin/dashboard/KpiCardGrid";
+import { RevenueLineChart } from "@/components/admin/dashboard/RevenueLineChart";
 import { RecentBookingsTable } from "@/components/admin/dashboard/RecentBookingsTable";
 import { PenaltyWarningPanel } from "@/components/admin/dashboard/PenaltyWarningPanel";
 import { CenterApprovalPanel } from "@/components/admin/dashboard/CenterApprovalPanel";
@@ -13,6 +14,8 @@ const AdminDashboardPage = () => {
   return (
     <div className="space-y-6">
       <KpiCardGrid />
+
+      <RevenueLineChart />
 
       <RecentBookingsTable />
 
