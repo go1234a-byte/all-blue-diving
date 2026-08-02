@@ -5,29 +5,29 @@
 
 @layer base {
   :root {
-    /* ALL BLUE — 프리미엄 딥오션 리뉴얼: 딥네이비 배경 기본, 블루/틸/코랄 브랜드 컬러 */
-    --background: 205 65% 7%;
+    /* ALL BLUE — 절제된 딥오션 팔레트: 네이비/블루/틸 모노크롬, 코랄 제거 */
+    --background: 212 65% 11%;
     --foreground: 200 30% 95%;
 
-    --card: 205 50% 10%;
+    --card: 212 55% 14%;
     --card-foreground: 200 30% 95%;
 
-    --popover: 205 50% 10%;
+    --popover: 212 55% 14%;
     --popover-foreground: 200 30% 95%;
 
-    /* ALL BLUE brand primary: 시그니처 블루 (#0066FF 근사) */
-    --primary: 216 100% 50%;
+    /* ALL BLUE brand primary: 차분한 블루 (#0D47A1) */
+    --primary: 216 85% 34%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 216 100% 65%;
+    --primary-glow: 216 80% 50%;
 
-    --secondary: 205 45% 14%;
+    --secondary: 212 45% 16%;
     --secondary-foreground: 200 30% 94%;
 
-    --muted: 205 40% 13%;
+    --muted: 212 40% 15%;
     --muted-foreground: 200 15% 68%;
 
-    /* 틸/아쿠아 액센트 (#00C7B7 근사) — CTA, 뱃지, 포커스링 */
-    --accent: 175 100% 39%;
+    /* 톤 다운 틸 액센트 (#1AB6C6) — CTA, 스쿠버 뱃지, 포커스링 */
+    --accent: 186 77% 44%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 78% 58%;
@@ -39,52 +39,52 @@
     --success: 152 55% 46%;
     --success-foreground: 0 0% 100%;
 
-    /* 코랄 액센트 (#FF6B6B 근사) — 프리다이빙 뱃지, 간편결제 CTA */
-    --coral: 0 100% 71%;
-    --coral-foreground: 0 45% 18%;
+    /* 코랄 제거 → 슬레이트 그레이 (#333F52) — 프리다이빙 뱃지 */
+    --coral: 217 23% 26%;
+    --coral-foreground: 210 20% 92%;
 
-    --border: 205 35% 18%;
-    --input: 205 35% 18%;
-    --ring: 175 100% 39%;
+    --border: 212 32% 20%;
+    --input: 212 32% 20%;
+    --ring: 186 77% 44%;
 
     --radius: 1rem;
 
-    --sidebar-background: 205 65% 5%;
+    --sidebar-background: 212 65% 6%;
     --sidebar-foreground: 200 30% 92%;
-    --sidebar-primary: 175 100% 39%;
-    --sidebar-primary-foreground: 205 65% 5%;
-    --sidebar-accent: 205 45% 14%;
+    --sidebar-primary: 186 77% 44%;
+    --sidebar-primary-foreground: 212 65% 6%;
+    --sidebar-accent: 212 45% 16%;
     --sidebar-accent-foreground: 200 30% 92%;
-    --sidebar-border: 205 35% 18%;
-    --sidebar-ring: 175 100% 39%;
+    --sidebar-border: 212 32% 20%;
+    --sidebar-ring: 186 77% 44%;
 
-    /* ALL BLUE ocean gradients & shadows */
-    --gradient-ocean: linear-gradient(160deg, hsl(216 100% 45%) 0%, hsl(205 70% 15%) 45%, hsl(205 65% 5%) 100%);
-    --gradient-ocean-light: linear-gradient(135deg, hsl(175 100% 39%) 0%, hsl(216 100% 50%) 100%);
+    /* ALL BLUE ocean gradients & shadows — 모노크롬 블루로 재계산 (색 섞임 제거) */
+    --gradient-ocean: linear-gradient(160deg, hsl(216 85% 40%) 0%, hsl(214 55% 20%) 45%, hsl(212 65% 11%) 100%);
+    --gradient-ocean-light: linear-gradient(135deg, hsl(216 85% 48%) 0%, hsl(216 85% 30%) 100%);
     /* 소비자 앱 페이지 배경 그라데이션 — 거의 모든 화면(Search/Checkout/MyPage/TourDetail 등)이
        이 토큰 하나로 페이지 배경을 그린다. 관리자는 .admin-light 스코프에서 밝은 값으로 되돌린다. */
-    --gradient-surface: linear-gradient(180deg, hsl(205 65% 7%) 0%, hsl(205 60% 5%) 100%);
-    --shadow-ocean: 0 20px 50px -15px hsl(205 65% 4% / 0.5);
-    --shadow-ocean-glow: 0 0 40px hsl(175 100% 39% / 0.35);
+    --gradient-surface: linear-gradient(180deg, hsl(212 65% 11%) 0%, hsl(212 60% 8%) 100%);
+    --shadow-ocean: 0 20px 50px -15px hsl(212 65% 4% / 0.5);
+    --shadow-ocean-glow: 0 0 40px hsl(186 77% 44% / 0.35);
   }
 
   /* 관리자 백오피스 전용 스코프 — 소비자 앱은 딥네이비 기본이지만, 운영자가
      데이터를 오래 들여다보는 관리자 화면은 기존처럼 밝은 화면을 유지한다.
      (브랜드 컬러인 primary/accent/coral/warning/success/destructive는 공유) */
   .admin-light {
-    --background: 200 40% 98%;
-    --foreground: 210 60% 8%;
+    --background: 216 33% 97%;
+    --foreground: 212 55% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 210 60% 8%;
+    --card-foreground: 212 55% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 60% 8%;
-    --secondary: 200 30% 94%;
-    --secondary-foreground: 210 60% 12%;
-    --muted: 200 25% 95%;
-    --muted-foreground: 210 15% 45%;
-    --border: 200 25% 89%;
-    --input: 200 25% 89%;
-    --gradient-surface: linear-gradient(180deg, hsl(200 40% 98%) 0%, hsl(200 30% 94%) 100%);
+    --popover-foreground: 212 55% 10%;
+    --secondary: 216 20% 94%;
+    --secondary-foreground: 212 40% 14%;
+    --muted: 216 18% 95%;
+    --muted-foreground: 217 15% 40%;
+    --border: 216 20% 89%;
+    --input: 216 20% 89%;
+    --gradient-surface: linear-gradient(180deg, hsl(216 33% 97%) 0%, hsl(216 20% 94%) 100%);
   }
 }
 

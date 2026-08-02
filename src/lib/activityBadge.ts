@@ -11,7 +11,7 @@ export const ACTIVITY_LABEL: Record<ActivityType, string> = {
 
 /**
  * 액티비티 타입별 뱃지 색상 — 한눈에 구별되도록 타입마다 다른 색을 사용한다.
- * scuba: 아쿠아(accent) · freediving: 코랄 · liveaboard: 골드(warning)
+ * scuba: 틸(accent) · freediving: 슬레이트 그레이(coral 토큰 재사용) · liveaboard: 골드(warning)
  * 세 색 모두 기존 디자인 토큰(index.css)을 그대로 재사용한다.
  */
 export const ACTIVITY_BADGE_CLASS: Record<ActivityType, string> = {
