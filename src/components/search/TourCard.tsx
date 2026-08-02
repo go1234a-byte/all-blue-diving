@@ -12,16 +12,11 @@ import { formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { isTourBookable } from "@/lib/tourBooking";
+import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
 
 interface TourCardProps {
   tour: Tour;
 }
-
-const ACTIVITY_LABEL: Record<string, string> = {
-  scuba: "스쿠버다이빙",
-  freediving: "프리다이빙",
-  liveaboard: "리브어보드",
-};
 
 export function TourCard({ tour }: TourCardProps) {
   const {
@@ -45,7 +40,7 @@ export function TourCard({ tour }: TourCardProps) {
 
   return (
     <Link to={`/tour/${tour.id}`}>
-      <Card className="accent-top-ocean group overflow-hidden border-border transition-shadow hover:shadow-ocean">
+      <Card className="group overflow-hidden rounded-2xl border-border/60 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-ocean-glow">
         <div className="relative aspect-[4/3] w-full overflow-hidden">
           <img
             src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
@@ -53,9 +48,10 @@ export function TourCard({ tour }: TourCardProps) {
             onError={handleImageFallback}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
           <div className="absolute left-2 top-2 flex flex-wrap gap-1">
             {tour.activityTypes.map((type) => (
-              <Badge key={type} className="bg-primary/90 text-primary-foreground backdrop-blur">
+              <Badge key={type} className={cn("border-0 backdrop-blur", ACTIVITY_BADGE_CLASS[type])}>
                 {ACTIVITY_LABEL[type]}
               </Badge>
             ))}

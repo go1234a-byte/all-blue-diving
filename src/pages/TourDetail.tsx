@@ -19,12 +19,7 @@ import { CERTIFICATION_LABELS } from "@/lib/constants";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { calculateAge, formatDateKR, formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-
-const ACTIVITY_LABEL: Record<string, string> = {
-  scuba: "스쿠버다이빙",
-  freediving: "프리다이빙",
-  liveaboard: "리브어보드",
-};
+import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
 
 const TourDetail = () => {
   const { tourId } = useParams();
@@ -184,7 +179,7 @@ const TourDetail = () => {
         <div className="space-y-2">
           <div className="flex flex-wrap gap-1.5">
             {tour.activityTypes.map((t) => (
-              <Badge key={t} className="bg-primary text-primary-foreground">
+              <Badge key={t} className={cn("border-0", ACTIVITY_BADGE_CLASS[t])}>
                 {ACTIVITY_LABEL[t]}
               </Badge>
             ))}
