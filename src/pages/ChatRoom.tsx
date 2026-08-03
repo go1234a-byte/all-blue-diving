@@ -69,7 +69,7 @@ const ChatRoom = () => {
   const chatOnly = searchParams.get("view") === "chat";
   const { tours, bookings, getInstructorById, toursLoading, getConfirmedParticipantCount, fetchMaskedTourParticipants } =
     useAppData();
-  const { role, currentInstructorId, currentDiverId, profile } = useRole();
+  const { role, currentInstructorId, currentDiverId, profile, authLoading } = useRole();
   const tour = tours.find((t) => t.id === tourId);
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
   const [tab, setTab] = useState("dashboard");
@@ -127,6 +127,18 @@ const ChatRoom = () => {
           채팅 목록으로 돌아가기
         </Link>
         <BottomNav />
+      </div>
+    );
+  }
+
+  // 로그인 직후 session -> profiles 조회가 끝나기 전까지는 role/currentInstructorId가
+  // 아직 확정되지 않아, authLoading을 안 보면 실제로는 담당 강사인데도 isInstructor가
+  // false로 계산되어 참가자 실명이 잠깐 마스킹되어 보이는 등의 문제가 생긴다. MyPage와
+  // 동일하게 인증 확인 중에는 로딩 상태만 보여준다.
+  if (authLoading) {
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center gap-3 bg-gradient-surface p-6 text-center">
+        <p className="text-sm text-muted-foreground">인증 정보를 확인하는 중...</p>
       </div>
     );
   }

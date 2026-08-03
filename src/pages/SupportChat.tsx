@@ -12,7 +12,7 @@ type InquiryView = "write" | "history";
 type SupportTab = "faq" | "inquiry" | "dispute" | "report";
 
 const SupportChat = () => {
-  const { currentDiverId } = useRole();
+  const { currentDiverId, authLoading } = useRole();
   const [inquiryView, setInquiryView] = useState<InquiryView>("write");
   // FAQ 탭의 "문의 남기기" 버튼을 눌렀을 때 실제로 접수되는 1:1 문의 탭으로 이동시키기 위해
   // 탭 상태를 여기서 직접 관리한다(기존에는 FAQ 탭 안에서 가짜 실시간 채팅 UI로만 전환되고
@@ -29,6 +29,14 @@ const SupportChat = () => {
       </header>
 
       <main className="mx-auto w-full max-w-md flex-1 px-4 py-4 md:max-w-lg">
+        {/* 로그인 직후 session -> profiles 조회가 끝나기 전까지는 currentDiverId가 아직
+            빈 문자열이라, authLoading을 안 보면 "내 문의 보기" 등에서 실제로는 문의 내역이
+            있는데도 잠깐 비어보인다. MyPage와 동일하게 인증 확인 중에는 로딩 상태만 보여준다. */}
+        {authLoading ? (
+          <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
+            인증 정보를 확인하는 중...
+          </div>
+        ) : (
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SupportTab)}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="faq" className="text-xs">FAQ</TabsTrigger>
@@ -80,6 +88,7 @@ const SupportChat = () => {
             <SupportTicketForm type="report" userId={currentDiverId} />
           </TabsContent>
         </Tabs>
+        )}
       </main>
     </div>
   );

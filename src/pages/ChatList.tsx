@@ -31,7 +31,7 @@ const EMPTY_MESSAGE: Record<string, string> = {
 };
 
 const ChatList = () => {
-  const { role, currentDiverId, currentInstructorId, profile } = useRole();
+  const { role, currentDiverId, currentInstructorId, profile, authLoading } = useRole();
   const { tours, bookings, chatMessages, supportTickets } = useAppData();
   const [sortMode, setSortMode] = useState<ChatSortMode>(() => {
     if (typeof window === "undefined") return "recent";
@@ -92,6 +92,16 @@ const ChatList = () => {
     <div className="min-h-full bg-gradient-surface pb-20">
       <AppHeader title="채팅" />
       <main className="mx-auto w-full max-w-md space-y-2 px-4 py-4 md:max-w-lg">
+        {/* 로그인 직후 session -> profiles 조회가 끝나기 전까지는 role이 아직 "public"이고
+            currentDiverId/currentInstructorId도 비어있어, authLoading을 안 보면 실제로는
+            채팅방이 있는데도 "채팅방 없음"이 잠깐 잘못 표시된다. MyPage와 동일하게 인증 확인
+            중에는 로딩 상태만 보여준다. */}
+        {authLoading ? (
+          <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
+            인증 정보를 확인하는 중...
+          </div>
+        ) : (
+        <>
         {role === "public" && (
           <Link
             to="/support"
@@ -198,6 +208,8 @@ const ChatList = () => {
             </Link>
           );
         })}
+        </>
+        )}
       </main>
       <BottomNav />
     </div>
