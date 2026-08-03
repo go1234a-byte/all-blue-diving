@@ -1,0 +1,6 @@
+-- reviews.visibility 컬럼 추가 (batch95)
+-- 후기 작성이 항상 실패(화면엔 성공처럼 보이지만 DB에 저장 안 됨)하던 버그의 원인.
+-- Supabase SQL Editor에서 직접 실행 완료 후 기록용으로 커밋.
+alter table public.reviews
+  add column if not exists visibility text not null default 'public'
+    check (visibility in ('public', 'instructor_only'));
