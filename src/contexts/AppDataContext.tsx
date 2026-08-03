@@ -814,7 +814,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     (async () => {
-      const { data, error } = await supabase.from("bookings").select("*").order("created_at", { ascending: false });
+      // 보안 강화 3단계(batch98): bookings 테이블은 이제 본인/담당강사/관리자만 직접 select
+      // 가능하므로, 부트스트랩 조회는 컬럼별로 조건부 마스킹된 bookings_directory 뷰를 통해
+      // 가져온다. (권한 없는 열람자는 결제금액/여권/항공편/취소사유/동반자명단이 null로
+      // 내려온다. 같은 투어 동승자는 성별/방번호/코골이·흡연/인원수/선택옵션까지는 계속 볼 수 있다.)
+      const { data, error } = await supabase
+        .from("bookings_directory")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (!active) return;
       if (!error && data) setBookings(data.map(mapBookingRow));
       setBookingsLoading(false);
@@ -831,7 +838,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const [reviewsRes, reportsRes, payoutsRes, inquiriesRes, profilesRes, couponsRes] = await Promise.all([
         supabase.from("reviews").select("*").order("created_at", { ascending: false }),
         supabase.from("reports").select("*").order("created_at", { ascending: false }),
-        supabase.from("payouts").select("*").order("created_at", { ascending: false }),
+        // 보안 강화 3단계(batch98): payouts 테이블은 이제 본인 강사/관리자만 직접 select
+        // 가능하므로, 부트스트랩 조회는 payouts_directory 뷰를 통해 가져온다.
+        supabase.from("payouts_directory").select("*").order("created_at", { ascending: false }),
         supabase.from("inquiries").select("*").order("created_at", { ascending: false }),
         // 보안 강화 2단계(batch97): profiles 테이블은 이제 본인/관리자만 직접 select 가능하므로,
         // 부트스트랩 조회는 컬럼별로 조건부 마스킹된 profiles_directory 뷰를 통해서 가져온다.
