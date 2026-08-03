@@ -833,7 +833,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         supabase.from("reports").select("*").order("created_at", { ascending: false }),
         supabase.from("payouts").select("*").order("created_at", { ascending: false }),
         supabase.from("inquiries").select("*").order("created_at", { ascending: false }),
-        supabase.from("profiles").select("*").is("deleted_at", null),
+        // 보안 강화 2단계(batch97): profiles 테이블은 이제 본인/관리자만 직접 select 가능하므로,
+        // 부트스트랩 조회는 컬럼별로 조건부 마스킹된 profiles_directory 뷰를 통해서 가져온다.
+        // (권한 없는 열람자는 전화번호/긴급연락처/C-Card 번호/보험정보가 null로 내려온다.
+        // 같은 투어 동승자는 생년월일·C-Card 등급·로그수까지는 계속 볼 수 있다.)
+        supabase.from("profiles_directory").select("*"),
         supabase.from("coupons").select("*").order("created_at", { ascending: false }),
       ]);
       if (!active) return;
