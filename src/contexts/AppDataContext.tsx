@@ -1017,14 +1017,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setTours((prev) =>
           prev.map((t) => (t.id === tour.id ? { ...t, status: "closed", autoCloseProcessed: true } : t)),
         );
-        // 주의: supabase-js의 쿼리 빌더는 thenable이라 .then()/await로 실제로 "소비"해야만
-        // 네트워크 요청이 발생한다. 과거 `void supabase.from(...).update(...)` 형태로만 두었을 때는
-        // 요청 자체가 전혀 나가지 않아(로컬 상태만 "마감"으로 바뀌고 DB는 계속 "open") 새로고침/재로그인
-        // 시 자동 마감 평가가 매번 다시 실행되는 버그가 있었다. .then()으로 반드시 실행시키고 에러를 남긴다.
+        // 주의: 이 useEffect는 다이버든 강사든 누구 화면이 열려있어도 트리거될 수 있어서,
+        // "본인 소유 투어만 수정 가능"이라는 일반 RLS 정책으로는 이 쓰기가 막힌다(RLS 보안
+        // 강화 1단계 batch96 참고). 대신 상태 전이 조건을 서버에서 다시 검증하는
+        // apply_tour_auto_close() RPC를 호출한다.
         supabase
-          .from("tours")
-          .update({ status: "closed", auto_close_processed: true })
-          .eq("id", tour.id)
+          .rpc("apply_tour_auto_close", { p_tour_id: tour.id, p_meets_minimum: true })
           .then(({ error }) => {
             if (error) {
               console.error("[autoCloseEvaluation] tours 업데이트 실패(meetsMinimum):", error);
@@ -1040,11 +1038,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             : t,
         ),
       );
-      // 위와 동일한 이유로 .then()으로 명시적으로 실행시키고 실패를 콘솔에 남긴다.
+      // 위와 동일한 이유로 apply_tour_auto_close() RPC를 호출한다.
       supabase
-        .from("tours")
-        .update({ status: "closed", auto_close_processed: true, under_min_decision_pending: true })
-        .eq("id", tour.id)
+        .rpc("apply_tour_auto_close", { p_tour_id: tour.id, p_meets_minimum: false })
         .then(({ error }) => {
           if (error) {
             console.error("[autoCloseEvaluation] tours 업데이트 실패(underMin):", error);
@@ -1998,7 +1994,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const reportReview = async (reviewId: string) => {
     setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, reported: true } : r)));
-    await supabase.from("reviews").update({ reported: true }).eq("id", reviewId);
+    // 신고자가 이 리뷰의 작성자가 아니므로(RLS 보안 강화 1단계 batch96 참고) 일반 update
+    // 대신 reported 필드만 안전하게 켜주는 report_review() RPC를 쓴다.
+    const { error } = await supabase.rpc("report_review", { p_review_id: reviewId });
+    if (error) {
+      console.error("[reportReview] 리뷰 신고 처리 실패:", error);
+    }
   };
 
   /** 담당 강사가 자신의 투어에 달린 후기에 답글을 작성/수정한다. */
@@ -2063,7 +2064,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (!target) return;
     const usedCount = target.usedCount + 1;
     setCoupons((prev) => prev.map((c) => (c.id === couponId ? { ...c, usedCount } : c)));
-    await supabase.from("coupons").update({ used_count: usedCount }).eq("id", couponId);
+    // 구매자가 이 쿠폰의 소유자(관리자)가 아니므로(RLS 보안 강화 1단계 batch96 참고) 일반
+    // update 대신, 서버에서 원자적으로 +1 하고 한도/활성 여부까지 재검증하는 redeem_coupon()
+    // RPC를 쓴다. (기존 코드는 클라이언트가 계산한 절대값을 그대로 덮어써서 동시 사용 시
+    // 카운트가 씹힐 수 있는 잠재 버그도 있었는데, RPC 쪽이 이 문제도 함께 해결한다.)
+    const { error } = await supabase.rpc("redeem_coupon", { p_coupon_id: couponId });
+    if (error) {
+      console.error("[redeemCoupon] 쿠폰 사용 처리 실패:", error);
+    }
   };
 
   const deleteReview = async (reviewId: string) => {

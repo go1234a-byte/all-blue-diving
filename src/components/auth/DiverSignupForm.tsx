@@ -55,16 +55,15 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
     setSubmitting(true);
     try {
       // 탈퇴 후 6개월 재가입 제한 확인
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const { data: deletedRecord } = await supabase
-        .from("deleted_accounts")
-        .select("id, deleted_at")
-        .eq("email", email)
-        .gte("deleted_at", sixMonthsAgo.toISOString())
-        .maybeSingle();
+      // 주의: deleted_accounts 테이블은 탈퇴회원 이메일/전화번호가 담긴 민감정보라 RLS로
+      // 완전히 잠갔다(RLS 보안 강화 1단계 batch96 참고). 로그인 전에도 확인해야 하므로,
+      // 원본 행을 노출하지 않고 "최근 6개월 내 탈퇴 여부"만 boolean으로 돌려주는
+      // is_recently_deleted_account() RPC로 대체한다.
+      const { data: isRecentlyDeleted } = await supabase.rpc("is_recently_deleted_account", {
+        p_email: email,
+      });
 
-      if (deletedRecord) {
+      if (isRecentlyDeleted) {
         toast({
           title: "재가입이 제한된 계정입니다",
           description: "회원 보호 정책에 따라 탈퇴 후 6개월 동안은 동일한 정보로 재가입이 불가능합니다.",
