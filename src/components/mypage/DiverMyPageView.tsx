@@ -73,11 +73,15 @@ export function DiverMyPageView() {
 
       <AccountActions />
 
+      {/* 예전엔 개발 전용 MasterRoleToolbar(import.meta.env.DEV로 프로덕션에서는 렌더되지 않음)로
+          역할을 전환하라는 안내였는데, 프로덕션에는 그 툴바 자체가 없어서 다이버가 이 링크를 누르면
+          /instructor에서 RequireRole에 막혀 로그인 화면으로 튕겨나가기만 했다. 실제로 강사인 사용자가
+          쓸 수 있도록 강사 로그인/가입이 가능한 /auth로 보낸다. */}
       <Link
-        to="/instructor"
+        to="/auth"
         className="block rounded-xl border border-dashed border-primary/40 bg-secondary/40 p-4 text-center text-xs text-muted-foreground"
       >
-        강사이신가요? 마스터 테스트 툴바에서 &quot;강사&quot; 역할로 전환해보세요.
+        강사이신가요? 강사 계정으로 로그인하거나 가입해보세요.
       </Link>
     </div>
   );
