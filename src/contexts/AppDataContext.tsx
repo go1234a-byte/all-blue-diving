@@ -1017,7 +1017,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setTours((prev) =>
           prev.map((t) => (t.id === tour.id ? { ...t, status: "closed", autoCloseProcessed: true } : t)),
         );
-        void supabase.from("tours").update({ status: "closed", auto_close_processed: true }).eq("id", tour.id);
+        // 주의: supabase-js의 쿼리 빌더는 thenable이라 .then()/await로 실제로 "소비"해야만
+        // 네트워크 요청이 발생한다. 과거 `void supabase.from(...).update(...)` 형태로만 두었을 때는
+        // 요청 자체가 전혀 나가지 않아(로컬 상태만 "마감"으로 바뀌고 DB는 계속 "open") 새로고침/재로그인
+        // 시 자동 마감 평가가 매번 다시 실행되는 버그가 있었다. .then()으로 반드시 실행시키고 에러를 남긴다.
+        supabase
+          .from("tours")
+          .update({ status: "closed", auto_close_processed: true })
+          .eq("id", tour.id)
+          .then(({ error }) => {
+            if (error) {
+              console.error("[autoCloseEvaluation] tours 업데이트 실패(meetsMinimum):", error);
+            }
+          });
         return;
       }
 
@@ -1028,10 +1040,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             : t,
         ),
       );
-      void supabase
+      // 위와 동일한 이유로 .then()으로 명시적으로 실행시키고 실패를 콘솔에 남긴다.
+      supabase
         .from("tours")
         .update({ status: "closed", auto_close_processed: true, under_min_decision_pending: true })
-        .eq("id", tour.id);
+        .eq("id", tour.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error("[autoCloseEvaluation] tours 업데이트 실패(underMin):", error);
+          }
+        });
 
       const notification: InstructorNotification = {
         id: nextId("noti"),
@@ -1840,7 +1858,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const setProfileStatus = (profileId: string, status: Profile["status"]) => {
     setDiverProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, status } : p)));
     setInstructorProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, status } : p)));
-    void supabase.from("profiles").update({ status }).eq("id", profileId);
+    // 주의: supabase-js 쿼리 빌더는 thenable이라 .then()/await로 "소비"해야만 실제 네트워크 요청이
+    // 나간다. `void supabase.from(...).update(...)` 형태로만 두면 요청 자체가 전혀 발생하지 않아
+    // 관리자가 경고/정지 처리해도 화면(로컬 상태)만 바뀌고 DB에는 반영되지 않는 버그가 있었다.
+    supabase
+      .from("profiles")
+      .update({ status })
+      .eq("id", profileId)
+      .then(({ error }) => {
+        if (error) {
+          console.error("[setProfileStatus] profiles 업데이트 실패:", error);
+        }
+      });
   };
 
   const setPayoutStatus = async (payoutId: string, status: Payout["status"]) => {
