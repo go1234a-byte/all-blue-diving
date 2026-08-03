@@ -70,7 +70,14 @@ export function LogoMark({ size = 32, tone = "default", className }: LogoMarkPro
 interface LogoProps {
   size?: "sm" | "md" | "lg";
   showTagline?: boolean;
-  tone?: "default" | "inverted";
+  /**
+   * default: 밝은 배경 위 — 파란 워드마크 (라이트 테마 일반 화면, 관리자 사이드바 등)
+   * inverted: 항상 어두운 배경 위 — 흰 워드마크로 고정 (스플래시처럼 테마와 무관하게 항상
+   *   어두운 화면에서만 쓰이는 곳)
+   * header: 상단 헤더 전용 — 헤더 배경(gradient-ocean)이 라이트/다크 테마에 따라 밝거나
+   *   어두워지므로, 워드마크 색도 text-foreground로 테마에 맞춰 자동 전환된다.
+   */
+  tone?: "default" | "inverted" | "header";
   className?: string;
 }
 
@@ -86,12 +93,21 @@ const SIZE_PRESETS = {
  */
 export function Logo({ size = "sm", showTagline = false, tone = "default", className }: LogoProps) {
   const preset = SIZE_PRESETS[size];
-  const wordColor = tone === "inverted" ? "text-primary-foreground" : "text-primary";
-  const taglineColor = tone === "inverted" ? "text-primary-foreground/75" : "text-muted-foreground";
+  // 심벌(핀 아이콘)은 흰 배지 위에 파란 핀이 올라가는 "default" 스타일이 라이트/다크 헤더
+  // 모두에서 자연스럽게 보이므로, header 톤에서도 심벌 자체는 default를 그대로 쓴다.
+  const markTone = tone === "inverted" ? "inverted" : "default";
+  const wordColor =
+    tone === "inverted" ? "text-primary-foreground" : tone === "header" ? "text-foreground" : "text-primary";
+  const taglineColor =
+    tone === "inverted"
+      ? "text-primary-foreground/75"
+      : tone === "header"
+        ? "text-foreground/70"
+        : "text-muted-foreground";
 
   return (
     <div className={cn("inline-flex items-center gap-2.5", className)}>
-      <LogoMark size={preset.mark} tone={tone} />
+      <LogoMark size={preset.mark} tone={markTone} />
       <div className="flex flex-col leading-tight">
         <span className={cn("font-bold tracking-tight", preset.word, wordColor)}>ALL BLUE</span>
         {showTagline && (

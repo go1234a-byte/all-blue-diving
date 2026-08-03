@@ -1,11 +1,83 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* ALL BLUE — 절제된 딥오션 팔레트: 네이비/블루/틸 모노크롬, 코랄 제거 */
+    /* ALL BLUE — 라이트 기본 테마 (프리미엄 딥오션 팔레트의 밝은 버전).
+       #F5F7FA 라이트그레이 배경 + 흰 카드 + #0A1B2F 네이비 텍스트 + #0D47A1 블루 브랜드.
+       다크 모드는 .dark 스코프(사용자가 마이페이지에서 토글)에서 정의한다. */
+    --background: 216 33% 97%;
+    --foreground: 212 55% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 212 55% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 212 55% 12%;
+
+    /* ALL BLUE brand primary: 차분한 블루 (#0D47A1) */
+    --primary: 216 85% 34%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 216 78% 55%;
+
+    --secondary: 216 25% 95%;
+    --secondary-foreground: 212 45% 16%;
+
+    --muted: 216 20% 95%;
+    --muted-foreground: 217 15% 42%;
+
+    /* 톤 다운 틸 액센트 (#1AB6C6) — CTA, 스쿠버 뱃지, 포커스링 */
+    --accent: 186 77% 38%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 26 40% 14%;
+
+    --success: 152 55% 36%;
+    --success-foreground: 0 0% 100%;
+
+    /* 코랄 제거 → 슬레이트 그레이 (#333F52) — 프리다이빙 뱃지. 배경 톤과 무관하게
+       항상 짙은 뱃지+밝은 글자 조합이라 라이트/다크 공통으로 사용한다. */
+    --coral: 217 23% 26%;
+    --coral-foreground: 210 20% 92%;
+
+    --border: 216 20% 90%;
+    --input: 216 20% 90%;
+    --ring: 186 77% 38%;
+
+    --radius: 1rem;
+
+    /* 관리자 사이드바 — 라이트 화이트 사이드바 + 옅은 블루 active 상태 */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 212 45% 20%;
+    --sidebar-primary: 216 85% 34%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 216 78% 96%;
+    --sidebar-accent-foreground: 216 85% 34%;
+    --sidebar-border: 216 20% 90%;
+    --sidebar-ring: 216 85% 34%;
+
+    /* ALL BLUE ocean gradients & shadows.
+       gradient-ocean: 헤더/히어로 배경 — 라이트 모드에서는 거의 흰 배경에 가까운
+       은은한 그라데이션(브랜드 임팩트는 다크 모드에서 나타남).
+       gradient-ocean-light: 버튼 그라데이션 — 라이트/다크 공통으로 항상 블루 브랜드 색. */
+    --gradient-ocean: linear-gradient(160deg, hsl(0 0% 100%) 0%, hsl(216 30% 97%) 100%);
+    --gradient-ocean-light: linear-gradient(135deg, hsl(216 85% 44%) 0%, hsl(216 85% 30%) 100%);
+    /* 소비자 앱 페이지 배경 그라데이션 — 거의 모든 화면(Search/Checkout/MyPage/TourDetail 등)이
+       이 토큰 하나로 페이지 배경을 그린다. 관리자는 .admin-light 스코프에서 동일한 라이트 값을
+       다시 선언해, 다크 모드가 켜져 있어도 관리자 화면은 항상 밝게 유지되도록 한다. */
+    --gradient-surface: linear-gradient(180deg, hsl(216 33% 97%) 0%, hsl(216 25% 94%) 100%);
+    --shadow-ocean: 0 20px 50px -15px hsl(212 30% 70% / 0.25);
+    --shadow-ocean-glow: 0 0 40px hsl(186 77% 45% / 0.25);
+  }
+
+  /* ALL BLUE — 다크 모드 스코프. 마이페이지의 "다크 모드" 토글로 <html>에 .dark 클래스가
+     붙으면 이 값들이 :root 값을 덮어써, 기존 "프리미엄 딥오션" 다크 테마가 적용된다. */
+  .dark {
     --background: 212 65% 11%;
     --foreground: 200 30% 95%;
 
@@ -15,10 +87,9 @@
     --popover: 212 55% 14%;
     --popover-foreground: 200 30% 95%;
 
-    /* ALL BLUE brand primary: 차분한 블루 (#0D47A1) */
-    --primary: 216 85% 34%;
+    --primary: 216 78% 46%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 216 80% 50%;
+    --primary-glow: 216 75% 62%;
 
     --secondary: 212 45% 16%;
     --secondary-foreground: 200 30% 94%;
@@ -26,8 +97,7 @@
     --muted: 212 40% 15%;
     --muted-foreground: 200 15% 68%;
 
-    /* 톤 다운 틸 액센트 (#1AB6C6) — CTA, 스쿠버 뱃지, 포커스링 */
-    --accent: 186 77% 44%;
+    --accent: 186 72% 48%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 78% 58%;
@@ -39,52 +109,80 @@
     --success: 152 55% 46%;
     --success-foreground: 0 0% 100%;
 
-    /* 코랄 제거 → 슬레이트 그레이 (#333F52) — 프리다이빙 뱃지 */
     --coral: 217 23% 26%;
     --coral-foreground: 210 20% 92%;
 
     --border: 212 32% 20%;
     --input: 212 32% 20%;
-    --ring: 186 77% 44%;
-
-    --radius: 1rem;
+    --ring: 186 72% 48%;
 
     --sidebar-background: 212 65% 6%;
     --sidebar-foreground: 200 30% 92%;
-    --sidebar-primary: 186 77% 44%;
+    --sidebar-primary: 186 72% 48%;
     --sidebar-primary-foreground: 212 65% 6%;
     --sidebar-accent: 212 45% 16%;
     --sidebar-accent-foreground: 200 30% 92%;
     --sidebar-border: 212 32% 20%;
-    --sidebar-ring: 186 77% 44%;
+    --sidebar-ring: 186 72% 48%;
 
-    /* ALL BLUE ocean gradients & shadows — 모노크롬 블루로 재계산 (색 섞임 제거) */
-    --gradient-ocean: linear-gradient(160deg, hsl(216 85% 40%) 0%, hsl(214 55% 20%) 45%, hsl(212 65% 11%) 100%);
-    --gradient-ocean-light: linear-gradient(135deg, hsl(216 85% 48%) 0%, hsl(216 85% 30%) 100%);
-    /* 소비자 앱 페이지 배경 그라데이션 — 거의 모든 화면(Search/Checkout/MyPage/TourDetail 등)이
-       이 토큰 하나로 페이지 배경을 그린다. 관리자는 .admin-light 스코프에서 밝은 값으로 되돌린다. */
+    --gradient-ocean: linear-gradient(160deg, hsl(216 80% 48%) 0%, hsl(214 58% 24%) 45%, hsl(212 65% 11%) 100%);
+    --gradient-ocean-light: linear-gradient(135deg, hsl(216 80% 56%) 0%, hsl(216 78% 38%) 100%);
     --gradient-surface: linear-gradient(180deg, hsl(212 65% 11%) 0%, hsl(212 60% 8%) 100%);
     --shadow-ocean: 0 20px 50px -15px hsl(212 65% 4% / 0.5);
-    --shadow-ocean-glow: 0 0 40px hsl(186 77% 44% / 0.35);
+    --shadow-ocean-glow: 0 0 40px hsl(186 72% 48% / 0.35);
   }
 
-  /* 관리자 백오피스 전용 스코프 — 소비자 앱은 딥네이비 기본이지만, 운영자가
-     데이터를 오래 들여다보는 관리자 화면은 기존처럼 밝은 화면을 유지한다.
-     (브랜드 컬러인 primary/accent/coral/warning/success/destructive는 공유) */
+  /* 관리자 백오피스 전용 스코프 — 데이터를 오래 들여다보는 관리자 화면은 다크 모드 토글과
+     무관하게 항상 밝은 화면을 유지한다. .dark가 조상에 있어도 이 블록이 모든 토큰을 다시
+     선언하므로 관리자 영역(사이드바 포함)은 흔들리지 않는다. */
   .admin-light {
     --background: 216 33% 97%;
-    --foreground: 212 55% 10%;
+    --foreground: 212 55% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 212 55% 10%;
+    --card-foreground: 212 55% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 212 55% 10%;
-    --secondary: 216 20% 94%;
-    --secondary-foreground: 212 40% 14%;
-    --muted: 216 18% 95%;
-    --muted-foreground: 217 15% 40%;
-    --border: 216 20% 89%;
-    --input: 216 20% 89%;
-    --gradient-surface: linear-gradient(180deg, hsl(216 33% 97%) 0%, hsl(216 20% 94%) 100%);
+    --popover-foreground: 212 55% 12%;
+
+    --primary: 216 85% 34%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 216 78% 55%;
+
+    --secondary: 216 25% 95%;
+    --secondary-foreground: 212 45% 16%;
+
+    --muted: 216 20% 95%;
+    --muted-foreground: 217 15% 42%;
+
+    --accent: 186 77% 38%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 26 40% 14%;
+
+    --success: 152 55% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 216 20% 90%;
+    --input: 216 20% 90%;
+    --ring: 186 77% 38%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 212 45% 20%;
+    --sidebar-primary: 216 85% 34%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 216 78% 96%;
+    --sidebar-accent-foreground: 216 85% 34%;
+    --sidebar-border: 216 20% 90%;
+    --sidebar-ring: 216 85% 34%;
+
+    --gradient-ocean: linear-gradient(160deg, hsl(0 0% 100%) 0%, hsl(216 30% 97%) 100%);
+    --gradient-ocean-light: linear-gradient(135deg, hsl(216 85% 44%) 0%, hsl(216 85% 30%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(216 33% 97%) 0%, hsl(216 25% 94%) 100%);
+    --shadow-ocean: 0 20px 50px -15px hsl(212 30% 70% / 0.25);
+    --shadow-ocean-glow: 0 0 40px hsl(186 77% 45% / 0.25);
   }
 }
 

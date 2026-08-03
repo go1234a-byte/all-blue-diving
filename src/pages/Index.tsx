@@ -58,16 +58,17 @@ const Index = () => {
     <div className="min-h-full bg-gradient-surface pb-20">
       <AppHeader showLanguage />
 
-      {/* 히어로 — 시안 "홈" 화면의 다크 오션 그라데이션 배경 + 카피 구성을 재현 */}
+      {/* 히어로 — bg-gradient-ocean은 라이트 테마에서는 흰 배경에 가깝고, 다크 모드에서는
+          오션 그라데이션으로 바뀐다. 텍스트도 text-foreground라 두 테마 모두에서 대비가 맞다. */}
       <div className="relative overflow-hidden bg-gradient-ocean px-4 pb-8 pt-8 text-center md:pb-10 md:pt-10">
         <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
         <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-lg">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-primary-foreground md:text-3xl">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground md:text-3xl">
             다이빙의 모든 순간,
             <br />
             ALL BLUE와 함께
           </h1>
-          <p className="text-sm text-primary-foreground/70">
+          <p className="text-sm text-foreground/70">
             특별한 바다, 특별한 경험을 찾고 예약할 수 있습니다.
           </p>
         </div>

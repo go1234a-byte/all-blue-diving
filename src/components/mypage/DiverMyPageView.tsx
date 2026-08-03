@@ -6,6 +6,7 @@ import { DiverSafetyProfileCard } from "@/components/mypage/DiverSafetyProfileCa
 import { InquiryHistoryList } from "@/components/mypage/InquiryHistoryList";
 import { AccountActions } from "@/components/mypage/AccountActions";
 import { PushNotificationToggle } from "@/components/mypage/PushNotificationToggle";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -67,6 +68,8 @@ export function DiverMyPageView() {
       </div>
 
       <PushNotificationToggle />
+
+      <ThemeToggle />
 
       <AccountActions />
 

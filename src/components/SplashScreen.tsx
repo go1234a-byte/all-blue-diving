@@ -65,7 +65,9 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-gradient-ocean"
+          // "dark" 클래스를 이 컨테이너에 직접 붙여, 사용자의 라이트/다크 모드 설정과
+          // 무관하게 스플래시는 항상 브랜드 오션 그라데이션(다크 스코프 토큰)으로 보이게 한다.
+          className="dark fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-gradient-ocean"
         >
           {/* 위쪽에서 은은하게 번지는 빛 */}
           <div className="absolute inset-x-0 top-0 h-2/3 bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary-glow)/0.35),_transparent_65%)]" />

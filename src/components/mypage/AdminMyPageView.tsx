@@ -18,6 +18,7 @@ import { TelemetryCards } from "@/components/admin/TelemetryCards";
 import { CancellationReviewQueue } from "@/components/admin/CancellationReviewQueue";
 import { AccountActions } from "@/components/mypage/AccountActions";
 import { PushNotificationToggle } from "@/components/mypage/PushNotificationToggle";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AdminToursPage from "@/pages/admin/AdminToursPage";
 import AdminBookingsPage from "@/pages/admin/AdminBookingsPage";
@@ -88,6 +89,8 @@ export function AdminMyPageView() {
       </Accordion>
 
       <PushNotificationToggle />
+
+      <ThemeToggle />
 
       <AccountActions />
     </div>

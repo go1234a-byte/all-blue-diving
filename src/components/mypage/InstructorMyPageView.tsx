@@ -12,6 +12,7 @@ import { InstructorNotificationCenter } from "@/components/instructor/Instructor
 import { InstructorProfileEditCard } from "@/components/mypage/InstructorProfileEditCard";
 import { AccountActions } from "@/components/mypage/AccountActions";
 import { PushNotificationToggle } from "@/components/mypage/PushNotificationToggle";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { formatDateKR, isPastDate } from "@/lib/dates";
@@ -151,6 +152,8 @@ export function InstructorMyPageView() {
       </div>
 
       <PushNotificationToggle />
+
+      <ThemeToggle />
 
       <AccountActions />
     </div>

@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { routers } from "./router";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { AppDataProvider } from "@/contexts/AppDataContext";
 import { SplashScreen } from "@/components/SplashScreen";
@@ -28,18 +29,20 @@ const App = () => {
   };
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <RoleProvider>
-          <AppDataProvider>
-            <Toaster />
-            <Sonner />
-            {!splashDone && <SplashScreen onFinish={handleSplashFinish} />}
-            <RouterProvider router={router} />
-          </AppDataProvider>
-        </RoleProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <RoleProvider>
+            <AppDataProvider>
+              <Toaster />
+              <Sonner />
+              {!splashDone && <SplashScreen onFinish={handleSplashFinish} />}
+              <RouterProvider router={router} />
+            </AppDataProvider>
+          </RoleProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 };
 
