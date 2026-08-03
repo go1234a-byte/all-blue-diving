@@ -111,6 +111,20 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         return;
       }
       setProfile(row);
+      // 강사 계정이면 profiles.id(auth UID)와는 별도 PK인 instructors.id 조회까지 끝난 뒤에
+      // authLoading을 내린다. 이 조회가 끝나기 전에 authLoading만 먼저 false가 되면(기존 버그),
+      // RequireRole 통과 직후에도 currentInstructorId가 잠깐 빈 문자열이라 TourEditPage 등의
+      // "본인 소유 투어인지" 확인 로직이 진짜 담당 강사를 남으로 오인해 강제로 콘솔로
+      // 튕겨내는 문제가 있었다(특히 수정 페이지를 새로고침하거나 직접 URL로 들어올 때 재현됨).
+      if (row?.role === "instructor") {
+        const { data: instructorRow } = await supabase
+          .from("instructors")
+          .select("id")
+          .eq("profile_id", row.id)
+          .maybeSingle();
+        if (!active) return;
+        setResolvedInstructorId((instructorRow as { id?: string } | null)?.id ?? "");
+      }
       setAuthLoading(false);
     })();
     return () => {
