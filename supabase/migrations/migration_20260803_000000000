@@ -1,0 +1,12 @@
+-- public_tour_booking_counts 뷰 추가 (batch89)
+-- 채팅방 참가자 수 위젯 / 투어 상세페이지 정원 카운터가 항상 0으로 뜨던 버그의 원인.
+-- Supabase SQL Editor에서 직접 실행 완료 후 기록용으로 커밋.
+create or replace view public.public_tour_booking_counts as
+select
+  tour_id,
+  count(*) as confirmed_count
+from public.bookings
+where status = 'confirmed'
+group by tour_id;
+
+grant select on public.public_tour_booking_counts to anon, authenticated;
