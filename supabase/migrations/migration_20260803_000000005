@@ -74,17 +74,17 @@ select
   p.name,
   p.status,
   p.created_at,
-  case when public.is_tour_companion_of(p.id) then p.birth_date else null end as birth_date,
-  case when public.is_tour_companion_of(p.id) then p.c_card_agency else null end as c_card_agency,
-  case when public.is_tour_companion_of(p.id) then p.log_count else null end as log_count,
-  case when public.is_profile_staff_for(p.id) then p.phone else null end as phone,
-  case when public.is_profile_staff_for(p.id) then p.gender else null end as gender,
-  case when public.is_profile_staff_for(p.id) then p.snoring else null end as snoring,
-  case when public.is_profile_staff_for(p.id) then p.smoking else null end as smoking,
-  case when public.is_profile_staff_for(p.id) then p.c_card_number else null end as c_card_number,
-  case when public.is_profile_staff_for(p.id) then p.emergency_contact_name else null end as emergency_contact_name,
-  case when public.is_profile_staff_for(p.id) then p.emergency_contact_phone else null end as emergency_contact_phone,
-  case when public.is_profile_staff_for(p.id) then p.insurance_info else null end as insurance_info
+  case when public.is_tour_companion_of(p.id::text) then p.birth_date else null end as birth_date,
+  case when public.is_tour_companion_of(p.id::text) then p.c_card_agency else null end as c_card_agency,
+  case when public.is_tour_companion_of(p.id::text) then p.log_count else null end as log_count,
+  case when public.is_profile_staff_for(p.id::text) then p.phone else null end as phone,
+  case when public.is_profile_staff_for(p.id::text) then p.gender else null end as gender,
+  case when public.is_profile_staff_for(p.id::text) then p.snoring else null end as snoring,
+  case when public.is_profile_staff_for(p.id::text) then p.smoking else null end as smoking,
+  case when public.is_profile_staff_for(p.id::text) then p.c_card_number else null end as c_card_number,
+  case when public.is_profile_staff_for(p.id::text) then p.emergency_contact_name else null end as emergency_contact_name,
+  case when public.is_profile_staff_for(p.id::text) then p.emergency_contact_phone else null end as emergency_contact_phone,
+  case when public.is_profile_staff_for(p.id::text) then p.insurance_info else null end as insurance_info
 from public.profiles p
 where p.deleted_at is null;
 
