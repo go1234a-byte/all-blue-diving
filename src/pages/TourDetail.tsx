@@ -38,7 +38,7 @@ const TourDetail = () => {
     getConfirmedParticipantCount,
     getReviewsByTourId,
   } = useAppData();
-  const { isLoggedIn, currentDiverId, currentInstructorId } = useRole();
+  const { isLoggedIn, currentDiverId, currentInstructorId, authLoading } = useRole();
   const { toast } = useToast();
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
 
@@ -59,6 +59,18 @@ const TourDetail = () => {
     return (
       <div className="flex min-h-full items-center justify-center p-6 text-sm text-muted-foreground">
         투어 정보를 찾을 수 없습니다.
+      </div>
+    );
+  }
+
+  // 로그인 직후 session -> profiles 조회가 끝나기 전까지는 currentDiverId/currentInstructorId가
+  // 아직 확정되지 않아, authLoading을 안 보면 이미 예약했는데도 "예약하기" 버튼이 잠깐 잘못
+  // 보이거나 담당 강사 본인인데도 강사 전용 버튼이 잠깐 안 보인다. 다른 페이지와 동일하게
+  // 인증 확인 중에는 로딩 상태만 보여준다.
+  if (authLoading) {
+    return (
+      <div className="flex min-h-full items-center justify-center p-6 text-sm text-muted-foreground">
+        인증 정보를 확인하는 중...
       </div>
     );
   }
