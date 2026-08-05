@@ -1938,13 +1938,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setPenalties((prev) => [mapPenaltyRow(data), ...prev]);
       }
     }
-
-    if (penaltyCount >= 2) {
-      const instructor = instructors.find((i) => i.id === instructorId);
-      if (instructor?.profileId) {
-        await setProfileStatus(instructor.profileId, "suspended");
-      }
-    }
   };
 
   /**
