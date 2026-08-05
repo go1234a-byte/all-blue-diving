@@ -170,6 +170,10 @@ const AdminInstructorsPage = () => {
                     <p className="line-clamp-1 text-sm font-semibold text-foreground">{instructor.name}</p>
                     {instructor.verified ? (
                       <VerifiedBadge />
+                    ) : instructor.rejectedAt ? (
+                      <Badge variant="destructive" className="shrink-0 text-[10px]">
+                        반려됨
+                      </Badge>
                     ) : (
                       <Badge variant="secondary" className="shrink-0 text-[10px]">
                         심사중
