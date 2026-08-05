@@ -24,6 +24,7 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminToursPage from "./pages/admin/AdminToursPage";
 import AdminBookingsPage from "./pages/admin/AdminBookingsPage";
 import AdminPayoutsPage from "./pages/admin/AdminPayoutsPage";
+import AdminAccountingPage from "./pages/admin/AdminAccountingPage";
 import AdminInstructorsPage from "./pages/admin/AdminInstructorsPage";
 import AdminCentersPage from "./pages/admin/AdminCentersPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
@@ -99,6 +100,7 @@ export const routers = [
               { path: "tours", name: "admin-tours", element: <AdminToursPage /> },
               { path: "bookings", name: "admin-bookings", element: <AdminBookingsPage /> },
               { path: "payouts", name: "admin-payouts", element: <AdminPayoutsPage /> },
+              { path: "accounting", name: "admin-accounting", element: <AdminAccountingPage /> },
               { path: "instructors", name: "admin-instructors", element: <AdminInstructorsPage /> },
               { path: "centers", name: "admin-centers", element: <AdminCentersPage /> },
               { path: "users", name: "admin-users", element: <AdminUsersPage /> },

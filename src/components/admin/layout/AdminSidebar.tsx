@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
+  Calculator,
   Compass,
   CalendarCheck,
   Wallet,
@@ -37,6 +38,7 @@ const MENU_ITEMS = [
   { to: "/admin/tours", label: "투어 관리", icon: Compass, end: false },
   { to: "/admin/bookings", label: "예약 관리", icon: CalendarCheck, end: false },
   { to: "/admin/payouts", label: "정산 관리", icon: Wallet, end: false },
+  { to: "/admin/accounting", label: "회계 센터", icon: Calculator, end: false },
   { to: "/admin/instructors", label: "강사 관리", icon: Users, end: false },
   { to: "/admin/centers", label: "센터 관리", icon: Building2, end: false },
   { to: "/admin/users", label: "회원 관리", icon: UserRound, end: false },
