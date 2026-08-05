@@ -46,6 +46,8 @@ export interface InstructorProfile {
   verified: boolean;
   verifiedAt?: string;
   verifiedBy?: string;
+  rejectedAt?: string; // 관리자가 인증 신청을 반려한 시각 (있으면 대기열에서 제외)
+  rejectionReason?: string; // 반려 사유 (강사 본인에게 알림으로 전달됨)
   pledgeSigned: boolean;
   pledgeSignedAt?: string;
   pledgeVersion?: string;
@@ -101,6 +103,8 @@ export interface Center {
   instagram?: string;
   phone?: string; // 관리자만 확인 가능
   features: string[];
+  status: "pending" | "approved" | "rejected"; // 관리자 승인 상태 (기본값 pending)
+  rejectionReason?: string;
   createdAt: string;
 }
 
@@ -318,6 +322,7 @@ export interface Penalty {
   instructorId: string;
   violationType: ViolationType;
   description: string;
+  voided?: boolean; // 관리자가 오적용으로 판단해 정정(취소)한 이력인지
   createdAt: string;
 }
 
@@ -437,7 +442,8 @@ export type InstructorNotificationType =
   | "forced_refund_penalty"
   | "min_participants_cancelled" // 최소 인원 미달로 예약 자동 취소/환불됨 (예약 단위)
   | "min_participants_proceed" // 최소 인원 미달이지만 강사가 "그대로 진행"을 선택해 투어 진행 (투어 단위, 책임 리마인드)
-  | "min_participants_decision_needed"; // 출발 30일 전, 최소 인원 미달로 강사의 진행/취소 결정이 필요함 (투어 단위)
+  | "min_participants_decision_needed" // 출발 30일 전, 최소 인원 미달로 강사의 진행/취소 결정이 필요함 (투어 단위)
+  | "application_rejected"; // 관리자가 강사 인증 신청을 반려함
 
 export interface InstructorNotification {
   id: string;
@@ -448,6 +454,7 @@ export interface InstructorNotification {
   diverName?: string; // 마스킹된 이름 저장 (예: 홍*동), 투어 단위 알림에는 없음
   selectedOptionNames?: string[];
   settlementAmount?: number; // 수수료 제외 강사 원금 정산 예정 금액
+  message?: string; // 자유 텍스트 메시지(예: 강사 인증 반려 사유)
   createdAt: string;
   read: boolean;
   type: InstructorNotificationType;

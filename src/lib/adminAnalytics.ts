@@ -133,7 +133,7 @@ export function computeTodaySignupsKpi(diverProfiles: Profile[], instructorProfi
 /** 카드 5: 활동 강사 수 / 신규 강사 / 인증 대기 */
 export function computeInstructorKpi(instructors: InstructorProfile[], instructorProfiles: Profile[]) {
   const active = instructors.filter((i) => i.verified).length;
-  const pending = instructors.filter((i) => !i.verified).length;
+  const pending = instructors.filter((i) => !i.verified && !i.rejectedAt).length;
   const newInstructors = instructorProfiles.filter((p) => isWithinLastNDays(p.createdAt, 30)).length;
 
   return { active, pending, newInstructors };

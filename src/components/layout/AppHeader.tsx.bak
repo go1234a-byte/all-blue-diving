@@ -1,0 +1,46 @@
+import { Link } from "react-router-dom";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/brand/Logo";
+import { useRole } from "@/contexts/RoleContext";
+
+interface AppHeaderProps {
+  title?: string;
+  showLanguage?: boolean;
+}
+
+export function AppHeader({ title, showLanguage = false }: AppHeaderProps) {
+  const { isLoggedIn } = useRole();
+
+  // 앱 전체가 이제 딥네이비 기본 테마라 별도 다크 스코프 없이도 토큰이 그대로
+  // 어울린다. bg-gradient-ocean/shadow-ocean은 index.css의 브랜드 그라데이션·
+  // 그림자 토큰을 재사용해 헤더에 살짝 더 깊은 그라데이션을 준다.
+  return (
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-gradient-ocean shadow-ocean">
+      <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between px-4 md:max-w-lg">
+        <Link to="/" className="flex items-center gap-2">
+          {title ? (
+            <span className="text-base font-bold tracking-tight text-primary-foreground">{title}</span>
+          ) : (
+            <Logo size="sm" />
+          )}
+        </Link>
+        <div className="flex items-center gap-2">
+          {!isLoggedIn && (
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="h-8 border-white/20 bg-white/5 text-xs text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+            >
+              <Link to="/auth">로그인 / 회원가입</Link>
+            </Button>
+          )}
+          <NotificationBell />
+          {showLanguage && <LanguageSwitcher className="h-8 min-w-[100px] text-xs" />}
+        </div>
+      </div>
+    </header>
+  );
+}

@@ -47,6 +47,7 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
             const isMinProceed = notification.type === "min_participants_proceed";
             const isMinDecisionNeeded = notification.type === "min_participants_decision_needed";
             const isWarning = isPenalty || isMinCancelled || isMinProceed || isMinDecisionNeeded;
+            const isRejected = notification.type === "application_rejected";
             const label = isPenalty
               ? "[강제 환불 승인 조치]"
               : isMinCancelled
@@ -55,7 +56,9 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                   ? "[최소 인원 미달 - 투어 진행 안내]"
                   : isMinDecisionNeeded
                     ? "[최소 인원 미달 - 결정 필요]"
-                    : "[신규 투어 예약 완료]";
+                    : isRejected
+                      ? "[강사 인증 신청 반려]"
+                      : "[신규 투어 예약 완료]";
             const description = isPenalty
               ? "관리자가 이의신청 건에 대해 강제 환불을 승인했습니다."
               : isMinCancelled
@@ -64,7 +67,9 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                   ? '출발 30일 전 기준 최소 인원 미달이지만 강사가 "그대로 진행"을 선택해 투어는 진행됩니다.'
                   : isMinDecisionNeeded
                     ? "출발 30일 전 기준 최소 인원 미달로 모집이 마감되었습니다. 아래 대시보드에서 진행/취소를 결정해주세요."
-                    : "어떤 유저가 어떤 옵션을 선택해 결제했습니다.";
+                    : isRejected
+                      ? notification.message ?? "관리자가 강사 인증 신청을 반려했습니다."
+                      : "어떤 유저가 어떤 옵션을 선택해 결제했습니다.";
             return (
               <Card
                 key={notification.id}
@@ -76,8 +81,8 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                 }}
                 className={cn(
                   "cursor-pointer border-primary/30 transition-shadow hover:shadow-ocean",
-                  isWarning && "border-2 border-destructive bg-destructive/10",
-                  !isWarning && !notification.read && "border-2 border-primary/60 bg-secondary/40",
+                  (isWarning || isRejected) && "border-2 border-destructive bg-destructive/10",
+                  !isWarning && !isRejected && !notification.read && "border-2 border-primary/60 bg-secondary/40",
                 )}
               >
                 <CardContent className="space-y-1.5 p-3">
@@ -85,10 +90,10 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                     <p
                       className={cn(
                         "flex items-center gap-1.5 break-keep text-sm font-semibold",
-                        isWarning ? "text-destructive" : "text-foreground",
+                        isWarning || isRejected ? "text-destructive" : "text-foreground",
                       )}
                     >
-                      {isWarning ? (
+                      {isWarning || isRejected ? (
                         <AlertOctagon className="h-4 w-4 shrink-0" />
                       ) : (
                         <BellRing className="h-4 w-4 shrink-0" />

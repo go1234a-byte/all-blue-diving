@@ -1,0 +1,137 @@
+diff --git a/src/pages/ChatList.tsx b/src/pages/ChatList.tsx
+index e7c007e..b9ef9a5 100644
+--- a/src/pages/ChatList.tsx
++++ b/src/pages/ChatList.tsx
+@@ -31,7 +31,7 @@ const EMPTY_MESSAGE: Record<string, string> = {
+ };
+ 
+ const ChatList = () => {
+-  const { role, currentDiverId, currentInstructorId, profile } = useRole();
++  const { role, currentDiverId, currentInstructorId, profile, authLoading } = useRole();
+   const { tours, bookings, chatMessages, supportTickets } = useAppData();
+   const [sortMode, setSortMode] = useState<ChatSortMode>(() => {
+     if (typeof window === "undefined") return "recent";
+@@ -92,6 +92,16 @@ const ChatList = () => {
+     <div className="min-h-full bg-gradient-surface pb-20">
+       <AppHeader title="채팅" />
+       <main className="mx-auto w-full max-w-md space-y-2 px-4 py-4 md:max-w-lg">
++        {/* 로그인 직후 session -> profiles 조회가 끝나기 전까지는 role이 아직 "public"이고
++            currentDiverId/currentInstructorId도 비어있어, authLoading을 안 보면 실제로는
++            채팅방이 있는데도 "채팅방 없음"이 잠깐 잘못 표시된다. MyPage와 동일하게 인증 확인
++            중에는 로딩 상태만 보여준다. */}
++        {authLoading ? (
++          <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
++            인증 정보를 확인하는 중...
++          </div>
++        ) : (
++        <>
+         {role === "public" && (
+           <Link
+             to="/support"
+@@ -198,6 +208,8 @@ const ChatList = () => {
+             </Link>
+           );
+         })}
++        </>
++        )}
+       </main>
+       <BottomNav />
+     </div>
+diff --git a/src/pages/ChatRoom.tsx b/src/pages/ChatRoom.tsx
+index c235e0b..f71f25b 100644
+--- a/src/pages/ChatRoom.tsx
++++ b/src/pages/ChatRoom.tsx
+@@ -69,7 +69,7 @@ const ChatRoom = () => {
+   const chatOnly = searchParams.get("view") === "chat";
+   const { tours, bookings, getInstructorById, toursLoading, getConfirmedParticipantCount, fetchMaskedTourParticipants } =
+     useAppData();
+-  const { role, currentInstructorId, currentDiverId, profile } = useRole();
++  const { role, currentInstructorId, currentDiverId, profile, authLoading } = useRole();
+   const tour = tours.find((t) => t.id === tourId);
+   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
+   const [tab, setTab] = useState("dashboard");
+@@ -131,6 +131,18 @@ const ChatRoom = () => {
+     );
+   }
+ 
++  // 로그인 직후 session -> profiles 조회가 끝나기 전까지는 role/currentInstructorId가
++  // 아직 확정되지 않아, authLoading을 안 보면 실제로는 담당 강사인데도 isInstructor가
++  // false로 계산되어 참가자 실명이 잠깐 마스킹되어 보이는 등의 문제가 생긴다. MyPage와
++  // 동일하게 인증 확인 중에는 로딩 상태만 보여준다.
++  if (authLoading) {
++    return (
++      <div className="flex min-h-full flex-col items-center justify-center gap-3 bg-gradient-surface p-6 text-center">
++        <p className="text-sm text-muted-foreground">인증 정보를 확인하는 중...</p>
++      </div>
++    );
++  }
++
+   if (chatOnly) {
+     return (
+       <div className="min-h-full bg-gradient-surface pb-20">
+diff --git a/src/pages/MyBookings.tsx b/src/pages/MyBookings.tsx
+index 7309435..0815d9c 100644
+--- a/src/pages/MyBookings.tsx
++++ b/src/pages/MyBookings.tsx
+@@ -6,14 +6,23 @@ import { useRole } from "@/contexts/RoleContext";
+ // 다이버 마이페이지에 있던 "내 예약 내역"(상태 필터 탭 포함)을 하단 네비게이션의
+ // "내 예약"으로 통합했다. 필터/후기/문의/취소 등 모든 기능은 BookingHistoryList가 그대로 담당한다.
+ const MyBookings = () => {
+-  const { currentDiverId } = useRole();
++  const { currentDiverId, authLoading } = useRole();
+ 
+   return (
+     <div className="min-h-full bg-gradient-surface pb-24">
+       <AppHeader title="내 예약" />
+       <main className="mx-auto w-full max-w-md px-4 py-6 md:max-w-lg">
+         <h1 className="mb-3 text-lg font-bold text-foreground">내 예약</h1>
+-        <BookingHistoryList diverId={currentDiverId} />
++        {/* 로그인 직후 session -> profiles 조회가 끝나기 전까지는 currentDiverId가 아직
++            빈 문자열이라, authLoading을 안 보면 실제로는 예약이 있는데도 "예약 내역 없음"이
++            잠깐 잘못 표시된다. MyPage와 동일하게 인증 확인 중에는 로딩 상태만 보여준다. */}
++        {authLoading ? (
++          <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
++            인증 정보를 확인하는 중...
++          </div>
++        ) : (
++          <BookingHistoryList diverId={currentDiverId} />
++        )}
+       </main>
+       <BottomNav />
+     </div>
+diff --git a/src/pages/SupportChat.tsx b/src/pages/SupportChat.tsx
+index 07c8849..972a208 100644
+--- a/src/pages/SupportChat.tsx
++++ b/src/pages/SupportChat.tsx
+@@ -12,7 +12,7 @@ type InquiryView = "write" | "history";
+ type SupportTab = "faq" | "inquiry" | "dispute" | "report";
+ 
+ const SupportChat = () => {
+-  const { currentDiverId } = useRole();
++  const { currentDiverId, authLoading } = useRole();
+   const [inquiryView, setInquiryView] = useState<InquiryView>("write");
+   // FAQ 탭의 "문의 남기기" 버튼을 눌렀을 때 실제로 접수되는 1:1 문의 탭으로 이동시키기 위해
+   // 탭 상태를 여기서 직접 관리한다(기존에는 FAQ 탭 안에서 가짜 실시간 채팅 UI로만 전환되고
+@@ -29,6 +29,14 @@ const SupportChat = () => {
+       </header>
+ 
+       <main className="mx-auto w-full max-w-md flex-1 px-4 py-4 md:max-w-lg">
++        {/* 로그인 직후 session -> profiles 조회가 끝나기 전까지는 currentDiverId가 아직
++            빈 문자열이라, authLoading을 안 보면 "내 문의 보기" 등에서 실제로는 문의 내역이
++            있는데도 잠깐 비어보인다. MyPage와 동일하게 인증 확인 중에는 로딩 상태만 보여준다. */}
++        {authLoading ? (
++          <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
++            인증 정보를 확인하는 중...
++          </div>
++        ) : (
+         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SupportTab)}>
+           <TabsList className="grid w-full grid-cols-4">
+             <TabsTrigger value="faq" className="text-xs">FAQ</TabsTrigger>
+@@ -80,6 +88,7 @@ const SupportChat = () => {
+             <SupportTicketForm type="report" userId={currentDiverId} />
+           </TabsContent>
+         </Tabs>
++        )}
+       </main>
+     </div>
+   );

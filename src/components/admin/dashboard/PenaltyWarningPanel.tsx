@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatDateKR } from "@/lib/dates";
@@ -10,7 +9,8 @@ import { formatDateKR } from "@/lib/dates";
 export function PenaltyWarningPanel() {
   const { penalties, instructors } = useAppData();
   const navigate = useNavigate();
-  const recent = penalties.slice(0, 5);
+  // 취소(voided)된 이력은 대시보드 요약에서 제외한다.
+  const recent = penalties.filter((p) => !p.voided).slice(0, 5);
 
   return (
     <Card className="accent-top-ocean">
@@ -33,7 +33,6 @@ export function PenaltyWarningPanel() {
               <div key={penalty.id} className="rounded-lg border border-warning/30 bg-warning/5 p-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-foreground">{instructor?.name ?? "-"}</span>
-                  <Badge variant="secondary" className="text-[10px]">조치 완료</Badge>
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">{penalty.violationType} · {penalty.description}</p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">{formatDateKR(penalty.createdAt)}</p>

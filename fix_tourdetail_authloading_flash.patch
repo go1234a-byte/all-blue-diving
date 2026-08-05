@@ -1,0 +1,32 @@
+diff --git a/src/pages/TourDetail.tsx b/src/pages/TourDetail.tsx
+index ff1855a..e466f41 100644
+--- a/src/pages/TourDetail.tsx
++++ b/src/pages/TourDetail.tsx
+@@ -38,7 +38,7 @@ const TourDetail = () => {
+     getConfirmedParticipantCount,
+     getReviewsByTourId,
+   } = useAppData();
+-  const { isLoggedIn, currentDiverId, currentInstructorId } = useRole();
++  const { isLoggedIn, currentDiverId, currentInstructorId, authLoading } = useRole();
+   const { toast } = useToast();
+   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
+ 
+@@ -63,6 +63,18 @@ const TourDetail = () => {
+     );
+   }
+ 
++  // 로그인 직후 session -> profiles 조회가 끝나기 전까지는 currentDiverId/currentInstructorId가
++  // 아직 확정되지 않아, authLoading을 안 보면 이미 예약했는데도 "예약하기" 버튼이 잠깐 잘못
++  // 보이거나 담당 강사 본인인데도 강사 전용 버튼이 잠깐 안 보인다. 다른 페이지와 동일하게
++  // 인증 확인 중에는 로딩 상태만 보여준다.
++  if (authLoading) {
++    return (
++      <div className="flex min-h-full items-center justify-center p-6 text-sm text-muted-foreground">
++        인증 정보를 확인하는 중...
++      </div>
++    );
++  }
++
+   const bookmarked = isBookmarked(tour.id);
+   const myBooking = currentDiverId
+     ? bookings.find((b) => b.tourId === tour.id && b.diverId === currentDiverId && b.status !== "cancelled")

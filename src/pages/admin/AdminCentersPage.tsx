@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import type { Center } from "@/types";
@@ -55,7 +56,7 @@ function toFormState(center: Center): CenterFormState {
 }
 
 const AdminCentersPage = () => {
-  const { centers, addCenter, updateCenter, deleteCenter } = useAppData();
+  const { centers, addCenter, updateCenter, deleteCenter, setCenterStatus } = useAppData();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("highlight");
@@ -63,6 +64,9 @@ const AdminCentersPage = () => {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<CenterFormState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [rejectingCenter, setRejectingCenter] = useState<Center | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
 
   const openEdit = (center: Center) => {
     setEditingCenter(center);
@@ -100,7 +104,7 @@ const AdminCentersPage = () => {
         phone: form.phone.trim() || undefined,
       };
       if (creating) {
-        await addCenter({ ...payload, features: [] });
+        await addCenter({ ...payload, features: [], status: "approved" });
         toast({ title: "새 센터가 등록되었습니다" });
       } else if (editingCenter) {
         await updateCenter(editingCenter.id, { ...payload, features: editingCenter.features });
@@ -115,6 +119,42 @@ const AdminCentersPage = () => {
   const handleDelete = async (center: Center) => {
     await deleteCenter(center.id);
     toast({ title: `"${center.name}" 센터를 삭제했습니다.` });
+  };
+
+  const handleApprove = async (center: Center) => {
+    setStatusUpdatingId(center.id);
+    try {
+      await setCenterStatus(center.id, "approved");
+      toast({ title: `"${center.name}" 센터를 승인했습니다.` });
+    } catch (err) {
+      toast({ title: "승인 처리 실패", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
+
+  const openReject = (center: Center) => {
+    setRejectingCenter(center);
+    setRejectReason("");
+  };
+
+  const handleReject = async () => {
+    if (!rejectingCenter) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
+      toast({ title: "반려 사유를 입력해주세요", variant: "destructive" });
+      return;
+    }
+    setStatusUpdatingId(rejectingCenter.id);
+    try {
+      await setCenterStatus(rejectingCenter.id, "rejected", reason);
+      toast({ title: `"${rejectingCenter.name}" 센터를 반려했습니다.` });
+      setRejectingCenter(null);
+    } catch (err) {
+      toast({ title: "반려 처리 실패", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
+    } finally {
+      setStatusUpdatingId(null);
+    }
   };
 
   return (
@@ -135,15 +175,51 @@ const AdminCentersPage = () => {
           <CardContent className="space-y-2 p-4">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-semibold text-foreground">{center.name}</p>
-              <Badge variant="default" className="shrink-0 text-[10px]">승인됨</Badge>
+              {center.status === "approved" && (
+                <Badge variant="default" className="shrink-0 text-[10px]">승인됨</Badge>
+              )}
+              {center.status === "pending" && (
+                <Badge variant="secondary" className="shrink-0 text-[10px]">승인 대기</Badge>
+              )}
+              {center.status === "rejected" && (
+                <Badge variant="destructive" className="shrink-0 text-[10px]">반려됨</Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">{center.country ?? "-"}</p>
             <p className="text-xs text-muted-foreground">{center.address}</p>
+            {center.status === "rejected" && center.rejectionReason && (
+              <p className="rounded-md bg-destructive/10 p-2 text-[11px] text-destructive">
+                반려 사유: {center.rejectionReason}
+              </p>
+            )}
             {center.features.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
                 {center.features.map((f) => (
                   <Badge key={f} variant="secondary" className="text-[10px]">{f}</Badge>
                 ))}
+              </div>
+            )}
+            {center.status === "pending" && (
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  className="flex-1 gap-1 text-xs"
+                  onClick={() => handleApprove(center)}
+                  disabled={statusUpdatingId === center.id}
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  승인
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 gap-1 text-xs text-destructive hover:text-destructive"
+                  onClick={() => openReject(center)}
+                  disabled={statusUpdatingId === center.id}
+                >
+                  <X className="h-3.5 w-3.5" />
+                  반려
+                </Button>
               </div>
             )}
             <div className="flex gap-2 pt-2">
@@ -227,6 +303,31 @@ const AdminCentersPage = () => {
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "저장 중..." : creating ? "등록" : "저장"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!rejectingCenter} onOpenChange={(open) => !open && setRejectingCenter(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>&quot;{rejectingCenter?.name}&quot; 센터 반려</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label>반려 사유</Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="예: 주소가 확인되지 않습니다. 정확한 센터 주소로 다시 등록해주세요."
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectingCenter(null)} disabled={!!statusUpdatingId}>
+              취소
+            </Button>
+            <Button variant="destructive" onClick={handleReject} disabled={!!statusUpdatingId}>
+              반려 확정
             </Button>
           </DialogFooter>
         </DialogContent>

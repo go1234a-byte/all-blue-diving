@@ -1,0 +1,1211 @@
+diff --git a/src/components/admin/dashboard/CenterApprovalPanel.tsx b/src/components/admin/dashboard/CenterApprovalPanel.tsx
+index b5e0a34..d4d6762 100644
+--- a/src/components/admin/dashboard/CenterApprovalPanel.tsx
++++ b/src/components/admin/dashboard/CenterApprovalPanel.tsx
+@@ -1,16 +1,39 @@
++import { useState } from "react";
+ import { useNavigate } from "react-router-dom";
+ import { Building2, Check, X } from "lucide-react";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+-import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+ import { useAppData } from "@/contexts/AppDataContext";
++import { useToast } from "@/hooks/use-toast";
+ import { formatDateKR } from "@/lib/dates";
+ 
+-/** 운영 모니터링 - 센터 승인 요청: 센터명/국가/신청일/승인/반려. */
++/**
++ * 운영 모니터링 - 센터 승인 요청: 실제로 승인 대기(status === "pending") 중인 센터만 노출한다.
++ * 예전에는 상태 개념 자체가 없어서 모든 센터에 "승인됨" 배지를 하드코딩하고 반려 버튼은
++ * 항상 비활성화되어 있었다 — 승인 워크플로우가 있는 것처럼 보이지만 실제로는 가짜였다.
++ * 반려는 사유 입력이 필요해 이 위젯에서 바로 처리하지 않고 /admin/centers로 이동시킨다.
++ */
+ export function CenterApprovalPanel() {
+-  const { centers } = useAppData();
++  const { centers, setCenterStatus } = useAppData();
+   const navigate = useNavigate();
+-  const recent = [...centers].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 5);
++  const { toast } = useToast();
++  const [approvingId, setApprovingId] = useState<string | null>(null);
++  const pending = [...centers]
++    .filter((c) => c.status === "pending")
++    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
++    .slice(0, 5);
++
++  const handleApprove = async (centerId: string, name: string) => {
++    setApprovingId(centerId);
++    try {
++      await setCenterStatus(centerId, "approved");
++      toast({ title: `"${name}" 센터를 승인했습니다.` });
++    } catch (err) {
++      toast({ title: "승인 실패", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
++    } finally {
++      setApprovingId(null);
++    }
++  };
+ 
+   return (
+     <Card className="accent-top-ocean">
+@@ -24,10 +47,10 @@ export function CenterApprovalPanel() {
+         </Button>
+       </CardHeader>
+       <CardContent className="space-y-2">
+-        {recent.length === 0 ? (
+-          <p className="py-4 text-center text-xs text-muted-foreground">등록된 센터가 없습니다.</p>
++        {pending.length === 0 ? (
++          <p className="py-4 text-center text-xs text-muted-foreground">승인 대기 중인 센터가 없습니다.</p>
+         ) : (
+-          recent.map((center) => (
++          pending.map((center) => (
+             <div key={center.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5">
+               <div className="min-w-0 flex-1">
+                 <p className="truncate text-xs font-semibold text-foreground">{center.name}</p>
+@@ -36,12 +59,24 @@ export function CenterApprovalPanel() {
+                 </p>
+               </div>
+               <div className="flex shrink-0 items-center gap-1">
+-                <Badge variant="default" className="gap-1 text-[10px]">
+-                  <Check className="h-3 w-3" />
+-                  승인됨
+-                </Badge>
+-                <Button size="icon" variant="ghost" className="h-6 w-6" disabled aria-label="반려">
+-                  <X className="h-3 w-3" />
++                <Button
++                  size="icon"
++                  variant="ghost"
++                  className="h-6 w-6 text-success"
++                  aria-label="승인"
++                  disabled={approvingId === center.id}
++                  onClick={() => handleApprove(center.id, center.name)}
++                >
++                  <Check className="h-3.5 w-3.5" />
++                </Button>
++                <Button
++                  size="icon"
++                  variant="ghost"
++                  className="h-6 w-6 text-destructive"
++                  aria-label="반려"
++                  onClick={() => navigate("/admin/centers")}
++                >
++                  <X className="h-3.5 w-3.5" />
+                 </Button>
+               </div>
+             </div>
+diff --git a/src/components/admin/dashboard/InstructorVerificationPanel.tsx b/src/components/admin/dashboard/InstructorVerificationPanel.tsx
+index 19412ed..5c63840 100644
+--- a/src/components/admin/dashboard/InstructorVerificationPanel.tsx
++++ b/src/components/admin/dashboard/InstructorVerificationPanel.tsx
+@@ -10,7 +10,7 @@ import { useAppData } from "@/contexts/AppDataContext";
+ export function InstructorVerificationPanel() {
+   const { instructors, setInstructorVerified, adminProfile } = useAppData();
+   const navigate = useNavigate();
+-  const pending = instructors.filter((i) => !i.verified).slice(0, 5);
++  const pending = instructors.filter((i) => !i.verified && !i.rejectedAt).slice(0, 5);
+   const [approvingId, setApprovingId] = useState<string | null>(null);
+ 
+   const handleApprove = async (id: string) => {
+diff --git a/src/components/admin/dashboard/PenaltyWarningPanel.tsx b/src/components/admin/dashboard/PenaltyWarningPanel.tsx
+index a098d4f..2e4ea23 100644
+--- a/src/components/admin/dashboard/PenaltyWarningPanel.tsx
++++ b/src/components/admin/dashboard/PenaltyWarningPanel.tsx
+@@ -1,7 +1,6 @@
+ import { useNavigate } from "react-router-dom";
+ import { AlertTriangle } from "lucide-react";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+-import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+ import { useAppData } from "@/contexts/AppDataContext";
+ import { formatDateKR } from "@/lib/dates";
+@@ -10,7 +9,8 @@ import { formatDateKR } from "@/lib/dates";
+ export function PenaltyWarningPanel() {
+   const { penalties, instructors } = useAppData();
+   const navigate = useNavigate();
+-  const recent = penalties.slice(0, 5);
++  // 취소(voided)된 이력은 대시보드 요약에서 제외한다.
++  const recent = penalties.filter((p) => !p.voided).slice(0, 5);
+ 
+   return (
+     <Card className="accent-top-ocean">
+@@ -33,7 +33,6 @@ export function PenaltyWarningPanel() {
+               <div key={penalty.id} className="rounded-lg border border-warning/30 bg-warning/5 p-2.5">
+                 <div className="flex items-center justify-between gap-2">
+                   <span className="text-xs font-semibold text-foreground">{instructor?.name ?? "-"}</span>
+-                  <Badge variant="secondary" className="text-[10px]">조치 완료</Badge>
+                 </div>
+                 <p className="mt-1 text-[11px] text-muted-foreground">{penalty.violationType} · {penalty.description}</p>
+                 <p className="mt-0.5 text-[10px] text-muted-foreground">{formatDateKR(penalty.createdAt)}</p>
+diff --git a/src/components/instructor/CenterFormSection.tsx b/src/components/instructor/CenterFormSection.tsx
+index 93a8de1..d8ebd81 100644
+--- a/src/components/instructor/CenterFormSection.tsx
++++ b/src/components/instructor/CenterFormSection.tsx
+@@ -46,6 +46,10 @@ export function CenterFormSection({
+   onModeChange,
+ }: CenterFormSectionProps) {
+   const { centers } = useAppData();
++  // 승인된 센터만 다른 강사들이 "기존 센터 선택"으로 재사용할 수 있게 한다.
++  // 관리자 승인 전(pending)이거나 반려(rejected)된 센터는 목록에서 숨긴다(#217 회귀 방지) —
++  // 단, 현재 선택되어 있는 센터(예: 방금 자신이 등록한 센터)는 계속 보이게 예외를 둔다.
++  const approvedCenters = centers.filter((c) => c.status === "approved" || c.id === selectedCenterId);
+   const [customFeature, setCustomFeature] = useState("");
+ 
+   const toggleFeature = (feature: string) => {
+@@ -104,7 +108,7 @@ export function CenterFormSection({
+               <SelectValue placeholder="센터 선택" />
+             </SelectTrigger>
+             <SelectContent>
+-              {centers.map((c) => (
++              {approvedCenters.map((c) => (
+                 <SelectItem key={c.id} value={c.id}>
+                   {c.name}
+                 </SelectItem>
+diff --git a/src/components/instructor/InstructorNotificationCenter.tsx b/src/components/instructor/InstructorNotificationCenter.tsx
+index dbd5151..46e1822 100644
+--- a/src/components/instructor/InstructorNotificationCenter.tsx
++++ b/src/components/instructor/InstructorNotificationCenter.tsx
+@@ -47,6 +47,7 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
+             const isMinProceed = notification.type === "min_participants_proceed";
+             const isMinDecisionNeeded = notification.type === "min_participants_decision_needed";
+             const isWarning = isPenalty || isMinCancelled || isMinProceed || isMinDecisionNeeded;
++            const isRejected = notification.type === "application_rejected";
+             const label = isPenalty
+               ? "[강제 환불 승인 조치]"
+               : isMinCancelled
+@@ -55,7 +56,9 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
+                   ? "[최소 인원 미달 - 투어 진행 안내]"
+                   : isMinDecisionNeeded
+                     ? "[최소 인원 미달 - 결정 필요]"
+-                    : "[신규 투어 예약 완료]";
++                    : isRejected
++                      ? "[강사 인증 신청 반려]"
++                      : "[신규 투어 예약 완료]";
+             const description = isPenalty
+               ? "관리자가 이의신청 건에 대해 강제 환불을 승인했습니다."
+               : isMinCancelled
+@@ -64,7 +67,9 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
+                   ? '출발 30일 전 기준 최소 인원 미달이지만 강사가 "그대로 진행"을 선택해 투어는 진행됩니다.'
+                   : isMinDecisionNeeded
+                     ? "출발 30일 전 기준 최소 인원 미달로 모집이 마감되었습니다. 아래 대시보드에서 진행/취소를 결정해주세요."
+-                    : "어떤 유저가 어떤 옵션을 선택해 결제했습니다.";
++                    : isRejected
++                      ? notification.message ?? "관리자가 강사 인증 신청을 반려했습니다."
++                      : "어떤 유저가 어떤 옵션을 선택해 결제했습니다.";
+             return (
+               <Card
+                 key={notification.id}
+@@ -76,8 +81,8 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
+                 }}
+                 className={cn(
+                   "cursor-pointer border-primary/30 transition-shadow hover:shadow-ocean",
+-                  isWarning && "border-2 border-destructive bg-destructive/10",
+-                  !isWarning && !notification.read && "border-2 border-primary/60 bg-secondary/40",
++                  (isWarning || isRejected) && "border-2 border-destructive bg-destructive/10",
++                  !isWarning && !isRejected && !notification.read && "border-2 border-primary/60 bg-secondary/40",
+                 )}
+               >
+                 <CardContent className="space-y-1.5 p-3">
+@@ -85,10 +90,10 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
+                     <p
+                       className={cn(
+                         "flex items-center gap-1.5 break-keep text-sm font-semibold",
+-                        isWarning ? "text-destructive" : "text-foreground",
++                        isWarning || isRejected ? "text-destructive" : "text-foreground",
+                       )}
+                     >
+-                      {isWarning ? (
++                      {isWarning || isRejected ? (
+                         <AlertOctagon className="h-4 w-4 shrink-0" />
+                       ) : (
+                         <BellRing className="h-4 w-4 shrink-0" />
+diff --git a/src/components/mypage/InstructorApplicationQueue.tsx b/src/components/mypage/InstructorApplicationQueue.tsx
+index 1e7f790..f5aa82e 100644
+--- a/src/components/mypage/InstructorApplicationQueue.tsx
++++ b/src/components/mypage/InstructorApplicationQueue.tsx
+@@ -1,30 +1,75 @@
+ import { useState } from "react";
+-import { CheckCircle2 } from "lucide-react";
++import { CheckCircle2, XCircle } from "lucide-react";
+ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+ import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+ import { Card, CardContent } from "@/components/ui/card";
++import {
++  Dialog,
++  DialogContent,
++  DialogFooter,
++  DialogHeader,
++  DialogTitle,
++} from "@/components/ui/dialog";
++import { Label } from "@/components/ui/label";
++import { Textarea } from "@/components/ui/textarea";
+ import { useAppData } from "@/contexts/AppDataContext";
++import { useToast } from "@/hooks/use-toast";
+ import { maskName } from "@/lib/masking";
+ 
+ /**
+- * 관리자용 강사 인증 신청 큐. `verified_status = false`인 강사를 나열하고,
+- * "인증 승인" 클릭 시 Enter Cloud(Supabase) instructors.verified_status를 true로 업데이트한다.
++ * 관리자용 강사 인증 신청 큐. `verified_status = false`이고 아직 반려되지 않은 강사를
++ * 나열하고, "인증 승인" 또는 "반려" 처리를 할 수 있다.
++ * (예전에는 반려 기능 자체가 없어서 대기열에 들어간 강사를 승인하거나 영구히 방치하는
++ * 것 외에 관리자가 취할 수 있는 조치가 없었다.)
+  */
+ export function InstructorApplicationQueue() {
+-  const { instructors, setInstructorVerified, adminProfile } = useAppData();
+-  const pending = instructors.filter((i) => !i.verified);
++  const { instructors, setInstructorVerified, rejectInstructorApplication, adminProfile } = useAppData();
++  const { toast } = useToast();
++  const pending = instructors.filter((i) => !i.verified && !i.rejectedAt);
+   const [approvingId, setApprovingId] = useState<string | null>(null);
++  const [rejectingId, setRejectingId] = useState<string | null>(null);
++  const [rejectReason, setRejectReason] = useState("");
++  const [submittingReject, setSubmittingReject] = useState(false);
+ 
+   const handleApprove = async (id: string) => {
+     setApprovingId(id);
+     try {
+       await setInstructorVerified(id, true, adminProfile.id);
++      toast({ title: "강사 인증을 승인했습니다." });
+     } finally {
+       setApprovingId(null);
+     }
+   };
+ 
++  const openReject = (id: string) => {
++    setRejectingId(id);
++    setRejectReason("");
++  };
++
++  const handleReject = async () => {
++    if (!rejectingId) return;
++    const reason = rejectReason.trim();
++    if (!reason) {
++      toast({ title: "반려 사유를 입력해주세요", variant: "destructive" });
++      return;
++    }
++    setSubmittingReject(true);
++    try {
++      await rejectInstructorApplication(rejectingId, reason, adminProfile.id);
++      toast({ title: "강사 인증 신청을 반려했습니다." });
++      setRejectingId(null);
++    } catch (err) {
++      toast({
++        title: "반려 처리에 실패했습니다",
++        description: err instanceof Error ? err.message : undefined,
++        variant: "destructive",
++      });
++    } finally {
++      setSubmittingReject(false);
++    }
++  };
++
+   if (pending.length === 0) {
+     return (
+       <p className="py-8 text-center text-sm text-muted-foreground">대기중인 강사 인증 신청이 없습니다.</p>
+@@ -54,18 +99,55 @@ export function InstructorApplicationQueue() {
+             <Badge variant="secondary" className="shrink-0">
+               심사 대기
+             </Badge>
+-            <Button
+-              size="sm"
+-              className="shrink-0 gap-1"
+-              onClick={() => handleApprove(instructor.id)}
+-              disabled={approvingId === instructor.id}
+-            >
+-              <CheckCircle2 className="h-3.5 w-3.5" />
+-              인증 승인
+-            </Button>
++            <div className="flex shrink-0 flex-col gap-1">
++              <Button
++                size="sm"
++                className="gap-1"
++                onClick={() => handleApprove(instructor.id)}
++                disabled={approvingId === instructor.id}
++              >
++                <CheckCircle2 className="h-3.5 w-3.5" />
++                인증 승인
++              </Button>
++              <Button
++                size="sm"
++                variant="outline"
++                className="gap-1 text-destructive hover:text-destructive"
++                onClick={() => openReject(instructor.id)}
++                disabled={approvingId === instructor.id}
++              >
++                <XCircle className="h-3.5 w-3.5" />
++                반려
++              </Button>
++            </div>
+           </CardContent>
+         </Card>
+       ))}
++
++      <Dialog open={!!rejectingId} onOpenChange={(open) => !open && setRejectingId(null)}>
++        <DialogContent>
++          <DialogHeader>
++            <DialogTitle>강사 인증 신청 반려</DialogTitle>
++          </DialogHeader>
++          <div className="space-y-1.5">
++            <Label>반려 사유 (강사 본인에게 알림으로 전달됩니다)</Label>
++            <Textarea
++              value={rejectReason}
++              onChange={(e) => setRejectReason(e.target.value)}
++              placeholder="예: 제출된 자격증 사본이 식별되지 않습니다. 선명한 이미지로 다시 제출해주세요."
++              rows={4}
++            />
++          </div>
++          <DialogFooter>
++            <Button variant="outline" onClick={() => setRejectingId(null)} disabled={submittingReject}>
++              취소
++            </Button>
++            <Button variant="destructive" onClick={handleReject} disabled={submittingReject}>
++              {submittingReject ? "처리 중..." : "반려 확정"}
++            </Button>
++          </DialogFooter>
++        </DialogContent>
++      </Dialog>
+     </div>
+   );
+ }
+diff --git a/src/contexts/AppDataContext.tsx b/src/contexts/AppDataContext.tsx
+index 762f978..58e7d6a 100644
+--- a/src/contexts/AppDataContext.tsx
++++ b/src/contexts/AppDataContext.tsx
+@@ -41,6 +41,7 @@ function mapPenaltyRow(row: {
+   instructor_id: string;
+   violation_type: string;
+   description: string | null;
++  voided?: boolean | null;
+   created_at: string;
+ }): Penalty {
+   return {
+@@ -48,6 +49,7 @@ function mapPenaltyRow(row: {
+     instructorId: row.instructor_id,
+     violationType: row.violation_type as Penalty["violationType"],
+     description: row.description ?? "",
++    voided: row.voided ?? false,
+     createdAt: row.created_at,
+   };
+ }
+@@ -64,6 +66,8 @@ function mapInstructorRow(row: {
+   verified_status: boolean;
+   verified_at?: string | null;
+   verified_by?: string | null;
++  rejected_at?: string | null;
++  rejection_reason?: string | null;
+   pledge_signed?: boolean | null;
+   pledge_signed_at?: string | null;
+   pledge_version?: string | null;
+@@ -96,6 +100,8 @@ function mapInstructorRow(row: {
+     verified: row.verified_status,
+     verifiedAt: row.verified_at ?? undefined,
+     verifiedBy: row.verified_by ?? undefined,
++    rejectedAt: row.rejected_at ?? undefined,
++    rejectionReason: row.rejection_reason ?? undefined,
+     pledgeSigned: row.pledge_signed ?? false,
+     pledgeSignedAt: row.pledge_signed_at ?? undefined,
+     pledgeVersion: row.pledge_version ?? undefined,
+@@ -128,6 +134,8 @@ function mapCenterRow(row: {
+   instagram: string | null;
+   phone: string | null;
+   features: string[] | null;
++  status?: string | null;
++  rejection_reason?: string | null;
+   created_at: string;
+ }): Center {
+   return {
+@@ -140,6 +148,10 @@ function mapCenterRow(row: {
+     instagram: row.instagram ?? undefined,
+     phone: row.phone ?? undefined,
+     features: row.features ?? [],
++    // status 컬럼이 아직 마이그레이션 전이라 없을 수도 있으므로 기본값은 approved로 둔다
++    // (기존에 이미 등록된 센터들이 갑자기 전부 "승인 대기"로 바뀌어 노출되지 않는 사고 방지).
++    status: (row.status as Center["status"]) ?? "approved",
++    rejectionReason: row.rejection_reason ?? undefined,
+     createdAt: row.created_at,
+   };
+ }
+@@ -365,6 +377,49 @@ function mapArbitrationMessageRow(row: any): ArbitrationMessage {
+   };
+ }
+ 
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++function mapInstructorNotificationRow(row: any): InstructorNotification {
++  return {
++    id: row.id,
++    instructorId: row.instructor_id,
++    tourId: row.tour_id,
++    bookingId: row.booking_id ?? undefined,
++    tourTitle: row.tour_title,
++    diverName: row.diver_name ?? undefined,
++    selectedOptionNames: row.selected_option_names ?? undefined,
++    settlementAmount: row.settlement_amount ?? undefined,
++    message: row.message ?? undefined,
++    createdAt: row.created_at,
++    read: row.read,
++    type: row.type,
++  };
++}
++
++/**
++ * instructor_notifications 테이블에 알림을 기록한다(insert-only, fire-and-forget).
++ * 실제 상태 갱신은 실시간 구독(INSERT 이벤트)이 담당하므로 여기서는 로컬 state를
++ * 직접 건드리지 않는다 — arbitration_messages/chat_messages와 동일한 패턴.
++ */
++async function persistInstructorNotification(
++  notification: Omit<InstructorNotification, "id" | "read">,
++): Promise<void> {
++  const { error } = await supabase.from("instructor_notifications").insert({
++    instructor_id: notification.instructorId,
++    tour_id: notification.tourId,
++    booking_id: notification.bookingId ?? null,
++    tour_title: notification.tourTitle,
++    diver_name: notification.diverName ?? null,
++    selected_option_names: notification.selectedOptionNames ?? null,
++    settlement_amount: notification.settlementAmount ?? null,
++    message: notification.message ?? null,
++    type: notification.type,
++    created_at: notification.createdAt,
++  });
++  if (error) {
++    console.error("[persistInstructorNotification] instructor_notifications insert 실패:", error);
++  }
++}
++
+ export interface NewBookingInput {
+   tourId: string;
+   diverId?: string; // 실 로그인 다이버의 profiles.id — 없으면 게스트 예약으로 처리
+@@ -465,6 +520,12 @@ interface NewCenterInput {
+   instagram?: string;
+   phone?: string;
+   features: string[];
++  /**
++   * 관리자가 AdminCentersPage에서 직접 등록할 때만 "approved"를 명시적으로 넘긴다.
++   * 강사가 투어 생성 중 "새 센터 등록"으로 넣는 경우는 생략하면 기본값 "pending"이 적용되어,
++   * 관리자 승인 전까지는 다른 강사의 "기존 센터 선택" 목록에 노출되지 않는다.
++   */
++  status?: "pending" | "approved";
+ }
+ 
+ interface NewInstructorSignupInput {
+@@ -591,7 +652,9 @@ interface AppDataContextValue {
+   resolveReport: (reportId: string) => Promise<void>;
+   addChatMessage: (input: Omit<ChatMessage, "id" | "createdAt">) => Promise<void>;
+   setInstructorVerified: (instructorId: string, verified: boolean, verifiedBy?: string) => Promise<void>;
++  rejectInstructorApplication: (instructorId: string, reason: string, rejectedBy?: string) => Promise<void>;
+   setInstructorPenalty: (instructorId: string, penaltyCount: number, reason?: string) => Promise<void>;
++  voidPenalty: (penaltyId: string, instructorId: string) => Promise<void>;
+   updateInstructorProfile: (
+     instructorId: string,
+     updates: {
+@@ -643,6 +706,7 @@ interface AppDataContextValue {
+   addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => Promise<void>;
+   addCenter: (input: NewCenterInput) => Promise<Center>;
+   updateCenter: (centerId: string, updates: NewCenterInput) => Promise<void>;
++  setCenterStatus: (centerId: string, status: "approved" | "rejected", reason?: string) => Promise<void>;
+   deleteCenter: (centerId: string) => Promise<void>;
+   addSupportTicket: (input: NewSupportTicketInput) => Promise<SupportTicket>;
+   updateSupportTicketStatus: (ticketId: string, status: SupportTicketStatus, adminReply?: string) => Promise<void>;
+@@ -743,6 +807,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+   };
+ 
+   // Enter Cloud(Supabase) `instructors` 테이블에서 강사 신뢰 데이터를 가져온다.
++  // + realtime 구독 추가: 예전에는 1회성 fetch만 있어서 관리자가 인증 승인/반려를 처리해도
++  // 해당 강사의 브라우저 세션에는 새로고침 전까지 전혀 반영되지 않았다(#235 회귀 방지).
+   useEffect(() => {
+     let active = true;
+     (async () => {
+@@ -751,8 +817,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+       if (!error && data) setInstructors(data.map(mapInstructorRow));
+       setInstructorsLoading(false);
+     })();
++
++    const channel = supabase
++      .channel("instructors_all")
++      .on(
++        "postgres_changes",
++        { event: "UPDATE", schema: "public", table: "instructors" },
++        (payload) => {
++          const updated = mapInstructorRow(payload.new as Parameters<typeof mapInstructorRow>[0]);
++          setInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
++        },
++      )
++      .subscribe();
++
+     return () => {
+       active = false;
++      supabase.removeChannel(channel);
+     };
+   }, []);
+ 
+@@ -1055,6 +1135,47 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+     };
+   }, []);
+ 
++  // `instructor_notifications` 테이블 실시간 구독.
++  // 예전에는 이 state가 useState([])로 시작해서 브라우저 세션 로컬 메모리에만 쌓였다 —
++  // 새로고침하면 전부 사라지고, 다른 세션(다른 관리자/강사 기기)에서 발생한 이벤트는
++  // 절대 보이지 않았다(신규예약/강제환불/최소인원 이벤트 등 강사·관리자 알림 전체에 해당).
++  // arbitration_messages와 동일한 fetch + realtime 패턴으로 바꿔 실제로 영속화한다.
++  useEffect(() => {
++    let active = true;
++    (async () => {
++      const { data, error } = await supabase
++        .from("instructor_notifications")
++        .select("*")
++        .order("created_at", { ascending: false });
++      if (!active) return;
++      if (!error && data) setInstructorNotifications(data.map(mapInstructorNotificationRow));
++    })();
++
++    const channel = supabase
++      .channel("instructor_notifications_all")
++      .on(
++        "postgres_changes",
++        { event: "INSERT", schema: "public", table: "instructor_notifications" },
++        (payload) => {
++          setInstructorNotifications((prev) => [mapInstructorNotificationRow(payload.new), ...prev]);
++        },
++      )
++      .on(
++        "postgres_changes",
++        { event: "UPDATE", schema: "public", table: "instructor_notifications" },
++        (payload) => {
++          const updated = mapInstructorNotificationRow(payload.new);
++          setInstructorNotifications((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
++        },
++      )
++      .subscribe();
++
++    return () => {
++      active = false;
++      supabase.removeChannel(channel);
++    };
++  }, []);
++
+   /**
+    * 최소 인원 자동 마감 평가 — 실제 서버 크론잡이 없는 인메모리/데모 아키텍처이므로,
+    * tours/bookings가 로드되거나 갱신될 때마다 "투어 출발일 30일 전을 지났고 아직
+@@ -1107,16 +1228,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+           }
+         });
+ 
+-      const notification: InstructorNotification = {
+-        id: nextId("noti"),
++      void persistInstructorNotification({
+         instructorId: tour.instructorId,
+         tourId: tour.id,
+         tourTitle: tour.title,
+         createdAt: new Date().toISOString(),
+-        read: false,
+         type: "min_participants_decision_needed",
+-      };
+-      setInstructorNotifications((prev) => [notification, ...prev]);
++      });
+       notifyInstructorPush(
+         tour.instructorId,
+         "최소 인원 미달 - 결정이 필요합니다",
+@@ -1210,8 +1328,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+           .eq("booking_id", booking.id)
+           .neq("status", "released");
+ 
+-        const notification: InstructorNotification = {
+-          id: nextId("noti"),
++        void persistInstructorNotification({
+           instructorId: tour.instructorId,
+           tourId: tour.id,
+           bookingId: booking.id,
+@@ -1220,10 +1337,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+           selectedOptionNames: booking.selectedOptions.map((o) => o.name),
+           settlementAmount: 0,
+           createdAt: cancelRequestedAt,
+-          read: false,
+           type: "min_participants_cancelled",
+-        };
+-        setInstructorNotifications((prev) => [notification, ...prev]);
++        });
+         notifyDiverPush(
+           booking.diverId,
+           "투어가 취소되었습니다",
+@@ -1233,16 +1348,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+       });
+     } else {
+       // "그대로 진행" — 투어 단위로 강사에게 책임 리마인드 알림을 1건 발행하고, 확정 다이버들에게도 알린다.
+-      const notification: InstructorNotification = {
+-        id: nextId("noti"),
++      void persistInstructorNotification({
+         instructorId: tour.instructorId,
+         tourId: tour.id,
+         tourTitle: tour.title,
+         createdAt: new Date().toISOString(),
+-        read: false,
+         type: "min_participants_proceed",
+-      };
+-      setInstructorNotifications((prev) => [notification, ...prev]);
++      });
+       confirmedBookings.forEach((booking) => {
+         notifyDiverPush(
+           booking.diverId,
+@@ -1642,8 +1754,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+       setPayouts((prev) => [payout, ...prev]);
+ 
+       // 트랜잭션이 확정되는 즉시(=예약 생성 시점) 담당 강사에게 실시간 알림을 발행한다.
+-      const notification: InstructorNotification = {
+-        id: nextId("noti"),
++      void persistInstructorNotification({
+         instructorId: tour.instructorId,
+         tourId: tour.id,
+         bookingId: booking.id,
+@@ -1652,10 +1763,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+         selectedOptionNames: input.selectedOptions.map((o) => o.name),
+         settlementAmount: input.basePrice + input.optionsCost,
+         createdAt: new Date().toISOString(),
+-        read: false,
+         type: "new_booking",
+-      };
+-      setInstructorNotifications((prev) => [notification, ...prev]);
++      });
+       notifyInstructorPush(
+         tour.instructorId,
+         "신규 투어 예약 완료",
+@@ -1739,11 +1848,58 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+     const verifiedAt = verified ? new Date().toISOString() : undefined;
+     await supabase
+       .from("instructors")
+-      .update({ verified_status: verified, verified_at: verifiedAt, verified_by: verifiedBy })
++      .update({
++        verified_status: verified,
++        verified_at: verifiedAt,
++        verified_by: verifiedBy,
++        // 승인하면 예전에 반려된 이력이 있어도 지워서 깨끗한 상태로 만든다.
++        rejected_at: verified ? null : undefined,
++        rejection_reason: verified ? null : undefined,
++      })
++      .eq("id", instructorId);
++    setInstructors((prev) =>
++      prev.map((i) =>
++        i.id === instructorId
++          ? { ...i, verified, verifiedAt, verifiedBy, rejectedAt: verified ? undefined : i.rejectedAt, rejectionReason: verified ? undefined : i.rejectionReason }
++          : i,
++      ),
++    );
++  };
++
++  /**
++   * 관리자 — 강사 인증 신청을 반려한다. 예전에는 InstructorApplicationQueue에 "인증 승인"
++   * 버튼만 있고 반려 기능 자체가 없어서, 대기열에 들어간 강사는 승인하거나 영구히 방치하는
++   * 것 외에 관리자가 취할 수 있는 조치가 없었다(#233/#234 회귀 방지). 반려 사유는
++   * instructor_notifications에도 기록해 강사 본인 알림 센터에 노출한다.
++   */
++  const rejectInstructorApplication = async (
++    instructorId: string,
++    reason: string,
++    rejectedBy?: string,
++  ): Promise<void> => {
++    const rejectedAt = new Date().toISOString();
++    const { error } = await supabase
++      .from("instructors")
++      .update({ rejected_at: rejectedAt, rejection_reason: reason, verified_by: rejectedBy ?? null })
+       .eq("id", instructorId);
++    if (error) {
++      console.error("[rejectInstructorApplication] instructors 업데이트 실패:", error);
++      throw new Error("반려 처리에 실패했습니다: " + error.message);
++    }
+     setInstructors((prev) =>
+-      prev.map((i) => (i.id === instructorId ? { ...i, verified, verifiedAt, verifiedBy } : i)),
++      prev.map((i) => (i.id === instructorId ? { ...i, rejectedAt, rejectionReason: reason } : i)),
+     );
++    const instructor = instructors.find((i) => i.id === instructorId);
++    if (instructor) {
++      void persistInstructorNotification({
++        instructorId,
++        tourId: "",
++        tourTitle: "강사 인증 신청",
++        message: reason,
++        createdAt: rejectedAt,
++        type: "application_rejected",
++      });
++    }
+   };
+ 
+   /**
+@@ -1790,6 +1946,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+     }
+   };
+ 
++  /**
++   * 관리자 — 오적용된 특정 패널티 이력 1건을 정정(취소)한다. 예전에는 "경고 해제" 버튼으로
++   * 강사의 경고 횟수를 통째로 0으로 초기화하는 것 외에 방법이 없었고, 이미 penalties_log에
++   * 쌓인 이력은 절대 수정/삭제할 수 없었다(#229 회귀 방지). 이 함수는 특정 1건만 voided
++   * 처리하고, 아직 취소되지 않은 나머지 경고 수만큼만 penalty_count를 재계산한다.
++   */
++  const voidPenalty = async (penaltyId: string, instructorId: string): Promise<void> => {
++    const { error } = await supabase.from("penalties_log").update({ voided: true }).eq("id", penaltyId);
++    if (error) {
++      console.error("[voidPenalty] penalties_log 업데이트 실패:", error);
++      throw new Error("패널티 이력 정정에 실패했습니다: " + error.message);
++    }
++    setPenalties((prev) => prev.map((p) => (p.id === penaltyId ? { ...p, voided: true } : p)));
++
++    const remainingCount = penalties.filter(
++      (p) => p.instructorId === instructorId && !p.voided && p.id !== penaltyId,
++    ).length;
++    await supabase.from("instructors").update({ penalty_count: remainingCount }).eq("id", instructorId);
++    setInstructors((prev) =>
++      prev.map((i) => (i.id === instructorId ? { ...i, penaltyCount: remainingCount } : i)),
++    );
++  };
++
+   const updateInstructorProfile = async (
+     instructorId: string,
+     updates: {
+@@ -2143,6 +2322,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+     setInstructorNotifications((prev) =>
+       prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)),
+     );
++    void supabase
++      .from("instructor_notifications")
++      .update({ read: true })
++      .eq("id", notificationId)
++      .then(({ error }) => {
++        if (error) console.error("[markInstructorNotificationRead] 업데이트 실패:", error);
++      });
+   };
+ 
+   /**
+@@ -2253,8 +2439,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+ 
+       // 관리자가 [강제 환불 승인]을 실행하는 즉시 담당 강사에게 고위험 페널티 알림을 발행한다.
+       if (booking && tour) {
+-        const notification: InstructorNotification = {
+-          id: nextId("noti"),
++        void persistInstructorNotification({
+           instructorId: tour.instructorId,
+           tourId: tour.id,
+           bookingId: booking.id,
+@@ -2263,10 +2448,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+           selectedOptionNames: booking.selectedOptions.map((o) => o.name),
+           settlementAmount: booking.basePrice + booking.optionsCost,
+           createdAt: new Date().toISOString(),
+-          read: false,
+           type: "forced_refund_penalty",
+-        };
+-        setInstructorNotifications((prev) => [notification, ...prev]);
++        });
+         notifyInstructorPush(
+           tour.instructorId,
+           "강제 환불 승인 조치",
+@@ -2334,6 +2517,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+         instagram: input.instagram,
+         phone: input.phone,
+         features: input.features,
++        status: input.status ?? "pending",
+       })
+       .select()
+       .single();
+@@ -2375,6 +2559,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+     await supabase.from("centers").delete().eq("id", centerId);
+   };
+ 
++  /**
++   * 관리자 — 센터 승인/반려 처리. 예전에는 이 상태 자체가 스키마에 없어서 강사가 투어 생성
++   * 중 등록한 센터가 검증 없이 바로 전체 노출됐고, 대시보드/관리자 화면엔 "승인됨" 배지가
++   * 하드코딩되어 있었다(#216/#217/#249/#269 회귀 방지).
++   */
++  const setCenterStatus = async (
++    centerId: string,
++    status: "approved" | "rejected",
++    reason?: string,
++  ): Promise<void> => {
++    const rejectionReason = status === "rejected" ? reason : undefined;
++    const { error } = await supabase
++      .from("centers")
++      .update({ status, rejection_reason: rejectionReason ?? null })
++      .eq("id", centerId);
++    if (error) {
++      console.error("[setCenterStatus] centers 업데이트 실패:", error);
++      throw new Error("센터 상태 변경에 실패했습니다: " + error.message);
++    }
++    setCenters((prev) =>
++      prev.map((c) => (c.id === centerId ? { ...c, status, rejectionReason } : c)),
++    );
++  };
++
+   /** 1:1 문의 / 분쟁조정 / 신고를 통합 접수한다. */
+   const addSupportTicket = async (input: NewSupportTicketInput): Promise<SupportTicket> => {
+     const { data, error } = await supabase
+@@ -2503,7 +2711,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+       resolveReport,
+       addChatMessage,
+       setInstructorVerified,
++      rejectInstructorApplication,
+       setInstructorPenalty,
++      voidPenalty,
+       updateInstructorProfile,
+       toggleBookmark,
+       isBookmarked,
+@@ -2531,6 +2741,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+       addArbitrationMessage,
+       addCenter,
+       updateCenter,
++      setCenterStatus,
+       deleteCenter,
+       addSupportTicket,
+       updateSupportTicketStatus,
+diff --git a/src/lib/adminAnalytics.ts b/src/lib/adminAnalytics.ts
+index 6ab2320..fdfb4d4 100644
+--- a/src/lib/adminAnalytics.ts
++++ b/src/lib/adminAnalytics.ts
+@@ -133,7 +133,7 @@ export function computeTodaySignupsKpi(diverProfiles: Profile[], instructorProfi
+ /** 카드 5: 활동 강사 수 / 신규 강사 / 인증 대기 */
+ export function computeInstructorKpi(instructors: InstructorProfile[], instructorProfiles: Profile[]) {
+   const active = instructors.filter((i) => i.verified).length;
+-  const pending = instructors.filter((i) => !i.verified).length;
++  const pending = instructors.filter((i) => !i.verified && !i.rejectedAt).length;
+   const newInstructors = instructorProfiles.filter((p) => isWithinLastNDays(p.createdAt, 30)).length;
+ 
+   return { active, pending, newInstructors };
+diff --git a/src/pages/admin/AdminCentersPage.tsx b/src/pages/admin/AdminCentersPage.tsx
+index f5f2023..99b38ec 100644
+--- a/src/pages/admin/AdminCentersPage.tsx
++++ b/src/pages/admin/AdminCentersPage.tsx
+@@ -1,6 +1,6 @@
+ import { useState } from "react";
+ import { useSearchParams } from "react-router-dom";
+-import { Pencil, Plus, Trash2 } from "lucide-react";
++import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+ import {
+   AlertDialog,
+   AlertDialogAction,
+@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
+ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+ import { Input } from "@/components/ui/input";
+ import { Label } from "@/components/ui/label";
++import { Textarea } from "@/components/ui/textarea";
+ import { useAppData } from "@/contexts/AppDataContext";
+ import { useToast } from "@/hooks/use-toast";
+ import type { Center } from "@/types";
+@@ -55,7 +56,7 @@ function toFormState(center: Center): CenterFormState {
+ }
+ 
+ const AdminCentersPage = () => {
+-  const { centers, addCenter, updateCenter, deleteCenter } = useAppData();
++  const { centers, addCenter, updateCenter, deleteCenter, setCenterStatus } = useAppData();
+   const { toast } = useToast();
+   const [searchParams] = useSearchParams();
+   const highlightId = searchParams.get("highlight");
+@@ -63,6 +64,9 @@ const AdminCentersPage = () => {
+   const [creating, setCreating] = useState(false);
+   const [form, setForm] = useState<CenterFormState | null>(null);
+   const [saving, setSaving] = useState(false);
++  const [rejectingCenter, setRejectingCenter] = useState<Center | null>(null);
++  const [rejectReason, setRejectReason] = useState("");
++  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+ 
+   const openEdit = (center: Center) => {
+     setEditingCenter(center);
+@@ -100,7 +104,7 @@ const AdminCentersPage = () => {
+         phone: form.phone.trim() || undefined,
+       };
+       if (creating) {
+-        await addCenter({ ...payload, features: [] });
++        await addCenter({ ...payload, features: [], status: "approved" });
+         toast({ title: "새 센터가 등록되었습니다" });
+       } else if (editingCenter) {
+         await updateCenter(editingCenter.id, { ...payload, features: editingCenter.features });
+@@ -117,6 +121,42 @@ const AdminCentersPage = () => {
+     toast({ title: `"${center.name}" 센터를 삭제했습니다.` });
+   };
+ 
++  const handleApprove = async (center: Center) => {
++    setStatusUpdatingId(center.id);
++    try {
++      await setCenterStatus(center.id, "approved");
++      toast({ title: `"${center.name}" 센터를 승인했습니다.` });
++    } catch (err) {
++      toast({ title: "승인 처리 실패", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
++    } finally {
++      setStatusUpdatingId(null);
++    }
++  };
++
++  const openReject = (center: Center) => {
++    setRejectingCenter(center);
++    setRejectReason("");
++  };
++
++  const handleReject = async () => {
++    if (!rejectingCenter) return;
++    const reason = rejectReason.trim();
++    if (!reason) {
++      toast({ title: "반려 사유를 입력해주세요", variant: "destructive" });
++      return;
++    }
++    setStatusUpdatingId(rejectingCenter.id);
++    try {
++      await setCenterStatus(rejectingCenter.id, "rejected", reason);
++      toast({ title: `"${rejectingCenter.name}" 센터를 반려했습니다.` });
++      setRejectingCenter(null);
++    } catch (err) {
++      toast({ title: "반려 처리 실패", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
++    } finally {
++      setStatusUpdatingId(null);
++    }
++  };
++
+   return (
+     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+       <Button className="col-span-full gap-1.5" onClick={openCreate}>
+@@ -135,10 +175,23 @@ const AdminCentersPage = () => {
+           <CardContent className="space-y-2 p-4">
+             <div className="flex items-start justify-between gap-2">
+               <p className="text-sm font-semibold text-foreground">{center.name}</p>
+-              <Badge variant="default" className="shrink-0 text-[10px]">승인됨</Badge>
++              {center.status === "approved" && (
++                <Badge variant="default" className="shrink-0 text-[10px]">승인됨</Badge>
++              )}
++              {center.status === "pending" && (
++                <Badge variant="secondary" className="shrink-0 text-[10px]">승인 대기</Badge>
++              )}
++              {center.status === "rejected" && (
++                <Badge variant="destructive" className="shrink-0 text-[10px]">반려됨</Badge>
++              )}
+             </div>
+             <p className="text-xs text-muted-foreground">{center.country ?? "-"}</p>
+             <p className="text-xs text-muted-foreground">{center.address}</p>
++            {center.status === "rejected" && center.rejectionReason && (
++              <p className="rounded-md bg-destructive/10 p-2 text-[11px] text-destructive">
++                반려 사유: {center.rejectionReason}
++              </p>
++            )}
+             {center.features.length > 0 && (
+               <div className="flex flex-wrap gap-1 pt-1">
+                 {center.features.map((f) => (
+@@ -146,6 +199,29 @@ const AdminCentersPage = () => {
+                 ))}
+               </div>
+             )}
++            {center.status === "pending" && (
++              <div className="flex gap-2 pt-1">
++                <Button
++                  size="sm"
++                  className="flex-1 gap-1 text-xs"
++                  onClick={() => handleApprove(center)}
++                  disabled={statusUpdatingId === center.id}
++                >
++                  <Check className="h-3.5 w-3.5" />
++                  승인
++                </Button>
++                <Button
++                  size="sm"
++                  variant="outline"
++                  className="flex-1 gap-1 text-xs text-destructive hover:text-destructive"
++                  onClick={() => openReject(center)}
++                  disabled={statusUpdatingId === center.id}
++                >
++                  <X className="h-3.5 w-3.5" />
++                  반려
++                </Button>
++              </div>
++            )}
+             <div className="flex gap-2 pt-2">
+               <Button
+                 size="sm"
+@@ -231,6 +307,31 @@ const AdminCentersPage = () => {
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
++
++      <Dialog open={!!rejectingCenter} onOpenChange={(open) => !open && setRejectingCenter(null)}>
++        <DialogContent>
++          <DialogHeader>
++            <DialogTitle>&quot;{rejectingCenter?.name}&quot; 센터 반려</DialogTitle>
++          </DialogHeader>
++          <div className="space-y-1.5">
++            <Label>반려 사유</Label>
++            <Textarea
++              value={rejectReason}
++              onChange={(e) => setRejectReason(e.target.value)}
++              placeholder="예: 주소가 확인되지 않습니다. 정확한 센터 주소로 다시 등록해주세요."
++              rows={4}
++            />
++          </div>
++          <DialogFooter>
++            <Button variant="outline" onClick={() => setRejectingCenter(null)} disabled={!!statusUpdatingId}>
++              취소
++            </Button>
++            <Button variant="destructive" onClick={handleReject} disabled={!!statusUpdatingId}>
++              반려 확정
++            </Button>
++          </DialogFooter>
++        </DialogContent>
++      </Dialog>
+     </div>
+   );
+ };
+diff --git a/src/pages/admin/AdminInstructorsPage.tsx b/src/pages/admin/AdminInstructorsPage.tsx
+index 63d364b..46d29c7 100644
+--- a/src/pages/admin/AdminInstructorsPage.tsx
++++ b/src/pages/admin/AdminInstructorsPage.tsx
+@@ -32,11 +32,39 @@ import { isPastDate } from "@/lib/dates";
+ const PERMANENT_BAN_THRESHOLD = 2;
+ 
+ const AdminInstructorsPage = () => {
+-  const { instructors, tours, instructorProfiles, setInstructorPenalty, setProfileStatus, setInstructorVerified, setTourAdminStatus } =
+-    useAppData();
++  const {
++    instructors,
++    tours,
++    instructorProfiles,
++    penalties,
++    setInstructorPenalty,
++    voidPenalty,
++    setProfileStatus,
++    setInstructorVerified,
++    setTourAdminStatus,
++  } = useAppData();
+   const { toast } = useToast();
+   // 강사별 "경고 부여" 사유 입력 임시 상태 (다이얼로그를 열어둔 강사 id를 key로 사용)
+   const [warnReasonDrafts, setWarnReasonDrafts] = useState<Record<string, string>>({});
++  // 패널티 이력 펼침 상태 (id를 key로 사용)
++  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
++  const [voidingPenaltyId, setVoidingPenaltyId] = useState<string | null>(null);
++
++  const handleVoidPenalty = async (penaltyId: string, instructorId: string) => {
++    setVoidingPenaltyId(penaltyId);
++    try {
++      await voidPenalty(penaltyId, instructorId);
++      toast({ title: "해당 패널티 이력을 정정(취소)했습니다." });
++    } catch (err) {
++      toast({
++        title: "정정 처리 실패",
++        description: err instanceof Error ? err.message : undefined,
++        variant: "destructive",
++      });
++    } finally {
++      setVoidingPenaltyId(null);
++    }
++  };
+   const [verifiedFilter, setVerifiedFilter] = useState<"all" | "verified" | "pending">("all");
+   const [penaltyFilter, setPenaltyFilter] = useState<"all" | "has" | "none">("all");
+ 
+@@ -301,6 +329,60 @@ const AdminInstructorsPage = () => {
+                   )}
+                 </div>
+               )}
++
++              {/*
++                예전에는 penalties_log에 이력이 쌓이기만 하고 관리자 화면 어디에서도
++                특정 강사의 누적 이력을 조회할 방법이 없었다(#228 회귀 방지). 특정 건만
++                정정(취소)할 수도 없어서 "경고 해제"로 전체를 초기화하는 것 외엔 방법이
++                없었다(#229 회귀 방지).
++              */}
++              <Button
++                size="sm"
++                variant="ghost"
++                className="w-full text-xs text-muted-foreground"
++                onClick={() => setExpandedHistoryId(expandedHistoryId === instructor.id ? null : instructor.id)}
++              >
++                패널티 이력 {expandedHistoryId === instructor.id ? "숨기기" : "보기"}
++              </Button>
++              {expandedHistoryId === instructor.id && (
++                <div className="space-y-1.5 rounded-lg border border-border bg-secondary/30 p-2">
++                  {penalties.filter((p) => p.instructorId === instructor.id).length === 0 ? (
++                    <p className="py-2 text-center text-[11px] text-muted-foreground">이력이 없습니다.</p>
++                  ) : (
++                    penalties
++                      .filter((p) => p.instructorId === instructor.id)
++                      .map((p) => (
++                        <div
++                          key={p.id}
++                          className={`flex items-center justify-between gap-2 rounded-md border p-2 text-[11px] ${
++                            p.voided ? "border-border/50 bg-transparent opacity-50" : "border-border bg-card"
++                          }`}
++                        >
++                          <div className="min-w-0 flex-1">
++                            <p className={`text-foreground ${p.voided ? "line-through" : ""}`}>
++                              {p.violationType} · {p.description}
++                            </p>
++                            <p className="text-muted-foreground">
++                              {new Date(p.createdAt).toLocaleString("ko-KR")}
++                              {p.voided && " · 정정됨"}
++                            </p>
++                          </div>
++                          {!p.voided && (
++                            <Button
++                              size="sm"
++                              variant="outline"
++                              className="h-6 shrink-0 text-[10px] text-destructive hover:text-destructive"
++                              disabled={voidingPenaltyId === p.id}
++                              onClick={() => handleVoidPenalty(p.id, instructor.id)}
++                            >
++                              정정(취소)
++                            </Button>
++                          )}
++                        </div>
++                      ))
++                  )}
++                </div>
++              )}
+             </div>
+           );
+         })}
+diff --git a/src/pages/admin/AdminNotificationsPage.tsx b/src/pages/admin/AdminNotificationsPage.tsx
+index 747d265..b78badb 100644
+--- a/src/pages/admin/AdminNotificationsPage.tsx
++++ b/src/pages/admin/AdminNotificationsPage.tsx
+@@ -10,6 +10,7 @@ const TYPE_LABEL: Record<InstructorNotificationType, string> = {
+   min_participants_cancelled: "최소인원 미달 자동취소",
+   min_participants_proceed: "최소인원 미달 진행",
+   min_participants_decision_needed: "최소인원 미달 결정 필요",
++  application_rejected: "강사 인증 반려",
+ };
+ 
+ /** 모바일 폭에 맞춘 카드형 알림 목록 — 기존 데스크톱 표 대신 사용한다. */
+diff --git a/src/types/index.ts b/src/types/index.ts
+index 43cebb2..f3497bc 100644
+--- a/src/types/index.ts
++++ b/src/types/index.ts
+@@ -46,6 +46,8 @@ export interface InstructorProfile {
+   verified: boolean;
+   verifiedAt?: string;
+   verifiedBy?: string;
++  rejectedAt?: string; // 관리자가 인증 신청을 반려한 시각 (있으면 대기열에서 제외)
++  rejectionReason?: string; // 반려 사유 (강사 본인에게 알림으로 전달됨)
+   pledgeSigned: boolean;
+   pledgeSignedAt?: string;
+   pledgeVersion?: string;
+@@ -101,6 +103,8 @@ export interface Center {
+   instagram?: string;
+   phone?: string; // 관리자만 확인 가능
+   features: string[];
++  status: "pending" | "approved" | "rejected"; // 관리자 승인 상태 (기본값 pending)
++  rejectionReason?: string;
+   createdAt: string;
+ }
+ 
+@@ -318,6 +322,7 @@ export interface Penalty {
+   instructorId: string;
+   violationType: ViolationType;
+   description: string;
++  voided?: boolean; // 관리자가 오적용으로 판단해 정정(취소)한 이력인지
+   createdAt: string;
+ }
+ 
+@@ -437,7 +442,8 @@ export type InstructorNotificationType =
+   | "forced_refund_penalty"
+   | "min_participants_cancelled" // 최소 인원 미달로 예약 자동 취소/환불됨 (예약 단위)
+   | "min_participants_proceed" // 최소 인원 미달이지만 강사가 "그대로 진행"을 선택해 투어 진행 (투어 단위, 책임 리마인드)
+-  | "min_participants_decision_needed"; // 출발 30일 전, 최소 인원 미달로 강사의 진행/취소 결정이 필요함 (투어 단위)
++  | "min_participants_decision_needed" // 출발 30일 전, 최소 인원 미달로 강사의 진행/취소 결정이 필요함 (투어 단위)
++  | "application_rejected"; // 관리자가 강사 인증 신청을 반려함
+ 
+ export interface InstructorNotification {
+   id: string;
+@@ -448,6 +454,7 @@ export interface InstructorNotification {
+   diverName?: string; // 마스킹된 이름 저장 (예: 홍*동), 투어 단위 알림에는 없음
+   selectedOptionNames?: string[];
+   settlementAmount?: number; // 수수료 제외 강사 원금 정산 예정 금액
++  message?: string; // 자유 텍스트 메시지(예: 강사 인증 반려 사유)
+   createdAt: string;
+   read: boolean;
+   type: InstructorNotificationType;

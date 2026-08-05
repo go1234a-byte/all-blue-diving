@@ -1,0 +1,146 @@
+diff --git a/src/components/support/SupportTicketForm.tsx b/src/components/support/SupportTicketForm.tsx
+index f9fa700..d29a46a 100644
+--- a/src/components/support/SupportTicketForm.tsx
++++ b/src/components/support/SupportTicketForm.tsx
+@@ -59,6 +59,10 @@ export function SupportTicketForm({ type, userId }: SupportTicketFormProps) {
+       toast({ title: `${type === "dispute" ? "분쟁 유형" : "신고 유형"}을 선택해주세요`, variant: "destructive" });
+       return;
+     }
++    if (!userId) {
++      toast({ title: "로그인이 필요합니다", description: "로그인 후 다시 시도해주세요.", variant: "destructive" });
++      return;
++    }
+     setSubmitting(true);
+     try {
+       await addSupportTicket({
+@@ -76,6 +80,14 @@ export function SupportTicketForm({ type, userId }: SupportTicketFormProps) {
+       setAttachments([]);
+       setBookingId("");
+       setCategory("");
++    } catch (err) {
++      // addSupportTicket은 실패 시 이제 에러를 던진다 — 여기서 잡아 사용자에게 명확히
++      // 알려야 한다(예전에는 실패해도 무조건 성공 토스트가 떴다).
++      toast({
++        title: `${TYPE_LABEL[type]} 접수에 실패했습니다`,
++        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
++        variant: "destructive",
++      });
+     } finally {
+       setSubmitting(false);
+     }
+diff --git a/src/contexts/AppDataContext.tsx b/src/contexts/AppDataContext.tsx
+index b18155a..5be3b04 100644
+--- a/src/contexts/AppDataContext.tsx
++++ b/src/contexts/AppDataContext.tsx
+@@ -2275,19 +2275,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+       .select()
+       .single();
+ 
+-    if (!error && data) {
+-      const center = mapCenterRow(data);
+-      setCenters((prev) => [...prev, center]);
+-      return center;
++    if (error || !data) {
++      // addSupportTicket과 동일한 이유로, 실패 시 로컬 전용 가짜 센터로 조용히 넘어가지 않고
++      // 명확히 에러를 던진다 — 그래야 관리자 화면이 실패를 알고 사용자에게 알릴 수 있다.
++      console.error("[addCenter] centers insert 실패:", error);
++      throw new Error(
++        error?.message ? `센터 등록에 실패했습니다: ${error.message}` : "센터 등록에 실패했습니다. 잠시 후 다시 시도해주세요.",
++      );
+     }
+-
+-    const fallback: Center = {
+-      id: nextId("center"),
+-      createdAt: new Date().toISOString(),
+-      ...input,
+-    };
+-    setCenters((prev) => [...prev, fallback]);
+-    return fallback;
++    const center = mapCenterRow(data);
++    setCenters((prev) => [...prev, center]);
++    return center;
+   };
+ 
+   /** 관리자 — 이용센터 정보를 수정한다. */
+@@ -2330,21 +2328,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+       .select()
+       .single();
+ 
+-    if (!error && data) {
+-      const ticket = mapSupportTicketRow(data);
+-      setSupportTickets((prev) => [ticket, ...prev]);
+-      return ticket;
++    if (error || !data) {
++      // 접수 INSERT가 실패했는데도 로컬에만 존재하는 가짜 티켓 객체로 조용히 넘어가면,
++      // 사용자는 "접수되었습니다" 성공 토스트를 보지만 실제로는 DB에 아무것도 남지 않는다
++      // (신고/1:1문의/분쟁조정 모두 이 함수를 공유하므로 세 가지 다 해당). 반드시 에러를
++      // 던져서 SupportTicketForm이 실패로 처리하고 사용자에게 알리도록 한다.
++      console.error("[addSupportTicket] support_tickets insert 실패:", error);
++      throw new Error(
++        error?.message ? `접수에 실패했습니다: ${error.message}` : "접수에 실패했습니다. 잠시 후 다시 시도해주세요.",
++      );
+     }
+-
+-    const fallback: SupportTicket = {
+-      id: nextId("ticket"),
+-      status: "접수",
+-      createdAt: new Date().toISOString(),
+-      ...input,
+-      attachmentNames: input.attachmentNames ?? [],
+-    };
+-    setSupportTickets((prev) => [fallback, ...prev]);
+-    return fallback;
++    const ticket = mapSupportTicketRow(data);
++    setSupportTickets((prev) => [ticket, ...prev]);
++    return ticket;
+   };
+ 
+   /** 관리자가 고객센터 접수 건의 처리 상태/답변을 갱신한다. */
+diff --git a/src/pages/SupportChat.tsx b/src/pages/SupportChat.tsx
+index 972a208..7bd65ab 100644
+--- a/src/pages/SupportChat.tsx
++++ b/src/pages/SupportChat.tsx
+@@ -12,7 +12,12 @@ type InquiryView = "write" | "history";
+ type SupportTab = "faq" | "inquiry" | "dispute" | "report";
+ 
+ const SupportChat = () => {
+-  const { currentDiverId, authLoading } = useRole();
++  const { profile, authLoading } = useRole();
++  // 1:1문의/분쟁조정/신고는 다이버뿐 아니라 강사도 접수할 수 있어야 하므로, 역할별로
++  // 값이 갈리는 currentDiverId 대신 로그인한 계정의 공통 profiles.id를 사용한다.
++  // (이전에는 currentDiverId를 그대로 넘겨써서 강사 계정은 빈 문자열이 전달됐고,
++  // 그 결과 접수가 DB에 저장되지 않는 채로 성공 토스트만 뜨는 문제가 있었다.)
++  const userId = profile?.id ?? "";
+   const [inquiryView, setInquiryView] = useState<InquiryView>("write");
+   // FAQ 탭의 "문의 남기기" 버튼을 눌렀을 때 실제로 접수되는 1:1 문의 탭으로 이동시키기 위해
+   // 탭 상태를 여기서 직접 관리한다(기존에는 FAQ 탭 안에서 가짜 실시간 채팅 UI로만 전환되고
+@@ -29,7 +34,7 @@ const SupportChat = () => {
+       </header>
+ 
+       <main className="mx-auto w-full max-w-md flex-1 px-4 py-4 md:max-w-lg">
+-        {/* 로그인 직후 session -> profiles 조회가 끝나기 전까지는 currentDiverId가 아직
++        {/* 로그인 직후 session -> profiles 조회가 끝나기 전까지는 userId가 아직
+             빈 문자열이라, authLoading을 안 보면 "내 문의 보기" 등에서 실제로는 문의 내역이
+             있는데도 잠깐 비어보인다. MyPage와 동일하게 인증 확인 중에는 로딩 상태만 보여준다. */}
+         {authLoading ? (
+@@ -76,16 +81,16 @@ const SupportChat = () => {
+               </button>
+             </div>
+             {inquiryView === "write" ? (
+-              <SupportTicketForm type="inquiry" userId={currentDiverId} />
++              <SupportTicketForm type="inquiry" userId={userId} />
+             ) : (
+-              <MyInquiriesList userId={currentDiverId} />
++              <MyInquiriesList userId={userId} />
+             )}
+           </TabsContent>
+           <TabsContent value="dispute" className="pt-4">
+-            <SupportTicketForm type="dispute" userId={currentDiverId} />
++            <SupportTicketForm type="dispute" userId={userId} />
+           </TabsContent>
+           <TabsContent value="report" className="pt-4">
+-            <SupportTicketForm type="report" userId={currentDiverId} />
++            <SupportTicketForm type="report" userId={userId} />
+           </TabsContent>
+         </Tabs>
+         )}

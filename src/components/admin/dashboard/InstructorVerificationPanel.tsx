@@ -10,7 +10,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 export function InstructorVerificationPanel() {
   const { instructors, setInstructorVerified, adminProfile } = useAppData();
   const navigate = useNavigate();
-  const pending = instructors.filter((i) => !i.verified).slice(0, 5);
+  const pending = instructors.filter((i) => !i.verified && !i.rejectedAt).slice(0, 5);
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const handleApprove = async (id: string) => {

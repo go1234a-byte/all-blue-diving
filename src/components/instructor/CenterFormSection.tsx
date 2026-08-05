@@ -46,6 +46,10 @@ export function CenterFormSection({
   onModeChange,
 }: CenterFormSectionProps) {
   const { centers } = useAppData();
+  // 승인된 센터만 다른 강사들이 "기존 센터 선택"으로 재사용할 수 있게 한다.
+  // 관리자 승인 전(pending)이거나 반려(rejected)된 센터는 목록에서 숨긴다(#217 회귀 방지) —
+  // 단, 현재 선택되어 있는 센터(예: 방금 자신이 등록한 센터)는 계속 보이게 예외를 둔다.
+  const approvedCenters = centers.filter((c) => c.status === "approved" || c.id === selectedCenterId);
   const [customFeature, setCustomFeature] = useState("");
 
   const toggleFeature = (feature: string) => {
@@ -104,7 +108,7 @@ export function CenterFormSection({
               <SelectValue placeholder="센터 선택" />
             </SelectTrigger>
             <SelectContent>
-              {centers.map((c) => (
+              {approvedCenters.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
                 </SelectItem>

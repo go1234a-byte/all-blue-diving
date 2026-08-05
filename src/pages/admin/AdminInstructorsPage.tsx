@@ -32,11 +32,39 @@ import { isPastDate } from "@/lib/dates";
 const PERMANENT_BAN_THRESHOLD = 2;
 
 const AdminInstructorsPage = () => {
-  const { instructors, tours, instructorProfiles, setInstructorPenalty, setProfileStatus, setInstructorVerified, setTourAdminStatus } =
-    useAppData();
+  const {
+    instructors,
+    tours,
+    instructorProfiles,
+    penalties,
+    setInstructorPenalty,
+    voidPenalty,
+    setProfileStatus,
+    setInstructorVerified,
+    setTourAdminStatus,
+  } = useAppData();
   const { toast } = useToast();
   // 강사별 "경고 부여" 사유 입력 임시 상태 (다이얼로그를 열어둔 강사 id를 key로 사용)
   const [warnReasonDrafts, setWarnReasonDrafts] = useState<Record<string, string>>({});
+  // 패널티 이력 펼침 상태 (id를 key로 사용)
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+  const [voidingPenaltyId, setVoidingPenaltyId] = useState<string | null>(null);
+
+  const handleVoidPenalty = async (penaltyId: string, instructorId: string) => {
+    setVoidingPenaltyId(penaltyId);
+    try {
+      await voidPenalty(penaltyId, instructorId);
+      toast({ title: "해당 패널티 이력을 정정(취소)했습니다." });
+    } catch (err) {
+      toast({
+        title: "정정 처리 실패",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
+    } finally {
+      setVoidingPenaltyId(null);
+    }
+  };
   const [verifiedFilter, setVerifiedFilter] = useState<"all" | "verified" | "pending">("all");
   const [penaltyFilter, setPenaltyFilter] = useState<"all" | "has" | "none">("all");
 
@@ -298,6 +326,60 @@ const AdminInstructorsPage = () => {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
+                  )}
+                </div>
+              )}
+
+              {/*
+                예전에는 penalties_log에 이력이 쌓이기만 하고 관리자 화면 어디에서도
+                특정 강사의 누적 이력을 조회할 방법이 없었다(#228 회귀 방지). 특정 건만
+                정정(취소)할 수도 없어서 "경고 해제"로 전체를 초기화하는 것 외엔 방법이
+                없었다(#229 회귀 방지).
+              */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="w-full text-xs text-muted-foreground"
+                onClick={() => setExpandedHistoryId(expandedHistoryId === instructor.id ? null : instructor.id)}
+              >
+                패널티 이력 {expandedHistoryId === instructor.id ? "숨기기" : "보기"}
+              </Button>
+              {expandedHistoryId === instructor.id && (
+                <div className="space-y-1.5 rounded-lg border border-border bg-secondary/30 p-2">
+                  {penalties.filter((p) => p.instructorId === instructor.id).length === 0 ? (
+                    <p className="py-2 text-center text-[11px] text-muted-foreground">이력이 없습니다.</p>
+                  ) : (
+                    penalties
+                      .filter((p) => p.instructorId === instructor.id)
+                      .map((p) => (
+                        <div
+                          key={p.id}
+                          className={`flex items-center justify-between gap-2 rounded-md border p-2 text-[11px] ${
+                            p.voided ? "border-border/50 bg-transparent opacity-50" : "border-border bg-card"
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-foreground ${p.voided ? "line-through" : ""}`}>
+                              {p.violationType} · {p.description}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {new Date(p.createdAt).toLocaleString("ko-KR")}
+                              {p.voided && " · 정정됨"}
+                            </p>
+                          </div>
+                          {!p.voided && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 shrink-0 text-[10px] text-destructive hover:text-destructive"
+                              disabled={voidingPenaltyId === p.id}
+                              onClick={() => handleVoidPenalty(p.id, instructor.id)}
+                            >
+                              정정(취소)
+                            </Button>
+                          )}
+                        </div>
+                      ))
                   )}
                 </div>
               )}

@@ -41,6 +41,7 @@ function mapPenaltyRow(row: {
   instructor_id: string;
   violation_type: string;
   description: string | null;
+  voided?: boolean | null;
   created_at: string;
 }): Penalty {
   return {
@@ -48,6 +49,7 @@ function mapPenaltyRow(row: {
     instructorId: row.instructor_id,
     violationType: row.violation_type as Penalty["violationType"],
     description: row.description ?? "",
+    voided: row.voided ?? false,
     createdAt: row.created_at,
   };
 }
@@ -64,6 +66,8 @@ function mapInstructorRow(row: {
   verified_status: boolean;
   verified_at?: string | null;
   verified_by?: string | null;
+  rejected_at?: string | null;
+  rejection_reason?: string | null;
   pledge_signed?: boolean | null;
   pledge_signed_at?: string | null;
   pledge_version?: string | null;
@@ -96,6 +100,8 @@ function mapInstructorRow(row: {
     verified: row.verified_status,
     verifiedAt: row.verified_at ?? undefined,
     verifiedBy: row.verified_by ?? undefined,
+    rejectedAt: row.rejected_at ?? undefined,
+    rejectionReason: row.rejection_reason ?? undefined,
     pledgeSigned: row.pledge_signed ?? false,
     pledgeSignedAt: row.pledge_signed_at ?? undefined,
     pledgeVersion: row.pledge_version ?? undefined,
@@ -128,6 +134,8 @@ function mapCenterRow(row: {
   instagram: string | null;
   phone: string | null;
   features: string[] | null;
+  status?: string | null;
+  rejection_reason?: string | null;
   created_at: string;
 }): Center {
   return {
@@ -140,6 +148,10 @@ function mapCenterRow(row: {
     instagram: row.instagram ?? undefined,
     phone: row.phone ?? undefined,
     features: row.features ?? [],
+    // status 컬럼이 아직 마이그레이션 전이라 없을 수도 있으므로 기본값은 approved로 둔다
+    // (기존에 이미 등록된 센터들이 갑자기 전부 "승인 대기"로 바뀌어 노출되지 않는 사고 방지).
+    status: (row.status as Center["status"]) ?? "approved",
+    rejectionReason: row.rejection_reason ?? undefined,
     createdAt: row.created_at,
   };
 }
@@ -365,6 +377,49 @@ function mapArbitrationMessageRow(row: any): ArbitrationMessage {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapInstructorNotificationRow(row: any): InstructorNotification {
+  return {
+    id: row.id,
+    instructorId: row.instructor_id,
+    tourId: row.tour_id,
+    bookingId: row.booking_id ?? undefined,
+    tourTitle: row.tour_title,
+    diverName: row.diver_name ?? undefined,
+    selectedOptionNames: row.selected_option_names ?? undefined,
+    settlementAmount: row.settlement_amount ?? undefined,
+    message: row.message ?? undefined,
+    createdAt: row.created_at,
+    read: row.read,
+    type: row.type,
+  };
+}
+
+/**
+ * instructor_notifications 테이블에 알림을 기록한다(insert-only, fire-and-forget).
+ * 실제 상태 갱신은 실시간 구독(INSERT 이벤트)이 담당하므로 여기서는 로컬 state를
+ * 직접 건드리지 않는다 — arbitration_messages/chat_messages와 동일한 패턴.
+ */
+async function persistInstructorNotification(
+  notification: Omit<InstructorNotification, "id" | "read">,
+): Promise<void> {
+  const { error } = await supabase.from("instructor_notifications").insert({
+    instructor_id: notification.instructorId,
+    tour_id: notification.tourId,
+    booking_id: notification.bookingId ?? null,
+    tour_title: notification.tourTitle,
+    diver_name: notification.diverName ?? null,
+    selected_option_names: notification.selectedOptionNames ?? null,
+    settlement_amount: notification.settlementAmount ?? null,
+    message: notification.message ?? null,
+    type: notification.type,
+    created_at: notification.createdAt,
+  });
+  if (error) {
+    console.error("[persistInstructorNotification] instructor_notifications insert 실패:", error);
+  }
+}
+
 export interface NewBookingInput {
   tourId: string;
   diverId?: string; // 실 로그인 다이버의 profiles.id — 없으면 게스트 예약으로 처리
@@ -465,6 +520,12 @@ interface NewCenterInput {
   instagram?: string;
   phone?: string;
   features: string[];
+  /**
+   * 관리자가 AdminCentersPage에서 직접 등록할 때만 "approved"를 명시적으로 넘긴다.
+   * 강사가 투어 생성 중 "새 센터 등록"으로 넣는 경우는 생략하면 기본값 "pending"이 적용되어,
+   * 관리자 승인 전까지는 다른 강사의 "기존 센터 선택" 목록에 노출되지 않는다.
+   */
+  status?: "pending" | "approved";
 }
 
 interface NewInstructorSignupInput {
@@ -591,7 +652,9 @@ interface AppDataContextValue {
   resolveReport: (reportId: string) => Promise<void>;
   addChatMessage: (input: Omit<ChatMessage, "id" | "createdAt">) => Promise<void>;
   setInstructorVerified: (instructorId: string, verified: boolean, verifiedBy?: string) => Promise<void>;
+  rejectInstructorApplication: (instructorId: string, reason: string, rejectedBy?: string) => Promise<void>;
   setInstructorPenalty: (instructorId: string, penaltyCount: number, reason?: string) => Promise<void>;
+  voidPenalty: (penaltyId: string, instructorId: string) => Promise<void>;
   updateInstructorProfile: (
     instructorId: string,
     updates: {
@@ -643,6 +706,7 @@ interface AppDataContextValue {
   addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => Promise<void>;
   addCenter: (input: NewCenterInput) => Promise<Center>;
   updateCenter: (centerId: string, updates: NewCenterInput) => Promise<void>;
+  setCenterStatus: (centerId: string, status: "approved" | "rejected", reason?: string) => Promise<void>;
   deleteCenter: (centerId: string) => Promise<void>;
   addSupportTicket: (input: NewSupportTicketInput) => Promise<SupportTicket>;
   updateSupportTicketStatus: (ticketId: string, status: SupportTicketStatus, adminReply?: string) => Promise<void>;
@@ -743,6 +807,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   // Enter Cloud(Supabase) `instructors` 테이블에서 강사 신뢰 데이터를 가져온다.
+  // + realtime 구독 추가: 예전에는 1회성 fetch만 있어서 관리자가 인증 승인/반려를 처리해도
+  // 해당 강사의 브라우저 세션에는 새로고침 전까지 전혀 반영되지 않았다(#235 회귀 방지).
   useEffect(() => {
     let active = true;
     (async () => {
@@ -751,8 +817,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (!error && data) setInstructors(data.map(mapInstructorRow));
       setInstructorsLoading(false);
     })();
+
+    const channel = supabase
+      .channel("instructors_all")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "instructors" },
+        (payload) => {
+          const updated = mapInstructorRow(payload.new as Parameters<typeof mapInstructorRow>[0]);
+          setInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+        },
+      )
+      .subscribe();
+
     return () => {
       active = false;
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -1055,6 +1135,47 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // `instructor_notifications` 테이블 실시간 구독.
+  // 예전에는 이 state가 useState([])로 시작해서 브라우저 세션 로컬 메모리에만 쌓였다 —
+  // 새로고침하면 전부 사라지고, 다른 세션(다른 관리자/강사 기기)에서 발생한 이벤트는
+  // 절대 보이지 않았다(신규예약/강제환불/최소인원 이벤트 등 강사·관리자 알림 전체에 해당).
+  // arbitration_messages와 동일한 fetch + realtime 패턴으로 바꿔 실제로 영속화한다.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("instructor_notifications")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!active) return;
+      if (!error && data) setInstructorNotifications(data.map(mapInstructorNotificationRow));
+    })();
+
+    const channel = supabase
+      .channel("instructor_notifications_all")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "instructor_notifications" },
+        (payload) => {
+          setInstructorNotifications((prev) => [mapInstructorNotificationRow(payload.new), ...prev]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "instructor_notifications" },
+        (payload) => {
+          const updated = mapInstructorNotificationRow(payload.new);
+          setInstructorNotifications((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+        },
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   /**
    * 최소 인원 자동 마감 평가 — 실제 서버 크론잡이 없는 인메모리/데모 아키텍처이므로,
    * tours/bookings가 로드되거나 갱신될 때마다 "투어 출발일 30일 전을 지났고 아직
@@ -1107,16 +1228,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           }
         });
 
-      const notification: InstructorNotification = {
-        id: nextId("noti"),
+      void persistInstructorNotification({
         instructorId: tour.instructorId,
         tourId: tour.id,
         tourTitle: tour.title,
         createdAt: new Date().toISOString(),
-        read: false,
         type: "min_participants_decision_needed",
-      };
-      setInstructorNotifications((prev) => [notification, ...prev]);
+      });
       notifyInstructorPush(
         tour.instructorId,
         "최소 인원 미달 - 결정이 필요합니다",
@@ -1210,8 +1328,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           .eq("booking_id", booking.id)
           .neq("status", "released");
 
-        const notification: InstructorNotification = {
-          id: nextId("noti"),
+        void persistInstructorNotification({
           instructorId: tour.instructorId,
           tourId: tour.id,
           bookingId: booking.id,
@@ -1220,10 +1337,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           selectedOptionNames: booking.selectedOptions.map((o) => o.name),
           settlementAmount: 0,
           createdAt: cancelRequestedAt,
-          read: false,
           type: "min_participants_cancelled",
-        };
-        setInstructorNotifications((prev) => [notification, ...prev]);
+        });
         notifyDiverPush(
           booking.diverId,
           "투어가 취소되었습니다",
@@ -1233,16 +1348,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       });
     } else {
       // "그대로 진행" — 투어 단위로 강사에게 책임 리마인드 알림을 1건 발행하고, 확정 다이버들에게도 알린다.
-      const notification: InstructorNotification = {
-        id: nextId("noti"),
+      void persistInstructorNotification({
         instructorId: tour.instructorId,
         tourId: tour.id,
         tourTitle: tour.title,
         createdAt: new Date().toISOString(),
-        read: false,
         type: "min_participants_proceed",
-      };
-      setInstructorNotifications((prev) => [notification, ...prev]);
+      });
       confirmedBookings.forEach((booking) => {
         notifyDiverPush(
           booking.diverId,
@@ -1642,8 +1754,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setPayouts((prev) => [payout, ...prev]);
 
       // 트랜잭션이 확정되는 즉시(=예약 생성 시점) 담당 강사에게 실시간 알림을 발행한다.
-      const notification: InstructorNotification = {
-        id: nextId("noti"),
+      void persistInstructorNotification({
         instructorId: tour.instructorId,
         tourId: tour.id,
         bookingId: booking.id,
@@ -1652,10 +1763,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         selectedOptionNames: input.selectedOptions.map((o) => o.name),
         settlementAmount: input.basePrice + input.optionsCost,
         createdAt: new Date().toISOString(),
-        read: false,
         type: "new_booking",
-      };
-      setInstructorNotifications((prev) => [notification, ...prev]);
+      });
       notifyInstructorPush(
         tour.instructorId,
         "신규 투어 예약 완료",
@@ -1739,11 +1848,58 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const verifiedAt = verified ? new Date().toISOString() : undefined;
     await supabase
       .from("instructors")
-      .update({ verified_status: verified, verified_at: verifiedAt, verified_by: verifiedBy })
+      .update({
+        verified_status: verified,
+        verified_at: verifiedAt,
+        verified_by: verifiedBy,
+        // 승인하면 예전에 반려된 이력이 있어도 지워서 깨끗한 상태로 만든다.
+        rejected_at: verified ? null : undefined,
+        rejection_reason: verified ? null : undefined,
+      })
       .eq("id", instructorId);
     setInstructors((prev) =>
-      prev.map((i) => (i.id === instructorId ? { ...i, verified, verifiedAt, verifiedBy } : i)),
+      prev.map((i) =>
+        i.id === instructorId
+          ? { ...i, verified, verifiedAt, verifiedBy, rejectedAt: verified ? undefined : i.rejectedAt, rejectionReason: verified ? undefined : i.rejectionReason }
+          : i,
+      ),
     );
+  };
+
+  /**
+   * 관리자 — 강사 인증 신청을 반려한다. 예전에는 InstructorApplicationQueue에 "인증 승인"
+   * 버튼만 있고 반려 기능 자체가 없어서, 대기열에 들어간 강사는 승인하거나 영구히 방치하는
+   * 것 외에 관리자가 취할 수 있는 조치가 없었다(#233/#234 회귀 방지). 반려 사유는
+   * instructor_notifications에도 기록해 강사 본인 알림 센터에 노출한다.
+   */
+  const rejectInstructorApplication = async (
+    instructorId: string,
+    reason: string,
+    rejectedBy?: string,
+  ): Promise<void> => {
+    const rejectedAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("instructors")
+      .update({ rejected_at: rejectedAt, rejection_reason: reason, verified_by: rejectedBy ?? null })
+      .eq("id", instructorId);
+    if (error) {
+      console.error("[rejectInstructorApplication] instructors 업데이트 실패:", error);
+      throw new Error("반려 처리에 실패했습니다: " + error.message);
+    }
+    setInstructors((prev) =>
+      prev.map((i) => (i.id === instructorId ? { ...i, rejectedAt, rejectionReason: reason } : i)),
+    );
+    const instructor = instructors.find((i) => i.id === instructorId);
+    if (instructor) {
+      void persistInstructorNotification({
+        instructorId,
+        tourId: "",
+        tourTitle: "강사 인증 신청",
+        message: reason,
+        createdAt: rejectedAt,
+        type: "application_rejected",
+      });
+    }
   };
 
   /**
@@ -1788,6 +1944,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         await setProfileStatus(instructor.profileId, "suspended");
       }
     }
+  };
+
+  /**
+   * 관리자 — 오적용된 특정 패널티 이력 1건을 정정(취소)한다. 예전에는 "경고 해제" 버튼으로
+   * 강사의 경고 횟수를 통째로 0으로 초기화하는 것 외에 방법이 없었고, 이미 penalties_log에
+   * 쌓인 이력은 절대 수정/삭제할 수 없었다(#229 회귀 방지). 이 함수는 특정 1건만 voided
+   * 처리하고, 아직 취소되지 않은 나머지 경고 수만큼만 penalty_count를 재계산한다.
+   */
+  const voidPenalty = async (penaltyId: string, instructorId: string): Promise<void> => {
+    const { error } = await supabase.from("penalties_log").update({ voided: true }).eq("id", penaltyId);
+    if (error) {
+      console.error("[voidPenalty] penalties_log 업데이트 실패:", error);
+      throw new Error("패널티 이력 정정에 실패했습니다: " + error.message);
+    }
+    setPenalties((prev) => prev.map((p) => (p.id === penaltyId ? { ...p, voided: true } : p)));
+
+    const remainingCount = penalties.filter(
+      (p) => p.instructorId === instructorId && !p.voided && p.id !== penaltyId,
+    ).length;
+    await supabase.from("instructors").update({ penalty_count: remainingCount }).eq("id", instructorId);
+    setInstructors((prev) =>
+      prev.map((i) => (i.id === instructorId ? { ...i, penaltyCount: remainingCount } : i)),
+    );
   };
 
   const updateInstructorProfile = async (
@@ -2143,6 +2322,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setInstructorNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)),
     );
+    void supabase
+      .from("instructor_notifications")
+      .update({ read: true })
+      .eq("id", notificationId)
+      .then(({ error }) => {
+        if (error) console.error("[markInstructorNotificationRead] 업데이트 실패:", error);
+      });
   };
 
   /**
@@ -2253,8 +2439,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
       // 관리자가 [강제 환불 승인]을 실행하는 즉시 담당 강사에게 고위험 페널티 알림을 발행한다.
       if (booking && tour) {
-        const notification: InstructorNotification = {
-          id: nextId("noti"),
+        void persistInstructorNotification({
           instructorId: tour.instructorId,
           tourId: tour.id,
           bookingId: booking.id,
@@ -2263,10 +2448,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           selectedOptionNames: booking.selectedOptions.map((o) => o.name),
           settlementAmount: booking.basePrice + booking.optionsCost,
           createdAt: new Date().toISOString(),
-          read: false,
           type: "forced_refund_penalty",
-        };
-        setInstructorNotifications((prev) => [notification, ...prev]);
+        });
         notifyInstructorPush(
           tour.instructorId,
           "강제 환불 승인 조치",
@@ -2334,6 +2517,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         instagram: input.instagram,
         phone: input.phone,
         features: input.features,
+        status: input.status ?? "pending",
       })
       .select()
       .single();
@@ -2373,6 +2557,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const deleteCenter = async (centerId: string): Promise<void> => {
     setCenters((prev) => prev.filter((c) => c.id !== centerId));
     await supabase.from("centers").delete().eq("id", centerId);
+  };
+
+  /**
+   * 관리자 — 센터 승인/반려 처리. 예전에는 이 상태 자체가 스키마에 없어서 강사가 투어 생성
+   * 중 등록한 센터가 검증 없이 바로 전체 노출됐고, 대시보드/관리자 화면엔 "승인됨" 배지가
+   * 하드코딩되어 있었다(#216/#217/#249/#269 회귀 방지).
+   */
+  const setCenterStatus = async (
+    centerId: string,
+    status: "approved" | "rejected",
+    reason?: string,
+  ): Promise<void> => {
+    const rejectionReason = status === "rejected" ? reason : undefined;
+    const { error } = await supabase
+      .from("centers")
+      .update({ status, rejection_reason: rejectionReason ?? null })
+      .eq("id", centerId);
+    if (error) {
+      console.error("[setCenterStatus] centers 업데이트 실패:", error);
+      throw new Error("센터 상태 변경에 실패했습니다: " + error.message);
+    }
+    setCenters((prev) =>
+      prev.map((c) => (c.id === centerId ? { ...c, status, rejectionReason } : c)),
+    );
   };
 
   /** 1:1 문의 / 분쟁조정 / 신고를 통합 접수한다. */
@@ -2503,7 +2711,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       resolveReport,
       addChatMessage,
       setInstructorVerified,
+      rejectInstructorApplication,
       setInstructorPenalty,
+      voidPenalty,
       updateInstructorProfile,
       toggleBookmark,
       isBookmarked,
@@ -2531,6 +2741,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addArbitrationMessage,
       addCenter,
       updateCenter,
+      setCenterStatus,
       deleteCenter,
       addSupportTicket,
       updateSupportTicketStatus,

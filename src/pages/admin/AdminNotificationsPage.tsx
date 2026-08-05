@@ -10,6 +10,7 @@ const TYPE_LABEL: Record<InstructorNotificationType, string> = {
   min_participants_cancelled: "최소인원 미달 자동취소",
   min_participants_proceed: "최소인원 미달 진행",
   min_participants_decision_needed: "최소인원 미달 결정 필요",
+  application_rejected: "강사 인증 반려",
 };
 
 /** 모바일 폭에 맞춘 카드형 알림 목록 — 기존 데스크톱 표 대신 사용한다. */

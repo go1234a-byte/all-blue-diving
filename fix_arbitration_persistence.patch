@@ -1,0 +1,291 @@
+diff --git a/src/components/arbitration/ArbitrationChatRoom.tsx b/src/components/arbitration/ArbitrationChatRoom.tsx
+index d651f47..042779a 100644
+--- a/src/components/arbitration/ArbitrationChatRoom.tsx
++++ b/src/components/arbitration/ArbitrationChatRoom.tsx
+@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
+ import { SecureExportBlock } from "@/components/arbitration/SecureExportBlock";
+ import { useAppData } from "@/contexts/AppDataContext";
++import { useToast } from "@/hooks/use-toast";
++import { uploadImageFiles } from "@/lib/uploadImage";
+ import { cn } from "@/lib/utils";
+ 
+ interface ArbitrationChatRoomProps {
+@@ -21,7 +23,9 @@ interface ArbitrationChatRoomProps {
+  */
+ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, viewerName }: ArbitrationChatRoomProps) {
+   const { arbitrationMessages, addArbitrationMessage } = useAppData();
++  const { toast } = useToast();
+   const [text, setText] = useState("");
++  const [sending, setSending] = useState(false);
+   const scrollRef = useRef<HTMLDivElement>(null);
+   const fileInputRef = useRef<HTMLInputElement>(null);
+ 
+@@ -35,29 +39,59 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole,
+     return () => cancelAnimationFrame(frame);
+   }, [messages.length]);
+ 
+-  const handleSend = () => {
+-    if (!text.trim()) return;
+-    addArbitrationMessage({
+-      roomId,
+-      instructorId,
+-      senderRole: viewerRole,
+-      senderName: viewerName,
+-      body: text.trim(),
+-    });
++  const handleSend = async () => {
++    if (!text.trim() || sending) return;
++    const body = text.trim();
+     setText("");
++    setSending(true);
++    try {
++      await addArbitrationMessage({
++        roomId,
++        instructorId,
++        senderRole: viewerRole,
++        senderName: viewerName,
++        body,
++      });
++    } catch (err) {
++      toast({
++        title: "메시지 전송에 실패했습니다",
++        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
++        variant: "destructive",
++      });
++      setText(body); // 실패 시 입력한 내용을 복원해 다시 시도할 수 있게 한다.
++    } finally {
++      setSending(false);
++    }
+   };
+ 
+-  const handleAttach = (files: FileList | null) => {
++  const handleAttach = async (files: FileList | null) => {
+     if (!files || files.length === 0) return;
+-    addArbitrationMessage({
+-      roomId,
+-      instructorId,
+-      senderRole: viewerRole,
+-      senderName: viewerName,
+-      body: "증빙 이미지를 전송했습니다.",
+-      attachmentNames: Array.from(files).map((f) => f.name),
+-    });
++    const fileList = Array.from(files);
+     if (fileInputRef.current) fileInputRef.current.value = "";
++    setSending(true);
++    try {
++      // 예전에는 파일명만 메시지에 저장하고 실제 파일은 어디에도 업로드하지 않아, 상대방이
++      // "증빙 이미지를 전송했습니다"라는 문구만 보고 실제 이미지는 확인할 수 없었다.
++      // Storage에 실제로 업로드해 공개 URL을 함께 저장한다.
++      const urls = await uploadImageFiles(fileList, `arbitration/${instructorId}`);
++      await addArbitrationMessage({
++        roomId,
++        instructorId,
++        senderRole: viewerRole,
++        senderName: viewerName,
++        body: "증빙 이미지를 전송했습니다.",
++        attachmentNames: fileList.map((f) => f.name),
++        attachmentUrls: urls,
++      });
++    } catch (err) {
++      toast({
++        title: "증빙 이미지 전송에 실패했습니다",
++        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
++        variant: "destructive",
++      });
++    } finally {
++      setSending(false);
++    }
+   };
+ 
+   return (
+@@ -107,11 +141,25 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole,
+                   {msg.body}
+                   {msg.attachmentNames && msg.attachmentNames.length > 0 && (
+                     <ul className="mt-1 space-y-0.5 text-[11px] opacity-80">
+-                      {msg.attachmentNames.map((name) => (
+-                        <li key={name} className="truncate">
+-                          📎 {name}
+-                        </li>
+-                      ))}
++                      {msg.attachmentNames.map((name, idx) => {
++                        const url = msg.attachmentUrls?.[idx];
++                        return (
++                          <li key={`${name}-${idx}`} className="truncate">
++                            {url ? (
++                              <a
++                                href={url}
++                                target="_blank"
++                                rel="noreferrer"
++                                className="underline underline-offset-2 hover:opacity-100"
++                              >
++                                📎 {name}
++                              </a>
++                            ) : (
++                              <span>📎 {name}</span>
++                            )}
++                          </li>
++                        );
++                      })}
+                     </ul>
+                   )}
+                 </div>
+@@ -129,7 +177,7 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole,
+           accept="image/*"
+           multiple
+           className="hidden"
+-          onChange={(e) => handleAttach(e.target.files)}
++          onChange={(e) => void handleAttach(e.target.files)}
+         />
+         <Button
+           type="button"
+@@ -137,6 +185,7 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole,
+           variant="ghost"
+           className="shrink-0 text-white hover:bg-white/10 hover:text-white"
+           onClick={() => fileInputRef.current?.click()}
++          disabled={sending}
+           aria-label="증빙 이미지 첨부"
+         >
+           <Camera className="h-4 w-4" />
+@@ -150,12 +199,13 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole,
+                 // 남은 글자가 다음 Enter에 따로 전송되는 버그가 있었다(예: "에헤" 입력 중
+                 // 말풍선이 "에ㅔㅔ"/"ㅔ"처럼 쪼개져서 두 번 전송됨). isComposing이 true인
+                 // 동안(조합 확정 Enter)에는 전송하지 않고, 조합이 끝난 뒤의 Enter에서만 보낸다.
+-                if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
++                if (e.key === "Enter" && !e.nativeEvent.isComposing) void handleSend();
+               }}
+           placeholder="중재 관련 메시지를 입력하세요"
++          disabled={sending}
+           className="border-white/10 bg-white/5 text-white placeholder:text-white/30"
+         />
+-        <Button size="icon" className="shrink-0" onClick={handleSend} aria-label="전송">
++        <Button size="icon" className="shrink-0" onClick={() => void handleSend()} disabled={sending} aria-label="전송">
+           <Send className="h-4 w-4" />
+         </Button>
+       </div>
+diff --git a/src/contexts/AppDataContext.tsx b/src/contexts/AppDataContext.tsx
+index b18155a..5e58329 100644
+--- a/src/contexts/AppDataContext.tsx
++++ b/src/contexts/AppDataContext.tsx
+@@ -350,6 +350,21 @@ function mapChatMessageRow(row: any): ChatMessage {
+   };
+ }
+ 
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++function mapArbitrationMessageRow(row: any): ArbitrationMessage {
++  return {
++    id: row.id,
++    roomId: row.room_id,
++    instructorId: row.instructor_id,
++    senderRole: row.sender_role,
++    senderName: row.sender_name,
++    body: row.body,
++    attachmentNames: row.attachment_names ?? undefined,
++    attachmentUrls: row.attachment_urls ?? undefined,
++    createdAt: row.created_at,
++  };
++}
++
+ export interface NewBookingInput {
+   tourId: string;
+   diverId?: string; // 실 로그인 다이버의 profiles.id — 없으면 게스트 예약으로 처리
+@@ -625,7 +640,7 @@ interface AppDataContextValue {
+   updateCompanionRoom: (bookingId: string, companionIndex: number, roomNo: string | null) => Promise<void>;
+   submitCancellationForReview: (bookingId: string, reason: string, evidenceFileNames: string[]) => Promise<void>;
+   resolveCancellationReview: (bookingId: string, approved: boolean, rejectReason?: string) => Promise<void>;
+-  addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => ArbitrationMessage;
++  addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => Promise<void>;
+   addCenter: (input: NewCenterInput) => Promise<Center>;
+   updateCenter: (centerId: string, updates: NewCenterInput) => Promise<void>;
+   deleteCenter: (centerId: string) => Promise<void>;
+@@ -1008,6 +1023,38 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+     };
+   }, []);
+ 
++  // `arbitration_messages` 테이블 실시간 구독 (강사↔최고관리자 비밀 중재방)
++  // 예전에는 이 state가 로컬 메모리에만 쌓여서 새로고침하거나 상대방이 다른 세션에서
++  // 접속하면 대화가 전혀 보이지 않는 문제가 있었다(강사와 관리자가 실제로 대화 불가).
++  // chat_messages와 동일한 fetch + realtime 패턴으로 바꿔 실제로 영속화되도록 한다.
++  useEffect(() => {
++    let active = true;
++    (async () => {
++      const { data, error } = await supabase
++        .from("arbitration_messages")
++        .select("*")
++        .order("created_at", { ascending: true });
++      if (!active) return;
++      if (!error && data) setArbitrationMessages(data.map(mapArbitrationMessageRow));
++    })();
++
++    const channel = supabase
++      .channel("arbitration_messages_all")
++      .on(
++        "postgres_changes",
++        { event: "INSERT", schema: "public", table: "arbitration_messages" },
++        (payload) => {
++          setArbitrationMessages((prev) => [...prev, mapArbitrationMessageRow(payload.new)]);
++        },
++      )
++      .subscribe();
++
++    return () => {
++      active = false;
++      supabase.removeChannel(channel);
++    };
++  }, []);
++
+   /**
+    * 최소 인원 자동 마감 평가 — 실제 서버 크론잡이 없는 인메모리/데모 아키텍처이므로,
+    * tours/bookings가 로드되거나 갱신될 때마다 "투어 출발일 30일 전을 지났고 아직
+@@ -2248,14 +2295,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
+   };
+ 
+   /** 강사-최고관리자 비밀 중재방에 메시지(및 첨부파일)를 추가한다. */
+-  const addArbitrationMessage = (input: Omit<ArbitrationMessage, "id" | "createdAt">): ArbitrationMessage => {
+-    const message: ArbitrationMessage = {
+-      id: nextId("arbmsg"),
+-      createdAt: new Date().toISOString(),
+-      ...input,
+-    };
+-    setArbitrationMessages((prev) => [...prev, message]);
+-    return message;
++  /**
++   * 강사↔최고관리자 비밀 중재방 메시지를 등록한다.
++   * chat_messages(addChatMessage)와 동일하게, realtime 구독이 로컬 state를 갱신하므로
++   * 여기서는 insert만 수행한다(낙관적 업데이트 없음 — 중복 추가 방지).
++   * 예전에는 이 함수가 로컬 메모리에만 메시지를 쌓아 DB에 전혀 저장되지 않았다(새로고침/
++   * 다른 세션에서 대화가 사라짐, 강사·관리자가 실제로 대화 불가). 반드시 서버에 저장하고,
++   * 실패하면 호출부(ArbitrationChatRoom)가 사용자에게 알릴 수 있도록 에러를 던진다.
++   */
++  const addArbitrationMessage = async (input: Omit<ArbitrationMessage, "id" | "createdAt">): Promise<void> => {
++    const { error } = await supabase.from("arbitration_messages").insert({
++      room_id: input.roomId,
++      instructor_id: input.instructorId,
++      sender_role: input.senderRole,
++      sender_name: input.senderName,
++      body: input.body,
++      attachment_names: input.attachmentNames ?? [],
++      attachment_urls: input.attachmentUrls ?? [],
++    });
++    if (error) {
++      console.error("[addArbitrationMessage] arbitration_messages insert 실패:", error);
++      throw new Error(
++        error.message ? `메시지 전송에 실패했습니다: ${error.message}` : "메시지 전송에 실패했습니다.",
++      );
++    }
+   };
+ 
+   /** 신규 이용센터를 Enter Cloud(Supabase) `centers` 테이블에 등록한다. */
+diff --git a/src/types/index.ts b/src/types/index.ts
+index 3444d6f..43cebb2 100644
+--- a/src/types/index.ts
++++ b/src/types/index.ts
+@@ -461,6 +461,8 @@ export interface ArbitrationMessage {
+   senderName: string;
+   body: string;
+   attachmentNames?: string[];
++  /** attachmentNames와 같은 순서로 대응하는 실제 업로드 파일 URL(Supabase Storage 공개 URL). */
++  attachmentUrls?: string[];
+   createdAt: string;
+ }
+ 
