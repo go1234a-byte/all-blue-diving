@@ -16,6 +16,7 @@ import { InstructorSignupForm } from "@/components/auth/InstructorSignupForm";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { Logo } from "@/components/brand/Logo";
 import { supabase } from "@/integrations/supabase/client";
+import { getLoginLockoutRemainingMs, recordFailedLoginAttempt, clearLoginAttempts } from "@/lib/loginThrottle";
 import { useToast } from "@/hooks/use-toast";
 
 /** "아이디(이메일) 찾기" 다이얼로그 — 이름+휴대폰 번호로 가입된 이메일을 마스킹해서 찾아준다. */
@@ -192,13 +193,34 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       toast({ title: "이메일과 비밀번호를 입력해주세요", variant: "destructive" });
       return;
     }
+    const lockoutMs = getLoginLockoutRemainingMs(email);
+    if (lockoutMs > 0) {
+      const minutes = Math.max(1, Math.ceil(lockoutMs / 60000));
+      toast({
+        title: "로그인 시도가 너무 많습니다",
+        description: `보안을 위해 약 ${minutes}분 후 다시 시도해주세요.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        toast({ title: "로그인에 실패했습니다", description: error.message, variant: "destructive" });
+        const remainingMs = recordFailedLoginAttempt(email);
+        if (remainingMs > 0) {
+          const minutes = Math.max(1, Math.ceil(remainingMs / 60000));
+          toast({
+            title: "로그인 시도가 너무 많습니다",
+            description: `보안을 위해 약 ${minutes}분 후 다시 시도해주세요.`,
+            variant: "destructive",
+          });
+        } else {
+          toast({ title: "로그인에 실패했습니다", description: error.message, variant: "destructive" });
+        }
         return;
       }
+      clearLoginAttempts(email);
       toast({ title: "로그인되었습니다!" });
       onSuccess();
     } finally {
