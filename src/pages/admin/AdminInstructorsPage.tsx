@@ -28,8 +28,13 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { isPastDate } from "@/lib/dates";
 
-/** 2회 경고 누적 시 자동으로 영구정지 처리한다 (setInstructorPenalty 내부 로직과 동일 기준). */
+/** '영구정지' 버튼으로 즉시 계정을 정지할 때 함께 기록되는 경고 횟수 값 (기록용, 실제 정지는
+ * profiles.status 변경 + 투어 정지로 처리됨). */
 const PERMANENT_BAN_THRESHOLD = 2;
+
+/** 경고 누적이 이 값 이상이면 신규 투어 생성 기능이 제한된다 (InstructorConsole.tsx와 동일
+ * 기준). 계정 자체는 정지되지 않는다 — 즉시 정지하려면 '영구정지' 버튼을 사용한다. */
+const FEATURE_RESTRICTION_THRESHOLD = 5;
 
 const AdminInstructorsPage = () => {
   const {
@@ -90,9 +95,9 @@ const AdminInstructorsPage = () => {
     const next = currentPenalty + 1;
     setInstructorPenalty(instructorId, next, reason);
     setWarnReasonDrafts((prev) => ({ ...prev, [instructorId]: "" }));
-    if (next >= PERMANENT_BAN_THRESHOLD) {
+    if (next >= FEATURE_RESTRICTION_THRESHOLD) {
       toast({
-        title: `${instructorName} 강사에게 경고를 부여했습니다 (${next}회) — 영구정지 처리되었습니다.`,
+        title: `${instructorName} 강사에게 경고를 부여했습니다 (${next}회) — 신규 투어 생성 기능이 제한됩니다.`,
         variant: "destructive",
       });
     } else {
@@ -260,7 +265,7 @@ const AdminInstructorsPage = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>{instructor.name} 강사에게 경고를 주시겠습니까?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          경고 {PERMANENT_BAN_THRESHOLD}회 누적 시 자동으로 영구정지됩니다. 현재 누적 경고:{" "}
+                          경고 {FEATURE_RESTRICTION_THRESHOLD}회 누적 시 신규 투어 생성 기능이 제한됩니다 (계정 정지는 아닙니다). 현재 누적 경고:{" "}
                           {instructor.penaltyCount}회
                         </AlertDialogDescription>
                       </AlertDialogHeader>
