@@ -2338,19 +2338,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .select()
       .single();
 
-    if (!error && data) {
-      const center = mapCenterRow(data);
-      setCenters((prev) => [...prev, center]);
-      return center;
+    if (error || !data) {
+      // addSupportTicket과 동일한 이유로, 실패 시 로컬 전용 가짜 센터로 조용히 넘어가지 않고
+      // 명확히 에러를 던진다 — 그래야 관리자 화면이 실패를 알고 사용자에게 알릴 수 있다.
+      console.error("[addCenter] centers insert 실패:", error);
+      throw new Error(
+        error?.message ? `센터 등록에 실패했습니다: ${error.message}` : "센터 등록에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
     }
-
-    const fallback: Center = {
-      id: nextId("center"),
-      createdAt: new Date().toISOString(),
-      ...input,
-    };
-    setCenters((prev) => [...prev, fallback]);
-    return fallback;
+    const center = mapCenterRow(data);
+    setCenters((prev) => [...prev, center]);
+    return center;
   };
 
   /** 관리자 — 이용센터 정보를 수정한다. */
@@ -2393,21 +2391,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .select()
       .single();
 
-    if (!error && data) {
-      const ticket = mapSupportTicketRow(data);
-      setSupportTickets((prev) => [ticket, ...prev]);
-      return ticket;
+    if (error || !data) {
+      // 접수 INSERT가 실패했는데도 로컬에만 존재하는 가짜 티켓 객체로 조용히 넘어가면,
+      // 사용자는 "접수되었습니다" 성공 토스트를 보지만 실제로는 DB에 아무것도 남지 않는다
+      // (신고/1:1문의/분쟁조정 모두 이 함수를 공유하므로 세 가지 다 해당). 반드시 에러를
+      // 던져서 SupportTicketForm이 실패로 처리하고 사용자에게 알리도록 한다.
+      console.error("[addSupportTicket] support_tickets insert 실패:", error);
+      throw new Error(
+        error?.message ? `접수에 실패했습니다: ${error.message}` : "접수에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
     }
-
-    const fallback: SupportTicket = {
-      id: nextId("ticket"),
-      status: "접수",
-      createdAt: new Date().toISOString(),
-      ...input,
-      attachmentNames: input.attachmentNames ?? [],
-    };
-    setSupportTickets((prev) => [fallback, ...prev]);
-    return fallback;
+    const ticket = mapSupportTicketRow(data);
+    setSupportTickets((prev) => [ticket, ...prev]);
+    return ticket;
   };
 
   /** 관리자가 고객센터 접수 건의 처리 상태/답변을 갱신한다. */

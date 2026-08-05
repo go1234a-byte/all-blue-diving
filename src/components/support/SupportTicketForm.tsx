@@ -59,6 +59,10 @@ export function SupportTicketForm({ type, userId }: SupportTicketFormProps) {
       toast({ title: `${type === "dispute" ? "분쟁 유형" : "신고 유형"}을 선택해주세요`, variant: "destructive" });
       return;
     }
+    if (!userId) {
+      toast({ title: "로그인이 필요합니다", description: "로그인 후 다시 시도해주세요.", variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
     try {
       await addSupportTicket({
@@ -76,6 +80,14 @@ export function SupportTicketForm({ type, userId }: SupportTicketFormProps) {
       setAttachments([]);
       setBookingId("");
       setCategory("");
+    } catch (err) {
+      // addSupportTicket은 실패 시 이제 에러를 던진다 — 여기서 잡아 사용자에게 명확히
+      // 알려야 한다(예전에는 실패해도 무조건 성공 토스트가 떴다).
+      toast({
+        title: `${TYPE_LABEL[type]} 접수에 실패했습니다`,
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
