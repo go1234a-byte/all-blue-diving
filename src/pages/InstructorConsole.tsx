@@ -15,6 +15,8 @@ const InstructorConsole = () => {
   const { currentInstructorId } = useRole();
   const { getInstructorById } = useAppData();
   const isVerifiedInstructor = getInstructorById(currentInstructorId)?.verified === true;
+  const instructorPenaltyCount = getInstructorById(currentInstructorId)?.penaltyCount ?? 0;
+  const isTourCreationRestricted = instructorPenaltyCount >= 5;
 
   return (
     <div className="min-h-full bg-gradient-surface pb-24">
@@ -40,7 +42,17 @@ const InstructorConsole = () => {
             />
           </TabsContent>
           <TabsContent value="create" className="pt-4">
-            <TourCreateForm instructorId={currentInstructorId} onCreated={() => setTab("dashboard")} />
+            {isTourCreationRestricted ? (
+              <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+                <p className="font-medium">신규 투어 생성이 제한되었습니다.</p>
+                <p className="mt-1 text-xs text-red-700">
+                  누적 경고 {instructorPenaltyCount}회로 신규 투어 생성 기능이 제한되었습니다. 기존 예약·정산·채팅 등
+                  다른 기능은 계속 이용하실 수 있습니다. 이의가 있으시면 고객센터로 문의해주세요.
+                </p>
+              </div>
+            ) : (
+              <TourCreateForm instructorId={currentInstructorId} onCreated={() => setTab("dashboard")} />
+            )}
           </TabsContent>
           <TabsContent value="reviews" className="pt-4">
             <InstructorReviewsPanel instructorId={currentInstructorId} />

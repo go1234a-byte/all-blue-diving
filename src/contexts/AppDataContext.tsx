@@ -1904,7 +1904,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   /**
    * 관리자 — 강사에게 경고를 주거나(+1) 경고를 해제한다(0으로 초기화).
-   * 누적 경고가 2회 이상이 되면 연결된 계정(profiles)을 자동으로 영구정지 처리한다.
+   * 누적 경고가 5회 이상이 되면 신규 투어 생성 기능이 제한된다 (InstructorConsole.tsx에서 처리).
+   * 계정 정지/로그인 차단은 하지 않는다 — QA #39 대응 시 2회 자동 영구정지 로직은 제거함.
    */
   const setInstructorPenalty = async (
     instructorId: string,
