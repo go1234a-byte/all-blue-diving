@@ -461,6 +461,8 @@ export interface ArbitrationMessage {
   senderName: string;
   body: string;
   attachmentNames?: string[];
+  /** attachmentNames와 같은 순서로 대응하는 실제 업로드 파일 URL(Supabase Storage 공개 URL). */
+  attachmentUrls?: string[];
   createdAt: string;
 }
 

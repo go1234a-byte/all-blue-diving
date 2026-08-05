@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SecureExportBlock } from "@/components/arbitration/SecureExportBlock";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
+import { uploadImageFiles } from "@/lib/uploadImage";
 import { cn } from "@/lib/utils";
 
 interface ArbitrationChatRoomProps {
@@ -21,7 +23,9 @@ interface ArbitrationChatRoomProps {
  */
 export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, viewerName }: ArbitrationChatRoomProps) {
   const { arbitrationMessages, addArbitrationMessage } = useAppData();
+  const { toast } = useToast();
   const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -35,29 +39,59 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, 
     return () => cancelAnimationFrame(frame);
   }, [messages.length]);
 
-  const handleSend = () => {
-    if (!text.trim()) return;
-    addArbitrationMessage({
-      roomId,
-      instructorId,
-      senderRole: viewerRole,
-      senderName: viewerName,
-      body: text.trim(),
-    });
+  const handleSend = async () => {
+    if (!text.trim() || sending) return;
+    const body = text.trim();
     setText("");
+    setSending(true);
+    try {
+      await addArbitrationMessage({
+        roomId,
+        instructorId,
+        senderRole: viewerRole,
+        senderName: viewerName,
+        body,
+      });
+    } catch (err) {
+      toast({
+        title: "메시지 전송에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+      setText(body); // 실패 시 입력한 내용을 복원해 다시 시도할 수 있게 한다.
+    } finally {
+      setSending(false);
+    }
   };
 
-  const handleAttach = (files: FileList | null) => {
+  const handleAttach = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    addArbitrationMessage({
-      roomId,
-      instructorId,
-      senderRole: viewerRole,
-      senderName: viewerName,
-      body: "증빙 이미지를 전송했습니다.",
-      attachmentNames: Array.from(files).map((f) => f.name),
-    });
+    const fileList = Array.from(files);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    setSending(true);
+    try {
+      // 예전에는 파일명만 메시지에 저장하고 실제 파일은 어디에도 업로드하지 않아, 상대방이
+      // "증빙 이미지를 전송했습니다"라는 문구만 보고 실제 이미지는 확인할 수 없었다.
+      // Storage에 실제로 업로드해 공개 URL을 함께 저장한다.
+      const urls = await uploadImageFiles(fileList, `arbitration/${instructorId}`);
+      await addArbitrationMessage({
+        roomId,
+        instructorId,
+        senderRole: viewerRole,
+        senderName: viewerName,
+        body: "증빙 이미지를 전송했습니다.",
+        attachmentNames: fileList.map((f) => f.name),
+        attachmentUrls: urls,
+      });
+    } catch (err) {
+      toast({
+        title: "증빙 이미지 전송에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -107,11 +141,25 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, 
                   {msg.body}
                   {msg.attachmentNames && msg.attachmentNames.length > 0 && (
                     <ul className="mt-1 space-y-0.5 text-[11px] opacity-80">
-                      {msg.attachmentNames.map((name) => (
-                        <li key={name} className="truncate">
-                          📎 {name}
-                        </li>
-                      ))}
+                      {msg.attachmentNames.map((name, idx) => {
+                        const url = msg.attachmentUrls?.[idx];
+                        return (
+                          <li key={`${name}-${idx}`} className="truncate">
+                            {url ? (
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="underline underline-offset-2 hover:opacity-100"
+                              >
+                                📎 {name}
+                              </a>
+                            ) : (
+                              <span>📎 {name}</span>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>
@@ -129,7 +177,7 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, 
           accept="image/*"
           multiple
           className="hidden"
-          onChange={(e) => handleAttach(e.target.files)}
+          onChange={(e) => void handleAttach(e.target.files)}
         />
         <Button
           type="button"
@@ -137,6 +185,7 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, 
           variant="ghost"
           className="shrink-0 text-white hover:bg-white/10 hover:text-white"
           onClick={() => fileInputRef.current?.click()}
+          disabled={sending}
           aria-label="증빙 이미지 첨부"
         >
           <Camera className="h-4 w-4" />
@@ -150,12 +199,13 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, 
                 // 남은 글자가 다음 Enter에 따로 전송되는 버그가 있었다(예: "에헤" 입력 중
                 // 말풍선이 "에ㅔㅔ"/"ㅔ"처럼 쪼개져서 두 번 전송됨). isComposing이 true인
                 // 동안(조합 확정 Enter)에는 전송하지 않고, 조합이 끝난 뒤의 Enter에서만 보낸다.
-                if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) void handleSend();
               }}
           placeholder="중재 관련 메시지를 입력하세요"
+          disabled={sending}
           className="border-white/10 bg-white/5 text-white placeholder:text-white/30"
         />
-        <Button size="icon" className="shrink-0" onClick={handleSend} aria-label="전송">
+        <Button size="icon" className="shrink-0" onClick={() => void handleSend()} disabled={sending} aria-label="전송">
           <Send className="h-4 w-4" />
         </Button>
       </div>

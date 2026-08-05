@@ -350,6 +350,21 @@ function mapChatMessageRow(row: any): ChatMessage {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapArbitrationMessageRow(row: any): ArbitrationMessage {
+  return {
+    id: row.id,
+    roomId: row.room_id,
+    instructorId: row.instructor_id,
+    senderRole: row.sender_role,
+    senderName: row.sender_name,
+    body: row.body,
+    attachmentNames: row.attachment_names ?? undefined,
+    attachmentUrls: row.attachment_urls ?? undefined,
+    createdAt: row.created_at,
+  };
+}
+
 export interface NewBookingInput {
   tourId: string;
   diverId?: string; // 실 로그인 다이버의 profiles.id — 없으면 게스트 예약으로 처리
@@ -625,7 +640,7 @@ interface AppDataContextValue {
   updateCompanionRoom: (bookingId: string, companionIndex: number, roomNo: string | null) => Promise<void>;
   submitCancellationForReview: (bookingId: string, reason: string, evidenceFileNames: string[]) => Promise<void>;
   resolveCancellationReview: (bookingId: string, approved: boolean, rejectReason?: string) => Promise<void>;
-  addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => ArbitrationMessage;
+  addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => Promise<void>;
   addCenter: (input: NewCenterInput) => Promise<Center>;
   updateCenter: (centerId: string, updates: NewCenterInput) => Promise<void>;
   deleteCenter: (centerId: string) => Promise<void>;
@@ -998,6 +1013,38 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         { event: "INSERT", schema: "public", table: "chat_messages" },
         (payload) => {
           setChatMessages((prev) => [...prev, mapChatMessageRow(payload.new)]);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // `arbitration_messages` 테이블 실시간 구독 (강사↔최고관리자 비밀 중재방)
+  // 예전에는 이 state가 로컬 메모리에만 쌓여서 새로고침하거나 상대방이 다른 세션에서
+  // 접속하면 대화가 전혀 보이지 않는 문제가 있었다(강사와 관리자가 실제로 대화 불가).
+  // chat_messages와 동일한 fetch + realtime 패턴으로 바꿔 실제로 영속화되도록 한다.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("arbitration_messages")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (!active) return;
+      if (!error && data) setArbitrationMessages(data.map(mapArbitrationMessageRow));
+    })();
+
+    const channel = supabase
+      .channel("arbitration_messages_all")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "arbitration_messages" },
+        (payload) => {
+          setArbitrationMessages((prev) => [...prev, mapArbitrationMessageRow(payload.new)]);
         },
       )
       .subscribe();
@@ -2248,14 +2295,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   /** 강사-최고관리자 비밀 중재방에 메시지(및 첨부파일)를 추가한다. */
-  const addArbitrationMessage = (input: Omit<ArbitrationMessage, "id" | "createdAt">): ArbitrationMessage => {
-    const message: ArbitrationMessage = {
-      id: nextId("arbmsg"),
-      createdAt: new Date().toISOString(),
-      ...input,
-    };
-    setArbitrationMessages((prev) => [...prev, message]);
-    return message;
+  /**
+   * 강사↔최고관리자 비밀 중재방 메시지를 등록한다.
+   * chat_messages(addChatMessage)와 동일하게, realtime 구독이 로컬 state를 갱신하므로
+   * 여기서는 insert만 수행한다(낙관적 업데이트 없음 — 중복 추가 방지).
+   * 예전에는 이 함수가 로컬 메모리에만 메시지를 쌓아 DB에 전혀 저장되지 않았다(새로고침/
+   * 다른 세션에서 대화가 사라짐, 강사·관리자가 실제로 대화 불가). 반드시 서버에 저장하고,
+   * 실패하면 호출부(ArbitrationChatRoom)가 사용자에게 알릴 수 있도록 에러를 던진다.
+   */
+  const addArbitrationMessage = async (input: Omit<ArbitrationMessage, "id" | "createdAt">): Promise<void> => {
+    const { error } = await supabase.from("arbitration_messages").insert({
+      room_id: input.roomId,
+      instructor_id: input.instructorId,
+      sender_role: input.senderRole,
+      sender_name: input.senderName,
+      body: input.body,
+      attachment_names: input.attachmentNames ?? [],
+      attachment_urls: input.attachmentUrls ?? [],
+    });
+    if (error) {
+      console.error("[addArbitrationMessage] arbitration_messages insert 실패:", error);
+      throw new Error(
+        error.message ? `메시지 전송에 실패했습니다: ${error.message}` : "메시지 전송에 실패했습니다.",
+      );
+    }
   };
 
   /** 신규 이용센터를 Enter Cloud(Supabase) `centers` 테이블에 등록한다. */
