@@ -4,6 +4,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InstructorDashboard } from "@/components/instructor/InstructorDashboard";
 import { TourCreateForm } from "@/components/instructor/TourCreateForm";
+import { InstructorSettlementSummary } from "@/components/instructor/InstructorSettlementSummary";
 import { SettlementLedger } from "@/components/instructor/SettlementLedger";
 import { InstructorReviewsPanel } from "@/components/instructor/InstructorReviewsPanel";
 import { useRole } from "@/contexts/RoleContext";
@@ -58,6 +59,7 @@ const InstructorConsole = () => {
             <InstructorReviewsPanel instructorId={currentInstructorId} />
           </TabsContent>
           <TabsContent value="settlement" className="pt-4">
+            <InstructorSettlementSummary />
             <SettlementLedger instructorId={currentInstructorId} />
           </TabsContent>
         </Tabs>
