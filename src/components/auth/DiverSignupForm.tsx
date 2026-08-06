@@ -39,6 +39,14 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
       toast({ title: "필수 항목을 입력해주세요", variant: "destructive" });
       return;
     }
+    if (password.length < 8) {
+      toast({
+        title: "비밀번호는 8자 이상이어야 합니다",
+        description: "영문, 숫자 등을 조합해 8자 이상으로 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (password !== confirmPassword) {
       toast({ title: "비밀번호가 일치하지 않습니다", description: "비밀번호와 비밀번호 확인을 다시 확인해주세요.", variant: "destructive" });
       return;
