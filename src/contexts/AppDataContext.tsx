@@ -1719,7 +1719,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }));
     void fetchTourConfirmedCounts();
 
-    const tour = tours.find((t) => t.id === input.tourId);
+    // targetTour(이 함수 앞부분 정원 체크에서 이미 조회에 성공한 투어)를 그대로
+    // 재사용한다. 여기서 tours.find()를 다시 호출하면 드물게(정확한 원인은 미상이나,
+    // 정원을 꽉 채우는 예약처럼 투어 상태가 막 바뀌는 타이밍과 관련된 것으로 추정)
+    // 방금 찾았던 투어를 다시 찾지 못해 정산(payout/invoice) 생성과 강사 실시간 알림
+    // 발송이 통째로 에러 없이 조용히 스킵되는 문제가 실사용 중 확인됨
+    // (QA 라이브 테스트: 5인 단체예약 17,600,000원 결제 후 payouts/invoices 미생성 확인).
+    const tour = targetTour;
     if (tour) {
       const settlement = computeSettlement(input.basePrice, input.optionsCost);
       const { data: payoutData, error: payoutError } = await supabase
