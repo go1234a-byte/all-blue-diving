@@ -1753,6 +1753,35 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           };
       setPayouts((prev) => [payout, ...prev]);
 
+      // Invoice ID 채번 (INV-{YYYYMM}-{그 달 순번}). GMV/수수료/강사지급액을 예약 확정
+      // 시점 스냅샷으로 invoices 테이블에 남긴다 — 실패해도 payouts insert 실패 처리와
+      // 동일하게 예약 자체는 막지 않는다 (회계 리포트에서만 누락되고, 예약/정산은 정상 진행).
+      try {
+        const invoiceNow = new Date();
+        const invoicePeriod = `${invoiceNow.getFullYear()}-${String(invoiceNow.getMonth() + 1).padStart(2, "0")}-01`;
+        const { count: invoiceCountThisMonth } = await supabase
+          .from("invoices")
+          .select("id", { count: "exact", head: true })
+          .eq("period", invoicePeriod);
+        const invoiceSeq = (invoiceCountThisMonth ?? 0) + 1;
+        const invoiceId = `INV-${invoiceNow.getFullYear()}${String(invoiceNow.getMonth() + 1).padStart(2, "0")}-${String(invoiceSeq).padStart(6, "0")}`;
+        const { error: invoiceError } = await supabase.from("invoices").insert({
+          id: invoiceId,
+          booking_id: booking.id,
+          payout_id: payoutError ? null : payout.id,
+          gmv_amount: input.totalPaid,
+          platform_fee_amount: input.platformFee,
+          instructor_amount: input.basePrice + input.optionsCost,
+          refund_amount: 0,
+          period: invoicePeriod,
+        });
+        if (invoiceError) {
+          console.error("[addBooking] invoices insert 실패 (예약은 정상 처리됨):", invoiceError);
+        }
+      } catch (invoiceCatchError) {
+        console.error("[addBooking] invoice 채번 중 예외 (예약은 정상 처리됨):", invoiceCatchError);
+      }
+
       // 트랜잭션이 확정되는 즉시(=예약 생성 시점) 담당 강사에게 실시간 알림을 발행한다.
       void persistInstructorNotification({
         instructorId: tour.instructorId,
