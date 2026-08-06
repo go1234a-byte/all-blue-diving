@@ -2337,7 +2337,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         p.bookingId === bookingId && p.status !== "released" ? { ...p, status: "cancelled" } : p,
       ),
     );
-    await supabase.from("payouts").update({ status: "cancelled" }).eq("booking_id", bookingId).neq("status", "released");
+    const { error: cancelSettlementError } = await supabase.rpc("cancel_booking_settlement", {
+      p_booking_id: bookingId,
+      p_refund_amount: refundAmount,
+    });
+    if (cancelSettlementError) {
+      console.error(
+        "[cancelBooking] 정산(payout/invoice) 취소 반영 RPC 실패 (예약 취소는 정상 처리됨):",
+        cancelSettlementError,
+      );
+    }
     void fetchTourConfirmedCounts();
 
     return { refundRate, refundAmount };
@@ -2409,7 +2418,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           p.bookingId === bookingId && p.status !== "released" ? { ...p, status: "cancelled" } : p,
         ),
       );
-      await supabase.from("payouts").update({ status: "cancelled" }).eq("booking_id", bookingId).neq("status", "released");
+      const { error: cancelSettlementError } = await supabase.rpc("cancel_booking_settlement", {
+        p_booking_id: bookingId,
+        p_refund_amount: booking?.totalPaid ?? 0,
+      });
+      if (cancelSettlementError) {
+        console.error(
+          "[resolveCancellationReview] 정산(payout/invoice) 취소 반영 RPC 실패 (강제 환불은 정상 처리됨):",
+          cancelSettlementError,
+        );
+      }
       void fetchTourConfirmedCounts();
 
       // 관리자가 [강제 환불 승인]을 실행하는 즉시 담당 강사에게 고위험 페널티 알림을 발행한다.
