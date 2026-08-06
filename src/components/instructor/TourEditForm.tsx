@@ -361,6 +361,14 @@ export function TourEditForm({ tour }: TourEditFormProps) {
         toast({ title: "모집 정원은 1명 이상이어야 합니다", variant: "destructive" });
         return;
       }
+      if (Number(minParticipants) <= 0) {
+        toast({ title: "최소 인원은 1명 이상이어야 합니다", variant: "destructive" });
+        return;
+      }
+      if (Number(minParticipants) > Number(maxParticipants)) {
+        toast({ title: "최소 인원은 최대 인원보다 클 수 없습니다", variant: "destructive" });
+        return;
+      }
     }
     if (centerMode === "existing" && !selectedCenterId) {
       toast({ title: "이용센터를 선택해주세요", variant: "destructive" });
