@@ -1727,65 +1727,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     // (QA 라이브 테스트: 5인 단체예약 17,600,000원 결제 후 payouts/invoices 미생성 확인).
     const tour = targetTour;
     if (tour) {
-      const settlement = computeSettlement(input.basePrice, input.optionsCost);
-      const { data: payoutData, error: payoutError } = await supabase
-        .from("payouts")
-        .insert({
-          instructor_id: tour.instructorId,
-          booking_id: booking.id,
-          first_amount: settlement.firstAmount,
-          second_amount: settlement.secondAmount,
-          status: "scheduled",
-        })
-        .select()
-        .single();
-
-      if (payoutError) {
-        // 정산 레코드 저장 실패는 예약 자체를 무효화하지 않는다(다이버 쪽 예약은
-        // 이미 정상적으로 확정됨) — 다만 이 값이 로컬 전용 fallback으로만
-        // 채워지면 실제 정산 대시보드/CSV에는 절대 나타나지 않으므로, 최소한
-        // 콘솔에는 남겨서 나중에 추적 가능하게 한다.
-        console.error("[addBooking] payouts insert 실패 (예약은 정상 처리됨):", payoutError);
-      }
-      const payout: Payout = !payoutError && payoutData
-        ? mapPayoutRow(payoutData)
-        : {
-            id: nextId("po"),
-            instructorId: tour.instructorId,
-            bookingId: booking.id,
-            firstAmount: settlement.firstAmount,
-            secondAmount: settlement.secondAmount,
-            status: "scheduled",
-          };
-      setPayouts((prev) => [payout, ...prev]);
-
-      // Invoice ID 채번 (INV-{YYYYMM}-{그 달 순번}). GMV/수수료/강사지급액을 예약 확정
-      // 시점 스냅샷으로 invoices 테이블에 남긴다 — 실패해도 payouts insert 실패 처리와
-      // 동일하게 예약 자체는 막지 않는다 (회계 리포트에서만 누락되고, 예약/정산은 정상 진행).
-      try {
-        const invoiceNow = new Date();
-        const invoicePeriod = `${invoiceNow.getFullYear()}-${String(invoiceNow.getMonth() + 1).padStart(2, "0")}-01`;
-        const { count: invoiceCountThisMonth } = await supabase
-          .from("invoices")
-          .select("id", { count: "exact", head: true })
-          .eq("period", invoicePeriod);
-        const invoiceSeq = (invoiceCountThisMonth ?? 0) + 1;
-        const invoiceId = `INV-${invoiceNow.getFullYear()}${String(invoiceNow.getMonth() + 1).padStart(2, "0")}-${String(invoiceSeq).padStart(6, "0")}`;
-        const { error: invoiceError } = await supabase.from("invoices").insert({
-          id: invoiceId,
-          booking_id: booking.id,
-          payout_id: payoutError ? null : payout.id,
-          gmv_amount: input.totalPaid,
-          platform_fee_amount: input.platformFee,
-          instructor_amount: input.basePrice + input.optionsCost,
-          refund_amount: 0,
-          period: invoicePeriod,
-        });
-        if (invoiceError) {
-          console.error("[addBooking] invoices insert 실패 (예약은 정상 처리됨):", invoiceError);
-        }
-      } catch (invoiceCatchError) {
-        console.error("[addBooking] invoice 채번 중 예외 (예약은 정상 처리됨):", invoiceCatchError);
+      const { error: settlementError } = await supabase.rpc("create_booking_settlement", {
+        p_booking_id: booking.id,
+      });
+      if (settlementError) {
+        console.error("[addBooking] 정산(payout/invoice) 생성 RPC 실패 (예약은 정상 처리됨):", settlementError);
       }
 
       // 트랜잭션이 확정되는 즉시(=예약 생성 시점) 담당 강사에게 실시간 알림을 발행한다.
