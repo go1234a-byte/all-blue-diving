@@ -47,18 +47,10 @@ export function TourCard({ tour }: TourCardProps) {
   const instructor = getInstructorById(tour.instructorId);
   const bookmarked = isBookmarked(tour.id);
   const bookable = isTourBookable(tour);
-  // bookings 배열은 RLS 때문에 게스트/다른 다이버에게는 다른 사람 예약이 안 보이므로,
-  // 홈/검색 카드에 표시되는 정원은 반드시 공개 집계 뷰 기반 헬퍼로 계산해야 한다.
   const confirmedCount = getConfirmedParticipantCount(tour.id);
-  // 정원이 다 찬 경우 "모집마감"으로 표시한다. tour.status(관리자 취소 등)와는 별개로,
-  // 순수하게 "자리가 다 찼는지"만 보고 판단한다.
   const isFull = confirmedCount >= tour.maxParticipants;
-  // 강사의 경력/로그 수와 등록한 총 투어 수(진행 투어)를 투어 카드의 강사 정보에 함께 보여준다.
   const instructorTourCount = instructor ? tours.filter((t) => t.instructorId === instructor.id).length : 0;
 
-  // 모집마감 투어에서 "강사에게 문의하기"를 누르면, 기존 1:1 문의(support_tickets) 파이프라인을
-  // 재사용해 접수한다 — 별도 예약 없이도 로그인만 하면 등록 가능(RLS: 인증된 사용자 누구나 insert
-  // 가능)하고, 관리자 문의 관리 화면에서 그대로 확인 후 강사에게 전달할 수 있다.
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [inquiryMessage, setInquiryMessage] = useState("");
   const [submittingInquiry, setSubmittingInquiry] = useState(false);
@@ -148,7 +140,6 @@ export function TourCard({ tour }: TourCardProps) {
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
-                  // 이미 찜한 상태(해제)는 항상 허용하되, 예약 불가능한 투어는 새로 찜하지 못하게 막는다.
                   if (!bookmarked && !bookable) {
                     toast({
                       title: "찜할 수 없는 투어예요",
@@ -199,9 +190,6 @@ export function TourCard({ tour }: TourCardProps) {
                       {instructor.name[0]}
                     </AvatarFallback>
                   </Avatar>
-                  {/* 강사 이름은 항상 한 줄 전체 폭을 갖도록 분리했다 — 이전에는 이름과 소속(agency)
-                      배지가 같은 줄에서 폭을 나눠 가져서, 소속명이 길면(예: "TDI Tech Instructor")
-                      이름이 "김..."처럼 한두 글자만 남고 잘리거나 아예 안 보이는 문제가 있었다. */}
                   <div className="min-w-0 flex-1">
                     <span className="block truncate text-xs font-semibold text-foreground">
                       {instructor.name} 강사
@@ -249,14 +237,16 @@ export function TourCard({ tour }: TourCardProps) {
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-2 pt-0.5">
-              <span className="text-base font-bold text-primary">{formatKRW(applyPlatformFee(tour.basePrice))}~</span>
-              {isFull && instructor && (
+            {isFull && instructor ? (
+              <div className="space-y-2 pt-0.5">
+                <span className="block text-base font-bold text-primary">
+                  {formatKRW(applyPlatformFee(tour.basePrice))}~
+                </span>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="h-8 shrink-0 gap-1 text-xs"
+                  className="h-8 w-full gap-1 text-xs"
                   onClick={(e) => {
                     e.preventDefault();
                     setInquiryOpen(true);
@@ -265,8 +255,12 @@ export function TourCard({ tour }: TourCardProps) {
                   <MessageCircle className="h-3.5 w-3.5" />
                   강사에게 문의하기
                 </Button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="pt-0.5 text-base font-bold text-primary">
+                {formatKRW(applyPlatformFee(tour.basePrice))}~
+              </div>
+            )}
           </CardContent>
         </Card>
       </Link>
