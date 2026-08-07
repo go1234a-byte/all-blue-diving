@@ -305,7 +305,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           </div>
           <div className="space-y-1.5">
             <Label>신분증 사본 업로드 (필수)</Label>
-            <FileDropzone label="신분증 사본" accept=".pdf,.jpg,.png" onFilesChange={setIdFiles} />
+            <FileDropzone label="신분증 사본" accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif" onFilesChange={setIdFiles} />
           </div>
           <label className="flex items-start gap-2 text-xs text-muted-foreground">
             <Checkbox
@@ -325,7 +325,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
             label="강사 자격증 / 면허 서류"
             multiple
             maxFiles={3}
-            accept=".pdf,.jpg,.png"
+            accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif"
             onFilesChange={setLicenseFiles}
           />
         </div>
@@ -338,7 +338,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
             label="다이빙 강사 배상책임보험 증서"
             multiple
             maxFiles={2}
-            accept=".pdf,.jpg,.png"
+            accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif"
             onFilesChange={setInsuranceFiles}
           />
         </div>
