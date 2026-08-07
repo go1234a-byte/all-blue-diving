@@ -26,7 +26,8 @@ import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { InstructorApplicationQueue } from "@/components/mypage/InstructorApplicationQueue";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
-import { isPastDate } from "@/lib/dates";
+import { isPastDate, isWithinAdminPeriod } from "@/lib/dates";
+import { useAdminPeriod } from "@/contexts/AdminPeriodContext";
 
 /** '영구정지' 버튼으로 즉시 계정을 정지할 때 함께 기록되는 경고 횟수 값 (기록용, 실제 정지는
  * profiles.status 변경 + 투어 정지로 처리됨). */
@@ -72,14 +73,24 @@ const AdminInstructorsPage = () => {
   };
   const [verifiedFilter, setVerifiedFilter] = useState<"all" | "verified" | "pending">("all");
   const [penaltyFilter, setPenaltyFilter] = useState<"all" | "has" | "none">("all");
+  const [sortOrder, setSortOrder] = useState<"default" | "latest">("default");
+  // 상단바의 기간(오늘/이번주/이번달/올해) 선택 — 예전에는 이 값을 어떤 관리자 화면도
+  // 실제로 소비하지 않아서 선택해도 목록이 그대로였다. 여기서는 강사 가입(신청)일 기준으로 필터링한다.
+  const { period } = useAdminPeriod();
 
-  const filteredInstructors = instructors.filter((instructor) => {
-    if (verifiedFilter === "verified" && !instructor.verified) return false;
-    if (verifiedFilter === "pending" && instructor.verified) return false;
-    if (penaltyFilter === "has" && instructor.penaltyCount <= 0) return false;
-    if (penaltyFilter === "none" && instructor.penaltyCount > 0) return false;
-    return true;
-  });
+  const filteredInstructors = instructors
+    .filter((instructor) => {
+      if (verifiedFilter === "verified" && !instructor.verified) return false;
+      if (verifiedFilter === "pending" && instructor.verified) return false;
+      if (penaltyFilter === "has" && instructor.penaltyCount <= 0) return false;
+      if (penaltyFilter === "none" && instructor.penaltyCount > 0) return false;
+      if (!isWithinAdminPeriod(instructor.createdAt, period)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortOrder !== "latest") return 0;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   const handleRevokeVerified = (instructorId: string, instructorName: string) => {
     void setInstructorVerified(instructorId, false);
@@ -134,7 +145,7 @@ const AdminInstructorsPage = () => {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 rounded-xl border border-border bg-card p-3">
+      <div className="grid grid-cols-3 gap-2 rounded-xl border border-border bg-card p-3">
         <Select value={verifiedFilter} onValueChange={(v) => setVerifiedFilter(v as typeof verifiedFilter)}>
           <SelectTrigger className="h-8 text-xs">
             <SelectValue />
@@ -153,6 +164,15 @@ const AdminInstructorsPage = () => {
             <SelectItem value="all">전체 패널티</SelectItem>
             <SelectItem value="has">경고 있음</SelectItem>
             <SelectItem value="none">경고 없음</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as typeof sortOrder)}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default">기본순</SelectItem>
+            <SelectItem value="latest">최신순</SelectItem>
           </SelectContent>
         </Select>
       </div>
