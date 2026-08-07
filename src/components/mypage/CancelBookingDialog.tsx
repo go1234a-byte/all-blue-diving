@@ -135,7 +135,7 @@ export function CancelBookingDialog({ open, onOpenChange, booking, tour }: Cance
                 }
                 multiple
                 maxFiles={5}
-                accept=".pdf,.jpg,.png"
+                accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif"
                 onFilesChange={setEvidenceFiles}
               />
             </div>
