@@ -260,16 +260,33 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
         return;
       }
 
-      await addInstructorSignup({
-        name,
-        phone,
-        gender,
-        bio,
-        licenseFileNames: licenseFiles.map((f) => f.name),
-        signatureDataUrl: signature,
-        pledgeSigned: true,
-        settlementPledgeAgreed: true,
-      });
+      try {
+        await addInstructorSignup({
+          name,
+          phone,
+          gender,
+          bio,
+          licenseFileNames: licenseFiles.map((f) => f.name),
+          signatureDataUrl: signature,
+          pledgeSigned: true,
+          settlementPledgeAgreed: true,
+        });
+      } catch (err) {
+        // 계정(profiles)까지는 이미 만들어졌지만 강사 프로필(instructors) 생성에 실패한 경우.
+        // 예전에는 여기서 에러가 나도 그냥 무시하고 "가입 성공" 토스트를 띄웠는데, 그러면
+        // 로그인은 되지만 강사 프로필이 없는 유령 계정이 되어 마이페이지가 빈 화면으로
+        // 나오고 로그아웃도 안 되는 문제로 이어졌다. 실패를 명확히 알리고, 로그인은 유지한
+        // 채로 다시 시도할 수 있게 한다(계정 자체는 이미 만들어졌으므로 재가입할 필요는 없음).
+        toast({
+          title: "강사 프로필 생성에 실패했습니다",
+          description:
+            err instanceof Error
+              ? `${err.message} 잠시 후 다시 로그인해서 재시도해주세요.`
+              : "잠시 후 다시 로그인해서 재시도해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({ title: "인증 강사 회원가입이 접수되었습니다!", description: "관리자 검토 후 인증배지가 부여됩니다. 홈 화면으로 이동합니다." });
       onSuccess();
     } finally {
