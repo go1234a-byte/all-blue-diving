@@ -60,6 +60,41 @@ export function hoursSince(iso: string): number {
   return (Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60);
 }
 
+export type AdminPeriodFilter = "today" | "week" | "month" | "year" | "custom";
+
+/** 관리자 상단바의 기간(오늘/이번주/이번달/올해) 선택이 특정 날짜에 해당하는지 판별한다.
+ * "직접 선택"은 실제 날짜 범위 입력 UI가 아직 없어 전체를 보여준다(필터 없음). */
+export function isWithinAdminPeriod(iso: string, period: AdminPeriodFilter): boolean {
+  if (period === "custom") return true;
+  const now = new Date();
+  const target = new Date(iso);
+  if (period === "today") {
+    return (
+      target.getFullYear() === now.getFullYear() &&
+      target.getMonth() === now.getMonth() &&
+      target.getDate() === now.getDate()
+    );
+  }
+  if (period === "week") {
+    const start = new Date(now);
+    start.setDate(start.getDate() - start.getDay());
+    start.setHours(0, 0, 0, 0);
+    return target.getTime() >= start.getTime();
+  }
+  if (period === "month") {
+    return target.getFullYear() === now.getFullYear() && target.getMonth() === now.getMonth();
+  }
+  // year
+  return target.getFullYear() === now.getFullYear();
+}
+
+/** 오늘로부터 n개월 후 날짜를 반환한다 (투어 출발일 등록 가능 범위 제한에 사용). */
+export function addMonths(base: Date, months: number): Date {
+  const d = new Date(base);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
 /** 생년월일(YYYY-MM-DD)로부터 만 나이를 계산한다. */
 export function calculateAge(birthDateIso: string): number {
   const birth = new Date(birthDateIso);
