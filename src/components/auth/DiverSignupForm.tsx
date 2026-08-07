@@ -14,6 +14,8 @@ interface DiverSignupFormProps {
   onSuccess: () => void;
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
   const { toast } = useToast();
   const { registerDiverProfile } = useAppData();
@@ -80,11 +82,26 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      let { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { emailRedirectTo: `${window.location.origin}/` },
       });
+
+      // "이미 등록된 사용자" 오류가 아니라면 순간적인 네트워크 문제 등 일시적 오류일 수
+      // 있으므로, 짧게 대기 후 한 번 자동으로 재시도한다 — 예전에는 여기서 실패하면 바로
+      // 에러 토스트만 띄우고 끝나서, 사용자가 직접 '가입하기'를 다시 눌러야만 복구됐다.
+      if (error && !/already registered|already exists/i.test(error.message ?? "")) {
+        console.warn("[DiverSignupForm] 계정 생성 1차 실패, 1.2초 후 자동 재시도:", error);
+        await sleep(1200);
+        const retry = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/` },
+        });
+        data = retry.data;
+        error = retry.error;
+      }
 
       let userId = data?.user?.id;
 
@@ -140,6 +157,21 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
       };
 
       let { error: profileError } = await supabase.from("profiles").insert(profileInsertPayload);
+
+      // 네트워크 순간 끊김 등 일시적 오류일 수 있으므로(birth_date 스키마 캐시 문제는 바로
+      // 아래에서 별도로 다루므로 여기서는 재시도하지 않는다), 짧게 대기 후 한 번 더 자동
+      // 재시도한다. 이전에는 여기서 실패하면 로그인 계정만 만들어진 채로 끝나버려서, 사용자가
+      // "오류가 떴는데 다시 등록을 누르니 그냥 통과됐다"고 느끼는 원인이었다 — auth 계정은
+      // 이미 있고 프로필만 없는 상태라 재클릭 시 복구 경로를 타서 결과적으로는 성공했던 것.
+      if (
+        profileError &&
+        !(/birth_date/i.test(profileError.message) && /schema cache/i.test(profileError.message))
+      ) {
+        console.warn("[DiverSignupForm] 프로필 저장 1차 실패, 1.2초 후 자동 재시도:", profileError);
+        await sleep(1200);
+        const retry = await supabase.from("profiles").insert(profileInsertPayload);
+        profileError = retry.error;
+      }
 
       // 서버 스키마 캐시가 birth_date 컬럼을 아직 인식하지 못해 "Could not find the
       // 'birth_date' column ... in the schema cache" 에러가 나는 경우(마이그레이션이 실제
