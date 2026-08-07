@@ -462,7 +462,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
           )}
           <FileDropzone
             label="자격증 파일 추가"
-            accept=".pdf,.jpg,.png"
+            accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif"
             multiple
             maxFiles={5}
             onFilesChange={(files) => {
