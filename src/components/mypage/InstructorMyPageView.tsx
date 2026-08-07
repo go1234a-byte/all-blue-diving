@@ -19,13 +19,31 @@ import { formatDateKR, isPastDate } from "@/lib/dates";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 
 export function InstructorMyPageView() {
-  const { getInstructorById, getInstructorProfileById, tours } = useAppData();
+  const { getInstructorById, getInstructorProfileById, tours, instructorsLoading } = useAppData();
   const { currentInstructorId } = useRole();
   const instructor = getInstructorById(currentInstructorId);
   const instructorProfile = instructor ? getInstructorProfileById(instructor.profileId) : undefined;
   const [tab, setTab] = useState("recruiting");
 
-  if (!instructor) return null;
+  // 데이터가 아직 로딩 중이면 잠시 대기 — 로딩이 끝났는데도 강사 레코드를 못 찾으면
+  // (예전 회원가입 버그로 profiles엔 role="instructor"인데 instructors 행이 없는
+  // "유령 계정"이 된 경우) 빈 화면만 보여주고 로그아웃할 방법도 없이 갇히는 문제가
+  // 있었다. 최소한 로그아웃은 항상 할 수 있도록 안내 화면을 보여준다.
+  if (!instructor) {
+    if (instructorsLoading) return null;
+    return (
+      <div className="space-y-5">
+        <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-foreground">
+          <p className="font-semibold">강사 프로필을 찾을 수 없습니다.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            계정에 문제가 있을 수 있어요. 로그아웃 후 다시 로그인해보시거나, 고객센터로
+            문의해주세요.
+          </p>
+        </div>
+        <AccountActions />
+      </div>
+    );
+  }
 
   const myTours = tours.filter((t) => t.instructorId === currentInstructorId);
   const recruitingTours = myTours.filter((t) => t.status === "open" && !isPastDate(t.recruitmentDeadline));
