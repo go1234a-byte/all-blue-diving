@@ -37,6 +37,7 @@ export interface Profile {
 export interface InstructorProfile {
   id: string;
   profileId: string;
+  createdAt: string; // 가입(인증 신청) 시각 - 관리자 강사관리 기간 필터/최신순 정렬에 사용
   name: string;
   avatarUrl?: string;
   agency?: string; // 다이빙협회 소속 (예: PADI, SSI, CMAS 등)
