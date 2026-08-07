@@ -34,7 +34,7 @@ import {
   TOUR_TAG_OPTIONS,
   STANDARD_TOUR_OPTION_DEFS,
 } from "@/lib/constants";
-import { formatDateKR, isPastDate, toISODate } from "@/lib/dates";
+import { addMonths, formatDateKR, isPastDate, toISODate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type {
   ActivityType,
@@ -116,12 +116,26 @@ const EMPTY_CENTER_DRAFT = {
 };
 
 export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps) {
-  const { addTour, addCenter, getInstructorById } = useAppData();
+  const { addTour, addCenter, getInstructorById, tours } = useAppData();
   const { toast } = useToast();
   // 관리자 승인(인증배지) 전에는 투어를 실제로 게시할 수 없다 — 승인 대기 중인 강사가
   // 검수 없이 바로 투어를 열어 예약을 받는 것을 막기 위한 최소한의 안전장치.
   const instructorRecord = getInstructorById(instructorId);
   const isVerifiedInstructor = instructorRecord?.verified === true;
+
+  // 강사 1인당 투어 생성 제한: 한 달에 1개, 전체 누적 최대 3개.
+  // (createdAt = 투어 "생성"시각 기준. 투어 출발일이 아니라 실제로 이 강사가 투어를 만든 달을 센다.)
+  const myTours = tours.filter((t) => t.instructorId === instructorId);
+  const now = new Date();
+  const toursCreatedThisMonth = myTours.filter((t) => {
+    const d = new Date(t.createdAt);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  const hasReachedTotalLimit = myTours.length >= 3;
+  const hasReachedMonthlyLimit = toursCreatedThisMonth >= 1;
+  const hasReachedTourLimit = hasReachedTotalLimit || hasReachedMonthlyLimit;
+  // 투어 출발일은 오늘로부터 3개월 이내로만 등록할 수 있다.
+  const maxStartDate = addMonths(new Date(), 3);
 
   const [title, setTitle] = useState("");
   const [country, setCountry] = useState<string>("");
@@ -309,6 +323,29 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       });
       return;
     }
+    if (hasReachedTotalLimit) {
+      toast({
+        title: "투어 생성 한도를 초과했습니다",
+        description: "강사 1인당 투어는 최대 3개까지 생성할 수 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (hasReachedMonthlyLimit) {
+      toast({
+        title: "이번 달 투어 생성 한도를 초과했습니다",
+        description: "강사 1인당 투어는 한 달에 1개까지 생성할 수 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (startDate && toISODate(startDate) > toISODate(maxStartDate)) {
+      toast({
+        title: "투어 출발일은 3개월 이내로만 설정할 수 있습니다",
+        variant: "destructive",
+      });
+      return;
+    }
     const missingFields: string[] = [];
     if (!title) missingFields.push("투어명");
     if (!country) missingFields.push("국가");
@@ -448,8 +485,15 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
     <form onSubmit={handleSubmit} className="space-y-5">
       {!isVerifiedInstructor && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
-          아직 관리자 인증(승인)이 완료되지 않았어요. 내용은 미리 작성해둘 수 있지만,
+          아직 관리자 인증(승인)이 완료되지 않았어요.
           <strong> 승인 전에는 투어를 실제로 등록할 수 없습니다.</strong>
+        </div>
+      )}
+      {isVerifiedInstructor && hasReachedTourLimit && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
+          {hasReachedTotalLimit
+            ? "투어는 강사 1인당 최대 3개까지 생성할 수 있습니다."
+            : "이번 달에는 이미 투어를 생성하셨어요. 투어 생성은 강사 1인당 한 달에 1개까지 가능합니다."}
         </div>
       )}
       <div className="space-y-1.5">
@@ -580,7 +624,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <DatePickerField label="투어 출발일" value={startDate} onChange={setStartDate} />
+        <DatePickerField label="투어 출발일" value={startDate} onChange={setStartDate} maxDate={maxStartDate} />
         <DatePickerField label="투어 종료일" value={endDate} onChange={setEndDate} minDate={startDate} />
         <DatePickerField label="투어모집 마감일" value={deadline} onChange={setDeadline} maxDate={startDate} />
       </div>
@@ -936,8 +980,19 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         onSignatureChange={setPledgeSignature}
       />
 
-      <Button type="submit" className="w-full" size="lg" disabled={submitting || !isVerifiedInstructor}>
-        {submitting ? "등록 중..." : isVerifiedInstructor ? "투어 등록하기" : "관리자 승인 후 등록 가능"}
+      <Button
+        type="submit"
+        className="w-full"
+        size="lg"
+        disabled={submitting || !isVerifiedInstructor || hasReachedTourLimit}
+      >
+        {submitting
+          ? "등록 중..."
+          : !isVerifiedInstructor
+            ? "관리자 승인 후 등록 가능"
+            : hasReachedTourLimit
+              ? "투어 생성 한도 초과"
+              : "투어 등록하기"}
       </Button>
     </form>
   );
