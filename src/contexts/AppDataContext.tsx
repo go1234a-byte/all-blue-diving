@@ -725,9 +725,17 @@ interface AppDataContextValue {
 const AppDataContext = createContext<AppDataContextValue | undefined>(undefined);
 
 let idCounter = 1000;
+// 예전에는 idCounter가 매 페이지 로드마다 1000부터 다시 시작해서, 실제 DB에 이미
+// "inst-1001" 같은 낮은 번호의 행이 있으면(과거 세션에서 생성된 실데이터/QA 테스트 데이터)
+// 새로 생성한 id가 그것과 그대로 충돌했다 — insert가 PK 중복(409)으로 조용히 실패해도
+// 호출부에서 에러를 확인하지 않아 "가입은 성공했다고 뜨지만 실제로는 강사/다이버 등
+// 레코드가 DB에 하나도 생성되지 않은" 유령 계정이 만들어지는 버그의 근본 원인이었다.
+// (미인증 강사가 로그아웃이 안 되던 문제, 관리자 승인 큐에 강사가 안 뜨던 문제 모두 이 때문.)
+// 타임스탬프+랜덤 문자열을 섞어 세션 간에도 절대 충돌하지 않도록 한다.
 function nextId(prefix: string): string {
   idCounter += 1;
-  return `${prefix}-${idCounter}`;
+  const entropy = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${entropy}${idCounter.toString(36)}`;
 }
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
@@ -1811,7 +1819,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     };
 
     // Enter Cloud(Supabase)에 신규 강사 신청 기록 (관리자 인증 대기 상태)
-    await supabase.from("instructors").insert({
+    // 주의: 예전에는 이 insert의 결과를 확인하지 않아서, id 충돌 등으로 실패해도 아무
+    // 에러 없이 넘어갔다 — profiles에는 role="instructor"로 로그인은 되지만 정작
+    // instructors 행이 없는 "유령 계정"이 만들어져, 본인은 마이페이지가 빈 화면으로
+    // 나와 로그아웃도 못 하고, 관리자 승인 큐에도 뜨지 않는 문제로 이어졌다.
+    const { error: instructorInsertError } = await supabase.from("instructors").insert({
       id: instructorId,
       profile_id: profileId,
       name: input.name,
@@ -1823,6 +1835,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       pledge_version: input.pledgeSigned ? "v1" : undefined,
       bio: input.bio,
     });
+    if (instructorInsertError) {
+      throw new Error(
+        `강사 프로필 생성에 실패했습니다: ${instructorInsertError.message}`,
+      );
+    }
 
     setInstructors((prev) => [...prev, instructorProfile]);
     return instructorProfile;
