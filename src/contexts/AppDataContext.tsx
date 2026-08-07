@@ -57,6 +57,7 @@ function mapPenaltyRow(row: {
 function mapInstructorRow(row: {
   id: string;
   profile_id: string | null;
+  created_at: string;
   name: string;
   avatar_url: string | null;
   agency: string | null;
@@ -91,6 +92,7 @@ function mapInstructorRow(row: {
   return {
     id: row.id,
     profileId: row.profile_id ?? "",
+    createdAt: row.created_at,
     name: row.name,
     avatarUrl: row.avatar_url ?? undefined,
     agency: row.agency ?? undefined,
@@ -1792,6 +1794,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const instructorProfile: InstructorProfile = {
       id: instructorId,
       profileId,
+      createdAt: new Date().toISOString(),
       name: input.name,
       licenseFileNames: input.licenseFileNames,
       signatureDataUrl: input.signatureDataUrl,
