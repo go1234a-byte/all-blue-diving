@@ -26,7 +26,7 @@ export function LicenseVaultCard() {
         </p>
         <FileDropzone
           label="C-Card 업로드"
-          accept=".pdf,.jpg,.png"
+          accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif"
           onFilesChange={(files) => setUploaded(files.length > 0)}
         />
       </CardContent>
