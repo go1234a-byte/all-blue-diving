@@ -19,7 +19,7 @@ interface InstructorSignupFormProps {
 }
 
 const STEP_LABELS = [
-  "신분증 인증",
+  "신분증 · 정산계좌 인증",
   "강사 자격증 업로드",
   "보험 등록 (선택)",
   "플랫폼 윤리강령",
@@ -56,6 +56,11 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
 
   // 1) 신분증 인증
   const [idFiles, setIdFiles] = useState<File[]>([]);
+  // 1) 정산 계좌 (통장사본)
+  const [bankName, setBankName] = useState("");
+  const [accountHolder, setAccountHolder] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [bankbookFiles, setBankbookFiles] = useState<File[]>([]);
   // 2) 강사 자격증
   const [licenseFiles, setLicenseFiles] = useState<File[]>([]);
   // 3) 보험 등록 (선택)
@@ -76,6 +81,14 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           toast({
             title: "필수 항목을 입력해주세요",
             description: "이메일/비밀번호/이름/연락처/신분증 사본은 필수입니다.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        if (!bankName || !accountHolder || !accountNumber || bankbookFiles.length === 0) {
+          toast({
+            title: "정산 계좌 정보를 입력해주세요",
+            description: "은행명/예금주명/계좌번호와 통장사본은 필수입니다.",
             variant: "destructive",
           });
           return false;
@@ -223,6 +236,10 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
         gender,
         pledge_settlement_agreed: true,
         pledge_settlement_agreed_at: new Date().toISOString(),
+        bank_name: bankName,
+        account_holder: accountHolder,
+        account_number: accountNumber,
+        bankbook_file_name: bankbookFiles[0]?.name ?? null,
       };
 
       let { error: profileError } = await supabase.from("profiles").insert(instructorProfilePayload);
@@ -336,6 +353,47 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           <div className="space-y-1.5">
             <Label>신분증 사본 업로드 (필수)</Label>
             <FileDropzone label="신분증 사본" accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif" onFilesChange={setIdFiles} />
+          </div>
+          <div className="space-y-3 rounded-xl border border-border p-3">
+            <Label className="text-sm font-semibold">정산 계좌 정보 (필수)</Label>
+            <p className="text-xs text-muted-foreground">
+              정산금을 입금받을 본인 명의 계좌 정보를 입력해주세요.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="ins-bank-name">은행명</Label>
+              <Input
+                id="ins-bank-name"
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                placeholder="예: 국민은행"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ins-account-holder">예금주명</Label>
+              <Input
+                id="ins-account-holder"
+                value={accountHolder}
+                onChange={(e) => setAccountHolder(e.target.value)}
+                placeholder="계좌 명의자 이름"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ins-account-number">계좌번호</Label>
+              <Input
+                id="ins-account-number"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                placeholder="'-' 없이 숫자만 입력"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>통장 사본 업로드 (필수)</Label>
+              <FileDropzone
+                label="통장 사본"
+                accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif"
+                onFilesChange={setBankbookFiles}
+              />
+            </div>
           </div>
           <label className="flex items-start gap-2 text-xs text-muted-foreground">
             <Checkbox
