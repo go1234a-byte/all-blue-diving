@@ -450,3 +450,34 @@ const AdminInstructorsPage = () => {
                           <div className="min-w-0 flex-1">
                             <p className={`text-foreground ${p.voided ? "line-through" : ""}`}>
                               {p.violationType} · {p.description}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {new Date(p.createdAt).toLocaleString("ko-KR")}
+                              {p.voided && " · 정정됨"}
+                            </p>
+                          </div>
+                          {!p.voided && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 shrink-0 text-[10px] text-destructive hover:text-destructive"
+                              disabled={voidingPenaltyId === p.id}
+                              onClick={() => handleVoidPenalty(p.id, instructor.id)}
+                            >
+                              정정(취소)
+                            </Button>
+                          )}
+                        </div>
+                      ))
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default AdminInstructorsPage;
