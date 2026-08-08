@@ -3649,6 +3649,7 @@ export type Database = {
           experience_years: number
           id: string
           license_file_names: string[] | null
+          license_file_paths: string[] | null
           name: string
           penalty_count: number
           pledge_signed: boolean
@@ -3671,6 +3672,7 @@ export type Database = {
           experience_years?: number
           id: string
           license_file_names?: string[] | null
+          license_file_paths?: string[] | null
           name: string
           penalty_count?: number
           pledge_signed?: boolean
@@ -3693,6 +3695,7 @@ export type Database = {
           experience_years?: number
           id?: string
           license_file_names?: string[] | null
+          license_file_paths?: string[] | null
           name?: string
           penalty_count?: number
           pledge_signed?: boolean
@@ -3926,10 +3929,16 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_holder: string | null
+          account_number: string | null
+          bank_name: string | null
+          bankbook_file_name: string | null
+          bankbook_path: string | null
           created_at: string
           deleted_at: string | null
           gender: string | null
           id: string
+          id_document_path: string | null
           name: string
           phone: string | null
           pledge_settlement_agreed: boolean
@@ -3940,10 +3949,16 @@ export type Database = {
           status: string
         }
         Insert: {
+          account_holder?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          bankbook_file_name?: string | null
+          bankbook_path?: string | null
           created_at?: string
           deleted_at?: string | null
           gender?: string | null
           id: string
+          id_document_path?: string | null
           name: string
           phone?: string | null
           pledge_settlement_agreed?: boolean
@@ -3954,10 +3969,16 @@ export type Database = {
           status?: string
         }
         Update: {
+          account_holder?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          bankbook_file_name?: string | null
+          bankbook_path?: string | null
           created_at?: string
           deleted_at?: string | null
           gender?: string | null
           id?: string
+          id_document_path?: string | null
           name?: string
           phone?: string | null
           pledge_settlement_agreed?: boolean
