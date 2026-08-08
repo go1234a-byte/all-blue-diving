@@ -19,6 +19,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/tours": "투어 관리",
   "/admin/bookings": "예약 관리",
   "/admin/payouts": "정산 관리",
+  "/admin/accounting": "회계 센터",
   "/admin/instructors": "강사 관리",
   "/admin/centers": "센터 관리",
   "/admin/users": "회원 관리",
