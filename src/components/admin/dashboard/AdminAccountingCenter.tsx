@@ -557,53 +557,57 @@ export function AdminAccountingCenter() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadCsv}>
-            <Download className="h-4 w-4" />
-            엑셀 다운로드
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
-            <Printer className="h-4 w-4" />
-            PDF로 저장
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => shiftMonth(-1)} aria-label="이전 달">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="min-w-[90px] justify-center font-medium">
-                {year}년 {month}월
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="center" className="flex w-auto gap-2 p-3">
-              <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-                <SelectTrigger className="w-[100px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {YEAR_OPTIONS.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}년
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-                <SelectTrigger className="w-[90px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTH_OPTIONS.map((m) => (
-                    <SelectItem key={m} value={String(m)}>
-                      {m}월
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </PopoverContent>
-          </Popover>
-          <Button variant="outline" size="icon" onClick={() => shiftMonth(1)} aria-label="다음 달">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadCsv}>
+              <Download className="h-4 w-4" />
+              엑셀 다운로드
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
+              <Printer className="h-4 w-4" />
+              PDF로 저장
+            </Button>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <Button variant="outline" size="icon" onClick={() => shiftMonth(-1)} aria-label="이전 달">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="min-w-[90px] justify-center font-medium">
+                  {year}년 {month}월
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="center" className="flex w-auto gap-2 p-3">
+                <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {YEAR_OPTIONS.map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}년
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
+                  <SelectTrigger className="w-[90px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTH_OPTIONS.map((m) => (
+                      <SelectItem key={m} value={String(m)}>
+                        {m}월
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </PopoverContent>
+            </Popover>
+            <Button variant="outline" size="icon" onClick={() => shiftMonth(1)} aria-label="다음 달">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
