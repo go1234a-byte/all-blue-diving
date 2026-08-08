@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatKRW } from "@/lib/pricing";
@@ -50,6 +52,11 @@ function monthRange(year: number, month: number) {
     periodStr: `${year}-${String(month).padStart(2, "0")}-01`,
   };
 }
+
+const CURRENT_YEAR = new Date().getFullYear();
+// 현재 연도 기준 4년 전 ~ 1년 후까지 선택 가능하게 한다.
+const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - 4 + i);
+const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 type Tone = "blue" | "green" | "red" | "orange" | "slate";
 
@@ -209,9 +216,39 @@ export function AdminAccountingCenter() {
           <Button variant="outline" size="icon" onClick={() => shiftMonth(-1)} aria-label="이전 달">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="min-w-[90px] text-center font-medium">
-            {year}년 {month}월
-          </span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="min-w-[90px] justify-center font-medium">
+                {year}년 {month}월
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="center" className="flex w-auto gap-2 p-3">
+              <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {YEAR_OPTIONS.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}년
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
+                <SelectTrigger className="w-[90px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_OPTIONS.map((m) => (
+                    <SelectItem key={m} value={String(m)}>
+                      {m}월
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </PopoverContent>
+          </Popover>
           <Button variant="outline" size="icon" onClick={() => shiftMonth(1)} aria-label="다음 달">
             <ChevronRight className="h-4 w-4" />
           </Button>
