@@ -13,7 +13,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadInstructorDocument, uploadInstructorDocuments } from "@/lib/uploadImage";
 import { useToast } from "@/hooks/use-toast";
-import type { Gender } from "@/types";
+import type { Gender, InstructorBusinessType } from "@/types";
 
 interface InstructorSignupFormProps {
   onSuccess: () => void;
@@ -70,6 +70,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
   const [ethicsAgreed, setEthicsAgreed] = useState(false);
   // 5) 전자 서약
   const [pledgeSignerName, setPledgeSignerName] = useState("");
+  const [businessType, setBusinessType] = useState<InstructorBusinessType | "">("");
   const [pledgeAgreed, setPledgeAgreed] = useState(false);
   const [signature, setSignature] = useState<string | undefined>(undefined);
 
@@ -144,10 +145,10 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
       setStep(1);
       return;
     }
-    if (!pledgeSignerName.trim() || !pledgeAgreed || !signature) {
+    if (!pledgeSignerName.trim() || !businessType || !pledgeAgreed || !signature) {
       toast({
         title: "전자 서약을 완료해주세요",
-        description: "이름 입력, 동의 체크박스, 서명을 모두 완료해야 합니다.",
+        description: "이름 입력, 사업자 유형 선택, 동의 체크박스, 서명을 모두 완료해야 합니다.",
         variant: "destructive",
       });
       return;
@@ -302,6 +303,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           licenseFilePaths,
           signatureDataUrl: signature,
           pledgeSigned: true,
+          businessType: businessType || undefined,
           settlementPledgeAgreed: true,
           bankName,
           accountHolder,
@@ -513,6 +515,8 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
         <PledgeAgreement
           signerName={pledgeSignerName}
           onSignerNameChange={setPledgeSignerName}
+          businessType={businessType}
+          onBusinessTypeChange={setBusinessType}
           agreed={pledgeAgreed}
           onAgreedChange={setPledgeAgreed}
           signature={signature}
