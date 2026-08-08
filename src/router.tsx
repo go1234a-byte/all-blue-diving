@@ -16,6 +16,8 @@ import InstructorConsole from "./pages/InstructorConsole";
 import TourEditPage from "./pages/TourEditPage";
 import InstructorPublicProfile from "./pages/InstructorPublicProfile";
 import SupportChat from "./pages/SupportChat";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import InstructorArbitrationRoom from "./pages/InstructorArbitrationRoom";
 import AdminArbitrationRoom from "./pages/AdminArbitrationRoom";
 import { AdminLayout } from "./components/admin/layout/AdminLayout";
@@ -122,6 +124,8 @@ export const routers = [
         ],
       },
       { path: "support", name: "support-chat", element: <SupportChat /> },
+      { path: "terms", name: "terms", element: <TermsPage /> },
+      { path: "privacy", name: "privacy", element: <PrivacyPage /> },
       /* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */
       { path: "*", name: "404", element: <NotFound /> },
     ],
