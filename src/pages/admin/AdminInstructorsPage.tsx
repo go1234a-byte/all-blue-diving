@@ -105,6 +105,15 @@ const AdminInstructorsPage = () => {
     toast({ title: `${instructorName} 강사의 인증을 회수했습니다.`, variant: "destructive" });
   };
 
+  // 예전에는 한 번 반려된 강사는 승인 큐(InstructorApplicationQueue)에서 아예 제외돼서
+  // 다시 승인할 방법이 없었다 — 강사 본인이 재가입하지 않는 한 영구히 "반려됨" 상태로
+  // 남았다. 관리자관리 목록에서 반려된 강사에게 "인증 승인" 버튼을 추가해, 반려 사유가
+  // 해소됐을 때(예: 강사가 서류를 다시 보내온 경우) 관리자가 직접 승인할 수 있게 한다.
+  const handleApproveRejected = (instructorId: string, instructorName: string) => {
+    void setInstructorVerified(instructorId, true);
+    toast({ title: `${instructorName} 강사의 인증을 승인했습니다.` });
+  };
+
   const handleWarn = (instructorId: string, instructorName: string, currentPenalty: number) => {
     const reason = warnReasonDrafts[instructorId]?.trim() || undefined;
     if (!reason) {
@@ -244,6 +253,34 @@ const AdminInstructorsPage = () => {
                   )}
                 </div>
               </Link>
+
+              {!isBanned && !instructor.verified && instructor.rejectedAt && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" className="w-full text-xs">
+                      인증 승인
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{instructor.name} 강사를 인증 승인하시겠습니까?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        반려 이력이 있는 신청 건입니다. 반려 사유가 해소됐는지(제출 서류 재확인 등) 확인한 뒤
+                        승인해주세요. 승인하면 반려 상태가 해제되고 "인증됨"으로 전환됩니다.
+                        {instructor.rejectionReason && (
+                          <span className="mt-1.5 block text-foreground">반려 사유: {instructor.rejectionReason}</span>
+                        )}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleApproveRejected(instructor.id, instructor.name)}>
+                        인증 승인
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
 
               {isBanned ? (
                 <AlertDialog>
@@ -413,34 +450,3 @@ const AdminInstructorsPage = () => {
                           <div className="min-w-0 flex-1">
                             <p className={`text-foreground ${p.voided ? "line-through" : ""}`}>
                               {p.violationType} · {p.description}
-                            </p>
-                            <p className="text-muted-foreground">
-                              {new Date(p.createdAt).toLocaleString("ko-KR")}
-                              {p.voided && " · 정정됨"}
-                            </p>
-                          </div>
-                          {!p.voided && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 shrink-0 text-[10px] text-destructive hover:text-destructive"
-                              disabled={voidingPenaltyId === p.id}
-                              onClick={() => handleVoidPenalty(p.id, instructor.id)}
-                            >
-                              정정(취소)
-                            </Button>
-                          )}
-                        </div>
-                      ))
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-export default AdminInstructorsPage;
