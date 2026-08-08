@@ -32,6 +32,14 @@ export interface Profile {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   insuranceInfo?: string; // 선택 — 여행자/다이빙 보험 정보(보험사·증권번호 등)
+  // 강사 가입 시 제출하는 정산 계좌 정보 + 신분증 사본. 예전에는 DB엔 저장됐지만
+  // 프론트 타입에 없어서 관리자/본인 어디에도 노출되지 않았다.
+  bankName?: string;
+  accountHolder?: string;
+  accountNumber?: string;
+  bankbookFileName?: string; // 통장 사본 원본 파일명 (표시용)
+  bankbookPath?: string; // 통장 사본 실제 저장 경로 (instructor-documents 비공개 버킷, 서명된 URL 발급용)
+  idDocumentPath?: string; // 신분증 사본 실제 저장 경로 (instructor-documents 비공개 버킷, 서명된 URL 발급용)
 }
 
 export interface InstructorProfile {
@@ -43,6 +51,7 @@ export interface InstructorProfile {
   agency?: string; // 다이빙협회 소속 (예: PADI, SSI, CMAS 등)
   level?: string; // 자격 레벨 (예: Divemaster, OWSI, MSDT, Course Director 등)
   licenseFileNames: string[];
+  licenseFilePaths?: string[]; // 자격증 서류 실제 저장 경로들 (instructor-documents 비공개 버킷, 서명된 URL 발급용)
   signatureDataUrl?: string;
   verified: boolean;
   verifiedAt?: string;
