@@ -88,6 +88,12 @@ const AdminInstructorsPage = () => {
       return true;
     })
     .sort((a, b) => {
+      // 심사 대기중(미인증·미반려)인 강사는 정렬 조건과 무관하게 항상 맨 위로 올린다.
+      // 예전에는 새로 가입한 강사가 목록 맨 뒤에 추가되는 구조라, 승인이 시급한 신청
+      // 건이 전체 강사 목록 맨 아래에 파묻혀 관리자가 놓치기 쉬웠다.
+      const aPending = !a.verified && !a.rejectedAt;
+      const bPending = !b.verified && !b.rejectedAt;
+      if (aPending !== bPending) return aPending ? -1 : 1;
       if (sortOrder !== "latest") return 0;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
@@ -145,6 +151,15 @@ const AdminInstructorsPage = () => {
 
   return (
     <div className="space-y-4">
+      {/* 예전에는 이 승인 대기열이 전체 강사 목록 맨 아래에 있어서, 관리자가 승인/반려
+          처리를 하려면 등록된 모든 강사(인증됨/반려됨/정지됨 포함)를 다 스크롤해서
+          지나가야 했다. 가장 시급하게 처리해야 할 "심사 대기중" 건을 페이지 맨 위로
+          올린다. */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-foreground">강사 인증 신청 큐 (심사 대기중)</h3>
+        <InstructorApplicationQueue />
+      </div>
+
       <div className="grid grid-cols-3 gap-2 rounded-xl border border-border bg-card p-3">
         <Select value={verifiedFilter} onValueChange={(v) => setVerifiedFilter(v as typeof verifiedFilter)}>
           <SelectTrigger className="h-8 text-xs">
@@ -415,11 +430,6 @@ const AdminInstructorsPage = () => {
             </div>
           );
         })}
-      </div>
-
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-foreground">강사 인증 신청 큐</h3>
-        <InstructorApplicationQueue />
       </div>
     </div>
   );
