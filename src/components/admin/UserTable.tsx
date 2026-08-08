@@ -23,7 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useAdminPeriod } from "@/contexts/AdminPeriodContext";
 import { useToast } from "@/hooks/use-toast";
+import { isWithinAdminPeriod } from "@/lib/dates";
 import type { ProfileStatus } from "@/types";
 
 const STATUS_LABEL: Record<ProfileStatus, string> = {
@@ -45,17 +47,29 @@ export function UserTable() {
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "diver" | "instructor">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | ProfileStatus>("all");
+  const [sortOrder, setSortOrder] = useState<"latest" | "oldest" | "name">("latest");
+  // 상단바의 기간(오늘/이번주/이번달/올해) 선택 — 강사 관리 화면과 달리 이 회원관리
+  // 화면은 지금까지 이 값을 전혀 사용하지 않아서, 상단에 기간이 표시되는데도 필터링은
+  // 안 되는 상태였다. 가입일(createdAt) 기준으로 필터링한다.
+  const { period } = useAdminPeriod();
   const allUsersRaw = [...instructorProfiles, ...diverProfiles];
   const normalizedQuery = query.trim().toLowerCase();
-  const allUsers = allUsersRaw.filter((user) => {
-    if (roleFilter !== "all" && user.role !== roleFilter) return false;
-    if (statusFilter !== "all" && user.status !== statusFilter) return false;
-    if (!normalizedQuery) return true;
-    return (
-      user.name.toLowerCase().includes(normalizedQuery) ||
-      (user.phone ?? "").toLowerCase().includes(normalizedQuery)
-    );
-  });
+  const allUsers = allUsersRaw
+    .filter((user) => {
+      if (roleFilter !== "all" && user.role !== roleFilter) return false;
+      if (statusFilter !== "all" && user.status !== statusFilter) return false;
+      if (!isWithinAdminPeriod(user.createdAt, period)) return false;
+      if (!normalizedQuery) return true;
+      return (
+        user.name.toLowerCase().includes(normalizedQuery) ||
+        (user.phone ?? "").toLowerCase().includes(normalizedQuery)
+      );
+    })
+    .sort((a, b) => {
+      if (sortOrder === "name") return a.name.localeCompare(b.name, "ko");
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return sortOrder === "oldest" ? -diff : diff;
+    });
 
   const handleStatusChange = (userId: string, userName: string, status: ProfileStatus) => {
     setProfileStatus(userId, status);
@@ -83,7 +97,7 @@ export function UserTable() {
             className="h-8 pl-8 text-xs"
           />
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
             <SelectTrigger className="h-8 text-xs">
               <SelectValue />
@@ -103,6 +117,16 @@ export function UserTable() {
               <SelectItem value="active">정상</SelectItem>
               <SelectItem value="warned">경고</SelectItem>
               <SelectItem value="suspended">활동정지</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as typeof sortOrder)}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="latest">최신순</SelectItem>
+              <SelectItem value="oldest">오래된순</SelectItem>
+              <SelectItem value="name">이름순</SelectItem>
             </SelectContent>
           </Select>
         </div>
