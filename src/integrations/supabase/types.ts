@@ -3646,6 +3646,7 @@ export type Database = {
           bio: string | null
           completion_rate: number
           created_at: string
+          documents_pending_review: boolean
           experience_years: number
           id: string
           license_file_names: string[] | null
@@ -3669,6 +3670,7 @@ export type Database = {
           bio?: string | null
           completion_rate?: number
           created_at?: string
+          documents_pending_review?: boolean
           experience_years?: number
           id: string
           license_file_names?: string[] | null
@@ -3692,6 +3694,7 @@ export type Database = {
           bio?: string | null
           completion_rate?: number
           created_at?: string
+          documents_pending_review?: boolean
           experience_years?: number
           id?: string
           license_file_names?: string[] | null
