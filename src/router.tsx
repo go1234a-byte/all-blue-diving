@@ -20,6 +20,8 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import InstructorArbitrationRoom from "./pages/InstructorArbitrationRoom";
 import AdminArbitrationRoom from "./pages/AdminArbitrationRoom";
+import InstructorAdminNotePage from "./pages/InstructorAdminNotePage";
+import AdminInstructorNotePage from "./pages/admin/AdminInstructorNotePage";
 import { AdminLayout } from "./components/admin/layout/AdminLayout";
 import AdminHomePage from "./pages/admin/AdminHomePage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
@@ -87,6 +89,7 @@ export const routers = [
           { index: true, name: "instructor-console", element: <InstructorConsole /> },
           { path: "tours/:tourId/edit", name: "instructor-tour-edit", element: <TourEditPage /> },
           { path: "arbitration", name: "instructor-arbitration", element: <InstructorArbitrationRoom /> },
+          { path: "notes", name: "instructor-admin-notes", element: <InstructorAdminNotePage /> },
         ],
       },
       {
@@ -121,6 +124,7 @@ export const routers = [
             ],
           },
           { path: "arbitration/:instructorId", name: "admin-arbitration", element: <AdminArbitrationRoom /> },
+          { path: "instructors/:instructorId/notes", name: "admin-instructor-notes", element: <AdminInstructorNotePage /> },
         ],
       },
       { path: "support", name: "support-chat", element: <SupportChat /> },
