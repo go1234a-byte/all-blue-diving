@@ -33,6 +33,10 @@ export function PayoutManagement() {
       )}
       {payouts.map((payout) => {
         const instructor = instructors.find((i) => i.id === payout.instructorId);
+        const grossAmount = payout.firstAmount + payout.secondAmount;
+        // 원천징수 관련 값은 payouts_directory 뷰에서 본인 강사/관리자에게만 내려온다.
+        // 관리자 화면이므로 값이 있으면(undefined가 아니면) 표시한다.
+        const hasWithholdingInfo = payout.withholdingTaxAmount !== undefined && payout.netPayoutAmount !== undefined;
         return (
           <div
             key={payout.id}
@@ -56,6 +60,31 @@ export function PayoutManagement() {
                 <p className="font-semibold text-foreground">{formatKRW(payout.secondAmount)}</p>
               </div>
             </div>
+            {hasWithholdingInfo ? (
+              <div className="space-y-1 rounded-lg bg-secondary/40 p-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    원천징수세액 ({((payout.withholdingTaxRate ?? 0) * 100).toFixed(1)}%)
+                  </span>
+                  <span className="font-medium text-foreground">
+                    -{formatKRW(payout.withholdingTaxAmount ?? 0)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-foreground">실지급액</span>
+                  <span className="font-bold text-foreground">{formatKRW(payout.netPayoutAmount ?? grossAmount)}</span>
+                </div>
+                {!payout.businessTypeAtPayout && (
+                  <p className="pt-0.5 text-[10px] text-destructive">
+                    ⚠ 강사 사업자유형 미입력 상태로 지급되어 원천징수가 적용되지 않았습니다.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-[10px] text-muted-foreground">
+                원천징수 정보 없음 (정산 정책 적용 이전 건)
+              </p>
+            )}
             {payout.status === "held" && (
               <Button
                 size="sm"
