@@ -73,7 +73,7 @@ const AdminInstructorsPage = () => {
   };
   const [verifiedFilter, setVerifiedFilter] = useState<"all" | "verified" | "pending">("all");
   const [penaltyFilter, setPenaltyFilter] = useState<"all" | "has" | "none">("all");
-  const [sortOrder, setSortOrder] = useState<"default" | "latest">("default");
+  const [sortOrder, setSortOrder] = useState<"latest" | "oldest" | "name">("latest");
   // 상단바의 기간(오늘/이번주/이번달/올해) 선택 — 예전에는 이 값을 어떤 관리자 화면도
   // 실제로 소비하지 않아서 선택해도 목록이 그대로였다. 여기서는 강사 가입(신청)일 기준으로 필터링한다.
   const { period } = useAdminPeriod();
@@ -94,8 +94,9 @@ const AdminInstructorsPage = () => {
       const aPending = !a.verified && !a.rejectedAt;
       const bPending = !b.verified && !b.rejectedAt;
       if (aPending !== bPending) return aPending ? -1 : 1;
-      if (sortOrder !== "latest") return 0;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sortOrder === "name") return a.name.localeCompare(b.name, "ko");
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return sortOrder === "oldest" ? -diff : diff;
     });
 
   const handleRevokeVerified = (instructorId: string, instructorName: string) => {
@@ -186,8 +187,9 @@ const AdminInstructorsPage = () => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="default">기본순</SelectItem>
             <SelectItem value="latest">최신순</SelectItem>
+            <SelectItem value="oldest">오래된순</SelectItem>
+            <SelectItem value="name">이름순</SelectItem>
           </SelectContent>
         </Select>
       </div>
