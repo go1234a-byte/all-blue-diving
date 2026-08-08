@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FileCheck2, Pencil } from "lucide-react";
+import { ChevronRight, FileCheck2, FileText, Pencil } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -96,6 +96,19 @@ export function InstructorMyPageView() {
       <InstructorBusinessTypeBanner instructor={instructor} />
 
       <InstructorProfileEditCard instructor={instructor} profile={instructorProfile} />
+
+      {/* 관리자가 서류 보완 요청·반려 사유 등을 남기는 비공개 안내 메모함 — 관리자와 본인만
+          볼 수 있다. 이의신청용 "비밀 중재방"(/instructor/arbitration)과는 별개의 채널이다. */}
+      <Link
+        to="/instructor/notes"
+        className="flex items-center justify-between rounded-xl border border-border bg-card p-4 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
+      >
+        <span className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-muted-foreground" />
+          관리자 안내
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </Link>
 
       <InstructorNotificationCenter instructorId={currentInstructorId} />
 
