@@ -1,531 +1,843 @@
-// ALL BLUE — 도메인 타입 정의 (프론트엔드 목업 데이터 기반)
+import { useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Award,
+  Ban,
+  Bookmark,
+  CalendarCheck,
+  Clock,
+  Facebook,
+  Globe2,
+  Images,
+  Instagram,
+  Languages,
+  Link2,
+  MapPin,
+  MessageCircleOff,
+  Newspaper,
+  Repeat,
+  ShieldCheck,
+  Star,
+  TrendingDown,
+  Users,
+  Youtube,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
+import { DocumentViewButton } from "@/components/admin/DocumentViewButton";
+import { useAppData } from "@/contexts/AppDataContext";
+import { useRole } from "@/contexts/RoleContext";
+import { useToast } from "@/hooks/use-toast";
+import { formatDateKR, formatDateRangeKR, isPastDate } from "@/lib/dates";
+import { maskName } from "@/lib/masking";
+import { cn } from "@/lib/utils";
+import type { ChatMessage } from "@/types";
 
-export type UserRole = "public" | "diver" | "instructor" | "admin";
+/** 2회 경고 누적 시 자동으로 영구정지 처리한다 (AdminInstructorsPage와 동일 기준). */
+const PERMANENT_BAN_THRESHOLD = 2;
 
-export type ActivityType = "scuba" | "freediving" | "liveaboard";
+/** 응답률/응답속도 — 다이버 메시지 이후 강사가 실제로 답장했는지, 얼마나 빨리 답했는지 채팅 로그로부터 계산. */
+function computeResponseStats(messages: ChatMessage[], instructorProfileId: string) {
+  const byTour = new Map<string, ChatMessage[]>();
+  messages.forEach((m) => {
+    if (!byTour.has(m.tourId)) byTour.set(m.tourId, []);
+    byTour.get(m.tourId)!.push(m);
+  });
 
-export type ScubaCertLevel = "ow" | "aow" | "rescue" | "master" | "inst";
+  let diverMsgCount = 0;
+  let answeredCount = 0;
+  const responseDeltasHours: number[] = [];
 
-export type FreedivingCertLevel = "basic" | "level1" | "level2" | "level3" | "inst";
+  byTour.forEach((msgs) => {
+    const sorted = [...msgs].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    sorted.forEach((m, i) => {
+      if (m.senderRole !== "diver") return;
+      diverMsgCount += 1;
+      const reply = sorted
+        .slice(i + 1)
+        .find((next) => next.senderRole === "instructor" && next.senderProfileId === instructorProfileId);
+      if (reply) {
+        answeredCount += 1;
+        const deltaHours =
+          (new Date(reply.createdAt).getTime() - new Date(m.createdAt).getTime()) / (1000 * 60 * 60);
+        responseDeltasHours.push(deltaHours);
+      }
+    });
+  });
 
-export type CertificationLevel = ScubaCertLevel | FreedivingCertLevel;
+  const responseRate = diverMsgCount > 0 ? Math.round((answeredCount / diverMsgCount) * 100) : null;
+  const avgResponseHours =
+    responseDeltasHours.length > 0
+      ? responseDeltasHours.reduce((sum, v) => sum + v, 0) / responseDeltasHours.length
+      : null;
 
-export type ProfileStatus = "active" | "warned" | "suspended";
-
-export type Gender = "male" | "female";
-
-export interface Profile {
-  id: string;
-  role: "diver" | "instructor" | "admin";
-  name: string;
-  phone: string;
-  gender: Gender;
-  status: ProfileStatus;
-  createdAt: string;
-  snoring?: boolean;
-  smoking?: boolean;
-  birthDate?: string; // 생년월일(YYYY-MM-DD), 나이 계산용
-  // 다이버 가입 시 추가 정보 (안전/책임 목적)
-  cCardAgency?: string; // 자격증 발급 기관 (PADI/SSI 등)
-  cCardNumber?: string; // 자격증 번호
-  logCount?: number; // 누적 다이빙 로그 수
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  insuranceInfo?: string; // 선택 — 여행자/다이빙 보험 정보(보험사·증권번호 등)
-  // 강사 가입 시 제출하는 정산 계좌 정보 + 신분증 사본. 예전에는 DB엔 저장됐지만
-  // 프론트 타입에 없어서 관리자/본인 어디에도 노출되지 않았다.
-  bankName?: string;
-  accountHolder?: string;
-  accountNumber?: string;
-  bankbookFileName?: string; // 통장 사본 원본 파일명 (표시용)
-  bankbookPath?: string; // 통장 사본 실제 저장 경로 (instructor-documents 비공개 버킷, 서명된 URL 발급용)
-  idDocumentPath?: string; // 신분증 사본 실제 저장 경로 (instructor-documents 비공개 버킷, 서명된 URL 발급용)
+  return { responseRate, avgResponseHours };
 }
 
-export interface InstructorProfile {
-  id: string;
-  profileId: string;
-  createdAt: string; // 가입(인증 신청) 시각 - 관리자 강사관리 기간 필터/최신순 정렬에 사용
-  name: string;
-  avatarUrl?: string;
-  agency?: string; // 다이빙협회 소속 (예: PADI, SSI, CMAS 등)
-  level?: string; // 자격 레벨 (예: Divemaster, OWSI, MSDT, Course Director 등)
-  licenseFileNames: string[];
-  licenseFilePaths?: string[]; // 자격증 서류 실제 저장 경로들 (instructor-documents 비공개 버킷, 서명된 URL 발급용)
-  // 이미 인증된 강사가 마이페이지에서 신분증/자격증/통장사본 등을 재제출했지만 관리자가
-  // 아직 재확인하지 않은 상태. true면 관리자 강사 승인 큐에 다시 노출되고, 승인 큐의
-  // 버튼 라벨이 "인증승인" 대신 "수정요청"으로 바뀐다.
-  documentsPendingReview?: boolean;
-  signatureDataUrl?: string;
-  verified: boolean;
-  verifiedAt?: string;
-  verifiedBy?: string;
-  rejectedAt?: string; // 관리자가 인증 신청을 반려한 시각 (있으면 대기열에서 제외)
-  rejectionReason?: string; // 반려 사유 (강사 본인에게 알림으로 전달됨)
-  pledgeSigned: boolean;
-  pledgeSignedAt?: string;
-  pledgeVersion?: string;
-  totalLogs: number;
-  experienceYears: number;
-  completionRate: number; // 0-100
-  rating: number; // 0-5
-  penaltyCount: number;
-  penaltyReason?: string; // 가장 최근 패널티 부여 사유 (강사 프로필에 함께 노출)
-  bio: string;
-  languages?: string[]; // 사용 언어 (공개 프로필 표시용)
-  specialtyTags?: string[]; // 전문 분야 태그 (예: 고래상어, 난파선 등) - 강사 브랜드 페이지에 배지로 노출
-  teachingPhilosophy?: string; // 교육 철학
-  favoriteDiving?: string; // 좋아하는 다이빙
-  snsInstagram?: string;
-  snsYoutube?: string;
-  snsFacebook?: string;
-  snsBlog?: string;
-  snsHomepage?: string;
+function formatResponseSpeed(hours: number | null): string {
+  if (hours === null) return "데이터 없음";
+  if (hours < 1) return `평균 ${Math.max(1, Math.round(hours * 60))}분 이내`;
+  if (hours < 24) return `평균 ${Math.round(hours)}시간 이내`;
+  return `평균 ${Math.round(hours / 24)}일 이내`;
 }
 
-export interface DiveCenter {
-  instructorId: string;
-  name: string;
-  address: string;
-  operatingHours: string;
-  photos: string[];
-}
+const InstructorPublicProfile = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    getInstructorById,
+    getInstructorProfileById,
+    tours,
+    bookings,
+    chatMessages,
+    publicProfiles,
+    getReviewsByInstructorId,
+    setInstructorPenalty,
+    setProfileStatus,
+    setTourAdminStatus,
+    toggleInstructorBookmark,
+    isInstructorBookmarked,
+    instructorsLoading,
+  } = useAppData();
+  const { role } = useRole();
+  const { toast } = useToast();
+  const isAdmin = role === "admin";
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [endToursToo, setEndToursToo] = useState(true);
+  // "경고 부여" 사유 입력 임시 상태
+  const [warnReasonDraft, setWarnReasonDraft] = useState("");
 
-export const CENTER_FEATURE_OPTIONS = [
-  "전용 보트",
-  "하우스리프",
-  "온수 샤워",
-  "장비 세척장",
-  "카메라 전용 테이블",
-  "무료 WIFI",
-  "장비 렌탈",
-  "Nitrox 가능",
-  "레스토랑",
-  "숙소 도보 이동",
-  "공항 픽업",
-  "해양보호구역",
-] as const;
+  const instructor = id ? getInstructorById(id) : undefined;
 
-/** 투어가 반드시 연결되는 이용센터(다이브샵) 정보. */
-export interface Center {
-  id: string;
-  name: string;
-  country?: string;
-  address: string;
-  googleMap?: string;
-  homepage?: string;
-  instagram?: string;
-  phone?: string; // 관리자만 확인 가능
-  features: string[];
-  status: "pending" | "approved" | "rejected"; // 관리자 승인 상태 (기본값 pending)
-  rejectionReason?: string;
-  createdAt: string;
-}
+  const myTours = useMemo(
+    () => (instructor ? tours.filter((t) => t.instructorId === instructor.id) : []),
+    [tours, instructor],
+  );
+  const myTourIds = useMemo(() => new Set(myTours.map((t) => t.id)), [myTours]);
 
-export interface TourOption {
-  id: string;
-  name: string;
-  price: number;
-  isActive: boolean;
-}
+  const myBookings = useMemo(
+    () => bookings.filter((b) => myTourIds.has(b.tourId)),
+    [bookings, myTourIds],
+  );
 
-export interface SelectedOption {
-  name: string;
-  price: number;
-}
+  const upcomingTours = useMemo(
+    () => myTours.filter((t) => !isPastDate(t.endDate)).sort((a, b) => a.startDate.localeCompare(b.startDate)),
+    [myTours],
+  );
+  const completedTours = useMemo(
+    () => myTours.filter((t) => isPastDate(t.endDate)).sort((a, b) => b.startDate.localeCompare(a.startDate)),
+    [myTours],
+  );
 
-/** 투어 일자별 일정 한 항목 (참가자 대시보드 [일정] 탭에서 사용). */
-export interface TourItineraryDay {
-  dayNumber: number;
-  title: string; // 예: "1일차 - 입도 및 오리엔테이션"
-  briefing?: string;
-  diving?: string;
-  meals?: string;
-  freeTime?: string;
-}
+  const activeCountries = useMemo(
+    () => Array.from(new Set(myTours.map((t) => t.country))).filter(Boolean),
+    [myTours],
+  );
+  const activeSites = useMemo(
+    () => Array.from(new Set(myTours.map((t) => t.site))).filter(Boolean),
+    [myTours],
+  );
 
-export interface Tour {
-  id: string;
-  instructorId: string;
-  centerId?: string;
-  createdAt: string; // ISO datetime, 최신순 정렬에 사용
-  title: string;
-  country: string;
-  site: string;
-  activityTypes: ActivityType[];
-  /** 리브어보드 등 참가 조건으로 요구하는 최소 보유 로그 수 (없으면 조건 없음). */
-  minLogCount?: number;
-  /** 투어 특징 태그 (예: 마크로다이빙, 조류다이빙). 프리셋 선택 또는 강사 직접 입력. */
-  tags?: string[];
-  certificationLevel: CertificationLevel;
-  mainImageUrl: string;
-  galleryUrls: string[];
-  startDate: string; // ISO date
-  endDate: string; // ISO date
-  recruitmentDeadline: string; // ISO date
-  basePrice: number;
-  waterTempC: number;
-  visibilityM: number;
-  rating: number;
-  maxParticipants: number;
-  minParticipants: number; // 최소 진행 인원
-  underMinPolicy: UnderMinParticipantsPolicy; // 최소 인원 미달 시 처리 방침 (강사가 출발 30일 전 결정 시점에 선택한 값)
-  autoCloseProcessed: boolean; // 자동 마감/최소인원 평가 로직 중복 실행 방지 플래그
-  underMinDecisionPending: boolean; // 출발 30일 전 최소 인원 미달로 강사의 진행/취소 결정이 필요한 상태
-  status: "open" | "closed";
-  description: string;
-  inclusions: string[];
-  exclusions: string[];
-  prepNotes: string;
-  customOptions: TourOption[];
-  isConfirmed: boolean; // 출발 확정 여부 (미확정 시 전액 환불 규정 적용)
-  pledgeSignerName?: string;
-  pledgeAgreedAt?: string;
-  pledgeSignatureDataUrl?: string;
-  instructorNotice?: string; // 참가자 대시보드/그룹채팅 상단에 고정되는 강사 공지
-  itineraryDays?: TourItineraryDay[]; // 참가자 대시보드 [일정] 탭
-  meetingPoint: string; // 집합 장소 (투어 생성 시 필수 입력)
-  meetingTime: string; // 집합 시간 (투어 생성 시 필수 입력)
-  /** 관리자가 투어를 검토 후 정지(즉시 예약 차단, 검색 노출 제거)하거나 보류(임시 비공개)한 상태. 없으면 정상. */
-  adminStatus?: "suspended" | "held";
-  /** 항공편 정보 (강사가 투어 등록 시 선택 입력). 투어 상세 화면에 강사 프로필 바로 아래 노출된다. */
-  flightInfo?: TourFlightInfo;
-}
+  // 정지 상태 표시는 방문자 누구나 봐야 하므로 이름/역할/상태만 담긴 공개용 프로필(publicProfiles)에서 조회한다.
+  const linkedProfile = instructor ? publicProfiles.find((p) => p.id === instructor.profileId) : undefined;
+  const isBanned = linkedProfile?.status === "suspended";
+  // 관리자 전용 — 은행/계좌/신분증/통장사본 등 민감정보가 실제로 담긴 profile.
+  // (publicProfiles/linkedProfile은 profiles_directory 마스킹 뷰라 관리자가 아니면
+  // 애초에 값이 비어 있고, 관리자라도 is_profile_staff_for 조건 통과 시에만 값이 채워진다.)
+  const documentProfile = instructor ? getInstructorProfileById(instructor.profileId) : undefined;
 
-/** 항공편 한 편(가는 편 또는 오는 편)의 공항·시간 정보. 모두 자유 입력 텍스트(선택 사항). */
-export interface TourFlightSegment {
-  airport?: string; // 출발 공항/장소
-  departureTime?: string; // 출발 일시
-  arrivalTime?: string; // 도착 일시
-}
+  const handleWarn = () => {
+    if (!instructor) return;
+    const reason = warnReasonDraft.trim();
+    if (!reason) {
+      toast({ title: "패널티 사유를 입력해주세요", variant: "destructive" });
+      return;
+    }
+    const next = instructor.penaltyCount + 1;
+    setInstructorPenalty(instructor.id, next, reason);
+    setWarnReasonDraft("");
+    if (next >= PERMANENT_BAN_THRESHOLD) {
+      toast({
+        title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회) — 영구정지 처리되었습니다.`,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회).` });
+    }
+  };
 
-/** 투어의 가는 편 / 오는 편 항공편 정보. */
-export interface TourFlightInfo {
-  outbound?: TourFlightSegment; // 가는 편
-  inbound?: TourFlightSegment; // 오는 편
-}
+  const handleClearWarning = () => {
+    if (!instructor) return;
+    setInstructorPenalty(instructor.id, 0);
+    toast({ title: `${instructor.name} 강사의 경고를 모두 해제했습니다.` });
+  };
 
-export const UNDER_MIN_PARTICIPANTS_POLICIES = ["proceed", "cancel"] as const;
-export type UnderMinParticipantsPolicy = (typeof UNDER_MIN_PARTICIPANTS_POLICIES)[number];
+  const handlePermanentBanConfirm = () => {
+    if (!instructor) return;
+    setInstructorPenalty(instructor.id, PERMANENT_BAN_THRESHOLD);
+    setProfileStatus(instructor.profileId, "suspended");
+    if (endToursToo) {
+      upcomingTours.forEach((t) => setTourAdminStatus(t.id, "suspended"));
+    }
+    toast({
+      title: `${instructor.name} 강사를 영구정지 처리했습니다.${
+        endToursToo && upcomingTours.length > 0 ? ` (예정된 투어 ${upcomingTours.length}건도 함께 정지)` : ""
+      }`,
+      variant: "destructive",
+    });
+    setBanDialogOpen(false);
+  };
 
-export const UNDER_MIN_POLICY_LABELS: Record<UnderMinParticipantsPolicy, string> = {
-  proceed: "그대로 진행",
-  cancel: "투어 취소 (전액 환불)",
+  const handleReinstate = () => {
+    if (!instructor) return;
+    setInstructorPenalty(instructor.id, 0);
+    setProfileStatus(instructor.profileId, "active");
+    toast({ title: `${instructor.name} 강사의 영구정지를 해제했습니다.` });
+  };
+
+  const reviews = instructor ? getReviewsByInstructorId(instructor.id) : [];
+  const avgRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
+
+  const totalParticipants = myBookings.filter((b) => b.status === "confirmed").length;
+
+  const cancellationRate = useMemo(() => {
+    if (myBookings.length === 0) return null;
+    const cancelled = myBookings.filter((b) => b.status === "cancelled").length;
+    return Math.round((cancelled / myBookings.length) * 100);
+  }, [myBookings]);
+
+  // 재예약률 — 이 강사의 투어를 확정 예약한 적 있는 다이버 중, 2회 이상 예약한 다이버의 비율.
+  const rebookingRate = useMemo(() => {
+    const confirmed = myBookings.filter((b) => b.status === "confirmed");
+    const byDiver = new Map<string, number>();
+    confirmed.forEach((b) => byDiver.set(b.diverId, (byDiver.get(b.diverId) ?? 0) + 1));
+    if (byDiver.size === 0) return null;
+    const repeatDivers = Array.from(byDiver.values()).filter((count) => count > 1).length;
+    return Math.round((repeatDivers / byDiver.size) * 100);
+  }, [myBookings]);
+
+  // 갤러리 — 이 강사의 투어 대표/갤러리 사진(강사 업로드)과 후기 사진(회원 업로드)을 한 데 모아 보여준다.
+  const galleryImages = useMemo(() => {
+    // 최신순 정렬 후 취합 — 투어 사진은 투어 생성일, 후기 사진은 후기 작성일 기준 내림차순.
+    const sortedTours = [...myTours].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    const sortedReviews = [...reviews].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    const tourPhotos = sortedTours.flatMap((t) => [t.mainImageUrl, ...(t.galleryUrls ?? [])]).filter(Boolean);
+    const reviewPhotos = sortedReviews.flatMap((r) => r.photos ?? []);
+    return Array.from(new Set([...tourPhotos, ...reviewPhotos])).slice(0, 30);
+  }, [myTours, reviews]);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  const { responseRate, avgResponseHours } = useMemo(() => {
+    if (!instructor) return { responseRate: null, avgResponseHours: null };
+    const myMessages = chatMessages.filter((m) => myTourIds.has(m.tourId));
+    return computeResponseStats(myMessages, instructor.id);
+  }, [chatMessages, myTourIds, instructor]);
+
+  const lastActiveAt = useMemo(() => {
+    if (!instructor) return undefined;
+    const myInstructorMessages = chatMessages.filter(
+      (m) => myTourIds.has(m.tourId) && m.senderRole === "instructor" && m.senderProfileId === instructor.id,
+    );
+    if (myInstructorMessages.length === 0) return undefined;
+    return myInstructorMessages.reduce(
+      (latest, m) => (m.createdAt > latest ? m.createdAt : latest),
+      myInstructorMessages[0].createdAt,
+    );
+  }, [chatMessages, myTourIds, instructor]);
+
+  if (instructorsLoading && !instructor) {
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center gap-3 bg-gradient-surface p-6 text-center">
+        <p className="text-sm text-muted-foreground">불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (!instructor) {
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center gap-3 bg-gradient-surface p-6 text-center">
+        <MessageCircleOff className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">강사 프로필을 찾을 수 없습니다.</p>
+        <Link to="/" className="text-sm font-medium text-primary underline underline-offset-4">
+          홈으로 돌아가기
+        </Link>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-full bg-gradient-surface pb-24">
+      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-lg">
+          <button type="button" onClick={() => navigate(-1)} className="text-foreground" aria-label="뒤로가기">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="line-clamp-1 flex-1 text-base font-semibold text-foreground">강사 프로필</h1>
+          {instructor && (
+            <button
+              type="button"
+              onClick={() => toggleInstructorBookmark(instructor.id)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-secondary"
+              aria-label="강사 찜하기"
+            >
+              <Bookmark
+                className={cn(
+                  "h-5 w-5",
+                  isInstructorBookmarked(instructor.id) ? "fill-primary text-primary" : "text-foreground",
+                )}
+              />
+            </button>
+          )}
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-md space-y-4 px-4 py-4 md:max-w-lg">
+        {/* 프로필 헤더 */}
+        <Card className="border-primary/20 bg-card">
+          <CardContent className="space-y-3 p-4">
+            <div className="flex items-start justify-between">
+              {instructor.verified && <VerifiedBadge size="md" />}
+            </div>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-16 w-16 border border-border">
+                <AvatarImage src={instructor.avatarUrl} alt={instructor.name} />
+                <AvatarFallback className="bg-primary text-xl font-bold text-primary-foreground">
+                  {instructor.name[0]}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="text-base font-semibold text-foreground">{instructor.name} 강사</p>
+                  {instructor.agency && (
+                    <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                      {instructor.agency}
+                    </Badge>
+                  )}
+                </div>
+                {(instructor.agency || instructor.level) && (
+                  <p className="text-xs font-medium text-primary">
+                    {[instructor.agency, instructor.level].filter(Boolean).join(" ")}
+                  </p>
+                )}
+                {reviews.length > 0 && (
+                  <p className="flex items-center gap-1 pt-0.5 text-xs font-medium text-foreground">
+                    <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                    {avgRating.toFixed(1)} · 후기 {reviews.length}개
+                  </p>
+                )}
+                <p className="pt-0.5 text-xs text-muted-foreground">
+                  {instructor.totalLogs.toLocaleString()}+ Dives · {myTours.length} Tours · {instructor.experienceYears}년 경력
+                </p>
+              </div>
+            </div>
+            {instructor.bio && (
+              <p className="whitespace-pre-line break-keep text-sm text-muted-foreground">{instructor.bio}</p>
+            )}
+            {instructor.specialtyTags && instructor.specialtyTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {instructor.specialtyTags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="text-[10px]">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {instructor.languages && instructor.languages.length > 0 && (
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Languages className="h-3.5 w-3.5 text-primary" />
+                {instructor.languages.join(", ")}
+              </p>
+            )}
+            {(activeCountries.length > 0 || activeSites.length > 0) && (
+              <p className="flex items-start gap-1.5 break-keep text-xs text-muted-foreground">
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>
+                  {activeCountries.length > 0 && `활동 국가: ${activeCountries.join(", ")}`}
+                  {activeCountries.length > 0 && activeSites.length > 0 && " · "}
+                  {activeSites.length > 0 && `활동 지역: ${activeSites.join(", ")}`}
+                </span>
+              </p>
+            )}
+            {(instructor.snsInstagram || instructor.snsYoutube || instructor.snsFacebook || instructor.snsBlog || instructor.snsHomepage) && (
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                {instructor.snsInstagram && (
+                  <a href={instructor.snsInstagram} target="_blank" rel="noreferrer" aria-label="Instagram" className="text-muted-foreground hover:text-primary">
+                    <Instagram className="h-4 w-4" />
+                  </a>
+                )}
+                {instructor.snsYoutube && (
+                  <a href={instructor.snsYoutube} target="_blank" rel="noreferrer" aria-label="YouTube" className="text-muted-foreground hover:text-primary">
+                    <Youtube className="h-4 w-4" />
+                  </a>
+                )}
+                {instructor.snsFacebook && (
+                  <a href={instructor.snsFacebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="text-muted-foreground hover:text-primary">
+                    <Facebook className="h-4 w-4" />
+                  </a>
+                )}
+                {instructor.snsBlog && (
+                  <a href={instructor.snsBlog} target="_blank" rel="noreferrer" aria-label="블로그" className="text-muted-foreground hover:text-primary">
+                    <Newspaper className="h-4 w-4" />
+                  </a>
+                )}
+                {instructor.snsHomepage && (
+                  <a href={instructor.snsHomepage} target="_blank" rel="noreferrer" aria-label="홈페이지" className="text-muted-foreground hover:text-primary">
+                    <Link2 className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            )}
+            {(instructor.teachingPhilosophy || instructor.favoriteDiving) && (
+              <div className="space-y-1.5 rounded-lg bg-secondary/40 p-2.5">
+                {instructor.teachingPhilosophy && (
+                  <p className="text-xs text-foreground">
+                    <span className="font-semibold text-primary">교육 철학 </span>
+                    {instructor.teachingPhilosophy}
+                  </p>
+                )}
+                {instructor.favoriteDiving && (
+                  <p className="text-xs text-foreground">
+                    <span className="font-semibold text-primary">좋아하는 다이빙 </span>
+                    {instructor.favoriteDiving}
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 안전 패널티 유무 — 다이버/강사 등 모든 방문자에게 노출 (패널티가 있는 경우에만 표시) */}
+        {instructor.penaltyCount > 0 && (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="space-y-1 p-4">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-destructive">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                안전 패널티 누적 {instructor.penaltyCount}회
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {instructor.penaltyReason ? `사유: ${instructor.penaltyReason}` : "사유가 등록되지 않았습니다."}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 관리자 전용 — 제출 서류 열람. 예전에는 강사 승인 대기열(InstructorApplicationQueue)에서만
+            서류를 볼 수 있어서, 일단 인증된 강사는 나중에 서류를 다시 확인할 방법이 없었다.
+            강사 상세 프로필 어디서든(인증 여부와 무관하게) 관리자가 서류를 열람할 수 있게 한다. */}
+        {isAdmin && (
+          <Card className="border-primary/30">
+            <CardContent className="space-y-2.5 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground">제출 서류 (관리자 전용)</h3>
+                {instructor.documentsPendingReview && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    수정요청 확인중
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <DocumentViewButton path={documentProfile?.idDocumentPath} label="신분증 사본" />
+                {(instructor.licenseFilePaths?.length ? instructor.licenseFilePaths : [undefined]).map(
+                  (path, idx) => (
+                    <DocumentViewButton
+                      key={path ?? idx}
+                      path={path}
+                      label={(instructor.licenseFilePaths?.length ?? 0) > 1 ? `자격증 서류 ${idx + 1}` : "자격증 서류"}
+                    />
+                  ),
+                )}
+                <DocumentViewButton path={documentProfile?.bankbookPath} label="통장 사본" />
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                <span>은행: {documentProfile?.bankName || "-"}</span>
+                <span>예금주: {documentProfile?.accountHolder || "-"}</span>
+                <span className="col-span-2">계좌번호: {documentProfile?.accountNumber || "-"}</span>
+              </div>
+              {instructor.signatureDataUrl && (
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">전자서명</p>
+                  <img
+                    src={instructor.signatureDataUrl}
+                    alt="전자서명"
+                    className="h-16 w-auto rounded border border-border bg-white"
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 관리자 전용 — 경고/영구정지 관리 */}
+        {isAdmin && (
+          <Card className="border-destructive/30">
+            <CardContent className="space-y-2.5 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-destructive" />
+                  관리자 관리 도구
+                </h3>
+                <Badge variant={instructor.penaltyCount > 0 ? "destructive" : "outline"} className="text-[10px]">
+                  경고 {instructor.penaltyCount}회
+                </Badge>
+              </div>
+
+              {isBanned ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="w-full text-xs">
+                      영구정지 해제
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{instructor.name} 강사의 영구정지를 해제하시겠습니까?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        해제하면 경고 횟수가 0회로 초기화되고 다시 정상적으로 활동할 수 있습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleReinstate}>해제</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <div className="flex gap-1.5">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-xs"
+                        disabled={instructor.penaltyCount === 0}
+                      >
+                        경고 해제
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{instructor.name} 강사의 경고를 모두 해제하시겠습니까?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          누적된 경고 {instructor.penaltyCount}회가 0회로 초기화됩니다.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>취소</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearWarning}>해제</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="flex-1 text-xs">
+                        경고 부여
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{instructor.name} 강사에게 경고를 주시겠습니까?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          경고 {PERMANENT_BAN_THRESHOLD}회 누적 시 자동으로 영구정지됩니다. 현재 누적 경고:{" "}
+                          {instructor.penaltyCount}회
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <Textarea
+                        placeholder="패널티 사유를 입력하세요 (강사 프로필에 함께 표시됩니다)"
+                        value={warnReasonDraft}
+                        onChange={(e) => setWarnReasonDraft(e.target.value)}
+                        className="text-xs"
+                      />
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>취소</AlertDialogCancel>
+                        <AlertDialogAction disabled={!warnReasonDraft.trim()} onClick={handleWarn}>
+                          경고
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="flex-1 gap-1 text-xs"
+                    onClick={() => {
+                      setEndToursToo(true);
+                      setBanDialogOpen(true);
+                    }}
+                  >
+                    <Ban className="h-3.5 w-3.5" />
+                    영구정지
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 신뢰 지표 */}
+        <Card>
+          <CardContent className="grid grid-cols-2 gap-2.5 p-4">
+            <div className="flex flex-col items-center gap-0.5 rounded-lg bg-secondary px-2 py-3 text-center">
+              <Award className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground">경력</span>
+              <span className="text-sm font-bold text-foreground">{instructor.experienceYears}년</span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5 rounded-lg bg-secondary px-2 py-3 text-center">
+              <CalendarCheck className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground">진행 투어</span>
+              <span className="text-sm font-bold text-foreground">{myTours.length}회</span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5 rounded-lg bg-secondary px-2 py-3 text-center">
+              <Users className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground">누적 참가자</span>
+              <span className="text-sm font-bold text-foreground">{totalParticipants}명</span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5 rounded-lg bg-secondary px-2 py-3 text-center">
+              <TrendingDown className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground">취소율</span>
+              <span className="text-sm font-bold text-foreground">
+                {cancellationRate === null ? "-" : `${cancellationRate}%`}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5 rounded-lg bg-secondary px-2 py-3 text-center">
+              <Repeat className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground">재예약률</span>
+              <span className="text-sm font-bold text-foreground">
+                {rebookingRate === null ? "-" : `${rebookingRate}%`}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5 rounded-lg bg-secondary px-2 py-3 text-center">
+              <Globe2 className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground">채팅 응답률</span>
+              <span className="text-sm font-bold text-foreground">
+                {responseRate === null ? "-" : `${responseRate}%`}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5 rounded-lg bg-secondary px-2 py-3 text-center">
+              <Clock className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground">응답 속도</span>
+              <span className="text-[11px] font-bold leading-tight text-foreground">
+                {formatResponseSpeed(avgResponseHours)}
+              </span>
+            </div>
+          </CardContent>
+          {lastActiveAt && (
+            <CardContent className="pt-0 pb-3 text-center text-[11px] text-muted-foreground">
+              최근 활동: {formatDateKR(lastActiveAt)}
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 예정된 투어 */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">예정된 투어</h3>
+          {upcomingTours.length === 0 ? (
+            <p className="py-4 text-center text-xs text-muted-foreground">예정된 투어가 없습니다.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {upcomingTours.map((t) => (
+                <Link key={t.id} to={`/tour/${t.id}`}>
+                  <Card className="transition-colors hover:border-primary/40">
+                    <CardContent className="flex items-center justify-between p-3">
+                      <div className="min-w-0">
+                        <p className="line-clamp-1 text-sm font-medium text-foreground">{t.title}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {t.country} · {formatDateRangeKR(t.startDate, t.endDate)}
+                        </p>
+                      </div>
+                      <Badge variant={t.status === "open" ? "default" : "outline"} className="shrink-0 text-[10px]">
+                        {t.status === "open" ? "모집중" : "마감"}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 완료된 투어 */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">완료된 투어</h3>
+          {completedTours.length === 0 ? (
+            <p className="py-4 text-center text-xs text-muted-foreground">완료된 투어가 없습니다.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {completedTours.slice(0, 10).map((t) => (
+                <Link key={t.id} to={`/tour/${t.id}`}>
+                  <Card className="transition-colors hover:border-primary/40">
+                    <CardContent className="flex items-center justify-between p-3">
+                      <div className="min-w-0">
+                        <p className="line-clamp-1 text-sm font-medium text-foreground">{t.title}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {t.country} · {formatDateRangeKR(t.startDate, t.endDate)}
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="shrink-0 text-[10px]">
+                        완료
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 갤러리 — 투어 사진(강사 업로드) + 후기 사진(회원 업로드)을 모아 보여준다 */}
+        {galleryImages.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Images className="h-4 w-4 text-primary" />
+              갤러리
+            </h3>
+            <div className="grid grid-cols-3 gap-1">
+              {galleryImages.map((url, i) => (
+                <button
+                  key={url + i}
+                  type="button"
+                  onClick={() => setLightboxUrl(url)}
+                  className="aspect-square overflow-hidden rounded-md bg-secondary"
+                >
+                  <img src={url} alt={`갤러리 사진 ${i + 1}`} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 후기 */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">후기</h3>
+            {reviews.length > 0 && (
+              <div className="flex items-center gap-1 text-sm">
+                <Star className="h-4 w-4 text-warning" />
+                <span className="font-bold text-foreground">{avgRating.toFixed(1)}</span>
+                <span className="text-xs text-muted-foreground">({reviews.length}개)</span>
+              </div>
+            )}
+          </div>
+          {reviews.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">아직 등록된 후기가 없습니다.</p>
+          ) : (
+            <div className="space-y-2">
+              {reviews.slice(0, 20).map((review) => {
+                const reviewerName = publicProfiles.find((p) => p.id === review.diverId)?.name;
+                return (
+                  <Card key={review.id}>
+                    <CardContent className="space-y-1.5 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={
+                                star <= review.rating
+                                  ? "h-3.5 w-3.5 text-warning"
+                                  : "h-3.5 w-3.5 text-muted-foreground"
+                              }
+                            />
+                          ))}
+                          <span className="ml-1 text-[11px] text-muted-foreground">
+                            {maskName(reviewerName ?? "다이버")}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{formatDateKR(review.createdAt)}</span>
+                      </div>
+                      {review.title && <p className="text-sm font-semibold text-foreground">{review.title}</p>}
+                      {review.comment && <p className="text-xs text-muted-foreground">{review.comment}</p>}
+                      {review.instructorReply && (
+                        <div className="ml-2 space-y-0.5 rounded-lg border-l-2 border-primary/50 bg-secondary/40 p-2">
+                          <p className="text-[11px] font-semibold text-primary">강사 답글</p>
+                          <p className="break-keep text-xs text-foreground">{review.instructorReply}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {isAdmin && (
+        <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{instructor.name} 강사를 영구정지 시키겠습니까?</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              영구정지되면 해당 강사 계정은 즉시 서비스 이용이 제한됩니다. 나중에 다시 해제할 수 있습니다.
+            </p>
+            {upcomingTours.length > 0 && (
+              <label className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs">
+                <Checkbox checked={endToursToo} onCheckedChange={(v) => setEndToursToo(v === true)} className="mt-0.5" />
+                <span className="flex items-start gap-1.5">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning-foreground" />
+                  <span>
+                    예정된 투어 {upcomingTours.length}건도 함께 정지 처리합니다. 체크 해제 시 정지 처리 없이 강사
+                    계정만 영구정지됩니다.
+                  </span>
+                </span>
+              </label>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBanDialogOpen(false)}>
+                취소
+              </Button>
+              <Button variant="destructive" onClick={handlePermanentBanConfirm}>
+                영구정지
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
+        <DialogContent className="max-w-md p-1 sm:max-w-lg">
+          {lightboxUrl && <img src={lightboxUrl} alt="갤러리 확대" className="max-h-[80vh] w-full rounded-md object-contain" />}
+        </DialogContent>
+      </Dialog>
+
+      <BottomNav />
+    </div>
+  );
 };
 
-/** 자동 모집 마감 기준: 투어 출발일 이 일수 전. */
-export const RECRUITMENT_AUTO_CLOSE_DAYS_BEFORE_START = 30;
-
-export type PaymentMethod = "card" | "kakaopay" | "naverpay" | "tosspay" | "applepay";
-
-export interface Invoice {
-  basePrice: number;
-  optionsCost: number;
-  selectedOptions: SelectedOption[];
-  platformFee: number;
-  totalDue: number;
-  onSiteBalance: number;
-  couponCode?: string;
-  discountAmount?: number;
-}
-
-export type CouponDiscountType = "percent" | "fixed";
-
-/** 관리자가 발급하는 할인 쿠폰. 결제 금액에서만 차감되며 강사 정산 원금에는 영향을 주지 않는다. */
-export interface Coupon {
-  id: string;
-  code: string; // 대문자로 정규화해 저장
-  discountType: CouponDiscountType;
-  discountValue: number; // percent: 1-100, fixed: 원 단위
-  minPurchase: number; // 이 금액(소계) 이상일 때만 사용 가능
-  maxDiscount?: number; // percent 타입일 때 할인 상한액(선택)
-  expiresAt?: string; // ISO date, 미설정 시 무기한
-  usageLimit?: number; // 총 사용 가능 횟수, 미설정 시 무제한
-  usedCount: number;
-  active: boolean;
-  createdAt: string;
-}
-
-export interface Settlement {
-  basePrice: number;
-  firstAmount: number; // 80%
-  secondAmount: number; // 20%
-}
-
-export type DepositStatus = "pending" | "paid";
-
-export type BookingStatus = "confirmed" | "cancelled" | "cancel_pending_review";
-
-/** 예약 인원 2명 이상일 때, 본인 외 동반자 1명당 룸 배정용 정보. */
-export interface CompanionInfo {
-  /** 동반자 이름 (선택 입력, 비어 있으면 "동반자 N" 형태로 자동 채워짐). */
-  name: string;
-  gender?: Gender;
-  snoring?: boolean;
-  smoking?: boolean;
-  drinking?: boolean;
-  roomNote?: string;
-  /** 동반자 개인의 방 배정 번호 (companions는 jsonb라 컬럼 추가 없이 바로 저장 가능). */
-  roomNo?: string;
-}
-
-export interface Booking {
-  id: string;
-  tourId: string;
-  diverId: string;
-  diverName: string;
-  basePrice: number;
-  optionsCost: number;
-  selectedOptions: SelectedOption[];
-  platformFee: number;
-  totalPaid: number;
-  onSiteBalance: number;
-  couponCode?: string;
-  discountAmount?: number;
-  paymentMethod: PaymentMethod;
-  gender: Gender;
-  snoring: boolean;
-  smoking: boolean;
-  drinking: boolean;
-  roomNote?: string; // 룸 배정 참고사항 직접 입력 (예: "코골이 심함, 조용한 방 희망")
-  roomNo?: string;
-  depositStatus: DepositStatus;
-  status: BookingStatus;
-  createdAt: string;
-  cancelReason?: string;
-  refundRate?: number; // 0-1
-  refundAmount?: number;
-  cancelRequestedAt?: string;
-  evidenceFileNames?: string[];
-  flightInfo?: string; // 참가자 대시보드 [더보기] — 본인 항공편 정보 (본인/강사만 확인)
-  passportInfo?: string; // 참가자 대시보드 [더보기] — 여권 정보(만료일 등, 본인/강사만 확인)
-  /** 이 예약 1건으로 결제/확정된 인원 수 (본인 포함). 기존 예약은 모두 1명으로 취급한다. */
-  participantCount: number;
-  /** 2명 이상 예약 시 본인 외 동반자 이름을 자유 텍스트로 기록 (선택).
-   * companions가 있으면 그 이름들을 쉼표로 이어붙인 값이 자동으로 들어간다 — 참가자 목록 등
-   * 기존 화면에서 간단히 표시할 때 쓰고, 각 동반자별 성별/코골이/흡연/음주 등 상세 정보는
-   * companions 배열을 사용한다. */
-  companionNames?: string;
-  /** 본인 외 동반자별 상세 참가자 정보 (룸 배정용). 길이는 participantCount - 1과 같다. */
-  companions?: CompanionInfo[];
-}
-
-export const CANCEL_REASONS = [
-  "단순 변심",
-  "일정 변경",
-  "강사·투어사 사정",
-  "의료·천재지변 등 불가피한 사유",
-  "기타",
-] as const;
-
-export type CancelReason = (typeof CANCEL_REASONS)[number];
-
-export const VIOLATION_TYPES = [
-  "노쇼 (No-Show)",
-  "안전수칙 위반",
-  "허위 정보 게재",
-  "부적절한 언행",
-  "정산 지연",
-  "장비 미점검",
-] as const;
-
-export type ViolationType = (typeof VIOLATION_TYPES)[number];
-
-export interface Penalty {
-  id: string;
-  instructorId: string;
-  violationType: ViolationType;
-  description: string;
-  voided?: boolean; // 관리자가 오적용으로 판단해 정정(취소)한 이력인지
-  createdAt: string;
-}
-
-export type PayoutStatus = "scheduled" | "held" | "released" | "cancelled";
-
-export interface Payout {
-  id: string;
-  instructorId: string;
-  bookingId: string;
-  firstAmount: number;
-  secondAmount: number;
-  status: PayoutStatus;
-}
-
-export type ReportStatus = "pending" | "resolved";
-
-export interface Report {
-  id: string;
-  targetType: "instructor" | "diver";
-  targetId: string;
-  targetName: string;
-  violationType: ViolationType;
-  description: string;
-  status: ReportStatus;
-  createdAt: string;
-}
-
-export interface ReviewCategoryRatings {
-  instructorKindness: number;
-  instructorExpertise: number;
-  instructorSafety: number;
-  centerFacility: number;
-  centerCleanliness: number;
-  centerLocation: number;
-  tourSatisfaction: number;
-  tourSchedule: number;
-  tourValue: number;
-}
-
-/** "public": 모두에게 공개, "instructor_only": 담당 강사/관리자에게만 공개. */
-export type ReviewVisibility = "public" | "instructor_only";
-
-export interface Review {
-  id: string;
-  tourId: string;
-  bookingId: string;
-  diverId: string;
-  instructorId?: string;
-  rating: number; // 1-5 (전체 평점)
-  title?: string;
-  comment: string;
-  categoryRatings?: ReviewCategoryRatings;
-  photos: string[]; // 최대 10장
-  videoUrl?: string;
-  visibility: ReviewVisibility;
-  reported: boolean;
-  deleted: boolean;
-  createdAt: string;
-  instructorReply?: string;
-  instructorReplyAt?: string;
-}
-
-export const INQUIRY_CATEGORIES = [
-  "안전사고 신고",
-  "강사 관련 불만",
-  "환불/취소 문의",
-  "기타 문의",
-] as const;
-
-export type InquiryCategory = (typeof INQUIRY_CATEGORIES)[number];
-
-export type InquiryStatus = "pending" | "answered";
-
-export interface Inquiry {
-  id: string;
-  tourId: string;
-  bookingId: string;
-  diverId: string;
-  category: InquiryCategory;
-  message: string;
-  status: InquiryStatus;
-  createdAt: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  tourId: string;
-  senderProfileId: string;
-  senderName: string;
-  senderRole: "diver" | "instructor" | "admin";
-  body: string;
-  createdAt: string;
-}
-
-// "violation"/"enforcement"는 과거(마이그레이션 이전) 강사 전용 정책의 레거시 카테고리로,
-// 새 데이터는 diver/instructor로 명확히 구분된 카테고리를 사용한다.
-export type PolicyCategory =
-  | "refund"
-  | "violation"
-  | "enforcement"
-  | "violation_diver"
-  | "enforcement_diver"
-  | "violation_instructor"
-  | "enforcement_instructor";
-
-export interface Policy {
-  id: string;
-  category: PolicyCategory;
-  sortOrder: number;
-  title: string;
-  description: string | null;
-  rate: string | null;
-}
-
-export type InstructorNotificationType =
-  | "new_booking"
-  | "forced_refund_penalty"
-  | "min_participants_cancelled" // 최소 인원 미달로 예약 자동 취소/환불됨 (예약 단위)
-  | "min_participants_proceed" // 최소 인원 미달이지만 강사가 "그대로 진행"을 선택해 투어 진행 (투어 단위, 책임 리마인드)
-  | "min_participants_decision_needed" // 출발 30일 전, 최소 인원 미달로 강사의 진행/취소 결정이 필요함 (투어 단위)
-  | "application_rejected" // 관리자가 강사 인증 신청을 반려함
-  | "document_review_completed"; // 관리자가 강사의 제출 서류 수정요청을 확인 완료함
-
-export interface InstructorNotification {
-  id: string;
-  instructorId: string;
-  tourId: string;
-  bookingId?: string; // 투어 단위 알림(min_participants_proceed)에는 없음
-  tourTitle: string;
-  diverName?: string; // 마스킹된 이름 저장 (예: 홍*동), 투어 단위 알림에는 없음
-  selectedOptionNames?: string[];
-  settlementAmount?: number; // 수수료 제외 강사 원금 정산 예정 금액
-  message?: string; // 자유 텍스트 메시지(예: 강사 인증 반려 사유)
-  createdAt: string;
-  read: boolean;
-  type: InstructorNotificationType;
-}
-
-export interface ArbitrationMessage {
-  id: string;
-  roomId: string; // 관례: `arb-{instructorId}`
-  instructorId: string;
-  senderRole: "instructor" | "admin";
-  senderName: string;
-  body: string;
-  attachmentNames?: string[];
-  /** attachmentNames와 같은 순서로 대응하는 실제 업로드 파일 URL(Supabase Storage 공개 URL). */
-  attachmentUrls?: string[];
-  createdAt: string;
-}
-
-export const SUPPORT_FAQ_CATEGORIES = ["예약", "환불", "결제", "투어", "강사", "기타"] as const;
-export type SupportFaqCategory = (typeof SUPPORT_FAQ_CATEGORIES)[number];
-
-export const DISPUTE_TYPES = ["예약 관련", "환불 관련", "안전 문제", "서비스 불만", "기타"] as const;
-export type DisputeType = (typeof DISPUTE_TYPES)[number];
-
-export const REPORT_TICKET_TYPES = ["욕설", "외부거래", "허위정보", "성희롱", "노쇼", "기타"] as const;
-export type ReportTicketType = (typeof REPORT_TICKET_TYPES)[number];
-
-export type SupportTicketType = "inquiry" | "dispute" | "report";
-export type SupportTicketStatus = "접수" | "검토중" | "답변완료" | "종료";
-
-export const SUPPORT_TICKET_STATUSES: SupportTicketStatus[] = ["접수", "검토중", "답변완료", "종료"];
-
-/** 플랫폼 고객센터 통합 접수(1:1 문의 / 분쟁조정 / 신고)를 표현한다. */
-export interface SupportTicket {
-  id: string;
-  userId: string;
-  bookingId?: string;
-  type: SupportTicketType;
-  category?: string;
-  title?: string;
-  content: string;
-  attachmentNames: string[];
-  status: SupportTicketStatus;
-  adminReply?: string;
-  createdAt: string;
-}
-
-export const NOTICE_CATEGORIES = ["일반", "점검", "이벤트", "정책 변경", "안전"] as const;
-export type NoticeCategory = (typeof NOTICE_CATEGORIES)[number];
-
-/** 관리자가 등록하는 플랫폼 공지사항. */
-export interface Notice {
-  id: string;
-  title: string;
-  content: string;
-  category: NoticeCategory;
-  pinned: boolean;
-  createdAt: string;
-}
+export default InstructorPublicProfile;
