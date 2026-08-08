@@ -63,6 +63,7 @@ function mapInstructorRow(row: {
   agency: string | null;
   level?: string | null;
   license_file_names: string[] | null;
+  license_file_paths?: string[] | null;
   signature_data_url: string | null;
   verified_status: boolean;
   verified_at?: string | null;
@@ -98,6 +99,7 @@ function mapInstructorRow(row: {
     agency: row.agency ?? undefined,
     level: row.level ?? undefined,
     licenseFileNames: row.license_file_names ?? [],
+    licenseFilePaths: row.license_file_paths ?? [],
     signatureDataUrl: row.signature_data_url ?? undefined,
     verified: row.verified_status,
     verifiedAt: row.verified_at ?? undefined,
@@ -535,10 +537,19 @@ interface NewInstructorSignupInput {
   phone: string;
   gender: Profile["gender"];
   licenseFileNames: string[];
+  licenseFilePaths?: string[];
   signatureDataUrl?: string;
   bio: string;
   pledgeSigned?: boolean;
   settlementPledgeAgreed?: boolean;
+  // 관리자 승인 심사에 필요한 서류 — 실제 파일은 InstructorSignupForm에서 이미
+  // instructor-documents 버킷에 업로드를 마친 뒤, 그 저장 경로만 여기로 전달된다.
+  bankName?: string;
+  accountHolder?: string;
+  accountNumber?: string;
+  bankbookFileName?: string;
+  bankbookPath?: string;
+  idDocumentPath?: string;
 }
 
 interface NewDiverSignupInput {
@@ -980,6 +991,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           emergencyContactName: row.emergency_contact_name ?? undefined,
           emergencyContactPhone: row.emergency_contact_phone ?? undefined,
           insuranceInfo: row.insurance_info ?? undefined,
+          bankName: row.bank_name ?? undefined,
+          accountHolder: row.account_holder ?? undefined,
+          accountNumber: row.account_number ?? undefined,
+          bankbookFileName: row.bankbook_file_name ?? undefined,
+          bankbookPath: row.bankbook_path ?? undefined,
+          idDocumentPath: row.id_document_path ?? undefined,
         });
         setDiverProfiles(rows.filter((r) => r.role === "diver").map(toProfile));
         setInstructorProfiles(rows.filter((r) => r.role === "instructor").map(toProfile));
@@ -1794,6 +1811,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       gender: input.gender,
       status: "active",
       createdAt: new Date().toISOString(),
+      // profiles insert 자체는 InstructorSignupForm에서 먼저 끝났지만, 여기서 만드는
+      // 로컬 낙관적 객체에도 같이 넣어둬야 새로고침 없이 바로 관리자 승인 큐에서
+      // 계좌/신분증 정보를 볼 수 있다.
+      bankName: input.bankName,
+      accountHolder: input.accountHolder,
+      accountNumber: input.accountNumber,
+      bankbookFileName: input.bankbookFileName,
+      bankbookPath: input.bankbookPath,
+      idDocumentPath: input.idDocumentPath,
     };
     setInstructorProfiles((prev) => [...prev, profile]);
 
@@ -1805,6 +1831,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString(),
       name: input.name,
       licenseFileNames: input.licenseFileNames,
+      licenseFilePaths: input.licenseFilePaths,
       signatureDataUrl: input.signatureDataUrl,
       verified: false,
       pledgeSigned: input.pledgeSigned ?? false,
@@ -1828,6 +1855,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       profile_id: profileId,
       name: input.name,
       license_file_names: input.licenseFileNames,
+      license_file_paths: input.licenseFilePaths,
       signature_data_url: input.signatureDataUrl,
       verified_status: false,
       pledge_signed: input.pledgeSigned ?? false,
