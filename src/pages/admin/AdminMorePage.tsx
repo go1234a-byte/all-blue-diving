@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpen,
   Bell,
+  Calculator,
   ClipboardCheck,
   Building2,
   CalendarCheck,
@@ -21,6 +22,7 @@ import { AccountActions } from "@/components/mypage/AccountActions";
 const MORE_ITEMS = [
   { to: "/admin/tours", label: "투어 관리", icon: Compass },
   { to: "/admin/bookings", label: "예약 관리", icon: CalendarCheck },
+  { to: "/admin/accounting", label: "회계 센터", icon: Calculator },
   { to: "/admin/centers", label: "센터 관리", icon: Building2 },
   { to: "/admin/support", label: "문의 관리", icon: MessageCircle },
   { to: "/admin/reports", label: "신고 관리", icon: Flag },
