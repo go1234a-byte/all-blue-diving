@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
   ArbitrationMessage,
+  InstructorAdminNote,
   Booking,
   Center,
   ChatMessage,
@@ -402,6 +403,18 @@ function mapArbitrationMessageRow(row: any): ArbitrationMessage {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapInstructorAdminNoteRow(row: any): InstructorAdminNote {
+  return {
+    id: row.id,
+    instructorId: row.instructor_id,
+    senderRole: row.sender_role,
+    senderName: row.sender_name,
+    body: row.body,
+    createdAt: row.created_at,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapInstructorNotificationRow(row: any): InstructorNotification {
   return {
     id: row.id,
@@ -646,6 +659,7 @@ interface AppDataContextValue {
   inquiries: Inquiry[];
   instructorNotifications: InstructorNotification[];
   arbitrationMessages: ArbitrationMessage[];
+  instructorAdminNotes: InstructorAdminNote[];
   centers: Center[];
   centersLoading: boolean;
   supportTickets: SupportTicket[];
@@ -753,6 +767,7 @@ interface AppDataContextValue {
   submitCancellationForReview: (bookingId: string, reason: string, evidenceFileNames: string[]) => Promise<void>;
   resolveCancellationReview: (bookingId: string, approved: boolean, rejectReason?: string) => Promise<void>;
   addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => Promise<void>;
+  addInstructorAdminNote: (input: Omit<InstructorAdminNote, "id" | "createdAt">) => Promise<void>;
   addCenter: (input: NewCenterInput) => Promise<Center>;
   updateCenter: (centerId: string, updates: NewCenterInput) => Promise<void>;
   setCenterStatus: (centerId: string, status: "approved" | "rejected", reason?: string) => Promise<void>;
@@ -804,6 +819,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [instructorNotifications, setInstructorNotifications] = useState<InstructorNotification[]>([]);
   const [arbitrationMessages, setArbitrationMessages] = useState<ArbitrationMessage[]>([]);
+  const [instructorAdminNotes, setInstructorAdminNotes] = useState<InstructorAdminNote[]>([]);
   const [centers, setCenters] = useState<Center[]>([]);
   const [centersLoading, setCentersLoading] = useState(true);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
@@ -1188,6 +1204,37 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         { event: "INSERT", schema: "public", table: "arbitration_messages" },
         (payload) => {
           setArbitrationMessages((prev) => [...prev, mapArbitrationMessageRow(payload.new)]);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // `instructor_admin_notes` 테이블 실시간 구독 (관리자 ↔ 강사 전용 비공개 안내 메모).
+  // arbitration_messages와 동일한 fetch + realtime 패턴 — 새로고침/다른 세션에서도 대화가
+  // 그대로 보이도록 서버에서 실시간으로 반영한다.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("instructor_admin_notes")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (!active) return;
+      if (!error && data) setInstructorAdminNotes(data.map(mapInstructorAdminNoteRow));
+    })();
+
+    const channel = supabase
+      .channel("instructor_admin_notes_all")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "instructor_admin_notes" },
+        (payload) => {
+          setInstructorAdminNotes((prev) => [...prev, mapInstructorAdminNoteRow(payload.new)]);
         },
       )
       .subscribe();
@@ -2765,6 +2812,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * 관리자 ↔ 강사 전용 비공개 안내 메모(instructor_admin_notes) 전송.
+   * arbitration_messages와 동일하게 insert만 수행하고, 화면 반영은 realtime 구독이 담당한다.
+   */
+  const addInstructorAdminNote = async (input: Omit<InstructorAdminNote, "id" | "createdAt">): Promise<void> => {
+    const { error } = await supabase.from("instructor_admin_notes").insert({
+      instructor_id: input.instructorId,
+      sender_role: input.senderRole,
+      sender_name: input.senderName,
+      body: input.body,
+    });
+    if (error) {
+      console.error("[addInstructorAdminNote] instructor_admin_notes insert 실패:", error);
+      throw new Error(
+        error.message ? `메시지 전송에 실패했습니다: ${error.message}` : "메시지 전송에 실패했습니다.",
+      );
+    }
+  };
+
   /** 신규 이용센터를 Enter Cloud(Supabase) `centers` 테이블에 등록한다. */
   const addCenter = async (input: NewCenterInput): Promise<Center> => {
     const { data, error } = await supabase
@@ -2944,6 +3010,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       inquiries,
       instructorNotifications,
       arbitrationMessages,
+      instructorAdminNotes,
       centers,
       centersLoading,
       supportTickets,
@@ -3002,6 +3069,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       submitCancellationForReview,
       resolveCancellationReview,
       addArbitrationMessage,
+      addInstructorAdminNote,
       addCenter,
       updateCenter,
       setCenterStatus,
@@ -3037,6 +3105,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       inquiries,
       instructorNotifications,
       arbitrationMessages,
+      instructorAdminNotes,
       centers,
       centersLoading,
       supportTickets,
