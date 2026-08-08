@@ -11,11 +11,11 @@ export const ACTIVITY_LABEL: Record<ActivityType, string> = {
 
 /**
  * 액티비티 타입별 뱃지 색상 — 한눈에 구별되도록 타입마다 다른 색을 사용한다.
- * scuba: 틸(accent) · freediving: 슬레이트 그레이(coral 토큰 재사용) · liveaboard: 골드(warning)
- * 세 색 모두 기존 디자인 토큰(index.css)을 그대로 재사용한다.
+ * scuba: 짙은 블루(수심/탱크) · freediving: 터쿼이즈(맑은 수면) · liveaboard: 골드(프리미엄 항해)
+ * 전용 디자인 토큰(index.css의 --activity-*)을 사용한다.
  */
 export const ACTIVITY_BADGE_CLASS: Record<ActivityType, string> = {
-  scuba: "bg-accent text-accent-foreground",
-  freediving: "bg-coral text-coral-foreground",
-  liveaboard: "bg-warning text-warning-foreground",
+  scuba: "bg-activity-scuba text-activity-scuba-foreground",
+  freediving: "bg-activity-freediving text-activity-freediving-foreground",
+  liveaboard: "bg-activity-liveaboard text-activity-liveaboard-foreground",
 };
