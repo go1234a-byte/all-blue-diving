@@ -1915,10 +1915,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   ): Promise<void> => {
     // 경고를 해제(0회)할 때는 사유도 함께 비운다. 경고를 새로 부여할 때만 사유를 저장한다.
     const penaltyReason = penaltyCount > 0 ? reason : undefined;
-    await supabase
+    // 호출부(InstructorPublicProfile/AdminInstructorsPage)가 이 함수를 기다리지 않고
+    // 곧바로 "처리했습니다" 토스트를 띄우는 구조라, 여기서 실패를 던져도 사용자에게
+    // 전달되지 않는다. 그래서 예전처럼 먼저 화면(로컬 상태)부터 낙관적으로 바꾸지 않고,
+    // DB 업데이트가 성공했을 때만 화면에 반영한다 — 실패하면 화면은 그대로 남아있어
+    // "실제로는 적용 안 됐는데 화면엔 적용된 것처럼" 어긋나는 상태를 막는다.
+    const { error } = await supabase
       .from("instructors")
       .update({ penalty_count: penaltyCount, penalty_reason: penaltyReason ?? null })
       .eq("id", instructorId);
+    if (error) {
+      console.error("[setInstructorPenalty] instructors 업데이트 실패:", error);
+      return;
+    }
     setInstructors((prev) =>
       prev.map((i) => (i.id === instructorId ? { ...i, penaltyCount, penaltyReason } : i)),
     );
@@ -2125,9 +2134,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .select()
       .single();
 
-    const report: Report = !error && data
-      ? mapReportRow(data)
-      : { id: nextId("rp"), status: "pending", createdAt: new Date().toISOString(), ...input };
+    if (error || !data) {
+      // addSupportTicket/addBooking과 동일한 이유로, 실패 시 로컬 전용 가짜 신고 객체로
+      // 조용히 넘어가지 않고 명확히 에러를 던진다 — 그래야 신고자가 실패를 알고 재시도할 수 있다.
+      console.error("[addReport] reports insert 실패:", error);
+      throw new Error(
+        error?.message ? `신고 접수에 실패했습니다: ${error.message}` : "신고 접수에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
+    }
+    const report: Report = mapReportRow(data);
     setReports((prev) => [report, ...prev]);
   };
 
@@ -2138,13 +2153,23 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const addChatMessage = async (input: Omit<ChatMessage, "id" | "createdAt">) => {
     // realtime 구독이 로컬 state를 갱신하므로 여기서는 insert만 수행한다 (낙관적 업데이트 없음).
-    await supabase.from("chat_messages").insert({
+    // 예전에는 이 insert가 실패해도 아무 표시가 없어서, 사용자가 메시지를 보냈다고 생각했지만
+    // 실제로는 상대방 화면에 영원히 나타나지 않는 문제가 있었다(입력창은 이미 비워진 뒤라
+    // 재전송할 내용도 못 찾음). 에러를 던져 ChatThread가 실패를 알리고 입력값을 복구할 수
+    // 있게 한다.
+    const { error } = await supabase.from("chat_messages").insert({
       tour_id: input.tourId,
       sender_profile_id: input.senderProfileId,
       sender_name: input.senderName,
       sender_role: input.senderRole,
       body: input.body,
     });
+    if (error) {
+      console.error("[addChatMessage] chat_messages insert 실패:", error);
+      throw new Error(
+        error.message ? `메시지 전송에 실패했습니다: ${error.message}` : "메시지 전송에 실패했습니다.",
+      );
+    }
   };
 
   const toggleBookmark = (tourId: string) => {
@@ -2176,9 +2201,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .select()
       .single();
 
-    const inquiry: Inquiry = !error && data
-      ? mapInquiryRow(data)
-      : { id: nextId("inq"), status: "pending", createdAt: new Date().toISOString(), ...input };
+    if (error || !data) {
+      // 예전에는 실패해도 로컬 전용 가짜 문의로 조용히 넘어가서, 사용자는 "문의가
+      // 접수되었습니다" 성공 토스트를 보지만 실제로는 담당자에게 전달되지 않는 문제가
+      // 있었다. 명확히 에러를 던져 InquiryDialog가 실패로 처리하도록 한다.
+      console.error("[addInquiry] inquiries insert 실패:", error);
+      throw new Error(
+        error?.message ? `문의 접수에 실패했습니다: ${error.message}` : "문의 접수에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
+    }
+    const inquiry: Inquiry = mapInquiryRow(data);
     setInquiries((prev) => [inquiry, ...prev]);
     return inquiry;
   };
@@ -2202,17 +2234,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .select()
       .single();
 
-    const review: Review = !error && data
-      ? mapReviewRow(data)
-      : {
-          id: nextId("rv"),
-          createdAt: new Date().toISOString(),
-          reported: false,
-          deleted: false,
-          ...input,
-          photos: input.photos ?? [],
-          visibility: input.visibility ?? "public",
-        };
+    if (error || !data) {
+      // 예전에는 실패해도 로컬 전용 가짜 후기로 조용히 넘어가서, 작성자에게는 "등록됨"으로
+      // 보이지만 새로고침하면 사라지고 다른 사용자/강사에게는 애초에 노출되지 않는 문제가
+      // 있었다. 명확히 에러를 던져 ReviewDialog가 실패로 처리하도록 한다(캐치 로직 이미 존재).
+      console.error("[addReview] reviews insert 실패:", error);
+      throw new Error(
+        error?.message ? `후기 등록에 실패했습니다: ${error.message}` : "후기 등록에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
+    }
+    const review: Review = mapReviewRow(data);
     setReviews((prev) => [review, ...prev]);
     return review;
   };
@@ -2270,9 +2301,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .select()
       .single();
 
-    const coupon: Coupon = !error && data
-      ? mapCouponRow(data)
-      : { id: nextId("coupon"), createdAt: new Date().toISOString(), usedCount: 0, ...input, code: normalizedCode };
+    if (error || !data) {
+      // 예전에는 실패해도 로컬 전용 가짜 쿠폰으로 조용히 넘어가서, 관리자에게는 발급된
+      // 것처럼 보이지만 실제로는 DB에 없어 사용자가 그 코드를 입력하면 "존재하지 않는
+      // 쿠폰"으로 실패하는 문제가 있었다. 명확히 에러를 던져 AdminCouponsPage가 실패로
+      // 처리하도록 한다.
+      console.error("[addCoupon] coupons insert 실패:", error);
+      throw new Error(
+        error?.message ? `쿠폰 발급에 실패했습니다: ${error.message}` : "쿠폰 발급에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
+    }
+    const coupon: Coupon = mapCouponRow(data);
     setCoupons((prev) => [coupon, ...prev]);
     return coupon;
   };
