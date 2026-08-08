@@ -52,6 +52,10 @@ export interface InstructorProfile {
   level?: string; // 자격 레벨 (예: Divemaster, OWSI, MSDT, Course Director 등)
   licenseFileNames: string[];
   licenseFilePaths?: string[]; // 자격증 서류 실제 저장 경로들 (instructor-documents 비공개 버킷, 서명된 URL 발급용)
+  // 이미 인증된 강사가 마이페이지에서 신분증/자격증/통장사본 등을 재제출했지만 관리자가
+  // 아직 재확인하지 않은 상태. true면 관리자 강사 승인 큐에 다시 노출되고, 승인 큐의
+  // 버튼 라벨이 "인증승인" 대신 "수정요청"으로 바뀐다.
+  documentsPendingReview?: boolean;
   signatureDataUrl?: string;
   verified: boolean;
   verifiedAt?: string;
@@ -453,7 +457,8 @@ export type InstructorNotificationType =
   | "min_participants_cancelled" // 최소 인원 미달로 예약 자동 취소/환불됨 (예약 단위)
   | "min_participants_proceed" // 최소 인원 미달이지만 강사가 "그대로 진행"을 선택해 투어 진행 (투어 단위, 책임 리마인드)
   | "min_participants_decision_needed" // 출발 30일 전, 최소 인원 미달로 강사의 진행/취소 결정이 필요함 (투어 단위)
-  | "application_rejected"; // 관리자가 강사 인증 신청을 반려함
+  | "application_rejected" // 관리자가 강사 인증 신청을 반려함
+  | "document_review_completed"; // 관리자가 강사의 제출 서류 수정요청을 확인 완료함
 
 export interface InstructorNotification {
   id: string;
