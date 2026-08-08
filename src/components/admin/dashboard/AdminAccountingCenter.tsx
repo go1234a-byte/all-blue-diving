@@ -3,7 +3,9 @@ import {
   BadgeDollarSign,
   ChevronLeft,
   ChevronRight,
+  Download,
   PiggyBank,
+  Printer,
   Receipt,
   RefreshCcw,
   ScrollText,
@@ -60,6 +62,7 @@ interface InvoiceDetailRow {
   payoutStatus: string | null;
   diverName: string | null;
   tourTitle: string | null;
+  instructorName: string | null;
 }
 
 interface SignupRow {
@@ -76,6 +79,14 @@ function monthRange(year: number, month: number) {
     endISO: end.toISOString(),
     periodStr: `${year}-${String(month).padStart(2, "0")}-01`,
   };
+}
+
+// CSV 필드에 콤마/따옴표/줄바꿈이 있으면 큰따옴표로 감싸고 내부 따옴표는 두 번 반복한다.
+function csvEscape(value: string): string {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -117,12 +128,18 @@ type DetailKey =
 const DETAIL_META: Record<DetailKey, { title: string; description: string }> = {
   gmv: { title: "GMV (총 거래금액) 내역", description: "이번 기간 인보이스 기준 거래 내역입니다." },
   fee: { title: "플랫폼 수수료 매출 내역", description: "이번 기간 인보이스별 플랫폼 수수료입니다." },
-  payoutPending: { title: "강사 지급 예정 내역", description: "정산 상태가 released가 아닌 건입니다 (scheduled / held)." },
-  payoutPaid: { title: "강사 지급 완료 내역", description: "정산 상태가 released인 건입니다." },
+  payoutPending: {
+    title: "강사 지급 예정 내역",
+    description: "정산 상태가 released가 아닌 건입니다 (scheduled / held). 어느 강사에게 지급될지 함께 표시됩니다.",
+  },
+  payoutPaid: {
+    title: "강사 지급 완료 내역",
+    description: "정산 상태가 released인 건입니다. 어느 강사에게 지급되었는지 함께 표시됩니다.",
+  },
   refund: { title: "환불 내역", description: "이번 기간 인보이스 기준 환불이 발생한 건입니다." },
   net: { title: "순매출 내역", description: "인보이스별 플랫폼 수수료 − 환불액입니다." },
   count: { title: "거래 건수 내역", description: "이번 기간 발행된 인보이스 목록입니다." },
-  vat: { title: "예상 부가세", description: "" },
+  vat: { title: "예상 부가세 (일반과세 기준)", description: "" },
   newInstructors: { title: "신규 가입 강사", description: "이번 기간 가입한 강사 목록입니다." },
   newDivers: { title: "신규 가입 회원", description: "이번 기간 가입한 다이버 목록입니다." },
 };
@@ -187,6 +204,7 @@ function InvoiceRowsTable({
             <th className="py-2 pr-2 font-medium">일자</th>
             <th className="py-2 pr-2 font-medium">투어</th>
             <th className="py-2 pr-2 font-medium">예약자</th>
+            <th className="py-2 pr-2 font-medium">강사</th>
             <th className="py-2 pl-2 text-right font-medium">{amountLabel}</th>
           </tr>
         </thead>
@@ -196,8 +214,9 @@ function InvoiceRowsTable({
               <td className="py-2 pr-2 text-muted-foreground">
                 {new Date(r.issued_at).toLocaleDateString("ko-KR")}
               </td>
-              <td className="max-w-[160px] truncate py-2 pr-2">{r.tourTitle ?? "-"}</td>
+              <td className="max-w-[140px] truncate py-2 pr-2">{r.tourTitle ?? "-"}</td>
               <td className="py-2 pr-2">{r.diverName ?? "-"}</td>
+              <td className="py-2 pr-2">{r.instructorName ?? "-"}</td>
               <td className="py-2 pl-2 text-right font-medium">{formatKRW(getAmount(r))}</td>
             </tr>
           ))}
@@ -257,31 +276,34 @@ export function AdminAccountingCenter() {
       setLoading(true);
       const { startISO, endISO, periodStr } = monthRange(year, month);
 
-      const [accountingRes, invoicesRes, diversRes, instructorsRes, anyInvoiceRes] = await Promise.all([
-        supabase.rpc("get_admin_monthly_accounting", { p_year: year, p_month: month }),
-        supabase
-          .from("invoices")
-          .select(
-            "id, gmv_amount, platform_fee_amount, instructor_amount, refund_amount, issued_at, payouts(status), bookings(diver_name, tours(title))",
-          )
-          .eq("period", periodStr)
-          .order("issued_at", { ascending: false }),
-        supabase
-          .from("profiles")
-          .select("id, name, created_at")
-          .eq("role", "diver")
-          .gte("created_at", startISO)
-          .lt("created_at", endISO)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("profiles")
-          .select("id, name, created_at")
-          .eq("role", "instructor")
-          .gte("created_at", startISO)
-          .lt("created_at", endISO)
-          .order("created_at", { ascending: false }),
-        supabase.from("invoices").select("id", { count: "exact", head: true }),
-      ]);
+      const [accountingRes, invoicesRes, diversRes, instructorsRes, anyInvoiceRes, instructorsTableRes] =
+        await Promise.all([
+          supabase.rpc("get_admin_monthly_accounting", { p_year: year, p_month: month }),
+          supabase
+            .from("invoices")
+            .select(
+              "id, gmv_amount, platform_fee_amount, instructor_amount, refund_amount, issued_at, payouts(status, instructor_id), bookings(diver_name, tours(title))",
+            )
+            .eq("period", periodStr)
+            .order("issued_at", { ascending: false }),
+          supabase
+            .from("profiles")
+            .select("id, name, created_at")
+            .eq("role", "diver")
+            .gte("created_at", startISO)
+            .lt("created_at", endISO)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("profiles")
+            .select("id, name, created_at")
+            .eq("role", "instructor")
+            .gte("created_at", startISO)
+            .lt("created_at", endISO)
+            .order("created_at", { ascending: false }),
+          supabase.from("invoices").select("id", { count: "exact", head: true }),
+          // 정산 대상 강사 이름 표시를 위해 강사 목록(id → name)을 함께 불러온다.
+          supabase.from("instructors").select("id, name"),
+        ]);
 
       if (cancelled) return;
 
@@ -297,6 +319,13 @@ export function AdminAccountingCenter() {
         setRow(data && data.length > 0 ? data[0] : null);
       }
 
+      const instructorNameMap = new Map(
+        ((instructorsTableRes.data as Array<{ id: string; name: string }> | null) ?? []).map((i) => [
+          i.id,
+          i.name,
+        ]),
+      );
+
       if (!invoicesRes.error && invoicesRes.data) {
         const rows: InvoiceDetailRow[] = (
           invoicesRes.data as Array<{
@@ -306,7 +335,7 @@ export function AdminAccountingCenter() {
             instructor_amount: number;
             refund_amount: number;
             issued_at: string;
-            payouts: { status: string } | null;
+            payouts: { status: string; instructor_id: string | null } | null;
             bookings: { diver_name: string | null; tours: { title: string } | null } | null;
           }>
         ).map((r) => ({
@@ -319,6 +348,9 @@ export function AdminAccountingCenter() {
           payoutStatus: r.payouts?.status ?? null,
           diverName: r.bookings?.diver_name ?? null,
           tourTitle: r.bookings?.tours?.title ?? null,
+          instructorName: r.payouts?.instructor_id
+            ? (instructorNameMap.get(r.payouts.instructor_id) ?? null)
+            : null,
         }));
         setInvoiceRows(rows);
 
@@ -374,16 +406,102 @@ export function AdminAccountingCenter() {
   const net = row?.net_revenue ?? 0;
   const bookingCount = row?.booking_count ?? 0;
   const vat = row?.estimated_vat ?? 0;
+  // 대한민국 부가가치세법 일반과세자 기준: 매출액에 부가세가 포함되어 있다고 보고
+  // 공급가액 = 매출액 ÷ 1.1, 부가세 = 매출액 − 공급가액(= 매출액 × 10/110)으로 역산한다.
+  const vatSupplyAmount = Math.round(net / 1.1);
+
+  function handleDownloadCsv() {
+    const lines: string[] = [];
+    lines.push(csvEscape(`ALL BLUE 회계 센터 - ${year}년 ${month}월`));
+    lines.push("");
+    lines.push("지표,값");
+    lines.push(`GMV (총 거래금액),${gmv}`);
+    lines.push(`플랫폼 수수료 매출,${feeRevenue}`);
+    lines.push(`강사 지급 예정,${payoutBreakdown.pending}`);
+    lines.push(`강사 지급 완료,${payoutBreakdown.paid}`);
+    lines.push(`환불 금액,${refund}`);
+    lines.push(`순매출,${net}`);
+    lines.push(`거래 건수,${bookingCount}`);
+    lines.push(`공급가액(일반과세 기준),${vatSupplyAmount}`);
+    lines.push(`예상 부가세(일반과세 기준),${vat}`);
+    lines.push(`신규 가입 강사,${signups.newInstructors}`);
+    lines.push(`신규 가입 회원,${signups.newDivers}`);
+    lines.push("");
+    lines.push("거래 내역");
+    lines.push("일자,투어,예약자,강사,GMV,플랫폼수수료,환불액,강사지급액,정산상태");
+    for (const r of invoiceRows) {
+      lines.push(
+        [
+          new Date(r.issued_at).toLocaleDateString("ko-KR"),
+          csvEscape(r.tourTitle ?? ""),
+          csvEscape(r.diverName ?? ""),
+          csvEscape(r.instructorName ?? ""),
+          r.gmv_amount,
+          r.platform_fee_amount,
+          r.refund_amount,
+          r.instructor_amount,
+          r.payoutStatus ?? "",
+        ].join(","),
+      );
+    }
+    lines.push("");
+    lines.push("신규 가입 강사");
+    lines.push("이름,가입일");
+    for (const r of newInstructorRows) {
+      lines.push(`${csvEscape(r.name)},${new Date(r.created_at).toLocaleDateString("ko-KR")}`);
+    }
+    lines.push("");
+    lines.push("신규 가입 회원");
+    lines.push("이름,가입일");
+    for (const r of newDiverRows) {
+      lines.push(`${csvEscape(r.name)},${new Date(r.created_at).toLocaleDateString("ko-KR")}`);
+    }
+
+    // 엑셀에서 한글이 깨지지 않도록 UTF-8 BOM을 앞에 붙인다.
+    const csvContent = "\uFEFF" + lines.join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `allblue-accounting-${year}-${String(month).padStart(2, "0")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   function renderDetailContent() {
     if (!detailKey) return null;
 
     if (detailKey === "vat") {
       return (
-        <p className="text-sm text-muted-foreground">
-          예상 부가세는 플랫폼 수수료 매출을 기준으로 한 추정치이며, 실제 세금 신고 근거자료로 사용할 수
-          없습니다. 정확한 부가세액은 세무 대리인 확인이 필요합니다.
-        </p>
+        <div className="space-y-3 text-sm">
+          <p className="text-muted-foreground">
+            대한민국 부가가치세법상 일반과세자 기준 계산입니다. 플랫폼 순매출(수수료 매출 − 환불)에
+            부가세가 포함되어 있다고 보고, 매출액 ÷ 1.1 = 공급가액, 매출액 − 공급가액 = 부가세로
+            역산합니다.
+          </p>
+          <table className="w-full">
+            <tbody>
+              <tr className="border-b border-border/60">
+                <td className="py-1.5 text-muted-foreground">매출액 (부가세 포함, 수수료 매출 − 환불)</td>
+                <td className="py-1.5 text-right font-medium">{formatKRW(net)}</td>
+              </tr>
+              <tr className="border-b border-border/60">
+                <td className="py-1.5 text-muted-foreground">공급가액 (매출액 ÷ 1.1)</td>
+                <td className="py-1.5 text-right font-medium">{formatKRW(vatSupplyAmount)}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 font-semibold">예상 부가세 (10%)</td>
+                <td className="py-1.5 text-right font-semibold">{formatKRW(vat)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-xs text-muted-foreground">
+            매입세액 공제, 간이과세 전환 여부 등에 따라 실제 납부세액은 달라질 수 있습니다. 신고 전
+            세무 대리인 확인이 필요합니다.
+          </p>
+        </div>
       );
     }
 
@@ -431,14 +549,22 @@ export function AdminAccountingCenter() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div>
           <h1 className="text-xl font-semibold">회계 센터</h1>
           <p className="text-sm text-muted-foreground">
             월별 GMV · 플랫폼 수수료 매출 · 정산 현황 (invoices 테이블 기준 집계)
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadCsv}>
+            <Download className="h-4 w-4" />
+            엑셀 다운로드
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
+            <Printer className="h-4 w-4" />
+            PDF로 저장
+          </Button>
           <Button variant="outline" size="icon" onClick={() => shiftMonth(-1)} aria-label="이전 달">
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -482,7 +608,7 @@ export function AdminAccountingCenter() {
       </div>
 
       {hasAnyInvoices === false && (
-        <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-4 text-sm text-orange-600 dark:text-orange-400">
+        <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-4 text-sm text-orange-600 dark:text-orange-400 print:hidden">
           아직 발급된 인보이스가 없습니다. 예약 확정 시 invoices 레코드를 생성하는 로직이
           연결되기 전까지는 아래 카드가 전부 0으로 표시됩니다. (Invoice ID 채번 로직은
           다음 단계에서 구현 예정)
@@ -490,9 +616,9 @@ export function AdminAccountingCenter() {
       )}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">불러오는 중...</p>
+        <p className="text-sm text-muted-foreground print:hidden">불러오는 중...</p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 print:hidden">
           <AccountingCard
             title="GMV (총 거래금액)"
             value={formatKRW(gmv)}
@@ -551,7 +677,7 @@ export function AdminAccountingCenter() {
             value={formatKRW(vat)}
             icon={RefreshCcw}
             tone="orange"
-            sub="추정치 — 신고 근거자료 아님"
+            sub="일반과세 기준 추정치"
             onDetailClick={() => setDetailKey("vat")}
           />
           <AccountingCard
@@ -586,6 +712,154 @@ export function AdminAccountingCenter() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* PDF로 저장(브라우저 인쇄) 시에만 보이는 전체 리포트 — 카드/다이얼로그 대신
+          모든 지표와 상세 내역을 표/텍스트로 정리해 한 번에 출력한다. */}
+      <div className="hidden print:block">
+        <h1 className="mb-1 text-xl font-bold text-foreground">ALL BLUE 회계 센터 리포트</h1>
+        <p className="mb-4 text-sm text-muted-foreground">{year}년 {month}월</p>
+
+        <table className="mb-6 w-full text-sm">
+          <tbody>
+            <tr className="border-b border-border">
+              <td className="py-1 text-muted-foreground">GMV (총 거래금액)</td>
+              <td className="py-1 text-right font-medium">{formatKRW(gmv)}</td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="py-1 text-muted-foreground">플랫폼 수수료 매출</td>
+              <td className="py-1 text-right font-medium">{formatKRW(feeRevenue)}</td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="py-1 text-muted-foreground">강사 지급 예정</td>
+              <td className="py-1 text-right font-medium">{formatKRW(payoutBreakdown.pending)}</td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="py-1 text-muted-foreground">강사 지급 완료</td>
+              <td className="py-1 text-right font-medium">{formatKRW(payoutBreakdown.paid)}</td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="py-1 text-muted-foreground">환불 금액</td>
+              <td className="py-1 text-right font-medium">{formatKRW(refund)}</td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="py-1 text-muted-foreground">순매출</td>
+              <td className="py-1 text-right font-medium">{formatKRW(net)}</td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="py-1 text-muted-foreground">거래 건수</td>
+              <td className="py-1 text-right font-medium">{bookingCount.toLocaleString()}건</td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="py-1 text-muted-foreground">공급가액 (일반과세 기준)</td>
+              <td className="py-1 text-right font-medium">{formatKRW(vatSupplyAmount)}</td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="py-1 text-muted-foreground">예상 부가세 (일반과세 기준)</td>
+              <td className="py-1 text-right font-medium">{formatKRW(vat)}</td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="py-1 text-muted-foreground">신규 가입 강사</td>
+              <td className="py-1 text-right font-medium">{signups.newInstructors.toLocaleString()}명</td>
+            </tr>
+            <tr>
+              <td className="py-1 text-muted-foreground">신규 가입 회원</td>
+              <td className="py-1 text-right font-medium">{signups.newDivers.toLocaleString()}명</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 className="mb-2 text-base font-semibold text-foreground">거래 내역</h2>
+        <table className="mb-6 w-full text-xs">
+          <thead>
+            <tr className="border-b border-border text-left">
+              <th className="py-1 pr-2">일자</th>
+              <th className="py-1 pr-2">투어</th>
+              <th className="py-1 pr-2">예약자</th>
+              <th className="py-1 pr-2">강사</th>
+              <th className="py-1 pr-2 text-right">GMV</th>
+              <th className="py-1 pr-2 text-right">수수료</th>
+              <th className="py-1 pr-2 text-right">환불</th>
+              <th className="py-1 pr-2 text-right">강사지급액</th>
+              <th className="py-1 pl-2">정산상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoiceRows.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="py-2 text-center text-muted-foreground">
+                  데이터 없음
+                </td>
+              </tr>
+            ) : (
+              invoiceRows.map((r) => (
+                <tr key={r.id} className="border-b border-border/60">
+                  <td className="py-1 pr-2">{new Date(r.issued_at).toLocaleDateString("ko-KR")}</td>
+                  <td className="py-1 pr-2">{r.tourTitle ?? "-"}</td>
+                  <td className="py-1 pr-2">{r.diverName ?? "-"}</td>
+                  <td className="py-1 pr-2">{r.instructorName ?? "-"}</td>
+                  <td className="py-1 pr-2 text-right">{formatKRW(r.gmv_amount)}</td>
+                  <td className="py-1 pr-2 text-right">{formatKRW(r.platform_fee_amount)}</td>
+                  <td className="py-1 pr-2 text-right">{formatKRW(r.refund_amount)}</td>
+                  <td className="py-1 pr-2 text-right">{formatKRW(r.instructor_amount)}</td>
+                  <td className="py-1 pl-2">{r.payoutStatus ?? "-"}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        <h2 className="mb-2 text-base font-semibold text-foreground">신규 가입 강사</h2>
+        <table className="mb-6 w-full text-xs">
+          <thead>
+            <tr className="border-b border-border text-left">
+              <th className="py-1 pr-2">이름</th>
+              <th className="py-1 pl-2">가입일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {newInstructorRows.length === 0 ? (
+              <tr>
+                <td colSpan={2} className="py-2 text-center text-muted-foreground">
+                  없음
+                </td>
+              </tr>
+            ) : (
+              newInstructorRows.map((r) => (
+                <tr key={r.id} className="border-b border-border/60">
+                  <td className="py-1 pr-2">{r.name}</td>
+                  <td className="py-1 pl-2">{new Date(r.created_at).toLocaleDateString("ko-KR")}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        <h2 className="mb-2 text-base font-semibold text-foreground">신규 가입 회원</h2>
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border text-left">
+              <th className="py-1 pr-2">이름</th>
+              <th className="py-1 pl-2">가입일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {newDiverRows.length === 0 ? (
+              <tr>
+                <td colSpan={2} className="py-2 text-center text-muted-foreground">
+                  없음
+                </td>
+              </tr>
+            ) : (
+              newDiverRows.map((r) => (
+                <tr key={r.id} className="border-b border-border/60">
+                  <td className="py-1 pr-2">{r.name}</td>
+                  <td className="py-1 pl-2">{new Date(r.created_at).toLocaleDateString("ko-KR")}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
