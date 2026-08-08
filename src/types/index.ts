@@ -65,6 +65,8 @@ export interface InstructorProfile {
   pledgeSigned: boolean;
   pledgeSignedAt?: string;
   pledgeVersion?: string;
+  /** 가입(전자서약) 시 본인이 신고한 사업자 유형. 정산 시 원천징수(3.3%) 적용 여부를 결정한다. */
+  businessType?: InstructorBusinessType;
   totalLogs: number;
   experienceYears: number;
   completionRate: number; // 0-100
