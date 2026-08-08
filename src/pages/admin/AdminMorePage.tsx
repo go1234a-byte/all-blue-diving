@@ -3,7 +3,6 @@ import {
   BarChart3,
   BookOpen,
   Bell,
-  Calculator,
   ClipboardCheck,
   Building2,
   CalendarCheck,
@@ -14,15 +13,18 @@ import {
   MessageCircle,
   Settings,
   Ticket,
+  Wallet,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AccountActions } from "@/components/mypage/AccountActions";
 
-// 하단 바로가기(홈/대시보드/강사관리/회원관리/정산관리)에 들어가지 못한 나머지 관리 메뉴를 여기 모아둔다.
+// 하단 바로가기(홈/강사관리/회원관리/회계관리)에 들어가지 못한 나머지 관리 메뉴를 여기 모아둔다.
+// 회계관리(/admin/accounting)는 핵심 메뉴로 승격되어 여기서는 빠지고, 대신 개별 건별
+// 승인/보류를 처리하는 정산 관리(/admin/payouts)가 여기로 이동했다.
 const MORE_ITEMS = [
   { to: "/admin/tours", label: "투어 관리", icon: Compass },
   { to: "/admin/bookings", label: "예약 관리", icon: CalendarCheck },
-  { to: "/admin/accounting", label: "회계 센터", icon: Calculator },
+  { to: "/admin/payouts", label: "정산 관리", icon: Wallet },
   { to: "/admin/centers", label: "센터 관리", icon: Building2 },
   { to: "/admin/support", label: "문의 관리", icon: MessageCircle },
   { to: "/admin/reports", label: "신고 관리", icon: Flag },
