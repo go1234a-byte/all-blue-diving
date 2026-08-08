@@ -7,7 +7,7 @@ import {
   UserRound,
   LayoutDashboard,
   Users,
-  Wallet,
+  Calculator,
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,14 +40,16 @@ const INSTRUCTOR_NAV_ITEMS: NavItem[] = [
   { to: "/mypage", label: "마이페이지", icon: UserRound, end: false },
 ];
 
-// 관리자는 좌측 사이드바(15개 메뉴) 대신 핵심 5개 + 더보기로 구성한다.
-// "홈"은 오늘 요약, "대시보드"는 기존 상세 지표 페이지(/admin) 그대로다.
+// 관리자는 좌측 사이드바(15개 메뉴) 대신 핵심 4개 + 더보기로 구성한다.
+// 예전에는 "홈"(오늘 요약)과 "대시보드"(상세 지표)가 따로 있었는데, 지표가 대부분 겹쳐서
+// 두 화면이 거의 똑같아 보이는 문제가 있었다 — "홈" 하나로 합치고(AdminHomePage가
+// AdminDashboardPage를 그대로 재사용), "정산관리" 대신 사용 빈도가 높은 "회계관리"를
+// 핵심 메뉴로 승격했다. 정산관리(개별 건별 승인/보류)는 더보기로 이동했다.
 const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: "/admin/home", label: "홈", icon: Home, end: true },
-  { to: "/admin", label: "대시보드", icon: LayoutDashboard, end: true },
   { to: "/admin/instructors", label: "강사관리", icon: Users, end: false },
   { to: "/admin/users", label: "회원관리", icon: UserRound, end: false },
-  { to: "/admin/payouts", label: "정산관리", icon: Wallet, end: false },
+  { to: "/admin/accounting", label: "회계관리", icon: Calculator, end: false },
   { to: "/admin/more", label: "더보기", icon: MoreHorizontal, end: false },
 ];
 
