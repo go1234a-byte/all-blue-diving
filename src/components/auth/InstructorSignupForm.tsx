@@ -11,6 +11,7 @@ import { OnboardingProgress } from "@/components/auth/OnboardingProgress";
 import { PledgeAgreement } from "@/components/auth/PledgeAgreement";
 import { useAppData } from "@/contexts/AppDataContext";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadInstructorDocument, uploadInstructorDocuments } from "@/lib/uploadImage";
 import { useToast } from "@/hooks/use-toast";
 import type { Gender } from "@/types";
 
@@ -228,6 +229,35 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
         userId = signInData.user.id;
       }
 
+      // 신분증 사본/통장 사본/자격증 서류를 비공개 버킷(instructor-documents)에 실제로
+      // 업로드한다. 예전에는 이 파일들을 아예 서버로 보내지 않고 파일명 문자열만 저장해서,
+      // 관리자가 승인 심사를 하려 해도 실제 서류를 볼 방법이 전혀 없었다(신분증은 파일명조차
+      // 저장 안 됐음). 계정(auth)은 이미 만들어졌으니 실패하면 아래 profiles insert와
+      // 동일하게 재시도 안내를 하고 다시 로그인해서 이어가도록 한다.
+      let idDocumentPath: string | undefined;
+      let bankbookPath: string | undefined;
+      let licenseFilePaths: string[] = [];
+      try {
+        const [idResult, bankbookResult, licenseResult] = await Promise.all([
+          uploadInstructorDocument(idFiles[0], userId, "id"),
+          uploadInstructorDocument(bankbookFiles[0], userId, "bankbook"),
+          uploadInstructorDocuments(licenseFiles, userId, "license"),
+        ]);
+        idDocumentPath = idResult;
+        bankbookPath = bankbookResult;
+        licenseFilePaths = licenseResult;
+      } catch (uploadErr) {
+        toast({
+          title: "서류 업로드에 실패했습니다",
+          description:
+            uploadErr instanceof Error
+              ? `${uploadErr.message} 잠시 후 다시 로그인해서 재시도해주세요.`
+              : "잠시 후 다시 로그인해서 재시도해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const instructorProfilePayload = {
         id: userId,
         role: "instructor",
@@ -240,6 +270,8 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
         account_holder: accountHolder,
         account_number: accountNumber,
         bankbook_file_name: bankbookFiles[0]?.name ?? null,
+        bankbook_path: bankbookPath,
+        id_document_path: idDocumentPath,
       };
 
       let { error: profileError } = await supabase.from("profiles").insert(instructorProfilePayload);
@@ -267,9 +299,16 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           gender,
           bio,
           licenseFileNames: licenseFiles.map((f) => f.name),
+          licenseFilePaths,
           signatureDataUrl: signature,
           pledgeSigned: true,
           settlementPledgeAgreed: true,
+          bankName,
+          accountHolder,
+          accountNumber,
+          bankbookFileName: bankbookFiles[0]?.name,
+          bankbookPath,
+          idDocumentPath,
         });
       } catch (err) {
         // 계정(profiles)까지는 이미 만들어졌지만 강사 프로필(instructors) 생성에 실패한 경우.
