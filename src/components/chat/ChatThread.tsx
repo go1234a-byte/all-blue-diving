@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
+import { useToast } from "@/hooks/use-toast";
 import { CHAT_RETENTION_NOTICE, isChatAccessible } from "@/lib/chatRetention";
 import { cn } from "@/lib/utils";
 import type { Tour } from "@/types";
@@ -17,6 +18,7 @@ interface ChatThreadProps {
 export function ChatThread({ tourId, tour }: ChatThreadProps) {
   const { chatMessages, addChatMessage } = useAppData();
   const { role, profile } = useRole();
+  const { toast } = useToast();
   const [text, setText] = useState(""); const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -36,16 +38,30 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
   const currentSenderRole = role === "instructor" ? "instructor" : role === "admin" ? "admin" : "diver";
   const currentSenderName = profile?.name ?? (role === "admin" ? "관리자" : "게스트 다이버");
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!text.trim() || !accessible) return;
-    void addChatMessage({
-      tourId,
-      senderProfileId: profile?.id ?? "guest",
-      senderName: currentSenderName,
-      senderRole: currentSenderRole,
-      body: text.trim(),
-    });
-    setText(""); inputRef.current?.focus();
+    const body = text.trim();
+    // 실패해도 사용자가 계속 대화창을 보고 있을 확률이 높으므로 낙관적으로 먼저 비운다.
+    // 다만 예전에는 이 insert가 실패하면 입력했던 내용이 그대로 사라져 다시 타이핑해야
+    // 했다 — 실패 시 입력값을 복구하고 실패 사실을 토스트로 알린다.
+    setText("");
+    inputRef.current?.focus();
+    try {
+      await addChatMessage({
+        tourId,
+        senderProfileId: profile?.id ?? "guest",
+        senderName: currentSenderName,
+        senderRole: currentSenderRole,
+        body,
+      });
+    } catch (err) {
+      setText(body);
+      toast({
+        title: "메시지 전송에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
