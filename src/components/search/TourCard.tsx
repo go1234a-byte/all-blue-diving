@@ -197,7 +197,7 @@ export function TourCard({ tour }: TourCardProps) {
                     {(instructor.agency || instructor.verified) && (
                       <div className="mt-0.5 flex flex-wrap items-center gap-1">
                         {instructor.agency && (
-                          <Badge variant="outline" className="max-w-[130px] truncate px-1.5 py-0 text-[9px]">
+                          <Badge variant="outline" className="max-w-[130px] truncate px-2 py-0.5 text-[10px]">
                             {instructor.agency}
                           </Badge>
                         )}
