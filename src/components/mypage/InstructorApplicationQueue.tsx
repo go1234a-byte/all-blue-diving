@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, FileText, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,50 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
-import { getInstructorDocumentSignedUrl } from "@/lib/uploadImage";
+import { DocumentViewButton } from "@/components/admin/DocumentViewButton";
 import { maskName } from "@/lib/masking";
-
-/**
- * 서류 1건을 "보기" 버튼으로 노출한다. 파일은 비공개 버킷(instructor-documents)에 있어서
- * 미리 URL을 만들어둘 수 없고, 누른 시점에 서명된 임시 URL을 발급받아 새 탭으로 연다
- * (본인 또는 관리자만 발급 성공 — storage RLS가 서명 URL 발급 자체를 막는다).
- */
-function DocumentViewButton({ path, label }: { path?: string | null; label: string }) {
-  const [loading, setLoading] = useState(false);
-
-  if (!path) {
-    return (
-      <span className="rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground">
-        {label} 미제출
-      </span>
-    );
-  }
-
-  const handleClick = async () => {
-    setLoading(true);
-    const url = await getInstructorDocumentSignedUrl(path);
-    setLoading(false);
-    if (!url) {
-      alert(`${label} 파일을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.`);
-      return;
-    }
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  return (
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      className="h-7 gap-1 text-[11px]"
-      onClick={handleClick}
-      disabled={loading}
-    >
-      <FileText className="h-3 w-3" />
-      {loading ? "불러오는 중..." : `${label} 보기`}
-    </Button>
-  );
-}
 
 /**
  * 관리자용 강사 인증 신청 큐. `verified_status = false`이고 아직 반려되지 않은 강사를
@@ -67,10 +25,19 @@ function DocumentViewButton({ path, label }: { path?: string | null; label: stri
  * 것 외에 관리자가 취할 수 있는 조치가 없었다.)
  */
 export function InstructorApplicationQueue() {
-  const { instructors, getInstructorProfileById, setInstructorVerified, rejectInstructorApplication, adminProfile } =
-    useAppData();
+  const {
+    instructors,
+    getInstructorProfileById,
+    setInstructorVerified,
+    rejectInstructorApplication,
+    clearInstructorDocumentReview,
+    adminProfile,
+  } = useAppData();
   const { toast } = useToast();
-  const pending = instructors.filter((i) => !i.verified && !i.rejectedAt);
+  // 심사 대기중(!verified)인 신규 신청 건뿐 아니라, 이미 인증된 강사가 마이페이지에서
+  // 서류를 수정 제출해 documentsPendingReview가 true인 건도 이 큐에 다시 노출한다 —
+  // 관리자가 변경된 서류를 놓치지 않도록 하기 위함.
+  const pending = instructors.filter((i) => (!i.verified && !i.rejectedAt) || (i.verified && i.documentsPendingReview));
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -81,6 +48,24 @@ export function InstructorApplicationQueue() {
     try {
       await setInstructorVerified(id, true, adminProfile.id);
       toast({ title: "강사 인증을 승인했습니다." });
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  // 이미 인증된 강사의 "수정요청" 확인 완료 처리 — 최초 인증 승인과는 다른 액션이라
+  // setInstructorVerified가 아닌 clearInstructorDocumentReview를 호출한다.
+  const handleConfirmCorrection = async (id: string) => {
+    setApprovingId(id);
+    try {
+      await clearInstructorDocumentReview(id);
+      toast({ title: "서류 수정요청을 확인 완료했습니다." });
+    } catch (err) {
+      toast({
+        title: "확인 처리에 실패했습니다",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
     } finally {
       setApprovingId(null);
     }
@@ -116,7 +101,7 @@ export function InstructorApplicationQueue() {
 
   if (pending.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">대기중인 강사 인증 신청이 없습니다.</p>
+      <p className="py-8 text-center text-sm text-muted-foreground">대기중인 강사 인증/수정 신청이 없습니다.</p>
     );
   }
 
@@ -133,6 +118,9 @@ export function InstructorApplicationQueue() {
         const hasAnyDocument = Boolean(
           instructor.licenseFilePaths?.length || profile?.idDocumentPath || profile?.bankbookPath,
         );
+        // 이미 인증된 강사가 마이페이지에서 서류를 재제출해 다시 큐에 노출된 건인지 여부.
+        // 최초 심사 대기 건과는 처리 방식이 다르므로(재승인이 아니라 "확인") 버튼/문구를 구분한다.
+        const isCorrectionRequest = instructor.verified && instructor.documentsPendingReview;
         return (
           <Card key={instructor.id}>
             <CardContent className="space-y-3 p-3">
@@ -151,13 +139,18 @@ export function InstructorApplicationQueue() {
                   )}
                 </div>
                 <Badge variant="secondary" className="shrink-0">
-                  심사 대기
+                  {isCorrectionRequest ? "수정요청" : "심사 대기"}
                 </Badge>
               </div>
 
               <div className="space-y-2 rounded-lg border border-border bg-secondary/30 p-2.5">
                 <p className="text-[11px] font-semibold text-foreground">제출 서류</p>
-                {!hasAnyDocument && (
+                {isCorrectionRequest && (
+                  <p className="text-[11px] text-muted-foreground">
+                    이미 인증된 강사가 서류를 다시 제출했습니다. 아래 서류를 확인 후 처리해주세요.
+                  </p>
+                )}
+                {!isCorrectionRequest && !hasAnyDocument && (
                   <p className="text-[11px] text-destructive">
                     이 신청 건은 서류 원본이 저장되지 않았습니다(가입 당시 시스템 문제). 서류
                     확인 없이 승인하지 말고 별도로 본인 확인 후 처리해주세요.
@@ -195,27 +188,41 @@ export function InstructorApplicationQueue() {
                 )}
               </div>
 
-              <div className="flex gap-1.5">
+              {isCorrectionRequest ? (
+                // 사용자 요청: 이미 인증된 강사가 서류 수정을 요청한 경우 "인증 승인"이
+                // 아니라 "수정요청"이라는 버튼 라벨로 노출해 관리자가 구분할 수 있게 한다.
                 <Button
                   size="sm"
-                  className="flex-1 gap-1"
-                  onClick={() => handleApprove(instructor.id)}
+                  className="w-full gap-1"
+                  onClick={() => handleConfirmCorrection(instructor.id)}
                   disabled={approvingId === instructor.id}
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  인증 승인
+                  수정요청
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 gap-1 text-destructive hover:text-destructive"
-                  onClick={() => openReject(instructor.id)}
-                  disabled={approvingId === instructor.id}
-                >
-                  <XCircle className="h-3.5 w-3.5" />
-                  반려
-                </Button>
-              </div>
+              ) : (
+                <div className="flex gap-1.5">
+                  <Button
+                    size="sm"
+                    className="flex-1 gap-1"
+                    onClick={() => handleApprove(instructor.id)}
+                    disabled={approvingId === instructor.id}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    인증 승인
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 gap-1 text-destructive hover:text-destructive"
+                    onClick={() => openReject(instructor.id)}
+                    disabled={approvingId === instructor.id}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    반려
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         );
