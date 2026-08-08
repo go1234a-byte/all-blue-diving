@@ -342,13 +342,24 @@ export interface Penalty {
 
 export type PayoutStatus = "scheduled" | "held" | "released" | "cancelled";
 
+/** 강사 가입 시 선택하는 사업자 유형. 프리랜서(사업자 없음)는 지급 시 3.3% 원천징수 대상. */
+export type InstructorBusinessType = "individual" | "corporation" | "freelancer";
+
 export interface Payout {
   id: string;
   instructorId: string;
   bookingId: string;
-  firstAmount: number;
-  secondAmount: number;
+  firstAmount: number; // 1차 정산 (80%, 원천징수 전 총액)
+  secondAmount: number; // 2차 정산 (20%, 원천징수 전 총액)
   status: PayoutStatus;
+  /** 원천징수세율 (프리랜서 3.3% = 0.033, 그 외 0). 지급 시점 기준으로 고정 저장됨. */
+  withholdingTaxRate?: number;
+  /** 원천징수세액 = round((firstAmount + secondAmount) * withholdingTaxRate) */
+  withholdingTaxAmount?: number;
+  /** 실지급액 = firstAmount + secondAmount - withholdingTaxAmount */
+  netPayoutAmount?: number;
+  /** 지급 시점 기준 강사의 사업자 유형 스냅샷 (미입력 강사는 null). */
+  businessTypeAtPayout?: InstructorBusinessType | null;
 }
 
 export type ReportStatus = "pending" | "resolved";
