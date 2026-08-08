@@ -45,6 +45,15 @@
     --coral: 217 23% 26%;
     --coral-foreground: 210 20% 92%;
 
+    /* 투어카드 액티비티 뱃지 전용 색상 — scuba(짙은 블루) · freediving(터쿼이즈) ·
+       liveaboard(골드). 서로 다른 계열의 색으로 한눈에 구별되도록 한다. */
+    --activity-scuba: 206 90% 42%;
+    --activity-scuba-foreground: 0 0% 100%;
+    --activity-freediving: 174 68% 36%;
+    --activity-freediving-foreground: 0 0% 100%;
+    --activity-liveaboard: 35 88% 52%;
+    --activity-liveaboard-foreground: 26 40% 14%;
+
     --border: 216 20% 90%;
     --input: 216 20% 90%;
     --ring: 186 77% 38%;
@@ -111,6 +120,14 @@
 
     --coral: 217 23% 26%;
     --coral-foreground: 210 20% 92%;
+
+    /* 투어카드 액티비티 뱃지 — 다크 모드에서는 배경 대비를 위해 살짝 밝게 조정 */
+    --activity-scuba: 206 85% 55%;
+    --activity-scuba-foreground: 0 0% 100%;
+    --activity-freediving: 174 62% 46%;
+    --activity-freediving-foreground: 0 0% 100%;
+    --activity-liveaboard: 35 92% 58%;
+    --activity-liveaboard-foreground: 26 40% 14%;
 
     --border: 212 32% 20%;
     --input: 212 32% 20%;
