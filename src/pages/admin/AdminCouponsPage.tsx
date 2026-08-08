@@ -65,6 +65,12 @@ const AdminCouponsPage = () => {
       setMaxDiscount("");
       setExpiresAt("");
       setUsageLimit("");
+    } catch (err) {
+      toast({
+        title: "쿠폰 발급에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
