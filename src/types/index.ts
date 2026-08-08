@@ -501,6 +501,21 @@ export interface ArbitrationMessage {
   createdAt: string;
 }
 
+/**
+ * 관리자 ↔ 강사 전용 비공개 안내 메모. 이의신청/분쟁 조정 목적의 ArbitrationMessage(비밀
+ * 중재방)와는 별개로, 관리자가 강사에게 서류 보완 요청이나 반려 사유 등 일반 안내를 남기고
+ * 강사가 답할 수 있는 스레드다. 강사의 승인 여부와 무관하게 모든 강사에게 사용 가능하며,
+ * 관리자와 해당 강사 본인만 열람할 수 있다.
+ */
+export interface InstructorAdminNote {
+  id: string;
+  instructorId: string;
+  senderRole: "admin" | "instructor";
+  senderName: string;
+  body: string;
+  createdAt: string;
+}
+
 export const SUPPORT_FAQ_CATEGORIES = ["예약", "환불", "결제", "투어", "강사", "기타"] as const;
 export type SupportFaqCategory = (typeof SUPPORT_FAQ_CATEGORIES)[number];
 
