@@ -10,6 +10,7 @@ import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { SettlementLedger } from "@/components/instructor/SettlementLedger";
 import { InstructorNotificationCenter } from "@/components/instructor/InstructorNotificationCenter";
 import { InstructorProfileEditCard } from "@/components/mypage/InstructorProfileEditCard";
+import { InstructorBusinessTypeBanner } from "@/components/mypage/InstructorBusinessTypeBanner";
 import { AccountActions } from "@/components/mypage/AccountActions";
 import { PushNotificationToggle } from "@/components/mypage/PushNotificationToggle";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -91,6 +92,8 @@ export function InstructorMyPageView() {
           </div>
         </CardContent>
       </Card>
+
+      <InstructorBusinessTypeBanner instructor={instructor} />
 
       <InstructorProfileEditCard instructor={instructor} profile={instructorProfile} />
 
