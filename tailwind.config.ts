@@ -42,6 +42,14 @@ export default {
 					DEFAULT: 'hsl(var(--coral))',
 					foreground: 'hsl(var(--coral-foreground))'
 				},
+				activity: {
+					scuba: 'hsl(var(--activity-scuba))',
+					'scuba-foreground': 'hsl(var(--activity-scuba-foreground))',
+					freediving: 'hsl(var(--activity-freediving))',
+					'freediving-foreground': 'hsl(var(--activity-freediving-foreground))',
+					liveaboard: 'hsl(var(--activity-liveaboard))',
+					'liveaboard-foreground': 'hsl(var(--activity-liveaboard-foreground))'
+				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
 					foreground: 'hsl(var(--secondary-foreground))'
