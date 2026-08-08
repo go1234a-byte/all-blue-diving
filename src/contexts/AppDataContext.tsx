@@ -64,6 +64,7 @@ function mapInstructorRow(row: {
   level?: string | null;
   license_file_names: string[] | null;
   license_file_paths?: string[] | null;
+  documents_pending_review?: boolean | null;
   signature_data_url: string | null;
   verified_status: boolean;
   verified_at?: string | null;
@@ -100,6 +101,7 @@ function mapInstructorRow(row: {
     level: row.level ?? undefined,
     licenseFileNames: row.license_file_names ?? [],
     licenseFilePaths: row.license_file_paths ?? [],
+    documentsPendingReview: row.documents_pending_review ?? false,
     signatureDataUrl: row.signature_data_url ?? undefined,
     verified: row.verified_status,
     verifiedAt: row.verified_at ?? undefined,
@@ -691,6 +693,20 @@ interface AppDataContextValue {
       snsHomepage?: string;
     },
   ) => Promise<void>;
+  submitInstructorDocumentCorrection: (
+    instructorId: string,
+    updates: {
+      idDocumentPath?: string;
+      bankbookPath?: string;
+      bankbookFileName?: string;
+      licenseFileNames?: string[];
+      licenseFilePaths?: string[];
+      bankName?: string;
+      accountHolder?: string;
+      accountNumber?: string;
+    },
+  ) => Promise<void>;
+  clearInstructorDocumentReview: (instructorId: string) => Promise<void>;
   toggleBookmark: (tourId: string) => void;
   isBookmarked: (tourId: string) => boolean;
   toggleInstructorBookmark: (instructorId: string) => void;
@@ -2101,6 +2117,145 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * 강사 — 이미 인증된 상태에서 마이페이지를 통해 신분증/자격증/통장사본 등 제출 서류나
+   * 정산 계좌 정보를 수정(재제출)한다. 예전에는 이 화면의 "강사 자격증 서류" 수정 UI가
+   * 실제로는 파일을 업로드하지 않고 파일명만 저장하는 반쪽짜리 기능이었고(#84와 동일한
+   * 유형의 버그), 신분증/통장사본은 애초에 마이페이지에서 수정할 방법 자체가 없었다.
+   * 여기서 실제로 업로드된 새 storage 경로들을 받아 profiles/instructors 테이블에
+   * 반영하고, instructors.documents_pending_review를 true로 세워 관리자가 변경 사실을
+   * 알아채고 다시 확인할 수 있게 한다(관리자 강사 승인 큐에 "수정요청" 버튼으로 재노출됨).
+   */
+  const submitInstructorDocumentCorrection = async (
+    instructorId: string,
+    updates: {
+      idDocumentPath?: string;
+      bankbookPath?: string;
+      bankbookFileName?: string;
+      licenseFileNames?: string[];
+      licenseFilePaths?: string[];
+      bankName?: string;
+      accountHolder?: string;
+      accountNumber?: string;
+    },
+  ): Promise<void> => {
+    const instructor = instructors.find((i) => i.id === instructorId);
+    if (!instructor?.profileId) {
+      throw new Error("강사 프로필 정보를 찾을 수 없습니다.");
+    }
+
+    const hasInstructorFieldChange =
+      updates.licenseFileNames !== undefined || updates.licenseFilePaths !== undefined;
+    const hasProfileFieldChange =
+      updates.idDocumentPath !== undefined ||
+      updates.bankbookPath !== undefined ||
+      updates.bankbookFileName !== undefined ||
+      updates.bankName !== undefined ||
+      updates.accountHolder !== undefined ||
+      updates.accountNumber !== undefined;
+
+    if (hasInstructorFieldChange) {
+      const { error: instructorError } = await supabase
+        .from("instructors")
+        .update({
+          ...(updates.licenseFileNames !== undefined ? { license_file_names: updates.licenseFileNames } : {}),
+          ...(updates.licenseFilePaths !== undefined ? { license_file_paths: updates.licenseFilePaths } : {}),
+          documents_pending_review: true,
+        })
+        .eq("id", instructorId);
+      if (instructorError) {
+        console.error("[submitInstructorDocumentCorrection] instructors 업데이트 실패:", instructorError);
+        throw new Error("자격증 서류 저장에 실패했습니다: " + instructorError.message);
+      }
+    } else {
+      // 자격증 파일 변경이 없어도 신분증/통장사본/계좌정보만 바뀌었다면 여전히
+      // "수정요청" 상태로 표시되어야 하므로 플래그만 갱신한다.
+      const { error: flagError } = await supabase
+        .from("instructors")
+        .update({ documents_pending_review: true })
+        .eq("id", instructorId);
+      if (flagError) {
+        console.error("[submitInstructorDocumentCorrection] documents_pending_review 갱신 실패:", flagError);
+        throw new Error("서류 수정요청 처리에 실패했습니다: " + flagError.message);
+      }
+    }
+
+    setInstructors((prev) =>
+      prev.map((i) =>
+        i.id === instructorId
+          ? {
+              ...i,
+              ...(updates.licenseFileNames !== undefined ? { licenseFileNames: updates.licenseFileNames } : {}),
+              ...(updates.licenseFilePaths !== undefined ? { licenseFilePaths: updates.licenseFilePaths } : {}),
+              documentsPendingReview: true,
+            }
+          : i,
+      ),
+    );
+
+    if (hasProfileFieldChange) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          ...(updates.idDocumentPath !== undefined ? { id_document_path: updates.idDocumentPath } : {}),
+          ...(updates.bankbookPath !== undefined ? { bankbook_path: updates.bankbookPath } : {}),
+          ...(updates.bankbookFileName !== undefined ? { bankbook_file_name: updates.bankbookFileName } : {}),
+          ...(updates.bankName !== undefined ? { bank_name: updates.bankName } : {}),
+          ...(updates.accountHolder !== undefined ? { account_holder: updates.accountHolder } : {}),
+          ...(updates.accountNumber !== undefined ? { account_number: updates.accountNumber } : {}),
+        })
+        .eq("id", instructor.profileId);
+      if (profileError) {
+        console.error("[submitInstructorDocumentCorrection] profiles 업데이트 실패:", profileError);
+        throw new Error("제출 서류 저장에 실패했습니다: " + profileError.message);
+      }
+
+      setInstructorProfiles((prev) =>
+        prev.map((p) =>
+          p.id === instructor.profileId
+            ? {
+                ...p,
+                ...(updates.idDocumentPath !== undefined ? { idDocumentPath: updates.idDocumentPath } : {}),
+                ...(updates.bankbookPath !== undefined ? { bankbookPath: updates.bankbookPath } : {}),
+                ...(updates.bankbookFileName !== undefined ? { bankbookFileName: updates.bankbookFileName } : {}),
+                ...(updates.bankName !== undefined ? { bankName: updates.bankName } : {}),
+                ...(updates.accountHolder !== undefined ? { accountHolder: updates.accountHolder } : {}),
+                ...(updates.accountNumber !== undefined ? { accountNumber: updates.accountNumber } : {}),
+              }
+            : p,
+        ),
+      );
+    }
+  };
+
+  /**
+   * 관리자 — 강사가 마이페이지에서 제출한 서류 수정요청을 확인 완료 처리한다.
+   * documents_pending_review를 false로 되돌려 승인 큐에서 다시 사라지게 하고,
+   * 강사 알림 센터에 확인 완료 사실을 남긴다.
+   */
+  const clearInstructorDocumentReview = async (instructorId: string): Promise<void> => {
+    const { error } = await supabase
+      .from("instructors")
+      .update({ documents_pending_review: false })
+      .eq("id", instructorId);
+    if (error) {
+      console.error("[clearInstructorDocumentReview] instructors 업데이트 실패:", error);
+      throw new Error("수정요청 확인 처리에 실패했습니다: " + error.message);
+    }
+    setInstructors((prev) =>
+      prev.map((i) => (i.id === instructorId ? { ...i, documentsPendingReview: false } : i)),
+    );
+    void persistInstructorNotification({
+      instructorId,
+      tourId: "",
+      tourTitle: "제출 서류 확인",
+      message: "제출하신 수정 서류를 관리자가 확인했습니다.",
+      createdAt: new Date().toISOString(),
+      type: "document_review_completed",
+    });
+  };
+
+
   const addDiverSignup = (input: NewDiverSignupInput): Profile => {
     const profile: Profile = {
       id: nextId("diver"),
@@ -2795,6 +2950,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setInstructorPenalty,
       voidPenalty,
       updateInstructorProfile,
+      submitInstructorDocumentCorrection,
+      clearInstructorDocumentReview,
       toggleBookmark,
       isBookmarked,
       toggleInstructorBookmark,
