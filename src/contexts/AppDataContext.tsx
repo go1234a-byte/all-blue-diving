@@ -710,6 +710,7 @@ interface AppDataContextValue {
       snsFacebook?: string;
       snsBlog?: string;
       snsHomepage?: string;
+      businessType?: InstructorBusinessType;
     },
   ) => Promise<void>;
   submitInstructorDocumentCorrection: (
@@ -2059,6 +2060,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       snsFacebook?: string;
       snsBlog?: string;
       snsHomepage?: string;
+      /** 마이페이지에서 본인이 사업자 유형을 신고/정정할 때 사용 (정산 원천징수 계산에 반영됨). */
+      businessType?: InstructorBusinessType;
     },
   ): Promise<void> => {
     const instructor = instructors.find((i) => i.id === instructorId);
@@ -2084,6 +2087,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ...(updates.snsFacebook !== undefined ? { sns_facebook: updates.snsFacebook } : {}),
         ...(updates.snsBlog !== undefined ? { sns_blog: updates.snsBlog } : {}),
         ...(updates.snsHomepage !== undefined ? { sns_homepage: updates.snsHomepage } : {}),
+        ...(updates.businessType !== undefined ? { business_type: updates.businessType } : {}),
       })
       .eq("id", instructorId);
 
@@ -2109,6 +2113,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               ...(updates.snsFacebook !== undefined ? { snsFacebook: updates.snsFacebook } : {}),
               ...(updates.snsBlog !== undefined ? { snsBlog: updates.snsBlog } : {}),
               ...(updates.snsHomepage !== undefined ? { snsHomepage: updates.snsHomepage } : {}),
+              ...(updates.businessType !== undefined ? { businessType: updates.businessType } : {}),
             }
           : i,
       ),
