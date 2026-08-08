@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, FileText } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -257,6 +257,17 @@ const AdminInstructorsPage = () => {
                     </Badge>
                   )}
                 </div>
+              </Link>
+
+              {/* 관리자와 해당 강사만 볼 수 있는 비공개 안내 메모(서류 보완 요청, 반려 사유 등).
+                  기존 "문의" 성격의 지원 채널과는 다른 용도라 문구를 구분해 "안내 남기기"로 표기한다.
+                  승인 여부와 무관하게 모든 강사에게 노출된다. */}
+              <Link
+                to={`/admin/instructors/${instructor.id}/notes`}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/40 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                안내 남기기
               </Link>
 
               {!isBanned && !instructor.verified && instructor.rejectedAt && (
