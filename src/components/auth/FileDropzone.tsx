@@ -102,9 +102,8 @@ export function FileDropzone({
           setDragActive(false);
           applyFiles(e.dataTransfer.files);
         }}
-        onClick={() => inputRef.current?.click()}
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors",
+          "relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors",
           dragActive ? "border-primary bg-secondary" : "border-input bg-background hover:bg-secondary/50",
         )}
       >
@@ -113,12 +112,22 @@ export function FileDropzone({
         <p className="text-xs text-muted-foreground">
           클릭하거나 파일을 끌어다 놓으세요{multiple ? ` (최대 ${maxFiles}장)` : ""}
         </p>
+        {/* 예전에는 input을 className="hidden"(display:none)으로 숨기고 바깥 div의
+            onClick에서 inputRef.current?.click()을 호출해 파일 선택창을 여는 방식이었다.
+            아이폰 Chrome(iOS 웹킷 기반)에서는 display:none인 input에 대해 이렇게 JS로
+            간접 호출한 click()이 파일 선택 시트를 아예 띄우지 못하는 경우가 있어 —
+            사용자 입장에서는 버튼을 눌러도 아무 반응이 없어 보이고 업로드 자체가 불가능한
+            문제로 이어졌다. input을 display:none 대신 opacity:0으로 처리하고 드롭존
+            영역 전체를 덮도록 배치해서, 브라우저가 탭/클릭을 input에 직접 전달하도록
+            바꿨다 — 이러면 iOS를 포함한 모든 브라우저에서 네이티브 동작 그대로 안정적으로
+            파일 선택창이 열린다. */}
         <input
           ref={inputRef}
           type="file"
           multiple={multiple}
           accept={accept}
-          className="hidden"
+          aria-label={label}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           onChange={(e) => applyFiles(e.target.files)}
         />
       </div>
