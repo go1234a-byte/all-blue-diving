@@ -218,6 +218,14 @@ export const UNDER_MIN_POLICY_LABELS: Record<UnderMinParticipantsPolicy, string>
 /** 자동 모집 마감 기준: 투어 출발일 이 일수 전. */
 export const RECRUITMENT_AUTO_CLOSE_DAYS_BEFORE_START = 30;
 
+/**
+ * 투어 생성 직후 유예 시간 (시간 단위) — 이 시간 동안은 출발일이 자동마감 기준일(출발 30일 전)을
+ * 이미 지난 상태로 생성됐더라도 자동마감 평가 대상에서 제외한다. 그렇지 않으면 출발일이 30일
+ * 이내로 임박한 근시일 투어를 강사가 새로 만드는 즉시 예약 0건으로 "최소 인원 미달" 처리되어
+ * 생성하자마자 홈/검색 목록에서 사라지는 문제가 있었다 (batch — 신규 투어 미노출 버그 수정).
+ */
+export const RECRUITMENT_AUTO_CLOSE_GRACE_PERIOD_HOURS = 24;
+
 export type PaymentMethod = "card" | "kakaopay" | "naverpay" | "tosspay" | "applepay";
 
 export interface Invoice {
