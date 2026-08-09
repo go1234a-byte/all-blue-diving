@@ -316,7 +316,15 @@ const Auth = () => {
         </div>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          가입을 진행하면 ALL BLUE 이용약관 및 개인정보처리방침에 동의하는 것으로 간주됩니다.
+          가입을 진행하면 ALL BLUE{" "}
+          <Link to="/terms" className="underline underline-offset-2 hover:text-foreground">
+            이용약관
+          </Link>{" "}
+          및{" "}
+          <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground">
+            개인정보처리방침
+          </Link>
+          에 동의하는 것으로 간주됩니다.
         </p>
       </div>
     </div>
