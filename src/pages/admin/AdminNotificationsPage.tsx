@@ -20,9 +20,17 @@ const AdminNotificationsPage = () => {
   const navigate = useNavigate();
   const sorted = [...instructorNotifications].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
+  // "강사 인증 반려"/"제출 서류 확인 완료" 알림은 특정 투어가 아니라 강사 본인에 대한
+  // 알림이라 tourId가 빈 문자열로 저장된다(persistInstructorNotification 참고). 그동안 이
+  // 두 유형만 클릭해도 아무 데도 이동하지 않았는데, 나머지 5개 유형(투어 관련)과 동일하게
+  // 어딘가로는 이동해야 하므로 이 경우 관리자가 볼 수 있는 강사 프로필로 이동시킨다.
   const handleClick = (n: (typeof sorted)[number]) => {
     if (!n.read) markInstructorNotificationRead(n.id);
-    if (n.tourId) navigate(`/tour/${n.tourId}`);
+    if (n.tourId) {
+      navigate(`/tour/${n.tourId}`);
+    } else if (n.instructorId) {
+      navigate(`/instructor/${n.instructorId}/profile`);
+    }
   };
 
   return (
