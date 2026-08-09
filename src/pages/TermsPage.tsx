@@ -1,16 +1,15 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
-// PG 심사 및 사업자등록 완료 후 실제 정보로 교체 필요.
 const BUSINESS_INFO = {
   serviceName: "올블루(ALL BLUE)",
-  companyName: "[사업자등록 후 입력]",
-  ceoName: "[사업자등록 후 입력]",
-  businessNumber: "[사업자등록번호 입력]",
-  mailOrderNumber: "[통신판매업신고번호 입력]",
-  address: "[사업장 주소 입력]",
-  email: "[고객센터 이메일 입력]",
-  phone: "[고객센터 전화번호 입력]",
+  companyName: "올블루",
+  ceoName: "박재우",
+  businessNumber: "204-31-12475",
+  mailOrderNumber: "2026-부산사상구-0348호",
+  address: "부산광역시 사상구 백양대로494번길 10 102호",
+  email: "help@allbluedive.com",
+  phone: "010-2604-5661",
 };
 
 const EFFECTIVE_DATE = "2026-08-08";
