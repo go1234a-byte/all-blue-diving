@@ -1,4 +1,4 @@
-import { RECRUITMENT_AUTO_CLOSE_DAYS_BEFORE_START } from "@/types";
+import { RECRUITMENT_AUTO_CLOSE_DAYS_BEFORE_START, RECRUITMENT_AUTO_CLOSE_GRACE_PERIOD_HOURS } from "@/types";
 import type { Tour } from "@/types";
 
 /**
@@ -28,15 +28,30 @@ export function isPastAutoCloseDate(tour: Pick<Tour, "startDate">): boolean {
 }
 
 /**
+ * 투어가 생성된 지 RECRUITMENT_AUTO_CLOSE_GRACE_PERIOD_HOURS 이내인지 여부.
+ * 출발일이 임박한(자동마감 기준일을 이미 지난) 상태로 막 생성된 투어를 예약을 모을 시간도
+ * 없이 곧바로 "최소 인원 미달"로 자동마감시키지 않기 위한 유예기간이다.
+ */
+export function isWithinCreationGracePeriod(tour: Pick<Tour, "createdAt">): boolean {
+  const createdAt = new Date(tour.createdAt).getTime();
+  if (Number.isNaN(createdAt)) return false;
+  const graceMs = RECRUITMENT_AUTO_CLOSE_GRACE_PERIOD_HOURS * 60 * 60 * 1000;
+  return Date.now() - createdAt < graceMs;
+}
+
+/**
  * 특정 투어가 지금 자동 마감 평가 대상인지 판단한다.
  * - 이미 처리된 투어(autoCloseProcessed)나 이미 마감된 투어는 대상에서 제외한다.
+ * - 생성된 지 얼마 안 된 투어(유예기간 이내)는, 출발일이 임박해 자동마감 기준일을 이미
+ *   지난 상태로 생성됐더라도 평가 대상에서 제외한다 — 예약을 모을 최소한의 시간을 보장한다.
  */
 export function shouldEvaluateAutoClose(
-  tour: Pick<Tour, "startDate" | "status" | "autoCloseProcessed" | "adminStatus">,
+  tour: Pick<Tour, "startDate" | "status" | "autoCloseProcessed" | "adminStatus" | "createdAt">,
 ): boolean {
   if (tour.status !== "open") return false;
   if (tour.autoCloseProcessed) return false;
   if (tour.adminStatus) return false; // 관리자 정지/보류 중인 투어는 자동 마감 평가에서 제외
+  if (isWithinCreationGracePeriod(tour)) return false;
   return isPastAutoCloseDate(tour);
 }
 
