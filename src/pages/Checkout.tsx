@@ -76,6 +76,9 @@ const Checkout = () => {
   const [processing, setProcessing] = useState(false);
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
   const [confirmedInclusions, setConfirmedInclusions] = useState(false);
+  // 일정/장소 변경 등으로 강사·센터가 예약자에게 개별 연락해야 할 수 있음을 사전에 고지하고
+  // 동의받는 체크박스. 기존에는 이런 동의 절차 없이 결제 시 입력한 연락처로 바로 연락이 갔다.
+  const [contactConsent, setContactConsent] = useState(false);
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; amount: number } | null>(null);
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
@@ -421,6 +424,19 @@ const Checkout = () => {
         </div>
 
         <CancellationRefundPolicyCard agreed={agreedToPolicy} onAgreedChange={setAgreedToPolicy} />
+
+        <label className="flex items-start gap-2.5 rounded-xl border-2 border-primary/40 bg-card p-4 text-sm">
+          <Checkbox
+            checked={contactConsent}
+            onCheckedChange={(checked) => setContactConsent(checked === true)}
+            className="mt-0.5"
+          />
+          <span className="break-keep text-foreground">
+            <span className="font-semibold text-destructive">[필수]</span> 예약하신 투어의 일정·장소
+            변경 등 안내가 필요한 경우, 담당 강사 또는 센터가 입력하신 연락처로 개별 연락하는 것에
+            동의합니다.
+          </span>
+        </label>
       </main>
 
       <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:max-w-lg">
@@ -434,6 +450,7 @@ const Checkout = () => {
             authLoading ||
             !agreedToPolicy ||
             !confirmedInclusions ||
+            !contactConsent ||
             participantCount > remainingSlots ||
             remainingSlots < 1
           }
@@ -444,9 +461,11 @@ const Checkout = () => {
               ? "로그인 정보 확인 중..."
               : !confirmedInclusions
                 ? "포함/불포함 사항을 확인해주세요"
-                : agreedToPolicy
-                  ? `${formatKRW(invoice.totalDue)} 결제하기`
-                  : "취소 및 환불 규정에 동의해주세요"}
+                : !agreedToPolicy
+                  ? "취소 및 환불 규정에 동의해주세요"
+                  : !contactConsent
+                    ? "일정/장소 변경 안내 연락에 동의해주세요"
+                    : `${formatKRW(invoice.totalDue)} 결제하기`}
         </Button>
       </div>
     </div>
