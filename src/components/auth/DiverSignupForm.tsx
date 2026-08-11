@@ -37,8 +37,23 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !name || !phone) {
-      toast({ title: "필수 항목을 입력해주세요", variant: "destructive" });
+    // 예전에는 4개 필드를 한 조건문에서 묶어 검사해서 "필수 항목을 입력해주세요"라고만 떴다 —
+    // 이메일/비밀번호/이름/연락처 중 정확히 뭐가 비었는지 알 수 없어 사용자가 매번 전체 폼을
+    // 다시 훑어봐야 했다. 필드별로 나눠 정확한 안내를 준다.
+    if (!email.trim()) {
+      toast({ title: "이메일을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    if (!password) {
+      toast({ title: "비밀번호를 입력해주세요", variant: "destructive" });
+      return;
+    }
+    if (!name.trim()) {
+      toast({ title: "이름을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    if (!phone.trim()) {
+      toast({ title: "연락처를 입력해주세요", variant: "destructive" });
       return;
     }
     if (password.length < 8) {
