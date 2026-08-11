@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { CancelBookingDialog } from "@/components/mypage/CancelBookingDialog";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
-import { formatDateRangeKR } from "@/lib/dates";
+import { formatDateRangeKR, isPastDate } from "@/lib/dates";
 import { formatKRW } from "@/lib/pricing";
 import { CERTIFICATION_LABELS } from "@/lib/constants";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
@@ -149,11 +149,20 @@ const AdminToursPage = () => {
   const { toast } = useToast();
   const [detailTour, setDetailTour] = useState<Tour | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
-  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed" | "suspended" | "held">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed" | "completed" | "suspended" | "held">(
+    "all",
+  );
 
+  // "종료(진행완료)"는 tours.status 값이 아니라, 강사 마이페이지(InstructorMyPageView.tsx)와
+  // 동일한 기준(마감 처리됐거나 출발 종료일이 이미 지남)으로 계산하는 파생 상태다. 예전에는
+  // 관리자 화면에 실제로 투어가 끝났는지 확인할 방법이 없어 "마감(모집 종료)"과 "종료(진행
+  // 완료)"를 구분할 수 없었다.
   const filteredTours = tours.filter((tour) => {
     if (statusFilter === "all") return true;
     if (statusFilter === "suspended" || statusFilter === "held") return tour.adminStatus === statusFilter;
+    if (statusFilter === "completed") {
+      return !tour.adminStatus && (tour.status === "closed" || isPastDate(tour.endDate));
+    }
     return !tour.adminStatus && tour.status === statusFilter;
   });
 
@@ -201,6 +210,7 @@ const AdminToursPage = () => {
             <SelectItem value="all">전체 상태</SelectItem>
             <SelectItem value="open">모집중</SelectItem>
             <SelectItem value="closed">마감</SelectItem>
+            <SelectItem value="completed">종료(진행완료)</SelectItem>
             <SelectItem value="suspended">정지됨</SelectItem>
             <SelectItem value="held">보류중</SelectItem>
           </SelectContent>
