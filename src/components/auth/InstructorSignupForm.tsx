@@ -79,20 +79,43 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
   const canGoNext = (): boolean => {
     switch (step) {
       case 1:
-        if (!name || !phone || !email || !password || idFiles.length === 0) {
-          toast({
-            title: "필수 항목을 입력해주세요",
-            description: "이메일/비밀번호/이름/연락처/신분증 사본은 필수입니다.",
-            variant: "destructive",
-          });
+        // 예전에는 5개/4개 필드를 각각 한 조건문으로 묶어 검사해서 description에 "이게 다
+        // 필수"라고 나열만 할 뿐, 그중 정확히 뭐가 비었는지는 알려주지 못했다. 필드별로
+        // 나눠 정확한 안내를 준다.
+        if (!name.trim()) {
+          toast({ title: "이름을 입력해주세요", variant: "destructive" });
           return false;
         }
-        if (!bankName || !accountHolder || !accountNumber || bankbookFiles.length === 0) {
-          toast({
-            title: "정산 계좌 정보를 입력해주세요",
-            description: "은행명/예금주명/계좌번호와 통장사본은 필수입니다.",
-            variant: "destructive",
-          });
+        if (!phone.trim()) {
+          toast({ title: "연락처를 입력해주세요", variant: "destructive" });
+          return false;
+        }
+        if (!email.trim()) {
+          toast({ title: "이메일을 입력해주세요", variant: "destructive" });
+          return false;
+        }
+        if (!password) {
+          toast({ title: "비밀번호를 입력해주세요", variant: "destructive" });
+          return false;
+        }
+        if (idFiles.length === 0) {
+          toast({ title: "신분증 사본을 첨부해주세요", variant: "destructive" });
+          return false;
+        }
+        if (!bankName.trim()) {
+          toast({ title: "은행명을 입력해주세요", variant: "destructive" });
+          return false;
+        }
+        if (!accountHolder.trim()) {
+          toast({ title: "예금주명을 입력해주세요", variant: "destructive" });
+          return false;
+        }
+        if (!accountNumber.trim()) {
+          toast({ title: "계좌번호를 입력해주세요", variant: "destructive" });
+          return false;
+        }
+        if (bankbookFiles.length === 0) {
+          toast({ title: "통장 사본을 첨부해주세요", variant: "destructive" });
           return false;
         }
         if (password.length < 8) {
@@ -140,17 +163,32 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword || !agreedTerms) {
-      toast({ title: "계정 정보를 다시 확인해주세요", description: "비밀번호 확인 또는 약관 동의가 완료되지 않았습니다.", variant: "destructive" });
+    // 예전에는 여러 필드를 한 조건문으로 묶어 검사해서 정확히 뭐가 비었는지 알려주지
+    // 못했다(canGoNext의 step 1 검사와 동일한 문제). 필드별로 나눠 정확한 안내를 준다.
+    if (password !== confirmPassword) {
+      toast({ title: "비밀번호가 일치하지 않습니다", description: "비밀번호와 비밀번호 확인을 다시 확인해주세요.", variant: "destructive" });
       setStep(1);
       return;
     }
-    if (!pledgeSignerName.trim() || !businessType || !pledgeAgreed || !signature) {
-      toast({
-        title: "전자 서약을 완료해주세요",
-        description: "이름 입력, 사업자 유형 선택, 동의 체크박스, 서명을 모두 완료해야 합니다.",
-        variant: "destructive",
-      });
+    if (!agreedTerms) {
+      toast({ title: "이용약관 및 개인정보처리방침에 동의해주세요", variant: "destructive" });
+      setStep(1);
+      return;
+    }
+    if (!pledgeSignerName.trim()) {
+      toast({ title: "서약 서명자 이름을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    if (!businessType) {
+      toast({ title: "사업자 유형을 선택해주세요", variant: "destructive" });
+      return;
+    }
+    if (!pledgeAgreed) {
+      toast({ title: "전자 서약 동의 체크박스를 확인해주세요", variant: "destructive" });
+      return;
+    }
+    if (!signature) {
+      toast({ title: "서명을 입력해주세요", variant: "destructive" });
       return;
     }
     setSubmitting(true);
