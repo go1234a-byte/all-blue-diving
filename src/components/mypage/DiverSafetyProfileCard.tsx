@@ -69,6 +69,15 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
       });
       toast({ title: "정보가 저장되었습니다" });
       setEditing(false);
+    } catch (err) {
+      // updateDiverProfile이 실패 시 에러를 던지도록 바뀌었다 — 예전에는 여기서 실패해도
+      // "정보가 저장되었습니다" 토스트가 그대로 떠서 사용자가 저장 실패를 알 방법이 없었다.
+      // 실패 시에는 입력 화면을 닫지 않아 사용자가 다시 시도할 수 있게 한다.
+      toast({
+        title: "저장에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
