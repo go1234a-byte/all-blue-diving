@@ -744,6 +744,7 @@ interface AppDataContextValue {
       birthDate?: string;
       cCardAgency?: string;
       cCardNumber?: string;
+      cCardPhotoPath?: string;
       logCount?: number;
       emergencyContactName?: string;
       emergencyContactPhone?: string;
