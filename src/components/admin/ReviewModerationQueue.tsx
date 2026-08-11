@@ -16,8 +16,36 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatDateKR } from "@/lib/dates";
+import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { cn } from "@/lib/utils";
 import type { Review } from "@/types";
+
+/** 후기에 첨부된 사진(회원이 올린 증빙/후기 사진)을 관리자가 확인할 수 있는 썸네일 그리드.
+ *  예전에는 관리자 화면 어디에도 review.photos가 렌더링되지 않아, 관리자가 회원이 올린
+ *  사진을 전혀 볼 수 없었다(강사 쪽도 동일한 문제 — InstructorReviewsPanel.tsx도 같이 수정). */
+function ReviewPhotoThumbnails({ photos }: { photos?: string[] }) {
+  if (!photos || photos.length === 0) return null;
+  return (
+    <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+      {photos.map((url, i) => (
+        <a
+          key={url + i}
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border"
+        >
+          <img
+            src={url || IMAGE_PLACEHOLDER}
+            alt={`첨부 사진 ${i + 1}`}
+            onError={handleImageFallback}
+            className="h-full w-full object-cover"
+          />
+        </a>
+      ))}
+    </div>
+  );
+}
 
 /** 관리자용 신고된 후기 관리 큐. 신고된(reported) 후기를 나열하고 소프트 삭제(deleted)할 수 있다. */
 export function ReviewModerationQueue() {
@@ -39,6 +67,7 @@ export function ReviewModerationQueue() {
             </div>
             {review.title && <p className="text-sm font-medium text-foreground">{review.title}</p>}
             <p className="line-clamp-2 text-xs text-muted-foreground">{review.comment}</p>
+            <ReviewPhotoThumbnails photos={review.photos} />
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button size="sm" variant="destructive">후기 삭제</Button>
@@ -111,6 +140,7 @@ export function AllReviewsAdminPanel() {
               <CardContent className="space-y-2 border-t border-border p-3 pt-2">
                 {review.title && <p className="text-sm font-medium text-foreground">{review.title}</p>}
                 <p className="whitespace-pre-wrap text-xs text-muted-foreground">{review.comment}</p>
+                <ReviewPhotoThumbnails photos={review.photos} />
                 {review.instructorReply && (
                   <div className="rounded-lg border border-border bg-secondary/40 p-2 text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">강사 답글: </span>
