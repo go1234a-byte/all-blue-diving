@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import {
   BarChart3,
+  Ban,
   BookOpen,
   Bell,
   ClipboardCheck,
@@ -25,6 +26,7 @@ const MORE_ITEMS = [
   { to: "/admin/tours", label: "투어 관리", icon: Compass },
   { to: "/admin/bookings", label: "예약 관리", icon: CalendarCheck },
   { to: "/admin/payouts", label: "정산 관리", icon: Wallet },
+  { to: "/admin/cancellation-claims", label: "투어 취소 증빙 검토", icon: Ban },
   { to: "/admin/centers", label: "센터 관리", icon: Building2 },
   { to: "/admin/support", label: "문의 관리", icon: MessageCircle },
   { to: "/admin/reports", label: "신고 관리", icon: Flag },
