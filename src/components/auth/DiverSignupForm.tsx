@@ -5,9 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FileDropzone } from "@/components/auth/FileDropzone";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAppData } from "@/contexts/AppDataContext";
+import { uploadInstructorDocument } from "@/lib/uploadImage";
 import type { Gender } from "@/types";
 
 interface DiverSignupFormProps {
@@ -29,6 +31,9 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
   const [birthDate, setBirthDate] = useState("");
   const [cCardAgency, setCCardAgency] = useState("");
   const [cCardNumber, setCCardNumber] = useState("");
+  // 예전에는 자격증 정보가 발급기관/번호 텍스트로만 있어 관리자가 진위를 확인할 방법이
+  // 전혀 없었다. 선택 사항으로 실물 사진을 업로드받아 비공개 버킷에 저장한다.
+  const [cCardPhotoFiles, setCCardPhotoFiles] = useState<File[]>([]);
   const [logCount, setLogCount] = useState("");
   const [emergencyContactName, setEmergencyContactName] = useState("");
   const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
@@ -156,6 +161,22 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         userId = signInData.user.id;
       }
 
+      // 자격증 사진은 선택 사항이라 업로드 실패로 가입 전체가 막히면 안 되므로, 실패해도
+      // 경고만 띄우고 나머지 가입 절차는 그대로 진행한다.
+      let cCardPhotoPath: string | undefined;
+      if (cCardPhotoFiles[0]) {
+        try {
+          cCardPhotoPath = await uploadInstructorDocument(cCardPhotoFiles[0], userId, "ccard");
+        } catch (uploadErr) {
+          console.error("[DiverSignupForm] 자격증 사진 업로드 실패:", uploadErr);
+          toast({
+            title: "자격증 사진 업로드에 실패했습니다",
+            description: "나머지 가입은 정상 진행됩니다. 나중에 마이페이지에서 다시 등록해주세요.",
+            variant: "destructive",
+          });
+        }
+      }
+
       const profileInsertPayload = {
         id: userId,
         role: "diver",
@@ -165,6 +186,7 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         birth_date: birthDate || null,
         c_card_agency: cCardAgency || null,
         c_card_number: cCardNumber || null,
+        c_card_photo_path: cCardPhotoPath || null,
         log_count: logCount ? Number(logCount) : null,
         emergency_contact_name: emergencyContactName,
         emergency_contact_phone: emergencyContactPhone,
@@ -227,6 +249,7 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         createdAt: new Date().toISOString(),
         cCardAgency: cCardAgency || undefined,
         cCardNumber: cCardNumber || undefined,
+        cCardPhotoPath: cCardPhotoPath || undefined,
         logCount: logCount ? Number(logCount) : undefined,
         emergencyContactName,
         emergencyContactPhone,
@@ -328,6 +351,14 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
               placeholder="자격증 번호"
             />
           </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label>자격증 사진 (선택)</Label>
+          <FileDropzone
+            label="📸 C-Card 사진 업로드"
+            accept="image/*"
+            onFilesChange={setCCardPhotoFiles}
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="diver-log-count">보유 로그 수</Label>
