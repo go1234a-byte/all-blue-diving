@@ -73,6 +73,7 @@ function mapProfileRow(row: any): Profile {
     birthDate: row.birth_date ?? undefined,
     cCardAgency: row.c_card_agency ?? undefined,
     cCardNumber: row.c_card_number ?? undefined,
+    cCardPhotoPath: row.c_card_photo_path ?? undefined,
     logCount: row.log_count ?? undefined,
     emergencyContactName: row.emergency_contact_name ?? undefined,
     emergencyContactPhone: row.emergency_contact_phone ?? undefined,
@@ -1905,6 +1906,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       birthDate?: string;
       cCardAgency?: string;
       cCardNumber?: string;
+      cCardPhotoPath?: string;
       logCount?: number;
       emergencyContactName?: string;
       emergencyContactPhone?: string;
@@ -1923,6 +1925,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ...(updates.birthDate !== undefined ? { birth_date: updates.birthDate } : {}),
         ...(updates.cCardAgency !== undefined ? { c_card_agency: updates.cCardAgency } : {}),
         ...(updates.cCardNumber !== undefined ? { c_card_number: updates.cCardNumber } : {}),
+        ...(updates.cCardPhotoPath !== undefined ? { c_card_photo_path: updates.cCardPhotoPath } : {}),
         ...(updates.logCount !== undefined ? { log_count: updates.logCount } : {}),
         ...(updates.emergencyContactName !== undefined
           ? { emergency_contact_name: updates.emergencyContactName }
