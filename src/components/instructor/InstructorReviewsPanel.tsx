@@ -6,7 +6,35 @@ import { Button } from "@/components/ui/button";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
+import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { cn } from "@/lib/utils";
+
+/** 후기에 첨부된 사진(다이버가 올린 증빙/후기 사진)을 강사가 확인할 수 있는 썸네일 그리드.
+ *  예전에는 강사가 받은 후기 화면에 review.photos가 전혀 렌더링되지 않아, 다이버가 올린
+ *  사진을 강사가 볼 수 없었다(관리자 쪽도 동일한 문제 — ReviewModerationQueue.tsx도 같이 수정). */
+function ReviewPhotoThumbnails({ photos }: { photos?: string[] }) {
+  if (!photos || photos.length === 0) return null;
+  return (
+    <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+      {photos.map((url, i) => (
+        <a
+          key={url + i}
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border"
+        >
+          <img
+            src={url || IMAGE_PLACEHOLDER}
+            alt={`첨부 사진 ${i + 1}`}
+            onError={handleImageFallback}
+            className="h-full w-full object-cover"
+          />
+        </a>
+      ))}
+    </div>
+  );
+}
 
 interface InstructorReviewsPanelProps {
   instructorId: string;
@@ -62,6 +90,7 @@ export function InstructorReviewsPanel({ instructorId }: InstructorReviewsPanelP
               </div>
               {review.title && <p className="text-sm font-semibold text-foreground">{review.title}</p>}
               {review.comment && <p className="text-xs text-muted-foreground">{review.comment}</p>}
+              <ReviewPhotoThumbnails photos={review.photos} />
 
               <div className="space-y-1.5 rounded-lg border border-primary/30 bg-secondary/30 p-2.5">
                 <p className="flex items-center gap-1 text-[11px] font-semibold text-primary">
