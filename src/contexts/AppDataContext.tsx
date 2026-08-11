@@ -24,6 +24,8 @@ import type {
   SupportTicketStatus,
   SupportTicketType,
   Tour,
+  TourCancellationClaim,
+  TourCancellationClaimStatus,
   TourItineraryDay,
   TourOption,
   UnderMinParticipantsPolicy, CompanionInfo,} from "@/types";
@@ -443,6 +445,23 @@ function mapInstructorAdminNoteRow(row: any): InstructorAdminNote {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapTourCancellationClaimRow(row: any): TourCancellationClaim {
+  return {
+    id: row.id,
+    tourId: row.tour_id,
+    instructorId: row.instructor_id,
+    reason: row.reason,
+    evidenceFileUrls: row.evidence_file_urls ?? [],
+    affectedBookingIds: row.affected_booking_ids ?? [],
+    status: row.status,
+    adminNote: row.admin_note ?? undefined,
+    reviewedBy: row.reviewed_by ?? undefined,
+    reviewedAt: row.reviewed_at ?? undefined,
+    createdAt: row.created_at,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapInstructorNotificationRow(row: any): InstructorNotification {
   return {
     id: row.id,
@@ -688,6 +707,7 @@ interface AppDataContextValue {
   instructorNotifications: InstructorNotification[];
   arbitrationMessages: ArbitrationMessage[];
   instructorAdminNotes: InstructorAdminNote[];
+  tourCancellationClaims: TourCancellationClaim[];
   centers: Center[];
   centersLoading: boolean;
   supportTickets: SupportTicket[];
@@ -698,6 +718,17 @@ interface AppDataContextValue {
   addTour: (input: NewTourInput) => Promise<Tour>;
   resolveUnderMinDecision: (tourId: string, decision: UnderMinParticipantsPolicy) => Promise<void>;
   forceCancelTourBookings: (tourId: string) => Promise<number>;
+  cancelTourByInstructor: (
+    tourId: string,
+    reason: string,
+    evidenceFileUrls: string[],
+  ) => Promise<TourCancellationClaim>;
+  reviewTourCancellationClaim: (
+    claimId: string,
+    approved: boolean,
+    adminNote: string,
+    reviewedBy: string,
+  ) => Promise<void>;
   updateTourNotice: (tourId: string, notice: string) => Promise<void>;
   updateTourItinerary: (tourId: string, days: TourItineraryDay[]) => Promise<void>;
   updateTourMeetingInfo: (tourId: string, meetingPoint: string, meetingTime: string) => Promise<void>;
@@ -848,6 +879,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [instructorNotifications, setInstructorNotifications] = useState<InstructorNotification[]>([]);
   const [arbitrationMessages, setArbitrationMessages] = useState<ArbitrationMessage[]>([]);
   const [instructorAdminNotes, setInstructorAdminNotes] = useState<InstructorAdminNote[]>([]);
+  const [tourCancellationClaims, setTourCancellationClaims] = useState<TourCancellationClaim[]>([]);
   const [centers, setCenters] = useState<Center[]>([]);
   const [centersLoading, setCentersLoading] = useState(true);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
@@ -1293,6 +1325,49 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // `tour_cancellation_claims` 테이블 실시간 구독 (강사 귀책 아닌 사유의 투어 취소 증빙 검토 큐).
+  // instructor_admin_notes와 동일한 fetch + realtime 패턴 — 관리자 검토 큐와 강사 본인 화면
+  // 양쪽에서 새로고침 없이 실시간으로 반영되어야 한다.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("tour_cancellation_claims")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!active) return;
+      if (!error && data) setTourCancellationClaims(data.map(mapTourCancellationClaimRow));
+    })();
+
+    const channel = supabase
+      .channel("tour_cancellation_claims_all")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "tour_cancellation_claims" },
+        (payload) => {
+          setTourCancellationClaims((prev) =>
+            prev.some((c) => c.id === payload.new.id)
+              ? prev
+              : [mapTourCancellationClaimRow(payload.new), ...prev],
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "tour_cancellation_claims" },
+        (payload) => {
+          const updated = mapTourCancellationClaimRow(payload.new);
+          setTourCancellationClaims((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        },
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // `instructor_notifications` 테이블 실시간 구독.
   // 예전에는 이 state가 useState([])로 시작해서 브라우저 세션 로컬 메모리에만 쌓였다 —
   // 새로고침하면 전부 사라지고, 다른 세션(다른 관리자/강사 기기)에서 발생한 이벤트는
@@ -1586,6 +1661,93 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     void fetchTourConfirmedCounts();
     return confirmedBookings.length;
+  };
+
+  /**
+   * 강사 — 확정 예약이 있는 투어를 강사 본인 사정(예: 샵 중복예약)으로 취소하면서 증빙을 제출한다.
+   * 확정 예약은 즉시 전액환불 처리되고 투어는 마감(closed)되며, 연결된 정산은 일반 취소와 동일하게
+   * cancelled 처리된다. 이 함수 자체는 정산을 되살리지 않는다 — 관리자가 증빙을 검토해 승인하면
+   * (reviewTourCancellationClaim) 그때 1차 정산(80%)만 되살아난다.
+   */
+  const cancelTourByInstructor = async (
+    tourId: string,
+    reason: string,
+    evidenceFileUrls: string[],
+  ): Promise<TourCancellationClaim> => {
+    const tour = tours.find((t) => t.id === tourId);
+    if (!tour) throw new Error("투어 정보를 찾을 수 없습니다.");
+
+    const confirmedBookings = bookings.filter((b) => b.tourId === tourId && b.status === "confirmed");
+    const cancelRequestedAt = new Date().toISOString();
+    const cancelReason = `강사 사정으로 인한 투어 취소(증빙 제출, 관리자 검토 대기): ${reason}`;
+
+    confirmedBookings.forEach((booking) => {
+      const refundRate = 1.0;
+      const refundAmount = computeRefundAmount(booking.totalPaid, refundRate);
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === booking.id
+            ? { ...b, status: "cancelled", cancelReason, refundRate, refundAmount, cancelRequestedAt }
+            : b,
+        ),
+      );
+      void supabase
+        .from("bookings")
+        .update({
+          status: "cancelled",
+          cancel_reason: cancelReason,
+          refund_rate: refundRate,
+          refund_amount: refundAmount,
+          cancel_requested_at: cancelRequestedAt,
+        })
+        .eq("id", booking.id);
+
+      setPayouts((prev) =>
+        prev.map((p) => (p.bookingId === booking.id && p.status !== "released" ? { ...p, status: "cancelled" } : p)),
+      );
+      void supabase
+        .from("payouts")
+        .update({ status: "cancelled" })
+        .eq("booking_id", booking.id)
+        .neq("status", "released");
+
+      notifyDiverPush(
+        booking.diverId,
+        "투어가 취소되었습니다",
+        `${tour.title} 투어가 강사 사정으로 취소되어 전액 환불됩니다.`,
+        "/mypage",
+      );
+    });
+
+    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, status: "closed" } : t)));
+    await supabase.from("tours").update({ status: "closed" }).eq("id", tourId);
+
+    const affectedBookingIds = confirmedBookings.map((b) => b.id);
+    const { data, error } = await supabase
+      .from("tour_cancellation_claims")
+      .insert({
+        tour_id: tourId,
+        instructor_id: tour.instructorId,
+        reason,
+        evidence_file_urls: evidenceFileUrls,
+        affected_booking_ids: affectedBookingIds,
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
+      console.error("[cancelTourByInstructor] tour_cancellation_claims insert 실패:", error);
+      throw new Error(
+        error?.message ? `취소 접수에 실패했습니다: ${error.message}` : "취소 접수에 실패했습니다.",
+      );
+    }
+
+    const claim = mapTourCancellationClaimRow(data);
+    setTourCancellationClaims((prev) => [claim, ...prev]);
+
+    void fetchTourConfirmedCounts();
+
+    return claim;
   };
 
   const addTour = async (input: NewTourInput): Promise<Tour> => {
@@ -2847,6 +3009,68 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * 관리자 — 강사가 제출한 투어 취소 증빙(tour_cancellation_claims)을 검토해 승인/반려한다.
+   * 승인 시: 취소 당시 cancelled 처리됐던 정산 중 이 건과 연관된 것만 1차 정산(80%)을 되살려
+   * "정산 예정" 상태로 되돌린다. 투어가 실제 진행되지 않았으므로 2차 정산(20%)은 0원 처리한다.
+   * 반려 시: 정산은 취소된 상태 그대로 유지되고, 사유만 안내 메모로 강사에게 전달된다.
+   */
+  const reviewTourCancellationClaim = async (
+    claimId: string,
+    approved: boolean,
+    adminNote: string,
+    reviewedBy: string,
+  ): Promise<void> => {
+    const claim = tourCancellationClaims.find((c) => c.id === claimId);
+    if (!claim) throw new Error("취소 신청 정보를 찾을 수 없습니다.");
+
+    const reviewedAt = new Date().toISOString();
+    const nextStatus: TourCancellationClaimStatus = approved ? "approved" : "rejected";
+
+    setTourCancellationClaims((prev) =>
+      prev.map((c) => (c.id === claimId ? { ...c, status: nextStatus, adminNote, reviewedBy, reviewedAt } : c)),
+    );
+    const { error } = await supabase
+      .from("tour_cancellation_claims")
+      .update({
+        status: nextStatus,
+        admin_note: adminNote || null,
+        reviewed_by: reviewedBy,
+        reviewed_at: reviewedAt,
+      })
+      .eq("id", claimId);
+    if (error) {
+      console.error("[reviewTourCancellationClaim] tour_cancellation_claims 업데이트 실패:", error);
+      throw new Error(
+        error.message ? `검토 처리에 실패했습니다: ${error.message}` : "검토 처리에 실패했습니다.",
+      );
+    }
+
+    if (approved && claim.affectedBookingIds.length > 0) {
+      setPayouts((prev) =>
+        prev.map((p) =>
+          claim.affectedBookingIds.includes(p.bookingId) ? { ...p, status: "scheduled", secondAmount: 0 } : p,
+        ),
+      );
+      const { error: payoutError } = await supabase
+        .from("payouts")
+        .update({ status: "scheduled", second_amount: 0 })
+        .in("booking_id", claim.affectedBookingIds);
+      if (payoutError) {
+        console.error("[reviewTourCancellationClaim] payouts 되살리기 실패:", payoutError);
+      }
+    }
+
+    void addInstructorAdminNote({
+      instructorId: claim.instructorId,
+      senderRole: "admin",
+      senderName: "관리자",
+      body: approved
+        ? `제출하신 투어 취소 증빙이 승인되어 1차 정산(80%)이 정산 예정 상태로 복구되었습니다.${adminNote ? ` (${adminNote})` : ""}`
+        : `제출하신 투어 취소 증빙이 반려되었습니다.${adminNote ? ` 사유: ${adminNote}` : ""}`,
+    });
+  };
+
   /** 강사-최고관리자 비밀 중재방에 메시지(및 첨부파일)를 추가한다. */
   /**
    * 강사↔최고관리자 비밀 중재방 메시지를 등록한다.
@@ -3073,6 +3297,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       instructorNotifications,
       arbitrationMessages,
       instructorAdminNotes,
+      tourCancellationClaims,
       centers,
       centersLoading,
       supportTickets,
@@ -3082,6 +3307,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addTour,
       resolveUnderMinDecision,
       forceCancelTourBookings,
+      cancelTourByInstructor,
+      reviewTourCancellationClaim,
       updateTourNotice,
       updateTourItinerary,
       updateTourMeetingInfo,
@@ -3168,6 +3395,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       instructorNotifications,
       arbitrationMessages,
       instructorAdminNotes,
+      tourCancellationClaims,
       centers,
       centersLoading,
       supportTickets,
