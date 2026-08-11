@@ -44,6 +44,7 @@ import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import AdminManualPage from "./pages/admin/AdminManualPage";
 import AdminMorePage from "./pages/admin/AdminMorePage";
 import AdminQaChecklistPage from "./pages/admin/AdminQaChecklistPage";
+import AdminTourCancellationClaimsPage from "./pages/admin/AdminTourCancellationClaimsPage";
 import { RequireRole } from "./components/auth/RequireRole";
 import { RootLayout } from "./components/layout/RootLayout";
 import { MimoRootLayout } from "./components/mimo/layout/MimoRootLayout";
@@ -121,6 +122,11 @@ export const routers = [
               { path: "manual", name: "admin-manual", element: <AdminManualPage /> },
               { path: "more", name: "admin-more", element: <AdminMorePage /> },
               { path: "qa-checklist", name: "admin-qa-checklist", element: <AdminQaChecklistPage /> },
+              {
+                path: "cancellation-claims",
+                name: "admin-cancellation-claims",
+                element: <AdminTourCancellationClaimsPage />,
+              },
             ],
           },
           { path: "arbitration/:instructorId", name: "admin-arbitration", element: <AdminArbitrationRoom /> },
