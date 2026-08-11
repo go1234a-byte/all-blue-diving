@@ -28,6 +28,9 @@ export interface Profile {
   // 다이버 가입 시 추가 정보 (안전/책임 목적)
   cCardAgency?: string; // 자격증 발급 기관 (PADI/SSI 등)
   cCardNumber?: string; // 자격증 번호
+  // 자격증 실물 사진 실제 저장 경로 (instructor-documents 비공개 버킷 재사용, 서명된 URL 발급용).
+  // 예전에는 자격증 정보가 텍스트(발급기관/번호)로만 있어 관리자가 진위를 확인할 방법이 없었다.
+  cCardPhotoPath?: string;
   logCount?: number; // 누적 다이빙 로그 수
   emergencyContactName?: string;
   emergencyContactPhone?: string;
