@@ -524,6 +524,30 @@ export interface InstructorAdminNote {
   createdAt: string;
 }
 
+export type TourCancellationClaimStatus = "pending" | "approved" | "rejected";
+
+/**
+ * 강사 귀책이 아닌 사유(예: 샵 중복예약)로 확정 예약이 있는 투어를 취소할 때 제출하는 증빙 건.
+ * 강사가 취소 시점에 사유와 증빙(카톡 예약확인 캡처 등)을 제출하면, 관련 확정 예약은 즉시
+ * 전액환불되고 정산도 일반 취소와 동일하게 취소 처리되지만, 관리자가 증빙을 검토해 승인하면
+ * 1차 정산(80%)만 되살아나 지급 대상으로 복귀한다(2차 정산 20%는 투어가 실제 진행되지 않았으므로
+ * 0원 처리). 반려 시에는 정산이 취소된 상태로 유지된다.
+ */
+export interface TourCancellationClaim {
+  id: string;
+  tourId: string;
+  instructorId: string;
+  reason: string;
+  evidenceFileUrls: string[];
+  /** 취소 시점에 전액환불 처리된, 이 건과 연관된 예약 id 목록. 승인 시 해당 예약들의 정산만 되살린다. */
+  affectedBookingIds: string[];
+  status: TourCancellationClaimStatus;
+  adminNote?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: string;
+}
+
 export const SUPPORT_FAQ_CATEGORIES = ["예약", "환불", "결제", "투어", "강사", "기타"] as const;
 export type SupportFaqCategory = (typeof SUPPORT_FAQ_CATEGORIES)[number];
 
