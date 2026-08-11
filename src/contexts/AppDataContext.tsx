@@ -56,6 +56,34 @@ function mapPenaltyRow(row: {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapProfileRow(row: any): Profile {
+  return {
+    id: row.id,
+    role: row.role,
+    name: row.name,
+    phone: row.phone ?? "",
+    gender: row.gender ?? "male",
+    status: row.status,
+    createdAt: row.created_at,
+    snoring: row.snoring ?? false,
+    smoking: row.smoking ?? false,
+    birthDate: row.birth_date ?? undefined,
+    cCardAgency: row.c_card_agency ?? undefined,
+    cCardNumber: row.c_card_number ?? undefined,
+    logCount: row.log_count ?? undefined,
+    emergencyContactName: row.emergency_contact_name ?? undefined,
+    emergencyContactPhone: row.emergency_contact_phone ?? undefined,
+    insuranceInfo: row.insurance_info ?? undefined,
+    bankName: row.bank_name ?? undefined,
+    accountHolder: row.account_holder ?? undefined,
+    accountNumber: row.account_number ?? undefined,
+    bankbookFileName: row.bankbook_file_name ?? undefined,
+    bankbookPath: row.bankbook_path ?? undefined,
+    idDocumentPath: row.id_document_path ?? undefined,
+  };
+}
+
 function mapInstructorRow(row: {
   id: string;
   profile_id: string | null;
@@ -882,6 +910,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   // Enter Cloud(Supabase) `instructors` 테이블에서 강사 신뢰 데이터를 가져온다.
   // + realtime 구독 추가: 예전에는 1회성 fetch만 있어서 관리자가 인증 승인/반려를 처리해도
   // 해당 강사의 브라우저 세션에는 새로고침 전까지 전혀 반영되지 않았다(#235 회귀 방지).
+  // 주의: 기존에는 UPDATE만 구독해서, 신규 강사가 "가입"할 때(instructors 행 INSERT)는
+  // 관리자 화면에 새로고침 전까지 전혀 뜨지 않는 문제가 있었다 — INSERT도 함께 구독한다.
   useEffect(() => {
     let active = true;
     (async () => {
@@ -893,6 +923,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     const channel = supabase
       .channel("instructors_all")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "instructors" },
+        (payload) => {
+          const inserted = mapInstructorRow(payload.new as Parameters<typeof mapInstructorRow>[0]);
+          setInstructors((prev) => (prev.some((i) => i.id === inserted.id) ? prev : [...prev, inserted]));
+        },
+      )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "instructors" },
@@ -1026,36 +1064,46 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (!profilesRes.error && profilesRes.data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rows = profilesRes.data as any[];
-        const toProfile = (row: (typeof rows)[number]): Profile => ({
-          id: row.id,
-          role: row.role,
-          name: row.name,
-          phone: row.phone ?? "",
-          gender: row.gender ?? "male",
-          status: row.status,
-          createdAt: row.created_at,
-          snoring: row.snoring ?? false,
-          smoking: row.smoking ?? false,
-          birthDate: row.birth_date ?? undefined,
-          cCardAgency: row.c_card_agency ?? undefined,
-          cCardNumber: row.c_card_number ?? undefined,
-          logCount: row.log_count ?? undefined,
-          emergencyContactName: row.emergency_contact_name ?? undefined,
-          emergencyContactPhone: row.emergency_contact_phone ?? undefined,
-          insuranceInfo: row.insurance_info ?? undefined,
-          bankName: row.bank_name ?? undefined,
-          accountHolder: row.account_holder ?? undefined,
-          accountNumber: row.account_number ?? undefined,
-          bankbookFileName: row.bankbook_file_name ?? undefined,
-          bankbookPath: row.bankbook_path ?? undefined,
-          idDocumentPath: row.id_document_path ?? undefined,
-        });
-        setDiverProfiles(rows.filter((r) => r.role === "diver").map(toProfile));
-        setInstructorProfiles(rows.filter((r) => r.role === "instructor").map(toProfile));
+        setDiverProfiles(rows.filter((r) => r.role === "diver").map(mapProfileRow));
+        setInstructorProfiles(rows.filter((r) => r.role === "instructor").map(mapProfileRow));
       }
     })();
     return () => {
       active = false;
+    };
+  }, []);
+
+  // `profiles` 테이블 realtime 구독 — 회원관리/강사관리 화면(diverProfiles/instructorProfiles)이
+  // 위 부트스트랩 fetch 이후로는 1회성 조회만 하고 있어서, 신규 가입자가 새로고침 전까지
+  // 관리자 화면에 전혀 뜨지 않는 문제가 있었다(직접 profiles_directory 뷰는 realtime 구독
+  // 대상이 될 수 없어 원본 테이블인 profiles를 구독한다 — RLS는 원본 테이블 정책을 그대로
+  // 따르므로 관리자는 전체, 본인은 자신의 행 변경만 수신한다).
+  useEffect(() => {
+    const upsert = (setter: (updater: (prev: Profile[]) => Profile[]) => void, profile: Profile) => {
+      setter((prev) =>
+        prev.some((p) => p.id === profile.id) ? prev.map((p) => (p.id === profile.id ? profile : p)) : [...prev, profile],
+      );
+    };
+
+    const handleChange = (payload: { new: Record<string, unknown> }) => {
+      const row = payload.new as Parameters<typeof mapProfileRow>[0];
+      if (!row?.id) return;
+      const profile = mapProfileRow(row);
+      if (profile.role === "diver") {
+        upsert(setDiverProfiles, profile);
+      } else if (profile.role === "instructor") {
+        upsert(setInstructorProfiles, profile);
+      }
+    };
+
+    const channel = supabase
+      .channel("profiles_all")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "profiles" }, handleChange)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, handleChange)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
   }, []);
 
