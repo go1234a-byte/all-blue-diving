@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Globe, Lock, Star } from "lucide-react";
+import { CheckCircle2, Globe, Lock, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,6 +18,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { uploadImageFiles } from "@/lib/uploadImage";
+import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import type { ReviewCategoryRatings, ReviewVisibility } from "@/types";
 
 interface ReviewDialogProps {
@@ -52,6 +53,10 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
   const [videoUrl, setVideoUrl] = useState("");
   const [visibility, setVisibility] = useState<ReviewVisibility>("public");
   const [submitting, setSubmitting] = useState(false);
+  // 예전에는 제출 즉시 다이얼로그가 닫혀서, 특히 사진을 첨부한 경우 실제로 업로드/등록이
+  // 잘 됐는지 사용자가 확인할 방법이 없었다. 제출 성공 시 바로 닫지 않고 등록된 사진과
+  // 함께 완료 화면을 보여준 뒤, 사용자가 직접 확인 버튼을 눌러야 닫히게 한다.
+  const [submittedPhotoUrls, setSubmittedPhotoUrls] = useState<string[] | null>(null);
 
   const tour = getTourById(tourId);
 
@@ -81,7 +86,7 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
         visibility,
       });
       toast({ title: "투어 평가가 등록되었습니다. 감사합니다!" });
-      onOpenChange(false);
+      setSubmittedPhotoUrls(photoUrls);
     } catch {
       toast({ title: "후기 등록에 실패했습니다", description: "잠시 후 다시 시도해주세요.", variant: "destructive" });
     } finally {
@@ -89,9 +94,56 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
     }
   };
 
+  const handleClose = (next: boolean) => {
+    if (!next) {
+      setSubmittedPhotoUrls(null);
+      setRating(0);
+      setTitle("");
+      setComment("");
+      setCategoryRatings(DEFAULT_CATEGORY_RATINGS);
+      setPhotos([]);
+      setVideoUrl("");
+      setVisibility("public");
+    }
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+        {submittedPhotoUrls !== null ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-success" />
+                후기가 등록되었습니다
+              </DialogTitle>
+            </DialogHeader>
+            <p className="break-keep text-sm text-muted-foreground">
+              소중한 후기 감사합니다! {submittedPhotoUrls.length > 0 && "첨부하신 사진도 정상적으로 등록되었습니다."}
+            </p>
+            {submittedPhotoUrls.length > 0 && (
+              <div className="grid grid-cols-4 gap-2">
+                {submittedPhotoUrls.map((url, i) => (
+                  <div key={url + i} className="aspect-square overflow-hidden rounded-lg border border-border">
+                    <img
+                      src={url || IMAGE_PLACEHOLDER}
+                      alt={`등록된 사진 ${i + 1}`}
+                      onError={handleImageFallback}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            <DialogFooter>
+              <Button className="w-full" onClick={() => handleClose(false)}>
+                확인
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
         <DialogHeader>
           <DialogTitle>투어는 어떠셨나요?</DialogTitle>
         </DialogHeader>
@@ -205,6 +257,8 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
             평가 등록하기
           </Button>
         </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
