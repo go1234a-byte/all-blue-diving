@@ -1316,7 +1316,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "instructor_admin_notes" },
         (payload) => {
-          setInstructorAdminNotes((prev) => [...prev, mapInstructorAdminNoteRow(payload.new)]);
+          // addInstructorAdminNote가 보낸 사람 화면에는 이미 낙관적으로 반영해두므로, 그 본인에게
+          // 같은 메시지가 realtime으로 다시 도착했을 때 중복 추가되지 않도록 id로 막는다.
+          const incoming = mapInstructorAdminNoteRow(payload.new);
+          setInstructorAdminNotes((prev) =>
+            prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming],
+          );
         },
       )
       .subscribe();
@@ -3107,17 +3112,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
    * arbitration_messages와 동일하게 insert만 수행하고, 화면 반영은 realtime 구독이 담당한다.
    */
   const addInstructorAdminNote = async (input: Omit<InstructorAdminNote, "id" | "createdAt">): Promise<void> => {
-    const { error } = await supabase.from("instructor_admin_notes").insert({
-      instructor_id: input.instructorId,
-      sender_role: input.senderRole,
-      sender_name: input.senderName,
-      body: input.body,
-    });
+    const { data, error } = await supabase
+      .from("instructor_admin_notes")
+      .insert({
+        instructor_id: input.instructorId,
+        sender_role: input.senderRole,
+        sender_name: input.senderName,
+        body: input.body,
+      })
+      .select()
+      .single();
     if (error) {
       console.error("[addInstructorAdminNote] instructor_admin_notes insert 실패:", error);
       throw new Error(
         error.message ? `메시지 전송에 실패했습니다: ${error.message}` : "메시지 전송에 실패했습니다.",
       );
+    }
+    // realtime 구독(수신 이벤트)만으로는 발신자 본인 화면에 반영되기까지 왕복 지연이 있고,
+    // supabase_realtime publication 설정 누락 같은 서버 설정 문제가 생기면 아예 반영이 안 될 수도
+    // 있다(실제로 이 테이블이 publication에서 빠져있어 "안내 남기기"가 작동 안 하는 것처럼 보이던
+    // 버그가 있었다) — 그런 상황에서도 최소한 보낸 사람 화면에는 즉시 보이도록 낙관적으로 반영한다.
+    if (data) {
+      const sent = mapInstructorAdminNoteRow(data);
+      setInstructorAdminNotes((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
     }
   };
 
