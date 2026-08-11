@@ -1749,11 +1749,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       insuranceInfo?: string;
     },
   ): Promise<void> => {
-    setDiverProfiles((prev) =>
-      prev.map((p) => (p.id === diverId ? { ...p, ...updates } : p)),
-    );
-    // 주의: 실패해도 콘솔에조차 남기지 않으면(에러를 아예 읽지 않으면) 생년월일/비상연락처 등이
-    // 저장 안 됐는데도 사용자는 계속 "저장됨"으로 오해하게 된다. 에러가 있으면 최소한 로그는 남긴다.
+    // 실패 시 되돌릴 수 있도록 변경 전 값을 기억해둔다.
+    let previous: Profile | undefined;
+    setDiverProfiles((prev) => {
+      previous = prev.find((p) => p.id === diverId);
+      return prev.map((p) => (p.id === diverId ? { ...p, ...updates } : p));
+    });
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -1772,6 +1773,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .eq("id", diverId);
     if (error) {
       console.error("[updateDiverProfile] profiles 업데이트 실패:", error);
+      // 예전에는 여기서 에러를 삼키기만(console.error) 하고 호출부에는 알리지 않았다 — 그래서
+      // DB 저장이 실패해도 화면에는 낙관적으로 반영된 값이 그대로 남아있고 "저장되었습니다"
+      // 토스트까지 떠서, 사용자는 저장이 안 됐다는 사실을 전혀 알 수 없었다(다음 접속 때
+      // 서버의 진짜 값(기존 빈 값)으로 덮어써지면서 "분명 입력했는데 사라졌다"는 문제로
+      // 이어졌다). 낙관적으로 반영했던 값을 되돌리고, 에러를 던져 호출부가 실패를
+      // 사용자에게 보여줄 수 있게 한다.
+      if (previous) {
+        const rolledBack = previous;
+        setDiverProfiles((prev) => prev.map((p) => (p.id === diverId ? rolledBack : p)));
+      }
+      throw new Error(
+        error.message ? `정보 저장에 실패했습니다: ${error.message}` : "정보 저장에 실패했습니다.",
+      );
     }
   };
 
