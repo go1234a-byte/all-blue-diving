@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { Pencil } from "lucide-react";
+import { FileCheck2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FileDropzone } from "@/components/auth/FileDropzone";
+import { DocumentViewButton } from "@/components/admin/DocumentViewButton";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { calculateAge } from "@/lib/dates";
+import { getInstructorDocumentSignedUrl, uploadInstructorDocument } from "@/lib/uploadImage";
 import type { Profile } from "@/types";
 
 interface DiverSafetyProfileCardProps {
@@ -35,6 +38,11 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
   const [emergencyContactName, setEmergencyContactName] = useState(profile?.emergencyContactName ?? "");
   const [emergencyContactPhone, setEmergencyContactPhone] = useState(profile?.emergencyContactPhone ?? "");
   const [insuranceInfo, setInsuranceInfo] = useState(profile?.insuranceInfo ?? "");
+  // 예전에는 자격증 정보가 발급기관/번호 텍스트로만 있어 관리자가 진위를 확인할 방법이
+  // 전혀 없었다. 가입 시 놓쳤거나 갱신된 자격증 사진을 마이페이지에서도 등록/재제출할 수 있게 한다.
+  const [cCardPhotoPath, setCCardPhotoPath] = useState(profile?.cCardPhotoPath ?? "");
+  const [uploadingCCardPhoto, setUploadingCCardPhoto] = useState(false);
+  const [viewingCCardPhoto, setViewingCCardPhoto] = useState(false);
 
   const resetForm = () => {
     setBirthDate(profile?.birthDate ?? "");
@@ -44,6 +52,7 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
     setEmergencyContactName(profile?.emergencyContactName ?? "");
     setEmergencyContactPhone(profile?.emergencyContactPhone ?? "");
     setInsuranceInfo(profile?.insuranceInfo ?? "");
+    setCCardPhotoPath(profile?.cCardPhotoPath ?? "");
   };
 
   const handleCancel = () => {
@@ -66,6 +75,7 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
         emergencyContactName: emergencyContactName.trim(),
         emergencyContactPhone: emergencyContactPhone.trim(),
         insuranceInfo: insuranceInfo.trim(),
+        cCardPhotoPath: cCardPhotoPath || undefined,
       });
       toast({ title: "정보가 저장되었습니다" });
       setEditing(false);
@@ -116,6 +126,10 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
               </p>
             </div>
             <div>
+              <p className="text-muted-foreground">자격증 사진</p>
+              <DocumentViewButton path={profile?.cCardPhotoPath} label="자격증 사진" />
+            </div>
+            <div>
               <p className="text-muted-foreground">보유 로그 수</p>
               <p className="font-medium text-foreground">
                 {profile?.logCount != null ? `${profile.logCount}회` : "-"}
@@ -158,6 +172,56 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
             <Label>자격증 번호</Label>
             <Input value={cCardNumber} onChange={(e) => setCCardNumber(e.target.value)} />
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>자격증 사진</Label>
+          {cCardPhotoPath ? (
+            <div className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-xs">
+              <span className="flex items-center gap-1.5 text-secondary-foreground">
+                <FileCheck2 className="h-3.5 w-3.5 shrink-0 text-success" />
+                등록됨
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[10px]"
+                disabled={viewingCCardPhoto}
+                onClick={async () => {
+                  setViewingCCardPhoto(true);
+                  const url = await getInstructorDocumentSignedUrl(cCardPhotoPath);
+                  setViewingCCardPhoto(false);
+                  if (!url) {
+                    toast({ title: "사진을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.", variant: "destructive" });
+                    return;
+                  }
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }}
+              >
+                {viewingCCardPhoto ? "불러오는 중..." : "보기"}
+              </Button>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">아직 등록되지 않았습니다.</p>
+          )}
+          <FileDropzone
+            label={uploadingCCardPhoto ? "업로드 중..." : "자격증 사진 등록/재제출"}
+            accept="image/*"
+            onFilesChange={async (files) => {
+              if (files.length === 0) return;
+              setUploadingCCardPhoto(true);
+              try {
+                const path = await uploadInstructorDocument(files[0], diverId, "ccard");
+                setCCardPhotoPath(path);
+              } catch (err) {
+                console.error("[DiverSafetyProfileCard] 자격증 사진 업로드 실패:", err);
+                toast({ title: "자격증 사진 업로드에 실패했습니다", variant: "destructive" });
+              } finally {
+                setUploadingCCardPhoto(false);
+              }
+            }}
+          />
         </div>
 
         <div className="space-y-1.5">
