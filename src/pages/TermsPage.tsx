@@ -140,6 +140,13 @@ const TermsPage = () => {
                 해당 규정은 관계 법령에 반하지 않는 범위에서 강사(센터) 회원이 설정합니다.</li>
               <li>회사 또는 강사(센터) 회원의 귀책사유로 투어가 취소되는 경우 결제금액 전액을
                 환불합니다.</li>
+              <li>
+                취소·환불에 관한 세부 원칙은{" "}
+                <Link to="/refund-policy" className="text-primary underline underline-offset-2">
+                  취소·환불 규정
+                </Link>
+                을 통해 별도로 안내합니다.
+              </li>
             </ol>
           </section>
 
@@ -180,6 +187,34 @@ const TermsPage = () => {
               이 약관과 관련하여 회사와 회원 간에 발생한 분쟁에 대해서는 대한민국 법을 준거법으로
               하며, 「민사소송법」상의 관할법원에 소를 제기합니다.
             </p>
+          </section>
+
+          <section>
+            <h2 className="mb-2 text-base font-semibold">제14조 (플랫폼 수수료 및 정산)</h2>
+            <p>
+              플랫폼의 기본 중개수수료는 예약금액의 10%이며, 강사(센터) 회원의 정산금액은 결제금액에서
+              플랫폼 수수료, 환불액 및 계약상 조정금액을 반영하여 산정합니다.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="mb-2 text-base font-semibold">제15조 (세금 및 증빙)</h2>
+            <p>
+              강사(센터) 회원의 사업자 유형 및 관련 세법에 따라 세금 처리 및 증빙 발급 방식이 달라질 수
+              있습니다. 사업자 미등록 프리랜서 등에게는 관계 법령에 따라 원천징수가 적용될 수 있습니다.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="mb-2 text-base font-semibold">제16조 (금지행위)</h2>
+            <p className="mb-2">회원은 다음 각 호의 행위를 해서는 안 됩니다.</p>
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>허위 상품 등록 또는 허위 정보 게시</li>
+              <li>타인의 자격 또는 계정 도용</li>
+              <li>서비스를 통해 예약을 진행한 후 정당한 사유 없이 플랫폼 외부에서의 직거래를 유도하는 행위</li>
+              <li>결제정보 도용 등 부정한 방법으로 서비스를 이용하는 행위</li>
+              <li>다이빙 참가자 등 이용자의 안전을 위협하는 행위</li>
+            </ol>
           </section>
 
           <section className="border-t border-border pt-6">
