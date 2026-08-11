@@ -18,6 +18,7 @@ import InstructorPublicProfile from "./pages/InstructorPublicProfile";
 import SupportChat from "./pages/SupportChat";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
+import RefundPolicyPage from "./pages/RefundPolicyPage";
 import InstructorArbitrationRoom from "./pages/InstructorArbitrationRoom";
 import AdminArbitrationRoom from "./pages/AdminArbitrationRoom";
 import InstructorAdminNotePage from "./pages/InstructorAdminNotePage";
@@ -136,6 +137,7 @@ export const routers = [
       { path: "support", name: "support-chat", element: <SupportChat /> },
       { path: "terms", name: "terms", element: <TermsPage /> },
       { path: "privacy", name: "privacy", element: <PrivacyPage /> },
+      { path: "refund-policy", name: "refund-policy", element: <RefundPolicyPage /> },
       /* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */
       { path: "*", name: "404", element: <NotFound /> },
     ],
