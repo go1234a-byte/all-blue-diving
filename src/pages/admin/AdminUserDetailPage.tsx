@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DocumentViewButton } from "@/components/admin/DocumentViewButton";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
@@ -115,6 +116,10 @@ const AdminUserDetailPage = () => {
             <div>
               <p className="text-muted-foreground">C-Card 번호</p>
               <p className="font-medium text-foreground">{diver.cCardNumber || "-"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">자격증 사진</p>
+              <DocumentViewButton path={diver.cCardPhotoPath} label="자격증 사진" />
             </div>
             <div>
               <p className="text-muted-foreground">누적 다이빙 로그</p>
