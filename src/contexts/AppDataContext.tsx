@@ -1501,10 +1501,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         );
         // 주의: 이 useEffect는 다이버든 강사든 누구 화면이 열려있어도 트리거될 수 있어서,
         // "본인 소유 투어만 수정 가능"이라는 일반 RLS 정책으로는 이 쓰기가 막힌다(RLS 보안
-        // 강화 1단계 batch96 참고). 대신 상태 전이 조건을 서버에서 다시 검증하는
-        // apply_tour_auto_close() RPC를 호출한다.
+        // 강화 1단계 batch96 참고). apply_tour_auto_close() RPC가 min_participants 충족
+        // 여부를 서버에서 직접 재계산하므로(클라이언트 판단은 낙관적 UI 갱신용일 뿐) 안전하다.
         supabase
-          .rpc("apply_tour_auto_close", { p_tour_id: tour.id, p_meets_minimum: true })
+          .rpc("apply_tour_auto_close", { p_tour_id: tour.id })
           .then(({ error }) => {
             if (error) {
               console.error("[autoCloseEvaluation] tours 업데이트 실패(meetsMinimum):", error);
@@ -1522,7 +1522,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       );
       // 위와 동일한 이유로 apply_tour_auto_close() RPC를 호출한다.
       supabase
-        .rpc("apply_tour_auto_close", { p_tour_id: tour.id, p_meets_minimum: false })
+        .rpc("apply_tour_auto_close", { p_tour_id: tour.id })
         .then(({ error }) => {
           if (error) {
             console.error("[autoCloseEvaluation] tours 업데이트 실패(underMin):", error);
