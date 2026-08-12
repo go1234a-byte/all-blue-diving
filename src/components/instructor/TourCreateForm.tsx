@@ -146,6 +146,9 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   const [basePrice, setBasePrice] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("6");
   const [minParticipants, setMinParticipants] = useState("2");
+  // 이 투어를 강사 1:1 전담 케어로 진행하는지 여부. 체크한 경우에만 투어 상세 하이라이트에
+  // "OO 강사 1:1 케어"가 노출된다 (예전에는 선택란 없이 항상 고정 문구로 노출되던 버그였음).
+  const [oneOnOneCare, setOneOnOneCare] = useState(false);
   // 최소 인원 미달 시 진행/취소 결정은 더 이상 투어 생성 시점에 정하지 않고,
   // 출발 30일 전 자동 마감 시점에 강사가 대시보드에서 직접 선택한다(기본값은 DB not null 제약을 위한 값).
   const underMinPolicy: UnderMinParticipantsPolicy = "cancel";
@@ -454,6 +457,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         exclusions,
         prepNotes,
         customOptions: customOptions.filter((o) => o.name.trim() && o.price > 0),
+        oneOnOneCare,
         pledgeSignerName: pledgeSignerName.trim(),
         pledgeAgreedAt: new Date().toISOString(),
         pledgeSignatureDataUrl: pledgeSignature,
@@ -654,6 +658,14 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
               placeholder="예: 출발일 오전 9시"
             />
           </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 rounded-xl border border-border p-3">
+        <Checkbox id="one-on-one-care" checked={oneOnOneCare} onCheckedChange={(v) => setOneOnOneCare(v === true)} />
+        <div className="space-y-0.5">
+          <Label htmlFor="one-on-one-care" className="cursor-pointer">1:1 케어 투어</Label>
+          <p className="text-xs text-muted-foreground">체크하면 투어 상세 화면에 "강사 1:1 케어" 안내가 노출됩니다.</p>
         </div>
       </div>
 
