@@ -1575,12 +1575,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           prev.map((p) => (p.bookingId === booking.id && p.status !== "released" ? { ...p, status: "cancelled" } : p)),
         );
         void supabase
-          .from("payouts")
-          .update({ status: "cancelled" })
-          .eq("booking_id", booking.id)
-          .neq("status", "released")
+          .rpc("cancel_booking_settlement", { p_booking_id: booking.id, p_refund_amount: refundAmount })
           .then(({ error }) => {
-            if (error) console.error("[resolveUnderMinDecision] payouts 업데이트 실패:", error);
+            if (error) console.error("[resolveUnderMinDecision] 정산(payout) 취소 RPC 실패:", error);
           });
 
         void persistInstructorNotification({
@@ -1671,12 +1668,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         prev.map((p) => (p.bookingId === booking.id && p.status !== "released" ? { ...p, status: "cancelled" } : p)),
       );
       void supabase
-        .from("payouts")
-        .update({ status: "cancelled" })
-        .eq("booking_id", booking.id)
-        .neq("status", "released")
+        .rpc("cancel_booking_settlement", { p_booking_id: booking.id, p_refund_amount: refundAmount })
         .then(({ error }) => {
-          if (error) console.error("[forceCancelTourBookings] payouts 업데이트 실패:", error);
+          if (error) console.error("[forceCancelTourBookings] 정산(payout) 취소 RPC 실패:", error);
         });
 
       notifyDiverPush(
@@ -1734,10 +1728,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         prev.map((p) => (p.bookingId === booking.id && p.status !== "released" ? { ...p, status: "cancelled" } : p)),
       );
       void supabase
-        .from("payouts")
-        .update({ status: "cancelled" })
-        .eq("booking_id", booking.id)
-        .neq("status", "released");
+        .rpc("cancel_booking_settlement", { p_booking_id: booking.id, p_refund_amount: refundAmount })
+        .then(({ error }) => {
+          if (error) console.error("[cancelTourByInstructor] 정산(payout) 취소 RPC 실패:", error);
+        });
 
       notifyDiverPush(
         booking.diverId,
@@ -2638,7 +2632,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const setPayoutStatus = async (payoutId: string, status: Payout["status"]) => {
     setPayouts((prev) => prev.map((p) => (p.id === payoutId ? { ...p, status } : p)));
-    await supabase.from("payouts").update({ status }).eq("id", payoutId);
+    const { error } = await supabase.rpc("admin_set_payout_status", { p_payout_id: payoutId, p_status: status });
+    if (error) console.error("[setPayoutStatus] 정산 상태 변경 RPC 실패:", error);
   };
 
   const addReport = async (input: Omit<Report, "id" | "createdAt" | "status">) => {
@@ -3114,10 +3109,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           claim.affectedBookingIds.includes(p.bookingId) ? { ...p, status: "scheduled", secondAmount: 0 } : p,
         ),
       );
-      const { error: payoutError } = await supabase
-        .from("payouts")
-        .update({ status: "scheduled", second_amount: 0 })
-        .in("booking_id", claim.affectedBookingIds);
+      const { error: payoutError } = await supabase.rpc("admin_restore_settlement_after_claim", {
+        p_booking_ids: claim.affectedBookingIds,
+      });
       if (payoutError) {
         console.error("[reviewTourCancellationClaim] payouts 되살리기 실패:", payoutError);
       }
