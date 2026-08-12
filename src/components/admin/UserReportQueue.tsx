@@ -19,7 +19,7 @@ export function UserReportQueue() {
   const sorted = [...reports].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
   if (sorted.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">접수된 신고가 없습니다.</p>;
+    return <p className="py-8 text-center text-sm text-muted-foreground">접수된 회원 신고가 없습니다.</p>;
   }
 
   return (

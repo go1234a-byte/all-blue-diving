@@ -19,7 +19,7 @@ export function ReportsLog() {
         <p className="text-xs text-muted-foreground">
           문의관리와 동일하게 신고자 이름/연락처/ID/접수일시가 함께 표시됩니다.
         </p>
-        <SupportTicketQueue types={["report"]} emptyMessage="접수된 신고가 없습니다." />
+        <SupportTicketQueue types={["report"]} emptyMessage="접수된 신고 유형 문의가 없습니다." />
       </div>
 
       <div className="space-y-2">
