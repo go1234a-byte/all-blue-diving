@@ -51,14 +51,14 @@ export function UserTable() {
   // 상단바의 기간(오늘/이번주/이번달/올해) 선택 — 강사 관리 화면과 달리 이 회원관리
   // 화면은 지금까지 이 값을 전혀 사용하지 않아서, 상단에 기간이 표시되는데도 필터링은
   // 안 되는 상태였다. 가입일(createdAt) 기준으로 필터링한다.
-  const { period } = useAdminPeriod();
+  const { period, customRange } = useAdminPeriod();
   const allUsersRaw = [...instructorProfiles, ...diverProfiles];
   const normalizedQuery = query.trim().toLowerCase();
   const allUsers = allUsersRaw
     .filter((user) => {
       if (roleFilter !== "all" && user.role !== roleFilter) return false;
       if (statusFilter !== "all" && user.status !== statusFilter) return false;
-      if (!isWithinAdminPeriod(user.createdAt, period)) return false;
+      if (!isWithinAdminPeriod(user.createdAt, period, customRange)) return false;
       if (!normalizedQuery) return true;
       return (
         user.name.toLowerCase().includes(normalizedQuery) ||

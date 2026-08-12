@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import {
   Select,
@@ -6,12 +7,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AdminPeriodProvider, useAdminPeriod, type AdminPeriod } from "@/contexts/AdminPeriodContext";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatDateRangeKR } from "@/lib/dates";
 
 const PAGE_TITLES: Record<string, string> = {
   "/admin/home": "홈",
@@ -46,27 +50,60 @@ const PERIOD_LABEL: Record<AdminPeriod, string> = {
 
 function AdminTopBar() {
   const location = useLocation();
-  const { period, setPeriod } = useAdminPeriod();
+  const { period, setPeriod, customRange, setCustomRange } = useAdminPeriod();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const title =
     PAGE_TITLES[location.pathname] ??
     (location.pathname.startsWith("/admin/users/") ? "회원 상세" : "관리자 백오피스");
+
+  const handlePeriodChange = (value: AdminPeriod) => {
+    setPeriod(value);
+    // "직접 선택"을 고르면 바로 달력을 띄운다 — 예전에는 이 옵션을 선택해도
+    // 범위를 입력할 방법 자체가 없어 아무 반응도 없는 것처럼 보였다.
+    if (value === "custom") setPickerOpen(true);
+  };
+
+  const customLabel =
+    customRange.from && customRange.to
+      ? formatDateRangeKR(customRange.from.toISOString(), customRange.to.toISOString())
+      : PERIOD_LABEL.custom;
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-border bg-card/95 px-4 backdrop-blur md:px-6">
       <h1 className="line-clamp-1 text-base font-semibold text-foreground">{title}</h1>
       <div className="flex shrink-0 items-center gap-2">
-        <Select value={period} onValueChange={(v) => setPeriod(v as AdminPeriod)}>
-          <SelectTrigger className="h-8 w-[92px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(PERIOD_LABEL) as AdminPeriod[]).map((key) => (
-              <SelectItem key={key} value={key}>
-                {PERIOD_LABEL[key]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+          <Select value={period} onValueChange={handlePeriodChange}>
+            <PopoverAnchor asChild>
+              <SelectTrigger className="h-8 w-[110px] text-xs">
+                <SelectValue>{period === "custom" ? customLabel : PERIOD_LABEL[period]}</SelectValue>
+              </SelectTrigger>
+            </PopoverAnchor>
+            <SelectContent>
+              {(Object.keys(PERIOD_LABEL) as AdminPeriod[]).map((key) => (
+                <SelectItem key={key} value={key}>
+                  {PERIOD_LABEL[key]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <PopoverContent
+            className="w-auto p-0"
+            align="end"
+            // Radix Select가 항목 선택 뒤 SelectTrigger로 포커스를 되돌리는데,
+            // 이 포커스 이동을 Popover가 "바깥 상호작용"으로 오인해 열리자마자
+            // 바로 닫혀버렸다. 포커스 이동만 무시하고, 실제 바깥 클릭은 그대로 닫히게 둔다.
+            onFocusOutside={(e) => e.preventDefault()}
+          >
+            <Calendar
+              mode="range"
+              selected={customRange}
+              onSelect={(range) => setCustomRange(range ?? {})}
+              defaultMonth={customRange.from}
+              numberOfMonths={1}
+            />
+          </PopoverContent>
+        </Popover>
         <NotificationBell />
       </div>
     </header>

@@ -62,10 +62,22 @@ export function hoursSince(iso: string): number {
 
 export type AdminPeriodFilter = "today" | "week" | "month" | "year" | "custom";
 
-/** 관리자 상단바의 기간(오늘/이번주/이번달/올해) 선택이 특정 날짜에 해당하는지 판별한다.
- * "직접 선택"은 실제 날짜 범위 입력 UI가 아직 없어 전체를 보여준다(필터 없음). */
-export function isWithinAdminPeriod(iso: string, period: AdminPeriodFilter): boolean {
-  if (period === "custom") return true;
+/** 관리자 상단바의 기간(오늘/이번주/이번달/올해/직접 선택)이 특정 날짜에 해당하는지 판별한다.
+ * "직접 선택"은 아직 범위를 고르지 않았으면(from/to 미지정) 전체를 보여준다(필터 없음). */
+export function isWithinAdminPeriod(
+  iso: string,
+  period: AdminPeriodFilter,
+  customRange?: { from?: Date; to?: Date }
+): boolean {
+  if (period === "custom") {
+    if (!customRange?.from) return true;
+    const target = new Date(iso).getTime();
+    const from = new Date(customRange.from);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(customRange.to ?? customRange.from);
+    to.setHours(23, 59, 59, 999);
+    return target >= from.getTime() && target <= to.getTime();
+  }
   const now = new Date();
   const target = new Date(iso);
   if (period === "today") {

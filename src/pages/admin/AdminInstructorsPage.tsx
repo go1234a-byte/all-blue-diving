@@ -76,7 +76,7 @@ const AdminInstructorsPage = () => {
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest" | "name">("latest");
   // 상단바의 기간(오늘/이번주/이번달/올해) 선택 — 예전에는 이 값을 어떤 관리자 화면도
   // 실제로 소비하지 않아서 선택해도 목록이 그대로였다. 여기서는 강사 가입(신청)일 기준으로 필터링한다.
-  const { period } = useAdminPeriod();
+  const { period, customRange } = useAdminPeriod();
 
   const filteredInstructors = instructors
     .filter((instructor) => {
@@ -84,7 +84,7 @@ const AdminInstructorsPage = () => {
       if (verifiedFilter === "pending" && instructor.verified) return false;
       if (penaltyFilter === "has" && instructor.penaltyCount <= 0) return false;
       if (penaltyFilter === "none" && instructor.penaltyCount > 0) return false;
-      if (!isWithinAdminPeriod(instructor.createdAt, period)) return false;
+      if (!isWithinAdminPeriod(instructor.createdAt, period, customRange)) return false;
       return true;
     })
     .sort((a, b) => {
