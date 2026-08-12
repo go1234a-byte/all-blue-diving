@@ -155,6 +155,9 @@ export function TourEditForm({ tour }: TourEditFormProps) {
   const [basePrice, setBasePrice] = useState(String(tour.basePrice));
   const [maxParticipants, setMaxParticipants] = useState(String(tour.maxParticipants));
   const [minParticipants, setMinParticipants] = useState(String(tour.minParticipants));
+  // 이 투어를 강사 1:1 전담 케어로 진행하는지 여부. 체크한 경우에만 투어 상세 하이라이트에
+  // "OO 강사 1:1 케어"가 노출된다.
+  const [oneOnOneCare, setOneOnOneCare] = useState(tour.oneOnOneCare);
   const [description, setDescription] = useState(tour.description);
   const [startDate, setStartDate] = useState<Date | undefined>(new Date(tour.startDate));
   const [endDate, setEndDate] = useState<Date | undefined>(new Date(tour.endDate));
@@ -424,6 +427,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
         exclusions,
         prepNotes,
         customOptions: customOptions.filter((o) => o.name.trim() && o.price > 0),
+        oneOnOneCare,
         meetingPoint: meetingPoint.trim(),
         meetingTime: meetingTime.trim(),
         itineraryDays,
@@ -621,6 +625,14 @@ export function TourEditForm({ tour }: TourEditFormProps) {
               placeholder="예: 출발일 오전 9시"
             />
           </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 rounded-xl border border-border p-3">
+        <Checkbox id="one-on-one-care" checked={oneOnOneCare} onCheckedChange={(v) => setOneOnOneCare(v === true)} />
+        <div className="space-y-0.5">
+          <Label htmlFor="one-on-one-care" className="cursor-pointer">1:1 케어 투어</Label>
+          <p className="text-xs text-muted-foreground">체크하면 투어 상세 화면에 "강사 1:1 케어" 안내가 노출됩니다.</p>
         </div>
       </div>
 
