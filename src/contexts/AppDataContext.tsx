@@ -68,6 +68,8 @@ function mapProfileRow(row: any): Profile {
     gender: row.gender ?? "male",
     status: row.status,
     createdAt: row.created_at,
+    avatarUrl: row.avatar_url ?? undefined,
+    bio: row.bio ?? undefined,
     snoring: row.snoring ?? false,
     smoking: row.smoking ?? false,
     birthDate: row.birth_date ?? undefined,
@@ -744,6 +746,10 @@ interface AppDataContextValue {
   updateDiverProfile: (
     diverId: string,
     updates: {
+      name?: string;
+      phone?: string;
+      avatarUrl?: string;
+      bio?: string;
       birthDate?: string;
       cCardAgency?: string;
       cCardNumber?: string;
@@ -1914,6 +1920,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateDiverProfile = async (
     diverId: string,
     updates: {
+      name?: string;
+      phone?: string;
+      avatarUrl?: string;
+      bio?: string;
       birthDate?: string;
       cCardAgency?: string;
       cCardNumber?: string;
@@ -1933,6 +1943,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase
       .from("profiles")
       .update({
+        ...(updates.name !== undefined ? { name: updates.name } : {}),
+        ...(updates.phone !== undefined ? { phone: updates.phone } : {}),
+        ...(updates.avatarUrl !== undefined ? { avatar_url: updates.avatarUrl } : {}),
+        ...(updates.bio !== undefined ? { bio: updates.bio } : {}),
         ...(updates.birthDate !== undefined ? { birth_date: updates.birthDate } : {}),
         ...(updates.cCardAgency !== undefined ? { c_card_agency: updates.cCardAgency } : {}),
         ...(updates.cCardNumber !== undefined ? { c_card_number: updates.cCardNumber } : {}),
