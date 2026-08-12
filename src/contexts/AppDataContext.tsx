@@ -2772,6 +2772,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.rpc("report_review", { p_review_id: reviewId });
     if (error) {
       console.error("[reportReview] 리뷰 신고 처리 실패:", error);
+      // 예전에는 여기서 에러를 삼키기만 하고 호출부(ReviewList)에는 전혀 알리지 않아서,
+      // 신고 RPC가 실패해도(예: 네트워크 오류) 화면에는 항상 "신고 접수되었습니다" 토스트가
+      // 뜨고 낙관적으로 반영된 reported 상태가 그대로 남아있었다. 낙관적 업데이트를
+      // 되돌리고 에러를 던져 호출부가 실패를 사용자에게 보여줄 수 있게 한다.
+      setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, reported: false } : r)));
+      throw error;
     }
   };
 
