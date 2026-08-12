@@ -22,6 +22,10 @@ export interface Profile {
   gender: Gender;
   status: ProfileStatus;
   createdAt: string;
+  /** 마이페이지에서 본인이 직접 등록하는 프로필 사진 (공개 URL). */
+  avatarUrl?: string;
+  /** 마이페이지에서 본인이 직접 작성하는 자기소개. */
+  bio?: string;
   snoring?: boolean;
   smoking?: boolean;
   birthDate?: string; // 생년월일(YYYY-MM-DD), 나이 계산용
