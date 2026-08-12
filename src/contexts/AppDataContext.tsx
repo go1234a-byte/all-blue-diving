@@ -1566,7 +1566,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             refund_amount: refundAmount,
             cancel_requested_at: cancelRequestedAt,
           })
-          .eq("id", booking.id);
+          .eq("id", booking.id)
+          .then(({ error }) => {
+            if (error) console.error("[resolveUnderMinDecision] bookings 업데이트 실패:", error);
+          });
 
         setPayouts((prev) =>
           prev.map((p) => (p.bookingId === booking.id && p.status !== "released" ? { ...p, status: "cancelled" } : p)),
@@ -1575,7 +1578,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           .from("payouts")
           .update({ status: "cancelled" })
           .eq("booking_id", booking.id)
-          .neq("status", "released");
+          .neq("status", "released")
+          .then(({ error }) => {
+            if (error) console.error("[resolveUnderMinDecision] payouts 업데이트 실패:", error);
+          });
 
         void persistInstructorNotification({
           instructorId: tour.instructorId,
@@ -1656,7 +1662,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           refund_amount: refundAmount,
           cancel_requested_at: cancelRequestedAt,
         })
-        .eq("id", booking.id);
+        .eq("id", booking.id)
+        .then(({ error }) => {
+          if (error) console.error("[forceCancelTourBookings] bookings 업데이트 실패:", error);
+        });
 
       setPayouts((prev) =>
         prev.map((p) => (p.bookingId === booking.id && p.status !== "released" ? { ...p, status: "cancelled" } : p)),
@@ -1665,7 +1674,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         .from("payouts")
         .update({ status: "cancelled" })
         .eq("booking_id", booking.id)
-        .neq("status", "released");
+        .neq("status", "released")
+        .then(({ error }) => {
+          if (error) console.error("[forceCancelTourBookings] payouts 업데이트 실패:", error);
+        });
 
       notifyDiverPush(
         booking.diverId,
@@ -2863,7 +2875,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const deleteReview = async (reviewId: string) => {
     setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, deleted: true } : r)));
-    await supabase.from("reviews").update({ deleted: true }).eq("id", reviewId);
+    const { error } = await supabase.from("reviews").update({ deleted: true }).eq("id", reviewId);
+    if (error) console.error("[deleteReview] 업데이트 실패:", error);
   };
 
   const markInstructorNotificationRead = (notificationId: string) => {
@@ -2899,10 +2912,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           : b,
       ),
     );
-    await supabase
+    const { error: cancelBookingError } = await supabase
       .from("bookings")
       .update({ status: "cancelled", cancel_reason: reason, refund_rate: refundRate, refund_amount: refundAmount })
       .eq("id", bookingId);
+    if (cancelBookingError) {
+      console.error("[cancelBooking] bookings 업데이트 실패:", cancelBookingError);
+    }
 
     // 트랜잭션 롤백: 이미 지급 완료(released)된 정산은 되돌리지 않고, 예정/보류 상태만 취소 처리한다.
     setPayouts((prev) =>
@@ -2928,7 +2944,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   /** 강사가 방을 배정/수정할 때 사용. roomNo를 null로 넘기면 배정 해제(미배정으로 되돌림). */
   const updateBookingRoom = async (bookingId: string, roomNo: string | null) => {
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, roomNo: roomNo ?? undefined } : b)));
-    await supabase.from("bookings").update({ room_no: roomNo }).eq("id", bookingId);
+    const { error } = await supabase.from("bookings").update({ room_no: roomNo }).eq("id", bookingId);
+    if (error) console.error("[updateBookingRoom] 업데이트 실패:", error);
   };
 
   /** 예약 1건에 동반자가 여러 명 있을 때, 동반자 개인의 방 번호만 따로 배정/수정한다.
@@ -2941,7 +2958,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       idx === companionIndex ? { ...c, roomNo: roomNo ?? undefined } : c,
     );
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, companions: nextCompanions } : b)));
-    await supabase.from("bookings").update({ companions: nextCompanions }).eq("id", bookingId);
+    const { error } = await supabase.from("bookings").update({ companions: nextCompanions }).eq("id", bookingId);
+    if (error) console.error("[updateCompanionRoom] 업데이트 실패:", error);
   };
 
   /** 천재지변/의료 사유 등 즉시 환불이 아닌 운영팀 심사가 필요한 취소 요청을 접수한다. */
@@ -2954,7 +2972,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           : b,
       ),
     );
-    await supabase
+    const { error } = await supabase
       .from("bookings")
       .update({
         status: "cancel_pending_review",
@@ -2963,6 +2981,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         cancel_requested_at: cancelRequestedAt,
       })
       .eq("id", bookingId);
+    if (error) console.error("[submitCancellationForReview] 업데이트 실패:", error);
   };
 
   /**
@@ -2981,10 +3000,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             : b,
         ),
       );
-      await supabase
+      const { error: approveBookingError } = await supabase
         .from("bookings")
         .update({ status: "cancelled", refund_rate: 1, refund_amount: booking?.totalPaid })
         .eq("id", bookingId);
+      if (approveBookingError) {
+        console.error("[resolveCancellationReview] bookings 업데이트 실패(승인):", approveBookingError);
+      }
 
       setPayouts((prev) =>
         prev.map((p) =>
@@ -3027,7 +3049,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setBookings((prev) =>
         prev.map((b) => (b.id === bookingId ? { ...b, status: "confirmed" } : b)),
       );
-      await supabase.from("bookings").update({ status: "confirmed" }).eq("id", bookingId);
+      const { error: rejectBookingError } = await supabase
+        .from("bookings")
+        .update({ status: "confirmed" })
+        .eq("id", bookingId);
+      if (rejectBookingError) {
+        console.error("[resolveCancellationReview] bookings 업데이트 실패(반려):", rejectBookingError);
+      }
 
       // 반려 사유를 다이버에게 즉시 전달한다 (컬럼 미존재로 영구 저장은 아직 불가, 우선 실시간 알림으로 전달).
       if (booking) {
