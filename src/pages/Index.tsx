@@ -120,9 +120,9 @@ const Index = () => {
           </div>
         </section>
 
-        {/* 기업/단체 문의 — 워크샵/사내 행사 등 단체 예약은 회원가입 없이도 남길 수 있어야 하므로
-            로그인 필요한 1:1 문의(/support)가 아니라 별도 게시판(/business-inquiry, business_inquiries
-            테이블)으로 받는다. 다이버/강사로 로그인한 상태에서도 동일하게 이용 가능. */}
+        {/* 기업/단체 문의 — 워크샵/사내 행사 등 단체 예약 문의를 별도 게시판(/business-inquiry,
+            business_inquiries 테이블)으로 받는다. support_tickets(1:1 문의)와 마찬가지로 로그인한
+            다이버/강사(관리자 포함)만 이용 가능 — 게스트가 누르면 라우트 가드가 /auth로 보낸다. */}
         <section className="space-y-3 pt-2">
           <h2 className="text-base font-semibold text-foreground">기업/단체 문의</h2>
           <Link

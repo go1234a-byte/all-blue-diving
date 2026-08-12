@@ -9,9 +9,9 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 
 /**
- * 기업/단체(워크샵·사내 행사 등) 전용 문의 게시판. 로그인 여부와 무관하게(비회원 포함)
- * 누구나 접수할 수 있다 — 회원가입 안 한 기업 담당자도 남길 수 있어야 하고, 로그인한
- * 다이버/강사도 그대로 이 폼을 쓸 수 있다.
+ * 기업/단체(워크샵·사내 행사 등) 전용 문의 게시판. router.tsx에서 로그인 가드가 걸려있어
+ * 로그인한 다이버/강사(관리자 포함)만 도달하며, RLS(business_inquiries_insert_authenticated)도
+ * 동일하게 강제한다.
  */
 const BusinessInquiryPage = () => {
   const { addBusinessInquiry } = useAppData();

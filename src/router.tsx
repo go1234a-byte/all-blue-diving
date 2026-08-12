@@ -77,7 +77,6 @@ export const routers = [
       { path: "payment/success", name: "payment-success", element: <PaymentSuccess /> },
       { path: "payment/fail", name: "payment-fail", element: <PaymentFail /> },
       { path: "favorites", name: "favorites", element: <Favorites /> },
-      { path: "business-inquiry", name: "business-inquiry", element: <BusinessInquiryPage /> },
       {
         // 로그인(다이버/강사/관리자 무관, 게스트만 차단)이 필요한 개인화 페이지들을 한 번에 가드.
         element: <RequireRole allow={["public", "instructor", "admin"]} />,
@@ -87,6 +86,7 @@ export const routers = [
           { path: "chat/:tourId", name: "chat-tour", element: <ChatRoom /> },
           { path: "mypage", name: "mypage", element: <MyPage /> },
           { path: "support", name: "support-chat", element: <SupportChat /> },
+          { path: "business-inquiry", name: "business-inquiry", element: <BusinessInquiryPage /> },
         ],
       },
       {

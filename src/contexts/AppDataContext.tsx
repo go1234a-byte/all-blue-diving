@@ -3375,8 +3375,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  /** 기업/단체 문의 게시판 접수 — 비회원도(로그인 없이도) 접수할 수 있다.
-   *  RLS상 조회는 관리자만 가능해서 insert 뒤 select로 되읽으면 항상 실패하므로
+  /** 기업/단체 문의 게시판 접수 — 로그인한 다이버/강사(관리자 포함)만 접수 가능(RLS로 강제).
+   *  조회는 관리자만 가능해서 insert 뒤 select로 되읽으면 항상 실패하므로
    *  (addSupportTicket과 달리) select를 체이닝하지 않고 성공 여부만 확인한다. */
   const addBusinessInquiry = async (input: NewBusinessInquiryInput): Promise<void> => {
     const { error } = await supabase.from("business_inquiries").insert({
