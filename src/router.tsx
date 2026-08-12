@@ -16,6 +16,7 @@ import InstructorConsole from "./pages/InstructorConsole";
 import TourEditPage from "./pages/TourEditPage";
 import InstructorPublicProfile from "./pages/InstructorPublicProfile";
 import SupportChat from "./pages/SupportChat";
+import BusinessInquiryPage from "./pages/BusinessInquiryPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
@@ -46,6 +47,7 @@ import AdminManualPage from "./pages/admin/AdminManualPage";
 import AdminMorePage from "./pages/admin/AdminMorePage";
 import AdminQaChecklistPage from "./pages/admin/AdminQaChecklistPage";
 import AdminTourCancellationClaimsPage from "./pages/admin/AdminTourCancellationClaimsPage";
+import AdminBusinessInquiriesPage from "./pages/admin/AdminBusinessInquiriesPage";
 import { RequireRole } from "./components/auth/RequireRole";
 import { RootLayout } from "./components/layout/RootLayout";
 import { MimoRootLayout } from "./components/mimo/layout/MimoRootLayout";
@@ -75,6 +77,7 @@ export const routers = [
       { path: "payment/success", name: "payment-success", element: <PaymentSuccess /> },
       { path: "payment/fail", name: "payment-fail", element: <PaymentFail /> },
       { path: "favorites", name: "favorites", element: <Favorites /> },
+      { path: "business-inquiry", name: "business-inquiry", element: <BusinessInquiryPage /> },
       {
         // 로그인(다이버/강사/관리자 무관, 게스트만 차단)이 필요한 개인화 페이지들을 한 번에 가드.
         element: <RequireRole allow={["public", "instructor", "admin"]} />,
@@ -120,6 +123,7 @@ export const routers = [
               { path: "users", name: "admin-users", element: <AdminUsersPage /> },
               { path: "users/:id", name: "admin-user-detail", element: <AdminUserDetailPage /> },
               { path: "support", name: "admin-support", element: <AdminSupportPage /> },
+              { path: "business-inquiries", name: "admin-business-inquiries", element: <AdminBusinessInquiriesPage /> },
               { path: "reports", name: "admin-reports", element: <AdminReportsPage /> },
               { path: "notifications", name: "admin-notifications", element: <AdminNotificationsPage /> },
               { path: "activity", name: "admin-activity", element: <AdminActivityPage /> },

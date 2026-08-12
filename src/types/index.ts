@@ -587,6 +587,32 @@ export interface SupportTicket {
   createdAt: string;
 }
 
+export type BusinessInquiryStatus = "접수" | "답변완료";
+
+export const BUSINESS_INQUIRY_STATUSES: BusinessInquiryStatus[] = ["접수", "답변완료"];
+
+/** 기업/단체(워크샵·사내 행사 등) 전용 문의 게시판. support_tickets와 달리 로그인 없이도
+ *  누구나(비회원 포함) 등록할 수 있고, 조회/답변은 관리자만 가능하다. */
+export interface BusinessInquiry {
+  id: string;
+  companyName: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  message: string;
+  status: BusinessInquiryStatus;
+  adminReply?: string;
+  createdAt: string;
+}
+
+export interface NewBusinessInquiryInput {
+  companyName: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  message: string;
+}
+
 export const NOTICE_CATEGORIES = ["일반", "점검", "이벤트", "정책 변경", "안전"] as const;
 export type NoticeCategory = (typeof NOTICE_CATEGORIES)[number];
 

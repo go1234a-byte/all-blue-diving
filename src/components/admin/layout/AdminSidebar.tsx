@@ -17,6 +17,7 @@ import {
   Settings,
   BookOpen,
   ClipboardCheck,
+  Briefcase,
   LogOut,
 } from "lucide-react";
 import {
@@ -43,6 +44,7 @@ const MENU_ITEMS = [
   { to: "/admin/centers", label: "센터 관리", icon: Building2, end: false },
   { to: "/admin/users", label: "회원 관리", icon: UserRound, end: false },
   { to: "/admin/support", label: "문의 관리", icon: MessageCircle, end: false },
+  { to: "/admin/business-inquiries", label: "기업/단체 문의", icon: Briefcase, end: false },
   { to: "/admin/reports", label: "신고 관리", icon: Flag, end: false },
   { to: "/admin/notifications", label: "알림 관리", icon: Bell, end: false },
   { to: "/admin/notices", label: "공지 관리", icon: Megaphone, end: false },

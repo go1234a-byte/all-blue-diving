@@ -3,6 +3,9 @@ import type {
   ArbitrationMessage,
   InstructorAdminNote,
   Booking,
+  BusinessInquiry,
+  BusinessInquiryStatus,
+  NewBusinessInquiryInput,
   Center,
   ChatMessage,
   Coupon,
@@ -222,6 +225,30 @@ function mapSupportTicketRow(row: {
     content: row.content,
     attachmentNames: row.attachment_names ?? [],
     status: row.status as SupportTicketStatus,
+    adminReply: row.admin_reply ?? undefined,
+    createdAt: row.created_at,
+  };
+}
+
+function mapBusinessInquiryRow(row: {
+  id: string;
+  company_name: string;
+  contact_name: string;
+  phone: string;
+  email: string;
+  message: string;
+  status: string;
+  admin_reply: string | null;
+  created_at: string;
+}): BusinessInquiry {
+  return {
+    id: row.id,
+    companyName: row.company_name,
+    contactName: row.contact_name,
+    phone: row.phone,
+    email: row.email,
+    message: row.message,
+    status: row.status as BusinessInquiryStatus,
     adminReply: row.admin_reply ?? undefined,
     createdAt: row.created_at,
   };
@@ -718,6 +745,8 @@ interface AppDataContextValue {
   centersLoading: boolean;
   supportTickets: SupportTicket[];
   supportTicketsLoading: boolean;
+  businessInquiries: BusinessInquiry[];
+  businessInquiriesLoading: boolean;
   notices: Notice[];
   coupons: Coupon[];
 
@@ -844,6 +873,8 @@ interface AppDataContextValue {
   deleteCenter: (centerId: string) => Promise<void>;
   addSupportTicket: (input: NewSupportTicketInput) => Promise<SupportTicket>;
   updateSupportTicketStatus: (ticketId: string, status: SupportTicketStatus, adminReply?: string) => Promise<void>;
+  addBusinessInquiry: (input: NewBusinessInquiryInput) => Promise<void>;
+  updateBusinessInquiryStatus: (inquiryId: string, status: BusinessInquiryStatus, adminReply?: string) => Promise<void>;
   addNotice: (input: Omit<Notice, "id" | "createdAt">) => Notice;
   deleteNotice: (noticeId: string) => void;
 
@@ -914,6 +945,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     },
   ]);
   const [supportTicketsLoading, setSupportTicketsLoading] = useState(true);
+  const [businessInquiries, setBusinessInquiries] = useState<BusinessInquiry[]>([]);
+  const [businessInquiriesLoading, setBusinessInquiriesLoading] = useState(true);
   const [bookmarkedTourIds, setBookmarkedTourIds] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -1039,6 +1072,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (!active) return;
       if (!error && data) setSupportTickets(data.map(mapSupportTicketRow));
       setSupportTicketsLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Enter Cloud(Supabase) `business_inquiries` 테이블에서 기업/단체 문의를 가져온다.
+  // RLS상 관리자만 조회 가능하므로, 관리자가 아닌 세션에서는 항상 빈 배열로 조용히 끝난다
+  // (reports와 동일한 패턴 — 관리자 화면에서만 실제로 채워진다).
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("business_inquiries")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!active) return;
+      if (!error && data) setBusinessInquiries(data.map(mapBusinessInquiryRow));
+      setBusinessInquiriesLoading(false);
     })();
     return () => {
       active = false;
@@ -3323,6 +3375,44 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /** 기업/단체 문의 게시판 접수 — 비회원도(로그인 없이도) 접수할 수 있다.
+   *  RLS상 조회는 관리자만 가능해서 insert 뒤 select로 되읽으면 항상 실패하므로
+   *  (addSupportTicket과 달리) select를 체이닝하지 않고 성공 여부만 확인한다. */
+  const addBusinessInquiry = async (input: NewBusinessInquiryInput): Promise<void> => {
+    const { error } = await supabase.from("business_inquiries").insert({
+      company_name: input.companyName,
+      contact_name: input.contactName,
+      phone: input.phone,
+      email: input.email,
+      message: input.message,
+    });
+    if (error) {
+      console.error("[addBusinessInquiry] business_inquiries insert 실패:", error);
+      throw new Error(
+        error.message ? `문의 접수에 실패했습니다: ${error.message}` : "문의 접수에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
+    }
+  };
+
+  /** 관리자가 기업/단체 문의의 처리 상태/답변을 갱신한다. */
+  const updateBusinessInquiryStatus = async (
+    inquiryId: string,
+    status: BusinessInquiryStatus,
+    adminReply?: string,
+  ): Promise<void> => {
+    const { error } = await supabase
+      .from("business_inquiries")
+      .update({ status, admin_reply: adminReply, updated_at: new Date().toISOString() })
+      .eq("id", inquiryId);
+    if (error) {
+      console.error("[updateBusinessInquiryStatus] business_inquiries update 실패:", error);
+      throw new Error(`답변 저장에 실패했습니다: ${error.message}`);
+    }
+    setBusinessInquiries((prev) =>
+      prev.map((b) => (b.id === inquiryId ? { ...b, status, adminReply: adminReply ?? b.adminReply } : b)),
+    );
+  };
+
   const getInstructorById = (id: string) => instructors.find((i) => i.id === id);
   const getInstructorProfileById = (id: string) => instructorProfiles.find((p) => p.id === id);
   const getTourById = (id: string) => tours.find((t) => t.id === id);
@@ -3370,6 +3460,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       centersLoading,
       supportTickets,
       supportTicketsLoading,
+      businessInquiries,
+      businessInquiriesLoading,
       notices,
       coupons,
       addTour,
@@ -3433,6 +3525,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       deleteCenter,
       addSupportTicket,
       updateSupportTicketStatus,
+      addBusinessInquiry,
+      updateBusinessInquiryStatus,
       addNotice,
       deleteNotice,
       getInstructorById,
@@ -3468,6 +3562,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       centersLoading,
       supportTickets,
       supportTicketsLoading,
+      businessInquiries,
+      businessInquiriesLoading,
       notices,
       coupons,
     ],

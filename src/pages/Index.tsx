@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Megaphone, ShieldCheck, MessageCircle, CalendarCheck, Lock, Users, Star, Building2, Phone, Mail } from "lucide-react";
+import { Megaphone, ShieldCheck, MessageCircle, CalendarCheck, Lock, Users, Star, Building2, ChevronRight } from "lucide-react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -23,10 +23,6 @@ const FEATURES: Feature[] = [
   { icon: Lock, title: "안전한 결제", desc: "SSL 보안 시스템으로 안전한 결제" },
   { icon: Star, title: "생생한 후기", desc: "다녀온 다이버들의 진짜 후기를 확인해요" },
 ];
-
-// 회사 소개/약관 페이지(TermsPage 등)와 동일한 대표 연락처.
-const CONTACT_EMAIL = "help@allbluedive.com";
-const CONTACT_PHONE = "010-2604-5661";
 
 const Index = () => {
   const { role, authLoading } = useRole();
@@ -124,34 +120,25 @@ const Index = () => {
           </div>
         </section>
 
-        {/* 기업/단체 문의 — 워크샵/사내 행사 등 단체 예약은 회원가입 없이도 직접 연락할 수 있어야 하므로
-            로그인 필요한 1:1 문의(/support)로 보내지 않고 대표 연락처를 바로 보여준다. */}
+        {/* 기업/단체 문의 — 워크샵/사내 행사 등 단체 예약은 회원가입 없이도 남길 수 있어야 하므로
+            로그인 필요한 1:1 문의(/support)가 아니라 별도 게시판(/business-inquiry, business_inquiries
+            테이블)으로 받는다. 다이버/강사로 로그인한 상태에서도 동일하게 이용 가능. */}
         <section className="space-y-3 pt-2">
           <h2 className="text-base font-semibold text-foreground">기업/단체 문의</h2>
-          <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+          <Link
+            to="/business-inquiry"
+            className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-secondary/40"
+          >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
               <Building2 className="h-4.5 w-4.5" />
             </div>
-            <div className="min-w-0 flex-1 space-y-2">
+            <div className="min-w-0 flex-1">
               <p className="text-xs leading-relaxed text-muted-foreground">
-                워크샵, 사내 행사 등 단체 다이빙 투어가 필요하시면 아래로 연락해주세요.
+                워크샵, 사내 행사 등 단체 다이빙 투어가 필요하시면 문의를 남겨주세요.
               </p>
-              <a
-                href={`tel:${CONTACT_PHONE}`}
-                className="flex items-center gap-1.5 text-xs font-medium text-foreground hover:text-primary"
-              >
-                <Phone className="h-3.5 w-3.5 shrink-0" />
-                {CONTACT_PHONE}
-              </a>
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="flex items-center gap-1.5 text-xs font-medium text-foreground hover:text-primary"
-              >
-                <Mail className="h-3.5 w-3.5 shrink-0" />
-                {CONTACT_EMAIL}
-              </a>
             </div>
-          </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </Link>
         </section>
       </main>
       <BottomNav />
