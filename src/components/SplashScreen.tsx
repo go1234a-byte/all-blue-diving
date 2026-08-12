@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { WhaleTailMark } from "@/components/brand/WhaleTailMark";
+import { LogoMark } from "@/components/brand/Logo";
 import { SleepingSpermWhale } from "@/components/brand/SleepingSpermWhale";
 
 interface SplashScreenProps {
@@ -111,7 +111,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-col items-center gap-2"
             >
-              <WhaleTailMark size={108} tone="inverted" />
+              <LogoMark size={108} tone="inverted" />
               <span className="text-4xl font-bold tracking-tight text-primary-foreground md:text-5xl">
                 ALL BLUE
               </span>

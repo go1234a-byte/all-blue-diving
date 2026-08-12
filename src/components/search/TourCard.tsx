@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bookmark, MessageCircle, Star, Users } from "lucide-react";
+import { Bookmark, MessageCircle, Share2, Star, Users } from "lucide-react";
 import type { Tour } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import { formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { isTourBookable } from "@/lib/tourBooking";
+import { shareOrCopyLink } from "@/lib/share";
 import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
 
 interface TourCardProps {
@@ -96,6 +97,20 @@ export function TourCard({ tour }: TourCardProps) {
     }
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const result = await shareOrCopyLink({
+      title: tour.title,
+      text: `${tour.country} · ${tour.site} — ALL BLUE`,
+      url: `${window.location.origin}/tour/${tour.id}`,
+    });
+    if (result === "copied") {
+      toast({ title: "링크가 복사되었습니다", description: "카카오톡, 인스타그램 등에 붙여넣기 해보세요." });
+    } else if (result === "failed") {
+      toast({ title: "공유에 실패했습니다", variant: "destructive" });
+    }
+  };
+
   return (
     <>
       <Link to={`/tour/${tour.id}`}>
@@ -136,6 +151,14 @@ export function TourCard({ tour }: TourCardProps) {
                 <Star className="h-3 w-3 text-warning" />
                 {tour.rating.toFixed(1)}
               </div>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-background/85 backdrop-blur"
+                aria-label="공유하기"
+              >
+                <Share2 className="h-3.5 w-3.5 text-foreground" />
+              </button>
               <button
                 type="button"
                 onClick={(e) => {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, Compass, MapPin, MessageCircle, ShieldCheck, Star, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, Compass, MapPin, MessageCircle, Share2, ShieldCheck, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TourGallery } from "@/components/tour/TourGallery";
@@ -20,6 +20,7 @@ import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { calculateAge, formatDateKR, formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
+import { shareOrCopyLink } from "@/lib/share";
 
 const TourDetail = () => {
   const { tourId } = useParams();
@@ -147,6 +148,19 @@ const TourDetail = () => {
     navigate(`/checkout/${tour.id}`, { state: { selectedOptionIds } });
   };
 
+  const handleShare = async () => {
+    const result = await shareOrCopyLink({
+      title: tour.title,
+      text: `${tour.country} · ${tour.site} — ALL BLUE`,
+      url: window.location.href,
+    });
+    if (result === "copied") {
+      toast({ title: "링크가 복사되었습니다", description: "카카오톡, 인스타그램 등에 붙여넣기 해보세요." });
+    } else if (result === "failed") {
+      toast({ title: "공유에 실패했습니다", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-full bg-gradient-surface pb-28">
       <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
@@ -155,6 +169,9 @@ const TourDetail = () => {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <h1 className="line-clamp-1 flex-1 text-base font-semibold text-foreground">{tour.title}</h1>
+          <button type="button" onClick={handleShare} className="text-foreground" aria-label="공유하기">
+            <Share2 className="h-5 w-5" />
+          </button>
           <button
             type="button"
             onClick={() => {

@@ -6,63 +6,58 @@ interface LogoMarkProps {
   className?: string;
 }
 
-/** 위치(Pin) 심벌 외곽선 — 앱 아이콘/스플래시와 100% 동일한 심벌을 사용한다. */
-const PIN_PATH = "M20 3C12.27 3 6 9.27 6 17c0 11.5 14 24 14 24s14-12.5 14-24c0-7.73-6.27-14-14-14z";
+/** 고래 꼬리(Fluke) 심벌 — "컨셉 5. Whale Tail" 리브랜딩 아트워크. WhaleTailMark와 동일한 경로. */
+const TAIL_PATH =
+  "M60 92 C55 70 40 58 24 48 C10 40 4 26 12 12 C28 16 42 30 52 48 C55 54 58 60 60 66 " +
+  "C62 60 65 54 68 48 C78 30 92 16 108 12 C116 26 110 40 96 48 C80 58 65 70 60 92 Z";
 
 /**
- * ALL BLUE 심벌 — 흰 배경 위의 파란색 위치(Pin) 심벌, 내부는 파도처럼 흐르는
- * 블루 그라데이션. 이 심벌은 앱 아이콘 / 헤더 / 스플래시 컷아웃에서 항상 동일하게 사용한다.
+ * ALL BLUE 심벌 — 흰 배경(둥근 정사각형) 위의 고래 꼬리 심벌, 그 아래 파도 두 줄.
+ * 이 심벌은 앱 아이콘 / 헤더 / 스플래시에서 항상 동일하게 사용한다.
  */
 export function LogoMark({ size = 32, tone = "default", className }: LogoMarkProps) {
   const isInverted = tone === "inverted";
   const gradFrom = isInverted ? "hsl(var(--primary-foreground))" : "hsl(var(--primary))";
-  const gradTo = isInverted ? "hsl(var(--primary-foreground))" : "hsl(var(--primary-glow))";
-  const waveStroke = isInverted ? "hsl(var(--primary))" : "hsl(var(--primary-foreground))";
-  const gradId = `pin-gradient-${tone}`;
-  const clipId = `pin-clip-${tone}`;
+  const gradTo = isInverted ? "hsl(var(--accent-foreground))" : "hsl(var(--primary-glow))";
+  const waveStroke = isInverted ? "hsl(var(--accent))" : "hsl(var(--primary-foreground))";
+  const gradId = `tail-gradient-${tone}`;
 
   return (
     <svg
       width={size}
-      height={(size * 44) / 40}
-      viewBox="0 0 40 44"
+      height={size}
+      viewBox="0 0 120 120"
       fill="none"
       className={cn("shrink-0", className)}
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id={gradId} x1="6" y1="3" x2="34" y2="41" gradientUnits="userSpaceOnUse">
+        <linearGradient id={gradId} x1="12" y1="12" x2="108" y2="92" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor={gradFrom} />
           <stop offset="100%" stopColor={gradTo} />
         </linearGradient>
-        <clipPath id={clipId}>
-          <path d={PIN_PATH} />
-        </clipPath>
       </defs>
 
-      {!isInverted && <rect x="0" y="1" width="40" height="42" rx="12" fill="white" />}
+      {!isInverted && <rect x="0" y="0" width="120" height="120" rx="28" fill="white" />}
 
-      <path d={PIN_PATH} fill={`url(#${gradId})`} />
+      <path d={TAIL_PATH} fill={`url(#${gradId})`} />
 
-      {/* 파도 라인: 핀 내부에만 보이도록 클립 */}
-      <g clipPath={`url(#${clipId})`}>
-        <path
-          d="M2 22c2.6-2.4 5.2-2.4 7.8 0s5.2 2.4 7.8 0 5.2-2.4 7.8 0 5.2 2.4 7.8 0"
-          stroke={waveStroke}
-          strokeWidth="2.1"
-          strokeLinecap="round"
-          fill="none"
-          opacity="0.95"
-        />
-        <path
-          d="M2 27c2.6-2.4 5.2-2.4 7.8 0s5.2 2.4 7.8 0 5.2-2.4 7.8 0 5.2 2.4 7.8 0"
-          stroke={waveStroke}
-          strokeWidth="2.1"
-          strokeLinecap="round"
-          fill="none"
-          opacity="0.6"
-        />
-      </g>
+      <path
+        d="M8 100c6.4-5 12.8-5 19.2 0s12.8 5 19.2 0 12.8-5 19.2 0 12.8 5 19.2 0 12.8-5 19.2 0"
+        stroke={waveStroke}
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.9"
+      />
+      <path
+        d="M8 108.5c6.4-5 12.8-5 19.2 0s12.8 5 19.2 0 12.8-5 19.2 0 12.8 5 19.2 0 12.8-5 19.2 0"
+        stroke={waveStroke}
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.55"
+      />
     </svg>
   );
 }

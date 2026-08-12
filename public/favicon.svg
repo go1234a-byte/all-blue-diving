@@ -1,17 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 44" width="40" height="44">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
   <defs>
-    <linearGradient id="pin-gradient" x1="6" y1="3" x2="34" y2="41" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#0a4d99" />
-      <stop offset="100%" stop-color="#22a8e0" />
+    <linearGradient id="tail-gradient" x1="12" y1="12" x2="108" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0A2540" />
+      <stop offset="100%" stop-color="#1565C0" />
     </linearGradient>
-    <clipPath id="pin-clip">
-      <path d="M20 3C12.27 3 6 9.27 6 17c0 11.5 14 24 14 24s14-12.5 14-24c0-7.73-6.27-14-14-14z" />
-    </clipPath>
   </defs>
-  <rect x="0" y="1" width="40" height="42" rx="12" fill="#ffffff" />
-  <path d="M20 3C12.27 3 6 9.27 6 17c0 11.5 14 24 14 24s14-12.5 14-24c0-7.73-6.27-14-14-14z" fill="url(#pin-gradient)" />
-  <g clip-path="url(#pin-clip)">
-    <path d="M2 22c2.6-2.4 5.2-2.4 7.8 0s5.2 2.4 7.8 0 5.2-2.4 7.8 0 5.2 2.4 7.8 0" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" fill="none" opacity="0.95" />
-    <path d="M2 27c2.6-2.4 5.2-2.4 7.8 0s5.2 2.4 7.8 0 5.2-2.4 7.8 0 5.2 2.4 7.8 0" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" fill="none" opacity="0.6" />
-  </g>
+  <rect x="0" y="0" width="120" height="120" rx="28" fill="#ffffff" />
+  <path d="M60 92 C55 70 40 58 24 48 C10 40 4 26 12 12 C28 16 42 30 52 48 C55 54 58 60 60 66 C62 60 65 54 68 48 C78 30 92 16 108 12 C116 26 110 40 96 48 C80 58 65 70 60 92 Z" fill="url(#tail-gradient)" />
+  <path d="M8 100c6.4-5 12.8-5 19.2 0s12.8 5 19.2 0 12.8-5 19.2 0 12.8 5 19.2 0 12.8-5 19.2 0" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" fill="none" opacity="0.9" />
+  <path d="M8 108.5c6.4-5 12.8-5 19.2 0s12.8 5 19.2 0 12.8-5 19.2 0 12.8 5 19.2 0 12.8-5 19.2 0" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" fill="none" opacity="0.55" />
 </svg>
