@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   Clock,
   Facebook,
+  Flag,
   Globe2,
   Images,
   Instagram,
@@ -53,6 +54,7 @@ import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { DocumentViewButton } from "@/components/admin/DocumentViewButton";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
+import { SupportTicketForm } from "@/components/support/SupportTicketForm";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateKR, formatDateRangeKR, isPastDate } from "@/lib/dates";
 import { maskName } from "@/lib/masking";
@@ -127,10 +129,13 @@ const InstructorPublicProfile = () => {
     isInstructorBookmarked,
     instructorsLoading,
   } = useAppData();
-  const { role } = useRole();
+  const { role, currentDiverId } = useRole();
   const { toast } = useToast();
   const isAdmin = role === "admin";
   const [banDialogOpen, setBanDialogOpen] = useState(false);
+  // 다이버가 이 강사를 신고할 수 있는 진입점 — 예전에는 강사 프로필 화면 어디에도
+  // 신고 버튼이 없어서, 고객센터 화면까지 직접 찾아가 "신고" 탭을 스스로 골라야만 했다.
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [endToursToo, setEndToursToo] = useState(true);
   // "경고 부여" 사유 입력 임시 상태
   const [warnReasonDraft, setWarnReasonDraft] = useState("");
@@ -319,6 +324,16 @@ const InstructorPublicProfile = () => {
                   isInstructorBookmarked(instructor.id) ? "fill-primary text-primary" : "text-foreground",
                 )}
               />
+            </button>
+          )}
+          {instructor && role === "public" && currentDiverId && (
+            <button
+              type="button"
+              onClick={() => setReportDialogOpen(true)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-secondary"
+              aria-label="강사 신고하기"
+            >
+              <Flag className="h-5 w-5 text-foreground" />
             </button>
           )}
         </div>
@@ -834,6 +849,17 @@ const InstructorPublicProfile = () => {
           {lightboxUrl && <img src={lightboxUrl} alt="갤러리 확대" className="max-h-[80vh] w-full rounded-md object-contain" />}
         </DialogContent>
       </Dialog>
+
+      {currentDiverId && (
+        <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{instructor?.name ?? "강사"} 강사 신고하기</DialogTitle>
+            </DialogHeader>
+            <SupportTicketForm type="report" userId={currentDiverId} />
+          </DialogContent>
+        </Dialog>
+      )}
 
       <BottomNav />
     </div>
