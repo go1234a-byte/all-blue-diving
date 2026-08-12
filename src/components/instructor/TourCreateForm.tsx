@@ -123,17 +123,15 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   const instructorRecord = getInstructorById(instructorId);
   const isVerifiedInstructor = instructorRecord?.verified === true;
 
-  // 강사 1인당 투어 생성 제한: 한 달에 1개, 전체 누적 최대 3개.
-  // (createdAt = 투어 "생성"시각 기준. 투어 출발일이 아니라 실제로 이 강사가 투어를 만든 달을 센다.)
-  const myTours = tours.filter((t) => t.instructorId === instructorId);
-  const now = new Date();
-  const toursCreatedThisMonth = myTours.filter((t) => {
-    const d = new Date(t.createdAt);
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-  }).length;
+  // 강사 1인당 투어 생성 제한: 같은 "출발월"에 1개, 전체 누적 최대 3개.
+  // 예전에는 (a) "이번 달에 이미 하나 만들었는가"를 실제 달력상 오늘 날짜(now) 기준으로만
+  // 판단해서, 다른 달에 출발하는 투어를 새로 등록하려 해도 실제 달력의 이번 달이 지나기
+  // 전까지는 전부 막혀버렸고, (b) 마감(조기종료)한 투어도 계속 카운트에 남아있어 강사가
+  // 마감 후 같은 슬롯에 재등록하지 못하는 문제가 있었다. 마감된 투어는 더 이상 "등록된
+  // 투어"로 세지 않도록 제외하고, 월 제한은 이 강사가 지금 만들려는 투어의 "출발월"과 같은
+  // 달에 출발하는(마감되지 않은) 투어가 이미 있는지로 판단한다(아래 startDate 선택 이후).
+  const myTours = tours.filter((t) => t.instructorId === instructorId && t.status !== "closed");
   const hasReachedTotalLimit = myTours.length >= 3;
-  const hasReachedMonthlyLimit = toursCreatedThisMonth >= 1;
-  const hasReachedTourLimit = hasReachedTotalLimit || hasReachedMonthlyLimit;
   // 투어 출발일은 오늘로부터 3개월 이내로만 등록할 수 있다.
   const maxStartDate = addMonths(new Date(), 3);
 
@@ -156,6 +154,14 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   const [pledgeSignature, setPledgeSignature] = useState<string | undefined>(undefined);
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState<Date>();
+  const hasReachedMonthlyLimit = startDate
+    ? myTours.some(
+        (t) =>
+          new Date(t.startDate).getFullYear() === startDate.getFullYear() &&
+          new Date(t.startDate).getMonth() === startDate.getMonth(),
+      )
+    : false;
+  const hasReachedTourLimit = hasReachedTotalLimit || hasReachedMonthlyLimit;
   const [endDate, setEndDate] = useState<Date>();
   const [deadline, setDeadline] = useState<Date>();
   const [meetingPoint, setMeetingPoint] = useState("");
@@ -333,8 +339,8 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
     }
     if (hasReachedMonthlyLimit) {
       toast({
-        title: "이번 달 투어 생성 한도를 초과했습니다",
-        description: "강사 1인당 투어는 한 달에 1개까지 생성할 수 있습니다.",
+        title: "같은 출발월에 이미 등록된 투어가 있습니다",
+        description: "투어는 같은 달에 1개까지만 등록할 수 있습니다. 다른 달로 출발일을 선택해주세요.",
         variant: "destructive",
       });
       return;
@@ -493,7 +499,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
           {hasReachedTotalLimit
             ? "투어는 강사 1인당 최대 3개까지 생성할 수 있습니다."
-            : "이번 달에는 이미 투어를 생성하셨어요. 투어 생성은 강사 1인당 한 달에 1개까지 가능합니다."}
+            : "선택하신 출발월에는 이미 등록하신 투어가 있어요. 같은 달에는 투어를 1개까지만 등록할 수 있습니다. 다른 달로 출발일을 선택하시거나, 기존 투어를 마감한 뒤 등록해주세요."}
         </div>
       )}
       <div className="space-y-1.5">
