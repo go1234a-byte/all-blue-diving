@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarCheck, ChevronRight, MessageCircleQuestion, User } from "lucide-react";
+import { CalendarCheck, ChevronRight, Lock, MessageCircleQuestion, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LicenseVaultCard } from "@/components/mypage/LicenseVaultCard";
 import { DiverProfileEditCard } from "@/components/mypage/DiverProfileEditCard";
@@ -12,9 +12,30 @@ import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 
+/**
+ * 로그인 라우트 가드(RequireRole)를 우회해 도달한 비회원(주로 개발 모드 — RequireRole은
+ * QA 역할전환을 위해 개발 모드에서 role만 보고 isLoggedIn은 안 봄)이 실제 프로필/서류
+ * 카드를 만지다가 Supabase 업로드가 조용히 실패하는 문제가 있었다. 비회원에게는 실제
+ * 카드 대신 잠금 표시만 보여주고 클릭도 막는다.
+ */
+function LockedFeatureCard({ label }: { label: string }) {
+  return (
+    <Link
+      to="/auth"
+      className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-card/60 p-4 text-muted-foreground"
+    >
+      <Lock className="h-5 w-5 shrink-0" />
+      <div>
+        <p className="text-sm font-semibold">{label}</p>
+        <p className="text-xs">로그인 후 이용할 수 있어요</p>
+      </div>
+    </Link>
+  );
+}
+
 export function DiverMyPageView() {
   const { diverProfiles } = useAppData();
-  const { currentDiverId } = useRole();
+  const { currentDiverId, isLoggedIn } = useRole();
   const profile = diverProfiles.find((p) => p.id === currentDiverId);
 
   return (
@@ -28,17 +49,25 @@ export function DiverMyPageView() {
         </Avatar>
         <div>
           <p className="text-base font-semibold text-foreground">
-            안녕하세요, {profile?.name ?? "게스트 다이버"}님!
+            안녕하세요, {isLoggedIn ? (profile?.name ?? "게스트 다이버") : "비회원"}님!
           </p>
-          <p className="text-xs text-muted-foreground">{profile?.phone ?? "-"}</p>
+          <p className="text-xs text-muted-foreground">{isLoggedIn ? (profile?.phone ?? "-") : "로그인이 필요해요"}</p>
         </div>
       </div>
 
-      <DiverProfileEditCard profile={profile} diverId={currentDiverId} />
-
-      <LicenseVaultCard />
-
-      <DiverSafetyProfileCard profile={profile} diverId={currentDiverId} />
+      {isLoggedIn ? (
+        <>
+          <DiverProfileEditCard profile={profile} diverId={currentDiverId} />
+          <LicenseVaultCard />
+          <DiverSafetyProfileCard profile={profile} diverId={currentDiverId} />
+        </>
+      ) : (
+        <>
+          <LockedFeatureCard label="내 프로필" />
+          <LockedFeatureCard label="디지털 라이센스 보관함 (C-Card)" />
+          <LockedFeatureCard label="다이빙 자격 · 비상연락처 · 보험" />
+        </>
+      )}
 
       {/* 시안의 메뉴 리스트(아이콘 + 라벨 + 화살표) 구성을 그대로 적용 */}
       <div className="overflow-hidden rounded-xl border border-border bg-card">

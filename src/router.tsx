@@ -74,11 +74,18 @@ export const routers = [
       { path: "checkout/:tourId", name: "checkout", element: <Checkout /> },
       { path: "payment/success", name: "payment-success", element: <PaymentSuccess /> },
       { path: "payment/fail", name: "payment-fail", element: <PaymentFail /> },
-      { path: "my-bookings", name: "my-bookings", element: <MyBookings /> },
       { path: "favorites", name: "favorites", element: <Favorites /> },
-      { path: "chat", name: "chat", element: <ChatList /> },
-      { path: "chat/:tourId", name: "chat-tour", element: <ChatRoom /> },
-      { path: "mypage", name: "mypage", element: <MyPage /> },
+      {
+        // 로그인(다이버/강사/관리자 무관, 게스트만 차단)이 필요한 개인화 페이지들을 한 번에 가드.
+        element: <RequireRole allow={["public", "instructor", "admin"]} />,
+        children: [
+          { path: "my-bookings", name: "my-bookings", element: <MyBookings /> },
+          { path: "chat", name: "chat", element: <ChatList /> },
+          { path: "chat/:tourId", name: "chat-tour", element: <ChatRoom /> },
+          { path: "mypage", name: "mypage", element: <MyPage /> },
+          { path: "support", name: "support-chat", element: <SupportChat /> },
+        ],
+      },
       {
         path: "instructor/:id/profile",
         name: "instructor-public-profile",
@@ -134,7 +141,6 @@ export const routers = [
           { path: "instructors/:instructorId/notes", name: "admin-instructor-notes", element: <AdminInstructorNotePage /> },
         ],
       },
-      { path: "support", name: "support-chat", element: <SupportChat /> },
       { path: "terms", name: "terms", element: <TermsPage /> },
       { path: "privacy", name: "privacy", element: <PrivacyPage /> },
       { path: "refund-policy", name: "refund-policy", element: <RefundPolicyPage /> },
