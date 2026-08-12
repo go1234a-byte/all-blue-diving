@@ -260,6 +260,7 @@ function mapTourRow(row: any): Tour {
     prepNotes: row.prep_notes ?? "",
     customOptions: (row.custom_options ?? []) as TourOption[],
     isConfirmed: row.is_confirmed,
+    oneOnOneCare: row.one_on_one_care ?? false,
     pledgeSignerName: row.pledge_signer_name ?? undefined,
     pledgeAgreedAt: row.pledge_agreed_at ?? undefined,
     pledgeSignatureDataUrl: row.pledge_signature_data_url ?? undefined,
@@ -558,6 +559,7 @@ interface NewTourInput {
   exclusions: string[];
   prepNotes: string;
   customOptions: TourOption[];
+  oneOnOneCare?: boolean;
   pledgeSignerName: string;
   pledgeAgreedAt: string;
   pledgeSignatureDataUrl?: string;
@@ -590,6 +592,7 @@ interface UpdateTourInput {
   exclusions?: string[];
   prepNotes?: string;
   customOptions?: TourOption[];
+  oneOnOneCare?: boolean;
   meetingPoint?: string;
   meetingTime?: string;
   itineraryDays?: TourItineraryDay[];
@@ -1786,6 +1789,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         exclusions: input.exclusions,
         prep_notes: input.prepNotes,
         custom_options: input.customOptions,
+        one_on_one_care: input.oneOnOneCare ?? false,
         pledge_signer_name: input.pledgeSignerName,
         pledge_agreed_at: input.pledgeAgreedAt,
         pledge_signature_data_url: input.pledgeSignatureDataUrl,
@@ -1855,6 +1859,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (patch.exclusions !== undefined) dbPatch.exclusions = patch.exclusions;
     if (patch.prepNotes !== undefined) dbPatch.prep_notes = patch.prepNotes;
     if (patch.customOptions !== undefined) dbPatch.custom_options = patch.customOptions;
+    if (patch.oneOnOneCare !== undefined) dbPatch.one_on_one_care = patch.oneOnOneCare;
     if (patch.meetingPoint !== undefined) dbPatch.meeting_point = patch.meetingPoint;
     if (patch.meetingTime !== undefined) dbPatch.meeting_time = patch.meetingTime;
     if (patch.itineraryDays !== undefined) dbPatch.itinerary_days = patch.itineraryDays;
