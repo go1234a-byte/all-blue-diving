@@ -184,6 +184,9 @@ export interface Tour {
   prepNotes: string;
   customOptions: TourOption[];
   isConfirmed: boolean; // 출발 확정 여부 (미확정 시 전액 환불 규정 적용)
+  /** 강사가 이 투어를 1:1 전담 케어로 진행하는지 여부. 투어 생성/수정 시 강사가 직접 선택하며,
+   * 참일 때만 투어 상세 하이라이트에 "OO 강사 1:1 케어"가 노출된다. */
+  oneOnOneCare: boolean;
   pledgeSignerName?: string;
   pledgeAgreedAt?: string;
   pledgeSignatureDataUrl?: string;
