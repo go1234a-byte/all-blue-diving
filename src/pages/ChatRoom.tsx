@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, MessageCircleOff, Users } from "lucide-react";
+import { ArrowLeft, Flag, MessageCircleOff, Users } from "lucide-react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SupportTicketForm } from "@/components/support/SupportTicketForm";
 import { ChatThread } from "@/components/chat/ChatThread";
 import { ChatParticipantList } from "@/components/chat/ChatParticipantList";
 import { RoomAssignmentDashboard } from "@/components/chat/RoomAssignmentDashboard";
@@ -74,6 +76,9 @@ const ChatRoom = () => {
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
   const [tab, setTab] = useState("dashboard");
   const [participantsOpen, setParticipantsOpen] = useState(false);
+  // 참가자(다이버)가 이 채팅방(=담당 강사)을 신고할 수 있는 진입점 — 예전에는 채팅방
+  // 화면 어디에도 신고 버튼이 없었다.
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
   const tourBookings = bookings.filter((b) => b.tourId === tourId);
   // 취소한 참가자는 채팅방 참가자 목록/룸 배정에서 더 이상 보이면 안 되므로 별도로 걸러둔다.
@@ -150,7 +155,17 @@ const ChatRoom = () => {
           <Link to="/chat" className="text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="line-clamp-1 text-base font-semibold text-foreground">{tour.title}</h1>
+          <h1 className="line-clamp-1 flex-1 text-base font-semibold text-foreground">{tour.title}</h1>
+          {!isInstructor && currentDiverId && (
+            <button
+              type="button"
+              onClick={() => setReportDialogOpen(true)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-secondary"
+              aria-label="신고하기"
+            >
+              <Flag className="h-5 w-5 text-foreground" />
+            </button>
+          )}
         </header>
         <main className="mx-auto w-full max-w-md space-y-2 px-4 py-4 md:max-w-lg">
           <ChatHeaderSummary
@@ -195,6 +210,16 @@ const ChatRoom = () => {
             </div>
           </SheetContent>
         </Sheet>
+        {currentDiverId && (
+          <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+            <DialogContent className="max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>신고하기</DialogTitle>
+              </DialogHeader>
+              <SupportTicketForm type="report" userId={currentDiverId} />
+            </DialogContent>
+          </Dialog>
+        )}
         <BottomNav />
       </div>
     );
@@ -206,7 +231,17 @@ const ChatRoom = () => {
         <Link to="/chat" className="text-foreground">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="line-clamp-1 text-base font-semibold text-foreground">{tour.title}</h1>
+        <h1 className="line-clamp-1 flex-1 text-base font-semibold text-foreground">{tour.title}</h1>
+        {!isInstructor && currentDiverId && (
+          <button
+            type="button"
+            onClick={() => setReportDialogOpen(true)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-secondary"
+            aria-label="신고하기"
+          >
+            <Flag className="h-5 w-5 text-foreground" />
+          </button>
+        )}
       </header>
       <main className="mx-auto w-full max-w-md px-4 py-4 md:max-w-lg">
         <Tabs value={tab} onValueChange={setTab}>
@@ -238,6 +273,16 @@ const ChatRoom = () => {
           </TabsContent>
         </Tabs>
       </main>
+      {currentDiverId && (
+        <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>신고하기</DialogTitle>
+            </DialogHeader>
+            <SupportTicketForm type="report" userId={currentDiverId} />
+          </DialogContent>
+        </Dialog>
+      )}
       <BottomNav />
     </div>
   );
