@@ -73,13 +73,26 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
           {/* 위쪽에서 은은하게 번지는 빛 */}
           <div className="absolute inset-x-0 top-0 h-2/3 bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary-glow)/0.35),_transparent_65%)]" />
 
-          {/* 배경: 향유고래가 머리를 위로 향한 채 수중에서 움직이지 않고 자는 실루엣.
-              로고/문구를 가리지 않도록 아주 옅은 실루엣으로만 은은하게 떠 있게 한다. */}
+          {/* 배경: 향유고래가 머리를 위로 향한 채 수중에서 잠수한 채로 자는 실루엣.
+              실제로 잠자는 향유고래도 완전히 정지해 있지는 않고 조류에 따라 천천히
+              위아래로 흔들리며 살짝 돈다 — 그 느낌을 위아래 부유 + 좌우 스웨이 +
+              아주 느린 호흡성 스케일 변화로 표현한다. 로고/문구를 가리지 않도록
+              옅은 실루엣 톤은 유지한다. */}
           <motion.div
-            className="pointer-events-none absolute inset-0 flex items-center justify-center text-primary-foreground/[0.14]"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center text-primary-foreground/[0.16]"
             initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: [0, 6, 0] }}
-            transition={{ opacity: { duration: 1.2 }, y: { duration: 7, repeat: Infinity, ease: "easeInOut" } }}
+            animate={{
+              opacity: 1,
+              y: [0, 22, 0, -14, 0],
+              rotate: [0, 2.5, 0, -2.5, 0],
+              scale: [1, 1.035, 1, 1.02, 1],
+            }}
+            transition={{
+              opacity: { duration: 1.2 },
+              y: { duration: 10, repeat: Infinity, ease: "easeInOut" },
+              rotate: { duration: 10, repeat: Infinity, ease: "easeInOut" },
+              scale: { duration: 10, repeat: Infinity, ease: "easeInOut" },
+            }}
           >
             <SleepingSpermWhale className="h-[85vh] w-auto max-w-none" />
           </motion.div>
@@ -98,7 +111,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-col items-center gap-2"
             >
-              <WhaleTailMark size={72} tone="inverted" />
+              <WhaleTailMark size={108} tone="inverted" />
               <span className="text-4xl font-bold tracking-tight text-primary-foreground md:text-5xl">
                 ALL BLUE
               </span>
