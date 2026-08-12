@@ -24,6 +24,7 @@ export function ReviewList({ tourId }: ReviewListProps) {
   const { role, currentInstructorId } = useRole();
   const { toast } = useToast();
   const [reportedIds, setReportedIds] = useState<string[]>([]);
+  const [reportingId, setReportingId] = useState<string | null>(null);
 
   const tour = getTourById(tourId);
   const isPrivilegedViewer =
@@ -44,10 +45,24 @@ export function ReviewList({ tourId }: ReviewListProps) {
   const averageRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
   const allPhotos = reviews.flatMap((r) => r.photos);
 
-  const handleReport = (reviewId: string) => {
-    reportReview(reviewId);
-    setReportedIds((prev) => [...prev, reviewId]);
-    toast({ title: "후기가 신고 접수되었습니다" });
+  const handleReport = async (reviewId: string) => {
+    setReportingId(reviewId);
+    try {
+      await reportReview(reviewId);
+      setReportedIds((prev) => [...prev, reviewId]);
+      toast({ title: "후기가 신고 접수되었습니다" });
+    } catch (err) {
+      // reportReview가 실패 시 에러를 던지도록 바뀌었다 — 예전에는 결과를 기다리지도
+      // 않고(await 없이 fire-and-forget) 항상 성공 토스트만 띄워서, 실제로는 신고가
+      // 저장되지 않았는데도 사용자에게는 접수된 것처럼 보이는 문제가 있었다.
+      toast({
+        title: "신고 접수에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setReportingId(null);
+    }
   };
 
   return (
@@ -111,11 +126,15 @@ export function ReviewList({ tourId }: ReviewListProps) {
                 variant="ghost"
                 size="sm"
                 className="h-6 gap-1 px-1.5 text-[10px] text-muted-foreground"
-                disabled={reportedIds.includes(review.id) || review.reported}
+                disabled={reportedIds.includes(review.id) || review.reported || reportingId === review.id}
                 onClick={() => handleReport(review.id)}
               >
                 <Flag className="h-3 w-3" />
-                {review.reported || reportedIds.includes(review.id) ? "신고 접수됨" : "신고"}
+                {review.reported || reportedIds.includes(review.id)
+                  ? "신고 접수됨"
+                  : reportingId === review.id
+                    ? "접수 중..."
+                    : "신고"}
               </Button>
             </CardContent>
           </Card>
