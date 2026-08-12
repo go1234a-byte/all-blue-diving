@@ -176,7 +176,11 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
 
         <div className="space-y-1.5">
           <Label>자격증 사진</Label>
-          {cCardPhotoPath ? (
+          {/* 예전에는 사진을 선택(Storage 업로드)하자마자 아직 프로필에 저장(등록)되지 않았어도
+              "등록됨"으로 표시해서, 사용자가 하단 [저장] 버튼을 누르지 않고 나가면 실제로는
+              아무것도 등록되지 않았는데 등록된 줄 알고 지나치는 문제가 있었다. 실제 저장된
+              값(profile?.cCardPhotoPath)과 지금 막 선택한 값을 구분해서 보여준다. */}
+          {cCardPhotoPath && cCardPhotoPath === (profile?.cCardPhotoPath ?? "") ? (
             <div className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-xs">
               <span className="flex items-center gap-1.5 text-secondary-foreground">
                 <FileCheck2 className="h-3.5 w-3.5 shrink-0 text-success" />
@@ -201,6 +205,11 @@ export function DiverSafetyProfileCard({ profile, diverId }: DiverSafetyProfileC
               >
                 {viewingCCardPhoto ? "불러오는 중..." : "보기"}
               </Button>
+            </div>
+          ) : cCardPhotoPath ? (
+            <div className="flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-warning-foreground">
+              <FileCheck2 className="h-3.5 w-3.5 shrink-0" />
+              사진이 선택되었습니다. 하단 [저장] 버튼을 눌러야 등록이 완료됩니다.
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">아직 등록되지 않았습니다.</p>
