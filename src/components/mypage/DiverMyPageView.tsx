@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { CalendarCheck, ChevronRight, MessageCircleQuestion, User } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LicenseVaultCard } from "@/components/mypage/LicenseVaultCard";
+import { DiverProfileEditCard } from "@/components/mypage/DiverProfileEditCard";
 import { DiverSafetyProfileCard } from "@/components/mypage/DiverSafetyProfileCard";
 import { InquiryHistoryList } from "@/components/mypage/InquiryHistoryList";
 import { AccountActions } from "@/components/mypage/AccountActions";
@@ -20,6 +21,7 @@ export function DiverMyPageView() {
     <div className="space-y-5">
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
         <Avatar className="h-14 w-14 border-2 border-accent/40">
+          <AvatarImage src={profile?.avatarUrl || undefined} alt={profile?.name ?? "프로필"} />
           <AvatarFallback className="bg-gradient-ocean-light text-primary-foreground">
             <User className="h-7 w-7" />
           </AvatarFallback>
@@ -31,6 +33,8 @@ export function DiverMyPageView() {
           <p className="text-xs text-muted-foreground">{profile?.phone ?? "-"}</p>
         </div>
       </div>
+
+      <DiverProfileEditCard profile={profile} diverId={currentDiverId} />
 
       <LicenseVaultCard />
 
