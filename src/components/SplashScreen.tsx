@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Logo } from "@/components/brand/Logo";
+import { WhaleTailMark } from "@/components/brand/WhaleTailMark";
+import { SleepingSpermWhale } from "@/components/brand/SleepingSpermWhale";
 
 interface SplashScreenProps {
   onFinish?: () => void;
@@ -72,6 +73,17 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
           {/* 위쪽에서 은은하게 번지는 빛 */}
           <div className="absolute inset-x-0 top-0 h-2/3 bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary-glow)/0.35),_transparent_65%)]" />
 
+          {/* 배경: 향유고래가 머리를 위로 향한 채 수중에서 움직이지 않고 자는 실루엣.
+              로고/문구를 가리지 않도록 아주 옅은 실루엣으로만 은은하게 떠 있게 한다. */}
+          <motion.div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center text-primary-foreground/[0.14]"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: [0, 6, 0] }}
+            transition={{ opacity: { duration: 1.2 }, y: { duration: 7, repeat: Infinity, ease: "easeInOut" } }}
+          >
+            <SleepingSpermWhale className="h-[85vh] w-auto max-w-none" />
+          </motion.div>
+
           {/* 계속 흘러가는 파도 레이어들 (뒤에서 앞으로, 느리게 → 빠르게) */}
           <WaveLayer path={WAVE_PATH_C} className="text-primary-glow/10" duration={14} translateY={40} />
           <WaveLayer path={WAVE_PATH_B} className="text-accent/20" duration={9} delay={0.2} translateY={20} />
@@ -84,8 +96,12 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
                 showLogo ? { scale: 1, opacity: 1, y: 0 } : { scale: 0.7, opacity: 0, y: 12 }
               }
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center gap-2"
             >
-              <Logo size="lg" tone="inverted" />
+              <WhaleTailMark size={72} tone="inverted" />
+              <span className="text-4xl font-bold tracking-tight text-primary-foreground md:text-5xl">
+                ALL BLUE
+              </span>
             </motion.div>
 
             <motion.p
