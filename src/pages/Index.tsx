@@ -56,7 +56,7 @@ const Index = () => {
 
   return (
     <div className="min-h-full bg-gradient-surface pb-20">
-      <AppHeader showLanguage />
+      <AppHeader />
 
       {/* 히어로 — bg-gradient-ocean은 라이트 테마에서는 흰 배경에 가깝고, 다크 모드에서는
           오션 그라데이션으로 바뀐다. 텍스트도 text-foreground라 두 테마 모두에서 대비가 맞다. */}
