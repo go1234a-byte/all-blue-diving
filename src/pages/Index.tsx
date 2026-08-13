@@ -59,16 +59,24 @@ const Index = () => {
       <AppHeader />
 
       {/* 히어로 — bg-gradient-ocean은 라이트 테마에서는 흰 배경에 가깝고, 다크 모드에서는
-          오션 그라데이션으로 바뀐다. 텍스트도 text-foreground라 두 테마 모두에서 대비가 맞다. */}
+          오션 그라데이션으로 바뀐다. 텍스트도 text-foreground라 두 테마 모두에서 대비가 맞다.
+          고래 일러스트는 은은하게(낮은 불투명도 + 아래로 갈수록 자연스럽게 사라지는 마스크)
+          배경으로만 깔아서 텍스트 가독성과 기존 그라데이션 톤을 해치지 않게 한다. */}
       <div className="relative overflow-hidden bg-gradient-ocean px-4 pb-8 pt-8 text-center md:pb-10 md:pt-10">
+        <img
+          src="/hero-whale.jpg"
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top opacity-45 [mask-image:linear-gradient(to_bottom,black_70%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,black_70%,transparent)]"
+        />
         <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
         <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-lg">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground md:text-3xl">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground drop-shadow-[0_1px_6px_hsl(var(--background))] md:text-3xl">
             다이빙의 모든 순간,
             <br />
             ALL BLUE와 함께
           </h1>
-          <p className="text-sm text-foreground/70">
+          <p className="text-sm text-foreground/70 drop-shadow-[0_1px_4px_hsl(var(--background))]">
             특별한 바다, 특별한 경험을 찾고 예약할 수 있습니다.
           </p>
         </div>
