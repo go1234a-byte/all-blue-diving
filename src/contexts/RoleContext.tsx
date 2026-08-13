@@ -67,6 +67,15 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       if (!nextSession) {
         setProfile(null);
         setAuthLoading(false);
+      } else {
+        // 로그인 직후(비로그인 -> 로그인) 순간, 프로필을 조회하는 두 번째 useEffect가 아직
+        // 돌기 전까지는 authLoading이 예전 값(false)에 머물러 있어서 "로그인은 됐지만
+        // profile은 아직 null"인 렌더가 한 번 나온다. RootLayout의 전역 가드가 이 찰나의
+        // 상태(isLoggedIn && !authLoading && !profile)를 "프로필 없는 사용자"로 오인해
+        // 실제로는 프로필이 멀쩡히 있는 계정도 /complete-profile로 보내버렸다(한번 보내면
+        // 프로필이 나중에 로드돼도 되돌아오는 로직이 없어 그대로 갇힘). 세션이 생기는 바로
+        // 이 시점에 authLoading을 즉시 true로 올려서 그 틈을 없앤다.
+        setAuthLoading(true);
       }
     });
 
