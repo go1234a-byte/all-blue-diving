@@ -58,26 +58,23 @@ const Index = () => {
     <div className="min-h-full bg-gradient-surface pb-20">
       <AppHeader />
 
-      {/* 히어로 — bg-gradient-ocean은 라이트 테마에서는 흰 배경에 가깝고, 다크 모드에서는
-          오션 그라데이션으로 바뀐다. 텍스트도 text-foreground라 두 테마 모두에서 대비가 맞다. */}
-      <div className="relative overflow-hidden bg-gradient-ocean px-4 pb-8 pt-8 text-center md:pb-10 md:pt-10">
-        {/* 스플래시와 같은 향유고래 사진을 은은하게 — 라이트 테마의 bg-gradient-ocean은 흰색에
-            가까워서, 사진이 인지될 만큼은 보이되 텍스트 대비는 해치지 않는 불투명도로 맞춘다.
-            (12%는 흰 배경 위에서 사실상 안 보여서 28%로 올림.) 위아래 가장자리는 마스크로
-            자연스럽게 그라데이션에 녹아들게 한다. */}
+      {/* 히어로 — 오션 그라데이션/글로우 배경 없이 향유고래 사진이 그대로 배경이 된다.
+          위아래 가장자리만 마스크로 자연스럽게 풀어서 다음 섹션과 부드럽게 이어지게 한다. */}
+      <div className="relative overflow-hidden px-4 pb-8 pt-8 text-center md:pb-10 md:pt-10">
         <img
           src="/splash-whale.jpg"
           alt=""
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.28] [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)]"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover [mask-image:linear-gradient(to_bottom,transparent,black_20%,black_80%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_20%,black_80%,transparent)]"
         />
-        <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
         <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-lg">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground md:text-3xl">
+          {/* 배경이 이제 라이트/다크 상관없이 항상 같은 사진이라, 테마별로 바뀌던
+              text-foreground 대신 사진 위에서 항상 또렷한 흰 텍스트 + 그림자로 고정한다. */}
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-white drop-shadow-md md:text-3xl">
             다이빙의 모든 순간,
             <br />
             ALL BLUE와 함께
           </h1>
-          <p className="text-sm text-foreground/70">
+          <p className="text-sm text-white/85 drop-shadow-sm">
             특별한 바다, 특별한 경험을 찾고 예약할 수 있습니다.
           </p>
         </div>
