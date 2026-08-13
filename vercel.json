@@ -1,5 +1,11 @@
 {
   "rewrites": [
+    { "source": "/tour/:id", "destination": "/api/og/tour/:id" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/og/tour/[id].js": {
+      "includeFiles": "dist/index.html"
+    }
+  }
 }
