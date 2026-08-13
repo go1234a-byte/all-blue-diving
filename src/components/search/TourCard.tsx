@@ -188,9 +188,12 @@ export function TourCard({ tour }: TourCardProps) {
                 {tour.country} · {tour.site}
               </div>
               <h3 className="line-clamp-1 text-sm font-semibold text-foreground">{tour.title}</h3>
+              <span className="text-xs font-semibold text-foreground">
+                {formatDateRangeKR(tour.startDate, tour.endDate)}
+              </span>
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-foreground">
-                  {formatDateRangeKR(tour.startDate, tour.endDate)}
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  {formatNightsDaysKR(tour.startDate, tour.endDate)}
                 </span>
                 <span
                   className={cn(
@@ -201,9 +204,6 @@ export function TourCard({ tour }: TourCardProps) {
                   <Users className="h-3 w-3" />
                   {confirmedCount}/{tour.maxParticipants}명
                 </span>
-              </div>
-              <div className="text-[11px] font-medium text-muted-foreground">
-                {formatNightsDaysKR(tour.startDate, tour.endDate)}
               </div>
             </div>
 
