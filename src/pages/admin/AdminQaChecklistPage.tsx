@@ -188,6 +188,10 @@ const AdminQaChecklistPage = () => {
         .filter(([, items]) => items.length > 0)
         .map(([cat]) => cat);
       setOpenCategories(matches);
+    } else {
+      // 검색어를 지우면 검색으로 강제로 펼쳐졌던 카테고리들이 그대로 남아있던 문제 —
+      // 검색 시작 전 기본 상태(전부 접힘)로 되돌린다.
+      setOpenCategories([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);

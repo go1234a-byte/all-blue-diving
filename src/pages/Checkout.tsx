@@ -19,7 +19,7 @@ import { computeInvoice, formatKRW, validateAndComputeCouponDiscount } from "@/l
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
-import type { CompanionInfo, Gender } from "@/types";
+import type { CompanionInfo, Coupon, Gender } from "@/types";
 
 interface ParticipantForm {
   /** 본인(index 0)은 항상 빈 문자열 — 동반자만 이름을 입력받는다. */
@@ -80,7 +80,10 @@ const Checkout = () => {
   // 동의받는 체크박스. 기존에는 이런 동의 절차 없이 결제 시 입력한 연락처로 바로 연락이 갔다.
   const [contactConsent, setContactConsent] = useState(false);
   const [couponInput, setCouponInput] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; amount: number } | null>(null);
+  // 쿠폰 자체(정률/정액, 상한액 등)를 저장해두고 매 렌더마다 현재 소계 기준으로 할인액을
+  // 다시 계산한다. 예전엔 적용 시점의 할인 "금액"만 고정해서 저장해서, 정률 쿠폰을 적용한
+  // 뒤 인원수/옵션을 바꿔도 할인액이 그대로라 실제 %와 어긋났다.
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
 
   if (toursLoading && !tour) {
@@ -109,23 +112,27 @@ const Checkout = () => {
     .filter((o) => o.isActive && selectedOptionIds.includes(o.id))
     .map((o) => ({ name: o.name, price: o.price * participantCount }));
 
+  const subtotal = tour.basePrice * participantCount + selectedOptions.reduce((sum, o) => sum + o.price, 0);
+  // 정률 쿠폰의 할인액은 현재 소계 기준으로 매번 다시 계산한다 — 적용 시점에 고정하면
+  // 이후 인원수/옵션 변경으로 소계가 바뀌어도 할인액이 그대로 남아 실제 %와 어긋난다.
+  const couponResult = appliedCoupon ? validateAndComputeCouponDiscount(appliedCoupon, subtotal) : undefined;
+
   const invoice = computeInvoice(
     tour.basePrice * participantCount,
     selectedOptions,
-    appliedCoupon ?? undefined,
+    couponResult?.valid ? { code: appliedCoupon!.code, amount: couponResult.discountAmount } : undefined,
   );
 
   const handleApplyCoupon = () => {
     if (!couponInput.trim()) return;
     const coupon = getCouponByCode(couponInput);
-    const subtotal = tour.basePrice * participantCount + selectedOptions.reduce((sum, o) => sum + o.price, 0);
     const result = validateAndComputeCouponDiscount(coupon, subtotal);
     if (!result.valid || !coupon) {
       setAppliedCoupon(null);
       setCouponMessage(result.message ?? "사용할 수 없는 쿠폰입니다.");
       return;
     }
-    setAppliedCoupon({ code: coupon.code, amount: result.discountAmount });
+    setAppliedCoupon(coupon);
     setCouponMessage(`${formatKRW(result.discountAmount)} 할인이 적용되었습니다.`);
   };
 
@@ -392,7 +399,12 @@ const Checkout = () => {
               <div className="flex gap-2">
                 <Input
                   value={couponInput}
-                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    setCouponInput(e.target.value.toUpperCase());
+                    // 코드를 다시 입력/삭제하는데 이전 실패 메시지가 그대로 남아있으면
+                    // 방금 바꾼 내용이 평가된 것처럼 오해할 수 있어 같이 지워준다.
+                    setCouponMessage(null);
+                  }}
                   placeholder="쿠폰 코드 입력"
                   className="flex-1"
                 />
