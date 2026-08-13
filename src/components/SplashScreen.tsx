@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogoMark } from "@/components/brand/Logo";
-import { SleepingSpermWhale } from "@/components/brand/SleepingSpermWhale";
 
 interface SplashScreenProps {
   onFinish?: () => void;
@@ -73,28 +72,23 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
           {/* 위쪽에서 은은하게 번지는 빛 */}
           <div className="absolute inset-x-0 top-0 h-2/3 bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary-glow)/0.35),_transparent_65%)]" />
 
-          {/* 배경: 향유고래가 머리를 위로 향한 채 수중에서 잠수한 채로 자는 실루엣.
-              실제로 잠자는 향유고래도 완전히 정지해 있지는 않고 조류에 따라 천천히
-              위아래로 흔들리며 살짝 돈다 — 그 느낌을 위아래 부유 + 좌우 스웨이 +
-              아주 느린 호흡성 스케일 변화로 표현한다. 로고/문구를 가리지 않도록
-              옅은 실루엣 톤은 유지한다. */}
+          {/* 배경: 향유고래가 머리를 위로 향한 채 수중에서 잠수한 채로 자는 실사 이미지.
+              완전히 정지된 스틸컷이 아니라 살아있는 느낌을 주도록 아주 느린 줌인(켄 번스
+              효과)만 은은하게 걸어둔다. 로고/문구는 위에 겹쳐지므로 상단에 그라데이션
+              오버레이를 한 겹 더 얹어 대비를 확보한다. */}
           <motion.div
-            className="pointer-events-none absolute inset-0 flex items-center justify-center text-primary-foreground/[0.16]"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{
-              opacity: 1,
-              y: [0, 22, 0, -14, 0],
-              rotate: [0, 2.5, 0, -2.5, 0],
-              scale: [1, 1.035, 1, 1.02, 1],
-            }}
-            transition={{
-              opacity: { duration: 1.2 },
-              y: { duration: 10, repeat: Infinity, ease: "easeInOut" },
-              rotate: { duration: 10, repeat: Infinity, ease: "easeInOut" },
-              scale: { duration: 10, repeat: Infinity, ease: "easeInOut" },
-            }}
+            className="pointer-events-none absolute inset-0"
+            initial={{ opacity: 0, scale: 1.08 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ opacity: { duration: 1 }, scale: { duration: TOTAL_DURATION_MS / 1000, ease: "easeOut" } }}
           >
-            <SleepingSpermWhale className="h-[85vh] w-auto max-w-none" />
+            <img
+              src="/splash-whale.jpg"
+              alt=""
+              className="h-full w-full object-cover"
+              loading="eager"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-background/50" />
           </motion.div>
 
           {/* 계속 흘러가는 파도 레이어들 (뒤에서 앞으로, 느리게 → 빠르게) */}
