@@ -9,6 +9,7 @@ import { FileDropzone } from "@/components/auth/FileDropzone";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useRole } from "@/contexts/RoleContext";
 import { uploadInstructorDocument } from "@/lib/uploadImage";
 import type { Gender } from "@/types";
 
@@ -21,6 +22,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
   const { toast } = useToast();
   const { registerDiverProfile } = useAppData();
+  const { refreshProfile } = useRole();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -256,6 +258,11 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
         insuranceInfo: insuranceInfo || undefined,
       });
 
+      // RoleContext의 profile은 로그인(세션 생성) 시점에 한 번만 자체 조회하고 이후 다시
+      // 조회하지 않는다 — 방금 이 폼이 직접 insert한 row는 그 조회와 무관하므로, 명시적으로
+      // 갱신해주지 않으면 RoleContext.profile이 계속 null인 채로 남아 RootLayout이 가입을
+      // 방금 마친 계정도 다시 /complete-profile로 돌려보내는 문제가 있었다.
+      await refreshProfile();
       toast({ title: "일반 다이버 회원가입이 완료되었습니다!", description: "환영합니다! 홈 화면으로 이동합니다." });
       onSuccess();
     } finally {

@@ -28,6 +28,15 @@ interface RoleContextValue {
   user: User | null;
   /** 현재 로그인한 사용자의 profiles row. */
   profile: ProfileRow | null;
+  /**
+   * profiles row를 다시 조회해 profile 상태를 갱신한다. 회원가입 폼(DiverSignupForm/
+   * InstructorSignupForm)처럼 이 컨텍스트를 거치지 않고 직접 profiles에 insert하는 곳에서,
+   * 그 직후 SPA 네비게이션(전체 새로고침 없음)으로 넘어가기 전에 반드시 호출해야 한다 —
+   * 안 그러면 이 컨텍스트의 profile은 계속 null인 채로 남아(로그인 시점의 최초 조회 한 번뿐,
+   * 재조회 트리거가 없음) RootLayout이 방금 가입 완료한 계정도 다시 /complete-profile로
+   * 돌려보내는 문제가 있었다.
+   */
+  refreshProfile: () => Promise<void>;
   login: () => void;
   /** 실제 로그아웃: Supabase 세션 파기. */
   logout: () => Promise<void>;
@@ -270,6 +279,21 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setDevRoleOverride(null);
   };
 
+  const refreshProfile = async () => {
+    // 여기서 state의 session을 그대로 참조하면, 이 함수를 호출하는 쪽(예: 로그인 전에
+    // 렌더된 회원가입 폼의 handleSubmit)이 로그인 이전 렌더 시점에 캡처해둔 refreshProfile
+    // 클로저를 쓰는 경우 session이 그때 값(null)에 고정돼 있어 조용히 아무 일도 안 하는
+    // 문제가 있었다. Supabase 클라이언트 자체의 현재 세션을 다시 조회해서 이 함수가
+    // "언제 만들어진 클로저든" 항상 최신 로그인 사용자 기준으로 동작하게 한다.
+    const {
+      data: { session: currentSession },
+    } = await supabase.auth.getSession();
+    const userId = currentSession?.user?.id;
+    if (!userId) return;
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+    setProfile(data as ProfileRow | null);
+  };
+
   const value = useMemo<RoleContextValue>(
     () => ({
       role: resolvedRole,
@@ -278,6 +302,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       authLoading,
       user: session?.user ?? null,
       profile,
+      refreshProfile,
       login,
       logout,
       currentInstructorId:

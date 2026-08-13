@@ -19,9 +19,23 @@ export function RootLayout() {
   const needsProfileCompletion =
     isLoggedIn && !authLoading && !profile && location.pathname !== "/complete-profile";
 
+  // 반대 방향 가드: 로그인 직후/회원가입 직후에는 세션이 생기는 시점과 profile row가 실제로
+  // 채워지는 시점 사이에 항상 약간의 시차가 있다(원인이 하나가 아니었다 — 로그인 순간의
+  // authLoading 갱신 틈, 토큰 자동 갱신, 회원가입 폼 자체의 INSERT와 이 profile 조회 SELECT
+  // 간의 경쟁 등, 여러 건을 각각 고쳤다). 그 찰나에 위 가드가 먼저 발동해 실제로는 profile이
+  // 멀쩡한 계정도 /complete-profile로 보내질 수 있다. 원인을 하나씩 막기보다, "이미 profile이
+  // 있는 채로 이 화면에 남아있다"는 결과 자체를 감지해 되돌리는 게 더 근본적이다 — 앞으로 또
+  // 다른 타이밍 문제가 생겨도 이 한 줄이 계속 막아준다.
+  const shouldLeaveCompleteProfile =
+    isLoggedIn && !authLoading && !!profile && location.pathname === "/complete-profile";
+
   return (
     <div className="min-h-full">
-      {needsProfileCompletion ? <Navigate to="/complete-profile" replace /> : <Outlet />}
+      {needsProfileCompletion || shouldLeaveCompleteProfile ? (
+        <Navigate to={needsProfileCompletion ? "/complete-profile" : "/"} replace />
+      ) : (
+        <Outlet />
+      )}
       {import.meta.env.DEV && <MasterRoleToolbar />}
     </div>
   );

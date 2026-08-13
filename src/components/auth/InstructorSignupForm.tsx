@@ -10,6 +10,7 @@ import { SignaturePad } from "@/components/auth/SignaturePad";
 import { OnboardingProgress } from "@/components/auth/OnboardingProgress";
 import { PledgeAgreement } from "@/components/auth/PledgeAgreement";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadInstructorDocument, uploadInstructorDocuments } from "@/lib/uploadImage";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +43,7 @@ const ETHICS_CODE = [
 export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
   const { addInstructorSignup } = useAppData();
   const { toast } = useToast();
+  const { refreshProfile } = useRole();
 
   const [step, setStep] = useState(1);
 
@@ -366,6 +368,10 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
         });
         return;
       }
+      // DiverSignupForm과 동일한 이유 — RoleContext.profile은 로그인 시점 한 번만 자체
+      // 조회하므로, 이 폼이 방금 직접 insert한 row를 명시적으로 반영해줘야 RootLayout이
+      // 가입을 방금 마친 계정을 다시 /complete-profile로 돌려보내지 않는다.
+      await refreshProfile();
       toast({ title: "인증 강사 회원가입이 접수되었습니다!", description: "관리자 검토 후 인증배지가 부여됩니다. 홈 화면으로 이동합니다." });
       onSuccess();
     } finally {
