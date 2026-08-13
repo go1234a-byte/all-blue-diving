@@ -72,25 +72,6 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
           {/* 위쪽에서 은은하게 번지는 빛 */}
           <div className="absolute inset-x-0 top-0 h-2/3 bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary-glow)/0.35),_transparent_65%)]" />
 
-          {/* 배경: 향유고래가 머리를 위로 향한 채 수중에서 잠수한 채로 자는 실사 이미지.
-              완전히 정지된 스틸컷이 아니라 살아있는 느낌을 주도록 아주 느린 줌인(켄 번스
-              효과)만 은은하게 걸어둔다. 로고/문구는 위에 겹쳐지므로 상단에 그라데이션
-              오버레이를 한 겹 더 얹어 대비를 확보한다. */}
-          <motion.div
-            className="pointer-events-none absolute inset-0"
-            initial={{ opacity: 0, scale: 1.08 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ opacity: { duration: 1 }, scale: { duration: TOTAL_DURATION_MS / 1000, ease: "easeOut" } }}
-          >
-            <img
-              src="/splash-whale.jpg"
-              alt=""
-              className="h-full w-full object-cover"
-              loading="eager"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-background/50" />
-          </motion.div>
-
           {/* 계속 흘러가는 파도 레이어들 (뒤에서 앞으로, 느리게 → 빠르게) */}
           <WaveLayer path={WAVE_PATH_C} className="text-primary-glow/10" duration={14} translateY={40} />
           <WaveLayer path={WAVE_PATH_B} className="text-accent/20" duration={9} delay={0.2} translateY={20} />
