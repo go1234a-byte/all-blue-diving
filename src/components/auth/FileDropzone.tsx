@@ -12,6 +12,12 @@ interface FileDropzoneProps {
   /** 파일 1개당 허용 최대 용량(MB). 기본 10MB. */
   maxSizeMB?: number;
   onFilesChange: (files: File[]) => void;
+  /**
+   * 이 드롭존을 감싸는 화면이 조건부 렌더링(예: 여러 단계짜리 가입 폼에서 이전 단계로
+   * 돌아갔다 다시 오는 경우)으로 마운트/언마운트될 때, 이미 선택해둔 파일이 있으면 그
+   * 값으로 되살린다. 지정하지 않으면 항상 빈 목록으로 시작한다(기존 동작과 동일).
+   */
+  value?: File[];
 }
 
 /** accept 문자열(".pdf,.jpg,.png" 또는 "image/*" 등)을 기준으로 파일 하나가 허용되는지 검사한다.
@@ -37,10 +43,11 @@ export function FileDropzone({
   accept,
   maxSizeMB = 10,
   onFilesChange,
+  value,
 }: FileDropzoneProps) {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<File[]>(() => value ?? []);
   const [dragActive, setDragActive] = useState(false);
   // 이미지 파일은 파일명 텍스트만으로는 어떤 사진이 올라갔는지 알기 어려우므로,
   // 실제 이미지 미리보기(썸네일)를 함께 보여준다. 메모리 누수 방지를 위해 목록이 바뀔 때마다 정리한다.

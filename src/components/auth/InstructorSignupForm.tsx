@@ -448,7 +448,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           </div>
           <div className="space-y-1.5">
             <Label>신분증 사본 업로드 (필수)</Label>
-            <FileDropzone label="신분증 사본" accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif" onFilesChange={setIdFiles} />
+            <FileDropzone label="신분증 사본" accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif" onFilesChange={setIdFiles} value={idFiles} />
           </div>
           <div className="space-y-3 rounded-xl border border-border p-3">
             <Label className="text-sm font-semibold">정산 계좌 정보 (필수)</Label>
@@ -488,6 +488,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
                 label="통장 사본"
                 accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif"
                 onFilesChange={setBankbookFiles}
+                value={bankbookFiles}
               />
             </div>
           </div>
@@ -511,6 +512,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
             maxFiles={3}
             accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif"
             onFilesChange={setLicenseFiles}
+            value={licenseFiles}
           />
         </div>
       )}
@@ -524,6 +526,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
             maxFiles={2}
             accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif"
             onFilesChange={setInsuranceFiles}
+            value={insuranceFiles}
           />
         </div>
       )}
@@ -569,11 +572,16 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           </Button>
         )}
         {step < TOTAL_STEPS - 1 ? (
-          <Button type="button" className="flex-1" onClick={handleNext}>
+          // key를 달리 줘서 "다음"/"가입 신청하기" 버튼이 같은 DOM 노드를 재사용하지 않게
+          // 한다 — 재사용하면 마지막 단계(4→5) 전환 클릭 처리 중 React가 이 노드의
+          // type을 button에서 submit으로 바꿔치기해서, "다음"을 누른 그 클릭이 그대로
+          // form submit(handleSubmit)까지 같이 터뜨렸다(신청 전 마지막 단계에 미리 입력해둔
+          // 값이 있으면 실제 가입 요청까지 실행될 수 있는 심각한 버그였다).
+          <Button key="next" type="button" className="flex-1" onClick={handleNext}>
             다음
           </Button>
         ) : (
-          <Button type="submit" className="flex-1" disabled={submitting}>
+          <Button key="submit" type="submit" className="flex-1" disabled={submitting}>
             {submitting ? "제출 중..." : "인증 강사로 가입 신청하기 (관리자 승인 대기)"}
           </Button>
         )}
