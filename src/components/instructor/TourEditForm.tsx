@@ -314,8 +314,9 @@ export function TourEditForm({ tour }: TourEditFormProps) {
   const toggleActivity = (type: ActivityType) => {
     setActivityTypes((prev) => {
       const next = prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type];
-      const canBeScuba = next.includes("scuba");
-      const canBeFreediving = next.includes("freediving");
+      // 리브어보드는 스쿠버/프리다이빙 둘 다로 진행될 수 있어 두 등급 체계를 전부 보여준다.
+      const canBeScuba = next.includes("scuba") || next.includes("liveaboard");
+      const canBeFreediving = next.includes("freediving") || next.includes("liveaboard");
       setCertificationLevel((current) => {
         if ((canBeScuba && current in SCUBA_CERT_LABELS) || (canBeFreediving && current in FREEDIVING_CERT_LABELS)) {
           return current;
@@ -343,8 +344,9 @@ export function TourEditForm({ tour }: TourEditFormProps) {
     setTags((prev) => prev.filter((t) => t !== tag));
   };
 
-  const showScubaLevels = activityTypes.includes("scuba");
-  const showFreedivingLevels = activityTypes.includes("freediving");
+  // 리브어보드는 스쿠버/프리다이빙 둘 다로 진행될 수 있어 두 등급 체계를 전부 보여준다.
+  const showScubaLevels = activityTypes.includes("scuba") || activityTypes.includes("liveaboard");
+  const showFreedivingLevels = activityTypes.includes("freediving") || activityTypes.includes("liveaboard");
 
   const sites = country ? COUNTRIES_SITES[country] ?? [] : [];
 
@@ -522,7 +524,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label>액티비티 종류</Label>
-          <div className="flex h-10 flex-wrap items-center gap-3">
+          <div className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-1.5">
             <label className="flex items-center gap-1.5 text-sm">
               <Checkbox checked={activityTypes.includes("scuba")} onCheckedChange={() => toggleActivity("scuba")} />
               스쿠버다이빙
