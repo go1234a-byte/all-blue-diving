@@ -61,13 +61,15 @@ const Index = () => {
       {/* 히어로 — bg-gradient-ocean은 라이트 테마에서는 흰 배경에 가깝고, 다크 모드에서는
           오션 그라데이션으로 바뀐다. 텍스트도 text-foreground라 두 테마 모두에서 대비가 맞다.
           고래 일러스트는 은은하게(낮은 불투명도 + 아래로 갈수록 자연스럽게 사라지는 마스크)
-          배경으로만 깔아서 텍스트 가독성과 기존 그라데이션 톤을 해치지 않게 한다. */}
+          배경으로만 깔아서 텍스트 가독성과 기존 그라데이션 톤을 해치지 않게 한다. 공지 배너까지
+          이 영역 안에 포함시켜서 헤더 아래부터 검색 카드 시작 전까지 하나의 이미지 배경
+          영역으로 보이게 한다. */}
       <div className="relative overflow-hidden bg-gradient-ocean px-4 pb-8 pt-8 text-center md:pb-10 md:pt-10">
         <img
           src="/hero-whale.jpg"
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top opacity-45 [mask-image:linear-gradient(to_bottom,black_70%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,black_70%,transparent)]"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top opacity-45 [mask-image:linear-gradient(to_bottom,black_80%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,black_80%,transparent)]"
         />
         <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
         <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-lg">
@@ -79,20 +81,19 @@ const Index = () => {
           <p className="text-sm text-foreground/70 drop-shadow-[0_1px_4px_hsl(var(--background))]">
             특별한 바다, 특별한 경험을 찾고 예약할 수 있습니다.
           </p>
+          {pinnedNotice && (
+            <Link
+              to="/support"
+              className="mt-3 flex w-full items-start gap-2 rounded-xl border border-primary/30 bg-secondary/40 p-3 text-left text-xs text-foreground backdrop-blur-sm transition-colors hover:bg-secondary"
+            >
+              <Megaphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="line-clamp-1 break-keep">{pinnedNotice.title}</span>
+            </Link>
+          )}
         </div>
       </div>
 
       <main className="mx-auto w-full max-w-md space-y-6 px-4 pt-6 pb-6 md:max-w-lg">
-        {pinnedNotice && (
-          <Link
-            to="/support"
-            className="flex items-start gap-2 rounded-xl border border-primary/30 bg-secondary/40 p-3 text-xs text-foreground transition-colors hover:bg-secondary"
-          >
-            <Megaphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-            <span className="line-clamp-1 break-keep">{pinnedNotice.title}</span>
-          </Link>
-        )}
-
         <SearchForm months={months} onMonthsChange={setMonths} />
 
         <section className="space-y-3">
