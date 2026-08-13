@@ -61,12 +61,14 @@ const Index = () => {
       {/* 히어로 — bg-gradient-ocean은 라이트 테마에서는 흰 배경에 가깝고, 다크 모드에서는
           오션 그라데이션으로 바뀐다. 텍스트도 text-foreground라 두 테마 모두에서 대비가 맞다. */}
       <div className="relative overflow-hidden bg-gradient-ocean px-4 pb-8 pt-8 text-center md:pb-10 md:pt-10">
-        {/* 스플래시와 같은 향유고래 사진을 아주 은은하게 — 텍스트 대비를 해치지 않도록 낮은
-            불투명도 + 위아래 가장자리는 마스크로 자연스럽게 그라데이션에 녹아들게 한다. */}
+        {/* 스플래시와 같은 향유고래 사진을 은은하게 — 라이트 테마의 bg-gradient-ocean은 흰색에
+            가까워서, 사진이 인지될 만큼은 보이되 텍스트 대비는 해치지 않는 불투명도로 맞춘다.
+            (12%는 흰 배경 위에서 사실상 안 보여서 28%로 올림.) 위아래 가장자리는 마스크로
+            자연스럽게 그라데이션에 녹아들게 한다. */}
         <img
           src="/splash-whale.jpg"
           alt=""
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.12] [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)]"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.28] [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)]"
         />
         <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
         <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-lg">
