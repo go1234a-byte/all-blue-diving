@@ -73,12 +73,12 @@ const Index = () => {
         />
         <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
         <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-lg">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground drop-shadow-[0_1px_6px_hsl(var(--background))] md:text-3xl">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-primary drop-shadow-[0_1px_6px_hsl(var(--background))] md:text-3xl">
             다이빙의 모든 순간,
             <br />
             ALL BLUE와 함께
           </h1>
-          <p className="text-sm text-foreground/70 drop-shadow-[0_1px_4px_hsl(var(--background))]">
+          <p className="text-sm font-medium text-primary/80 drop-shadow-[0_1px_4px_hsl(var(--background))]">
             특별한 바다, 특별한 경험을 찾고 예약할 수 있습니다.
           </p>
           {pinnedNotice && (
