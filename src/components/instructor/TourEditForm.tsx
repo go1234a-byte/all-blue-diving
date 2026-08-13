@@ -48,14 +48,24 @@ interface TourEditFormProps {
   tour: Tour;
 }
 
+// title은 다이빙 포인트명만 담는다("N일차" 접두사는 제출 시 합성). 빈 문자열이어야
+// 필수 입력 검증(itineraryDays.some(d => !d.title.trim()))이 실제로 의미를 가진다.
 const EMPTY_ITINERARY_DAY = (dayNumber: number): TourItineraryDay => ({
   dayNumber,
-  title: `${dayNumber}일차`,
+  title: "",
   briefing: "",
   diving: "",
   meals: "",
   freeTime: "",
 });
+
+// 기존에 저장된 title에 이미 "N일차" 접두사가 붙어 있으면(과거 데이터) 편집 시 입력창에서
+// 벗겨내고, 제출할 때 다시 합성한다. 접두사가 없는 값은 그대로 둔다(하위호환).
+function stripDayPrefix(day: TourItineraryDay): TourItineraryDay {
+  const prefix = `${day.dayNumber}일차`;
+  if (!day.title.startsWith(prefix)) return day;
+  return { ...day, title: day.title.slice(prefix.length).replace(/^[\s-]+/, "") };
+}
 
 function DatePickerField({
   label,
@@ -155,9 +165,6 @@ export function TourEditForm({ tour }: TourEditFormProps) {
   const [basePrice, setBasePrice] = useState(String(tour.basePrice));
   const [maxParticipants, setMaxParticipants] = useState(String(tour.maxParticipants));
   const [minParticipants, setMinParticipants] = useState(String(tour.minParticipants));
-  // 이 투어를 강사 1:1 전담 케어로 진행하는지 여부. 체크한 경우에만 투어 상세 하이라이트에
-  // "OO 강사 1:1 케어"가 노출된다.
-  const [oneOnOneCare, setOneOnOneCare] = useState(tour.oneOnOneCare);
   const [description, setDescription] = useState(tour.description);
   const [startDate, setStartDate] = useState<Date | undefined>(new Date(tour.startDate));
   const [endDate, setEndDate] = useState<Date | undefined>(new Date(tour.endDate));
@@ -171,7 +178,9 @@ export function TourEditForm({ tour }: TourEditFormProps) {
   const [returnDepartureTime, setReturnDepartureTime] = useState(tour.flightInfo?.inbound?.departureTime ?? "");
   const [returnArrivalTime, setReturnArrivalTime] = useState(tour.flightInfo?.inbound?.arrivalTime ?? "");
   const [itineraryDays, setItineraryDays] = useState<TourItineraryDay[]>(
-    tour.itineraryDays && tour.itineraryDays.length > 0 ? tour.itineraryDays : [EMPTY_ITINERARY_DAY(1)],
+    tour.itineraryDays && tour.itineraryDays.length > 0
+      ? tour.itineraryDays.map(stripDayPrefix)
+      : [EMPTY_ITINERARY_DAY(1)],
   );
   const [mainImage, setMainImage] = useState<File[]>([]);
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
@@ -303,7 +312,20 @@ export function TourEditForm({ tour }: TourEditFormProps) {
   };
 
   const toggleActivity = (type: ActivityType) => {
-    setActivityTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
+    setActivityTypes((prev) => {
+      const next = prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type];
+      const canBeScuba = next.includes("scuba");
+      const canBeFreediving = next.includes("freediving");
+      setCertificationLevel((current) => {
+        if ((canBeScuba && current in SCUBA_CERT_LABELS) || (canBeFreediving && current in FREEDIVING_CERT_LABELS)) {
+          return current;
+        }
+        if (canBeScuba) return Object.keys(SCUBA_CERT_LABELS)[0] as CertificationLevel;
+        if (canBeFreediving) return Object.keys(FREEDIVING_CERT_LABELS)[0] as CertificationLevel;
+        return current;
+      });
+      return next;
+    });
   };
 
   const toggleTag = (tag: string) => {
@@ -321,8 +343,8 @@ export function TourEditForm({ tour }: TourEditFormProps) {
     setTags((prev) => prev.filter((t) => t !== tag));
   };
 
-  const showScubaLevels = activityTypes.length === 0 || activityTypes.includes("scuba");
-  const showFreedivingLevels = activityTypes.length === 0 || activityTypes.includes("freediving");
+  const showScubaLevels = activityTypes.includes("scuba");
+  const showFreedivingLevels = activityTypes.includes("freediving");
 
   const sites = country ? COUNTRIES_SITES[country] ?? [] : [];
 
@@ -341,7 +363,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
     if (!meetingPoint.trim()) missingFields.push("집합 장소");
     if (!meetingTime.trim()) missingFields.push("집합 시간");
     if (itineraryDays.length === 0 || itineraryDays.some((d) => !d.title.trim())) {
-      missingFields.push("투어 일정");
+      missingFields.push("일차별 다이빙 포인트");
     }
     if (missingFields.length > 0) {
       toast({
@@ -427,10 +449,10 @@ export function TourEditForm({ tour }: TourEditFormProps) {
         exclusions,
         prepNotes,
         customOptions: customOptions.filter((o) => o.name.trim() && o.price > 0),
-        oneOnOneCare,
+        oneOnOneCare: tour.oneOnOneCare,
         meetingPoint: meetingPoint.trim(),
         meetingTime: meetingTime.trim(),
-        itineraryDays,
+        itineraryDays: itineraryDays.map((d) => ({ ...d, title: `${d.dayNumber}일차 ${d.title.trim()}` })),
         flightInfo: {
           outbound: {
             airport: outboundAirport.trim() || undefined,
@@ -628,14 +650,6 @@ export function TourEditForm({ tour }: TourEditFormProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 rounded-xl border border-border p-3">
-        <Checkbox id="one-on-one-care" checked={oneOnOneCare} onCheckedChange={(v) => setOneOnOneCare(v === true)} />
-        <div className="space-y-0.5">
-          <Label htmlFor="one-on-one-care" className="cursor-pointer">1:1 케어 투어</Label>
-          <p className="text-xs text-muted-foreground">체크하면 투어 상세 화면에 "강사 1:1 케어" 안내가 노출됩니다.</p>
-        </div>
-      </div>
-
       <div className="space-y-3 rounded-xl border border-border p-3">
         <Label>항공편 정보 (선택)</Label>
         <p className="text-xs text-muted-foreground">참가자들이 항공권을 맞춰 예매할 수 있도록 가는 편/오는 편 일정을 안내해주세요.</p>
@@ -683,7 +697,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
 
       <div className="space-y-3 rounded-xl border border-border p-3">
         <div className="flex items-center justify-between">
-          <Label>투어 일정 (필수, 최소 1일차)</Label>
+          <Label>투어 일정 (필수, 일차별 다이빙 포인트 입력)</Label>
           <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={addItineraryDay}>
             <Plus className="h-3.5 w-3.5" />
             일차 추가
@@ -693,11 +707,12 @@ export function TourEditForm({ tour }: TourEditFormProps) {
           {itineraryDays.map((day, index) => (
             <div key={index} className="space-y-2 rounded-lg border border-border p-3">
               <div className="flex items-center justify-between gap-2">
+                <span className="shrink-0 text-sm font-semibold text-muted-foreground">{day.dayNumber}일차</span>
                 <Input
                   value={day.title}
                   onChange={(e) => updateItineraryDay(index, { title: e.target.value })}
                   className="h-8 flex-1 font-semibold"
-                  placeholder="예: 1일차 - 입도 및 오리엔테이션"
+                  placeholder="예: 발리카삭 (다이빙 포인트, 필수)"
                 />
                 {itineraryDays.length > 1 && (
                   <Button

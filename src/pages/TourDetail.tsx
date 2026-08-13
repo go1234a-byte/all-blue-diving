@@ -92,11 +92,6 @@ const TourDetail = () => {
   // 항상 참인 사실만 노출한다 (시안 문구를 그대로 베끼지 않고 실제 값으로 채움).
   const highlightItems: { icon: typeof Compass; label: string; sub: string }[] = [
     ...(tour.tags ?? []).slice(0, 2).map((tag) => ({ icon: Compass, label: tag, sub: "투어 특징" })),
-    // 강사가 투어 등록/수정 시 "1:1 케어 투어"를 직접 체크한 경우에만 노출한다.
-    // (예전에는 선택란 없이 모든 투어에 항상 고정 문구로 노출되던 버그였음.)
-    ...(tour.oneOnOneCare
-      ? [{ icon: Users, label: `${instructor.name} 강사 1:1 케어`, sub: "전담 강사 진행" }]
-      : []),
     { icon: ShieldCheck, label: `최대 ${tour.maxParticipants}명 소규모`, sub: "안전 최우선 운영" },
   ].slice(0, 4);
   const selectedOptionsTotal = tour.customOptions

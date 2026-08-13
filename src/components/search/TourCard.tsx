@@ -20,7 +20,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
-import { formatDateRangeKR } from "@/lib/dates";
+import { formatDateRangeKR, formatNightsDaysKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { isTourBookable } from "@/lib/tourBooking";
@@ -201,6 +201,9 @@ export function TourCard({ tour }: TourCardProps) {
                   <Users className="h-3 w-3" />
                   {confirmedCount}/{tour.maxParticipants}명
                 </span>
+              </div>
+              <div className="text-[11px] font-medium text-muted-foreground">
+                {formatNightsDaysKR(tour.startDate, tour.endDate)}
               </div>
             </div>
 

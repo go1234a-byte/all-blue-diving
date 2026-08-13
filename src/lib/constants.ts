@@ -18,12 +18,14 @@ export const SCUBA_CERT_LABELS: Record<ScubaCertLevel, string> = {
   inst: "Inst",
 };
 
+// PADI/AIDA/SSI/CMAS/RAID 등 단체별로 명칭이 제각각이라, 단체 무관 공통 레벨
+// 명칭(입문/초급/중급/상급/최고레벨)으로 통일해 투어 등록 시 헷갈리지 않게 한다.
 export const FREEDIVING_CERT_LABELS: Record<FreedivingCertLevel, string> = {
-  basic: "Basic",
-  level1: "Level 1",
-  level2: "Level 2",
-  level3: "Level 3",
-  inst: "Inst",
+  basic: "입문",
+  level1: "초급",
+  level2: "중급",
+  level3: "상급",
+  inst: "최고 레벨",
 };
 
 export const CERTIFICATION_LABELS: Record<CertificationLevel, string> = {

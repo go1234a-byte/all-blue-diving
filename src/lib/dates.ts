@@ -10,6 +10,17 @@ export function formatDateRangeKR(startIso: string, endIso: string): string {
   return `${formatDateKR(startIso)} - ${formatDateKR(endIso)}`;
 }
 
+/** 투어 기간을 "N박 M일" 형태로 표기한다 (당일치기는 "당일"). */
+export function formatNightsDaysKR(startIso: string, endIso: string): string {
+  const start = new Date(startIso);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(endIso);
+  end.setHours(0, 0, 0, 0);
+  const nights = Math.round((end.getTime() - start.getTime()) / 86400000);
+  if (nights <= 0) return "당일";
+  return `${nights}박 ${nights + 1}일`;
+}
+
 /** 관리자 화면 등에서 작성자를 특정해야 할 때 쓰는 날짜+시간 표기 (YYYY.MM.DD HH:mm). */
 export function formatDateTimeKR(iso: string): string {
   const d = new Date(iso);
