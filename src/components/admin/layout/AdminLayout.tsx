@@ -59,8 +59,9 @@ function AdminTopBar() {
   const handlePeriodChange = (value: AdminPeriod) => {
     setPeriod(value);
     // "직접 선택"을 고르면 바로 달력을 띄운다 — 예전에는 이 옵션을 선택해도
-    // 범위를 입력할 방법 자체가 없어 아무 반응도 없는 것처럼 보였다.
-    if (value === "custom") setPickerOpen(true);
+    // 범위를 입력할 방법 자체가 없어 아무 반응도 없는 것처럼 보였다. 다른
+    // 프리셋으로 바꾸면(달력이 열려 있던 상태였더라도) 달력은 닫아준다.
+    setPickerOpen(value === "custom");
   };
 
   const customLabel =
