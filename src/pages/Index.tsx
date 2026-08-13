@@ -3,6 +3,7 @@ import { Megaphone, ShieldCheck, MessageCircle, CalendarCheck, Lock, Users, Star
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { LogoWatermark } from "@/components/brand/Logo";
 import { SearchForm } from "@/components/search/SearchForm";
 import { TourCard } from "@/components/search/TourCard";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -60,16 +61,13 @@ const Index = () => {
 
       {/* 히어로 — bg-gradient-ocean은 라이트 테마에서는 흰 배경에 가깝고, 다크 모드에서는
           오션 그라데이션으로 바뀐다. 텍스트도 text-foreground라 두 테마 모두에서 대비가 맞다.
-          고래 일러스트는 은은하게(낮은 불투명도 + 아래로 갈수록 자연스럽게 사라지는 마스크)
-          배경으로만 깔아서 텍스트 가독성과 기존 그라데이션 톤을 해치지 않게 한다. 공지 배너와
-          검색 폼(여행지 검색/출발 월/투어 검색하기)까지 전부 이 영역 안에 포함시켜서, 헤더
-          아래부터 투어 검색하기 버튼까지 하나의 이미지 배경 영역으로 이어지게 한다. */}
+          배경은 브랜드 심벌(로고)을 은은하게 확대해 워터마크로 깔아서 텍스트 가독성과 기존
+          그라데이션 톤을 해치지 않게 한다. 공지 배너와 검색 폼(여행지 검색/출발 월/투어
+          검색하기)까지 전부 이 영역 안에 포함시켜서, 헤더 아래부터 투어 검색하기 버튼까지
+          하나의 배경 영역으로 이어지게 한다. */}
       <div className="relative overflow-hidden bg-gradient-ocean px-4 pb-8 pt-8 text-center md:pb-10 md:pt-10">
-        <img
-          src="/hero-whale.jpg"
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top opacity-60 [mask-image:linear-gradient(to_bottom,black_92%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,black_92%,transparent)]"
+        <LogoWatermark
+          className="pointer-events-none absolute left-1/2 top-0 h-[340px] w-[340px] -translate-x-1/2 -translate-y-16 text-primary opacity-[0.12] md:h-[400px] md:w-[400px]"
         />
         <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
         <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-lg">
