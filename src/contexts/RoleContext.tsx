@@ -214,21 +214,26 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
   const isLoggedIn = !!session?.user;
 
+  // QA 오버라이드(MasterRoleToolbar)는 "개발 환경 + 비로그인"일 때만 유효하다. 이 조건을 여기
+  // 한 곳에서만 계산하고, 아래 모든 소비처(resolvedRole/currentInstructorId/setRole)가 반드시
+  // activeDevRoleOverride를 거치게 한다 — 조건을 여러 곳에 따로 적으면 한쪽만 고쳤을 때 어긋날 수
+  // 있다(실제로 있었던 버그: 로그인은 됐지만 profiles row가 없는 상태(카카오 로그인 직후
+  // /complete-profile)에서 profile이 null이라는 이유만으로 예전에 눌러둔 오버라이드를 그대로
+  // 물려받아 관리자로 보였다).
+  const qaOverrideAllowed = import.meta.env.DEV && !isLoggedIn;
+  const activeDevRoleOverride = qaOverrideAllowed ? devRoleOverride : null;
+
   // profiles.role("diver"|"instructor"|"admin")을 기존 MasterRole("public"|"instructor"|"admin")로 매핑.
-  // devRoleOverride는 "실 로그인 없이" QA가 미리보기할 때만 유효하다 — 로그인은 됐지만 아직
-  // profiles row가 없는 사용자(예: 카카오 로그인 직후 /complete-profile)까지 profile이 null이라는
-  // 이유만으로 예전에 QA 툴바로 눌러둔 역할을 그대로 물려받던 버그가 있었다(뒤로가기 시 관리자로
-  // 보이는 문제의 원인). isLoggedIn이면 override를 절대 참조하지 않도록 명시적으로 막는다.
   const resolvedRole: MasterRole = profile
     ? profile.role === "diver"
       ? "public"
       : profile.role
-    : (import.meta.env.DEV && !isLoggedIn && devRoleOverride) || "public";
+    : activeDevRoleOverride || "public";
 
   const setRole = (next: MasterRole) => {
     // 실 세션이 있으면 role은 DB profiles.role이 유일한 소스이므로 무시한다.
     // 개발 환경에서 비로그인 QA 데모용으로만 오버라이드를 허용한다.
-    if (import.meta.env.DEV && !isLoggedIn) {
+    if (qaOverrideAllowed) {
       setDevRoleOverride(next);
     }
   };
@@ -258,7 +263,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       currentInstructorId:
         profile?.role === "instructor"
           ? resolvedInstructorId
-          : import.meta.env.DEV && !isLoggedIn && devRoleOverride === "instructor"
+          : activeDevRoleOverride === "instructor"
             ? seedInstructorId
             : "",
       currentDiverId: profile && profile.role !== "instructor" ? profile.id : "",
@@ -269,7 +274,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       authLoading,
       session,
       profile,
-      devRoleOverride,
+      activeDevRoleOverride,
       seedInstructorId,
       resolvedInstructorId,
     ],
