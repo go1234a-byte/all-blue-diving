@@ -69,7 +69,7 @@ const Index = () => {
           src="/hero-whale.jpg"
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top opacity-45 [mask-image:linear-gradient(to_bottom,black_88%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,black_88%,transparent)]"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top opacity-60 [mask-image:linear-gradient(to_bottom,black_92%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,black_92%,transparent)]"
         />
         <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
         <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-lg">

@@ -158,7 +158,7 @@ export function SearchForm({
   };
 
   return (
-    <div className="accent-top-ocean space-y-4 overflow-hidden rounded-2xl bg-card p-4 shadow-ocean">
+    <div className="accent-top-ocean space-y-4 overflow-hidden rounded-2xl bg-card/40 p-4 shadow-ocean backdrop-blur-[2px]">
       <div className="relative space-y-1.5">
         <Label className="text-xs text-muted-foreground">여행지 검색</Label>
         <div className="relative">
