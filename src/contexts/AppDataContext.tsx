@@ -39,6 +39,7 @@ import { shouldEvaluateAutoClose, MIN_PARTICIPANTS_AUTO_CANCEL_REASON, ADMIN_FOR
 import { sendPushToProfile } from "@/lib/push";
 import { maskName } from "@/lib/masking";
 import { supabase } from "@/integrations/supabase/client";
+import { useRole } from "@/contexts/RoleContext";
 
 const BOOKMARK_STORAGE_KEY = "allblue-bookmarked-tours";
 const INSTRUCTOR_BOOKMARK_STORAGE_KEY = "allblue-bookmarked-instructors";
@@ -902,6 +903,11 @@ function nextId(prefix: string): string {
 }
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
+  // bookings_directory/payouts_directory/profiles_directory 뷰는 authenticated role에만
+  // SELECT 권한이 있다(비로그인 anon은 401). 아래 부트스트랩 조회들이 로그인 여부와
+  // 무관하게 즉시 실행되고 있어서, 비회원이 홈 화면만 열어도 매번 이 3개 뷰에 대해
+  // 실패하는 요청이 나갔다(Supabase 로그에서 확인). 로그인 이후에 실행되도록 게이팅한다.
+  const { isLoggedIn, authLoading } = useRole();
   const [tours, setTours] = useState<Tour[]>([]);
   const [toursLoading, setToursLoading] = useState(true);
   const [instructors, setInstructors] = useState<InstructorProfile[]>([]);
@@ -1112,7 +1118,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Enter Cloud(Supabase) `bookings` 테이블에서 예약 목록을 가져온다.
+  // bookings_directory는 authenticated 전용 뷰라 로그인 확인 전(authLoading)이나 비회원일
+  // 때는 조회 자체를 건너뛴다 — 로그인 상태가 바뀌면(비회원→로그인) 다시 실행된다.
   useEffect(() => {
+    if (authLoading) return;
+    if (!isLoggedIn) {
+      setBookingsLoading(false);
+      return;
+    }
     let active = true;
     (async () => {
       // 보안 강화 3단계(batch98): bookings 테이블은 이제 본인/담당강사/관리자만 직접 select
@@ -1130,32 +1143,48 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [authLoading, isLoggedIn]);
 
-  // reviews / reports / payouts / inquiries / profiles(diver/instructor 목록)
+  // reviews / reports / inquiries / coupons — 로그인 여부와 무관하게 조회 가능한 것들.
   useEffect(() => {
     let active = true;
     (async () => {
-      const [reviewsRes, reportsRes, payoutsRes, inquiriesRes, profilesRes, couponsRes] = await Promise.all([
+      const [reviewsRes, reportsRes, inquiriesRes, couponsRes] = await Promise.all([
         supabase.from("reviews").select("*").order("created_at", { ascending: false }),
         supabase.from("reports").select("*").order("created_at", { ascending: false }),
-        // 보안 강화 3단계(batch98): payouts 테이블은 이제 본인 강사/관리자만 직접 select
-        // 가능하므로, 부트스트랩 조회는 payouts_directory 뷰를 통해 가져온다.
-        supabase.from("payouts_directory").select("*").order("created_at", { ascending: false }),
         supabase.from("inquiries").select("*").order("created_at", { ascending: false }),
-        // 보안 강화 2단계(batch97): profiles 테이블은 이제 본인/관리자만 직접 select 가능하므로,
-        // 부트스트랩 조회는 컬럼별로 조건부 마스킹된 profiles_directory 뷰를 통해서 가져온다.
-        // (권한 없는 열람자는 전화번호/긴급연락처/C-Card 번호/보험정보가 null로 내려온다.
-        // 같은 투어 동승자는 생년월일·C-Card 등급·로그수까지는 계속 볼 수 있다.)
-        supabase.from("profiles_directory").select("*"),
         supabase.from("coupons").select("*").order("created_at", { ascending: false }),
       ]);
       if (!active) return;
       if (!reviewsRes.error && reviewsRes.data) setReviews(reviewsRes.data.map(mapReviewRow));
       if (!reportsRes.error && reportsRes.data) setReports(reportsRes.data.map(mapReportRow));
-      if (!payoutsRes.error && payoutsRes.data) setPayouts(payoutsRes.data.map(mapPayoutRow));
       if (!inquiriesRes.error && inquiriesRes.data) setInquiries(inquiriesRes.data.map(mapInquiryRow));
       if (!couponsRes.error && couponsRes.data) setCoupons(couponsRes.data.map(mapCouponRow));
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // payouts / profiles(diver/instructor 목록) — payouts_directory/profiles_directory는
+  // authenticated 전용 뷰라 로그인 확인 전이나 비회원일 때는 조회를 건너뛴다.
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isLoggedIn) return;
+    let active = true;
+    (async () => {
+      const [payoutsRes, profilesRes] = await Promise.all([
+        // 보안 강화 3단계(batch98): payouts 테이블은 이제 본인 강사/관리자만 직접 select
+        // 가능하므로, 부트스트랩 조회는 payouts_directory 뷰를 통해 가져온다.
+        supabase.from("payouts_directory").select("*").order("created_at", { ascending: false }),
+        // 보안 강화 2단계(batch97): profiles 테이블은 이제 본인/관리자만 직접 select 가능하므로,
+        // 부트스트랩 조회는 컬럼별로 조건부 마스킹된 profiles_directory 뷰를 통해서 가져온다.
+        // (권한 없는 열람자는 전화번호/긴급연락처/C-Card 번호/보험정보가 null로 내려온다.
+        // 같은 투어 동승자는 생년월일·C-Card 등급·로그수까지는 계속 볼 수 있다.)
+        supabase.from("profiles_directory").select("*"),
+      ]);
+      if (!active) return;
+      if (!payoutsRes.error && payoutsRes.data) setPayouts(payoutsRes.data.map(mapPayoutRow));
       if (!profilesRes.error && profilesRes.data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rows = profilesRes.data as any[];
@@ -1166,7 +1195,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [authLoading, isLoggedIn]);
 
   // `profiles` 테이블 realtime 구독 — 회원관리/강사관리 화면(diverProfiles/instructorProfiles)이
   // 위 부트스트랩 fetch 이후로는 1회성 조회만 하고 있어서, 신규 가입자가 새로고침 전까지
