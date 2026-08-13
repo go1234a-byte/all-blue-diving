@@ -166,6 +166,16 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   const hasReachedTourLimit = hasReachedTotalLimit || hasReachedMonthlyLimit;
   const [endDate, setEndDate] = useState<Date>();
   const [deadline, setDeadline] = useState<Date>();
+  // 종료일/모집마감일은 출발일 기준으로 유효 범위가 정해지는데(minDate/maxDate), 이미
+  // 골라둔 값이 있는 상태에서 출발일을 바꾸면 그 값이 조용히 유효 범위 밖으로 벗어나
+  // 있었다 — 제출할 때만 에러 토스트로 걸러졌다. 출발일이 바뀌면 더 이상 유효하지 않은
+  // 종료일/모집마감일은 그 자리에서 초기화한다.
+  const handleStartDateChange = (d: Date | undefined) => {
+    setStartDate(d);
+    if (!d) return;
+    setEndDate((current) => (current && toISODate(current) < toISODate(d) ? undefined : current));
+    setDeadline((current) => (current && toISODate(current) > toISODate(d) ? undefined : current));
+  };
   const [meetingPoint, setMeetingPoint] = useState("");
   const [meetingTime, setMeetingTime] = useState("");
   const [outboundAirport, setOutboundAirport] = useState("");
@@ -648,7 +658,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <DatePickerField label="투어 출발일" value={startDate} onChange={setStartDate} maxDate={maxStartDate} />
+        <DatePickerField label="투어 출발일" value={startDate} onChange={handleStartDateChange} maxDate={maxStartDate} />
         <DatePickerField label="투어 종료일" value={endDate} onChange={setEndDate} minDate={startDate} />
         <DatePickerField label="투어모집 마감일" value={deadline} onChange={setDeadline} maxDate={startDate} />
       </div>

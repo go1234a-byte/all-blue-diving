@@ -169,6 +169,16 @@ export function TourEditForm({ tour }: TourEditFormProps) {
   const [startDate, setStartDate] = useState<Date | undefined>(new Date(tour.startDate));
   const [endDate, setEndDate] = useState<Date | undefined>(new Date(tour.endDate));
   const [deadline, setDeadline] = useState<Date | undefined>(new Date(tour.recruitmentDeadline));
+  // 종료일/모집마감일은 출발일 기준으로 유효 범위가 정해지는데(minDate/maxDate), 이미
+  // 골라둔 값이 있는 상태에서 출발일을 바꾸면 그 값이 조용히 유효 범위 밖으로 벗어나
+  // 있었다 — 제출할 때만 에러 토스트로 걸러졌다. 출발일이 바뀌면 더 이상 유효하지 않은
+  // 종료일/모집마감일은 그 자리에서 초기화한다.
+  const handleStartDateChange = (d: Date | undefined) => {
+    setStartDate(d);
+    if (!d) return;
+    setEndDate((current) => (current && toISODate(current) < toISODate(d) ? undefined : current));
+    setDeadline((current) => (current && toISODate(current) > toISODate(d) ? undefined : current));
+  };
   const [meetingPoint, setMeetingPoint] = useState(tour.meetingPoint ?? "");
   const [meetingTime, setMeetingTime] = useState(tour.meetingTime ?? "");
   const [outboundAirport, setOutboundAirport] = useState(tour.flightInfo?.outbound?.airport ?? "");
@@ -623,7 +633,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
 
       <div className="space-y-1.5">
         <div className="grid grid-cols-3 gap-3">
-          <DatePickerField label="투어 출발일" value={startDate} onChange={setStartDate} disabled={hasActiveBooking} />
+          <DatePickerField label="투어 출발일" value={startDate} onChange={handleStartDateChange} disabled={hasActiveBooking} />
           <DatePickerField label="투어 종료일" value={endDate} onChange={setEndDate} disabled={hasActiveBooking} minDate={startDate} />
           <DatePickerField label="투어모집 마감일" value={deadline} onChange={setDeadline} disabled={hasActiveBooking} maxDate={startDate} />
         </div>

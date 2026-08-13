@@ -14,6 +14,7 @@ import { TourCard } from "@/components/search/TourCard";
 import { TourMapView } from "@/components/search/TourMapView";
 import { FilterSidebar, DEFAULT_FILTERS, type FilterState } from "@/components/search/FilterSidebar";
 import { useAppData } from "@/contexts/AppDataContext";
+import { applyPlatformFee } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import type { ActivityType } from "@/types";
 
@@ -79,7 +80,13 @@ const Search = () => {
       )
       .filter((t) => months.length === 0 || months.includes(new Date(t.startDate).getMonth()))
       .filter((t) => activities.length === 0 || t.activityTypes.some((a) => activities.includes(a)))
-      .filter((t) => t.basePrice >= filters.priceRange[0] && t.basePrice <= filters.priceRange[1])
+      .filter((t) => {
+        // 카드/상세에는 플랫폼 수수료(10%)가 포함된 가격이 보이는데, 필터는 수수료 전
+        // basePrice와 비교하고 있어서 최대 가격을 걸어도 그보다 최대 10% 비싼 투어가
+        // 결과에 섞여 나올 수 있었다. 표시 가격 기준으로 비교하도록 통일한다.
+        const displayPrice = applyPlatformFee(t.basePrice);
+        return displayPrice >= filters.priceRange[0] && displayPrice <= filters.priceRange[1];
+      })
       .sort((a, b) => {
         if (sort === "newest") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         if (sort === "cheapest") return a.basePrice - b.basePrice;
