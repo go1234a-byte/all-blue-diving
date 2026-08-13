@@ -2697,18 +2697,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const setProfileStatus = (profileId: string, status: Profile["status"]) => {
     setDiverProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, status } : p)));
     setInstructorProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, status } : p)));
-    // 주의: supabase-js 쿼리 빌더는 thenable이라 .then()/await로 "소비"해야만 실제 네트워크 요청이
-    // 나간다. `void supabase.from(...).update(...)` 형태로만 두면 요청 자체가 전혀 발생하지 않아
-    // 관리자가 경고/정지 처리해도 화면(로컬 상태)만 바뀌고 DB에는 반영되지 않는 버그가 있었다.
-    supabase
-      .from("profiles")
-      .update({ status })
-      .eq("id", profileId)
-      .then(({ error }) => {
-        if (error) {
-          console.error("[setProfileStatus] profiles 업데이트 실패:", error);
-        }
-      });
+    // profiles.status는 컬럼 권한이 회수돼 있어(마이그레이션 20260813120000) 일반 UPDATE로는
+    // 절대 못 바꾸고 반드시 이 RPC(내부에서 is_admin() 확인)를 통해야 한다 — 예전엔 여기서
+    // .from("profiles").update({status})를 직접 호출했는데, profiles_update_own RLS가
+    // 본인 row만 허용해서 관리자가 "다른" 사용자를 정지 처리하면 항상 조용히 실패하고 있었다.
+    supabase.rpc("admin_set_profile_status", { p_profile_id: profileId, p_status: status }).then(({ error }) => {
+      if (error) {
+        console.error("[setProfileStatus] admin_set_profile_status RPC 실패:", error);
+      }
+    });
   };
 
   const setPayoutStatus = async (payoutId: string, status: Payout["status"]) => {

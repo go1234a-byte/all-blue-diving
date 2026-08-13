@@ -1717,6 +1717,10 @@ export type Database = {
         Args: { p_payout_id: string; p_status: string }
         Returns: undefined
       }
+      admin_set_profile_status: {
+        Args: { p_profile_id: string; p_status: string }
+        Returns: undefined
+      }
       apply_tour_auto_close: { Args: { p_tour_id: string }; Returns: undefined }
       cancel_booking_settlement: {
         Args: { p_booking_id: string; p_refund_amount: number }
