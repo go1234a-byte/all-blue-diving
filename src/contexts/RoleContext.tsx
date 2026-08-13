@@ -215,11 +215,15 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const isLoggedIn = !!session?.user;
 
   // profiles.role("diver"|"instructor"|"admin")을 기존 MasterRole("public"|"instructor"|"admin")로 매핑.
+  // devRoleOverride는 "실 로그인 없이" QA가 미리보기할 때만 유효하다 — 로그인은 됐지만 아직
+  // profiles row가 없는 사용자(예: 카카오 로그인 직후 /complete-profile)까지 profile이 null이라는
+  // 이유만으로 예전에 QA 툴바로 눌러둔 역할을 그대로 물려받던 버그가 있었다(뒤로가기 시 관리자로
+  // 보이는 문제의 원인). isLoggedIn이면 override를 절대 참조하지 않도록 명시적으로 막는다.
   const resolvedRole: MasterRole = profile
     ? profile.role === "diver"
       ? "public"
       : profile.role
-    : (import.meta.env.DEV && devRoleOverride) || "public";
+    : (import.meta.env.DEV && !isLoggedIn && devRoleOverride) || "public";
 
   const setRole = (next: MasterRole) => {
     // 실 세션이 있으면 role은 DB profiles.role이 유일한 소스이므로 무시한다.
@@ -254,7 +258,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       currentInstructorId:
         profile?.role === "instructor"
           ? resolvedInstructorId
-          : import.meta.env.DEV && devRoleOverride === "instructor"
+          : import.meta.env.DEV && !isLoggedIn && devRoleOverride === "instructor"
             ? seedInstructorId
             : "",
       currentDiverId: profile && profile.role !== "instructor" ? profile.id : "",
