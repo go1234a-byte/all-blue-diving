@@ -60,14 +60,18 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    // 실제 로그인 전환(다른 사용자로 바뀜)인지, 같은 사용자의 세션 갱신(토큰 자동 리프레시 등)
+    // 인지 구분하기 위한 값. React 상태가 아니라 클로저 변수로 충분 — 리렌더를 유발할 필요가 없다.
+    let lastUserId: string | null = null;
 
     // 세션 리스너를 먼저 등록한 뒤 현재 세션을 조회한다 (Supabase 권장 순서).
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      const nextUserId = nextSession?.user?.id ?? null;
       setSession(nextSession);
       if (!nextSession) {
         setProfile(null);
         setAuthLoading(false);
-      } else {
+      } else if (nextUserId !== lastUserId) {
         // 로그인 직후(비로그인 -> 로그인) 순간, 프로필을 조회하는 두 번째 useEffect가 아직
         // 돌기 전까지는 authLoading이 예전 값(false)에 머물러 있어서 "로그인은 됐지만
         // profile은 아직 null"인 렌더가 한 번 나온다. RootLayout의 전역 가드가 이 찰나의
@@ -75,8 +79,15 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         // 실제로는 프로필이 멀쩡히 있는 계정도 /complete-profile로 보내버렸다(한번 보내면
         // 프로필이 나중에 로드돼도 되돌아오는 로직이 없어 그대로 갇힘). 세션이 생기는 바로
         // 이 시점에 authLoading을 즉시 true로 올려서 그 틈을 없앤다.
+        //
+        // 단, 이건 "사용자가 바뀔 때"만 해야 한다 — autoRefreshToken으로 주기적으로 발생하는
+        // TOKEN_REFRESHED(같은 사용자, 새 세션 객체)에도 매번 반응하면, 프로필을 다시 조회하는
+        // 아래 useEffect는 의존값이 session?.user?.id라서(같은 id면) 재실행되지 않아 authLoading을
+        // 다시 false로 내려줄 코드가 없다 — 세션을 켜둔 모든 사용자가 토큰 갱신 시점마다
+        // "인증 정보를 확인하는 중..." 화면에 영구히 갇히는(새로고침 전까지) 문제가 있었다.
         setAuthLoading(true);
       }
+      lastUserId = nextUserId;
     });
 
     supabase.auth.getSession().then(({ data }) => {
