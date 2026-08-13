@@ -360,51 +360,6 @@ export type Database = {
         }
         Relationships: []
       }
-      game_players: {
-        Row: {
-          created_at: string
-          current_points: number
-          daily_points_date: string
-          daily_points_earned: number
-          equipped_skin: string
-          hearts_remaining: number
-          hearts_reset_date: string
-          inventory: string[]
-          max_depth: number
-          nickname: string
-          uid: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          current_points?: number
-          daily_points_date?: string
-          daily_points_earned?: number
-          equipped_skin?: string
-          hearts_remaining?: number
-          hearts_reset_date?: string
-          inventory?: string[]
-          max_depth?: number
-          nickname?: string
-          uid: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          current_points?: number
-          daily_points_date?: string
-          daily_points_earned?: number
-          equipped_skin?: string
-          hearts_remaining?: number
-          hearts_reset_date?: string
-          inventory?: string[]
-          max_depth?: number
-          nickname?: string
-          uid?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       inquiries: {
         Row: {
           booking_id: string | null
@@ -727,126 +682,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      mimo_reservations: {
-        Row: {
-          created_at: string
-          payment_method: string | null
-          payment_status: string
-          price: number
-          reservation_id: string
-          salon_id: string
-          service_name: string
-          start_time: string
-          status: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          payment_method?: string | null
-          payment_status?: string
-          price: number
-          reservation_id?: string
-          salon_id: string
-          service_name: string
-          start_time: string
-          status?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          payment_method?: string | null
-          payment_status?: string
-          price?: number
-          reservation_id?: string
-          salon_id?: string
-          service_name?: string
-          start_time?: string
-          status?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "mimo_reservations_salon_id_fkey"
-            columns: ["salon_id"]
-            isOneToOne: false
-            referencedRelation: "mimo_salons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mimo_reservations_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "mimo_users"
-            referencedColumns: ["uid"]
-          },
-        ]
-      }
-      mimo_salons: {
-        Row: {
-          address: string
-          categories: string[]
-          created_at: string
-          id: string
-          lat: number
-          lng: number
-          name: string
-          photos: string[]
-          rating: number
-          services: Json
-          status: boolean
-        }
-        Insert: {
-          address: string
-          categories?: string[]
-          created_at?: string
-          id: string
-          lat: number
-          lng: number
-          name: string
-          photos?: string[]
-          rating?: number
-          services?: Json
-          status?: boolean
-        }
-        Update: {
-          address?: string
-          categories?: string[]
-          created_at?: string
-          id?: string
-          lat?: number
-          lng?: number
-          name?: string
-          photos?: string[]
-          rating?: number
-          services?: Json
-          status?: boolean
-        }
-        Relationships: []
-      }
-      mimo_users: {
-        Row: {
-          created_at: string
-          favorites: string[]
-          name: string
-          phone: string | null
-          uid: string
-        }
-        Insert: {
-          created_at?: string
-          favorites?: string[]
-          name: string
-          phone?: string | null
-          uid: string
-        }
-        Update: {
-          created_at?: string
-          favorites?: string[]
-          name?: string
-          phone?: string | null
-          uid?: string
-        }
-        Relationships: []
       }
       notices: {
         Row: {
@@ -1887,7 +1722,6 @@ export type Database = {
         Args: { p_booking_id: string; p_refund_amount: number }
         Returns: undefined
       }
-      consume_game_heart: { Args: { p_uid: string }; Returns: number }
       create_booking_settlement: {
         Args: { p_booking_id: string }
         Returns: undefined
@@ -1935,7 +1769,6 @@ export type Database = {
           status: string
         }[]
       }
-      grant_continue_heart: { Args: { p_uid: string }; Returns: number }
       is_admin: { Args: never; Returns: boolean }
       is_booking_companion: {
         Args: { p_diver_id: string; p_tour_id: string }
@@ -1957,14 +1790,6 @@ export type Database = {
       owns_tour: { Args: { p_tour_id: string }; Returns: boolean }
       redeem_coupon: { Args: { p_coupon_id: string }; Returns: undefined }
       report_review: { Args: { p_review_id: string }; Returns: undefined }
-      set_equipped_skin: {
-        Args: { p_skin: string; p_uid: string }
-        Returns: undefined
-      }
-      settle_dive_score: {
-        Args: { p_depth: number; p_nickname: string; p_uid: string }
-        Returns: Json
-      }
     }
     Enums: {
       [_ in never]: never

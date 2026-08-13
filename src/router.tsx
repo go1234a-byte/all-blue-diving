@@ -50,18 +50,6 @@ import AdminTourCancellationClaimsPage from "./pages/admin/AdminTourCancellation
 import AdminBusinessInquiriesPage from "./pages/admin/AdminBusinessInquiriesPage";
 import { RequireRole } from "./components/auth/RequireRole";
 import { RootLayout } from "./components/layout/RootLayout";
-import { MimoRootLayout } from "./components/mimo/layout/MimoRootLayout";
-import MimoHome from "./pages/mimo/MimoHome";
-import MimoSalonDetail from "./pages/mimo/MimoSalonDetail";
-import MimoCheckout from "./pages/mimo/MimoCheckout";
-import MimoSuccess from "./pages/mimo/MimoSuccess";
-import MimoBookings from "./pages/mimo/MimoBookings";
-import MimoFavorites from "./pages/mimo/MimoFavorites";
-import MimoMyPage from "./pages/mimo/MimoMyPage";
-import { GameRootLayout } from "./components/game/layout/GameRootLayout";
-import GamePlay from "./pages/game/GamePlay";
-import GameLeaderboard from "./pages/game/GameLeaderboard";
-import GameShop from "./pages/game/GameShop";
 
 export const routers = [
   {
@@ -150,28 +138,6 @@ export const routers = [
       { path: "refund-policy", name: "refund-policy", element: <RefundPolicyPage /> },
       /* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */
       { path: "*", name: "404", element: <NotFound /> },
-    ],
-  },
-  {
-    path: "/mimo",
-    element: <MimoRootLayout />,
-    children: [
-      { index: true, name: "mimo-home", element: <MimoHome /> },
-      { path: "salon/:salonId", name: "mimo-salon-detail", element: <MimoSalonDetail /> },
-      { path: "checkout/:salonId", name: "mimo-checkout", element: <MimoCheckout /> },
-      { path: "success", name: "mimo-success", element: <MimoSuccess /> },
-      { path: "bookings", name: "mimo-bookings", element: <MimoBookings /> },
-      { path: "favorites", name: "mimo-favorites", element: <MimoFavorites /> },
-      { path: "mypage", name: "mimo-mypage", element: <MimoMyPage /> },
-    ],
-  },
-  {
-    path: "/game",
-    element: <GameRootLayout />,
-    children: [
-      { index: true, name: "game-play", element: <GamePlay /> },
-      { path: "leaderboard", name: "game-leaderboard", element: <GameLeaderboard /> },
-      { path: "shop", name: "game-shop", element: <GameShop /> },
     ],
   },
 ];
