@@ -30,11 +30,17 @@ const STATUS_VARIANT: Record<SupportTicketStatus, "secondary" | "default" | "out
 interface SupportTicketQueueProps {
   /** 지정하면 해당 타입의 접수 건만 보여준다 (예: 신고관리 페이지에서는 report만). 미지정 시 전체. */
   types?: SupportTicketType[];
+  /** 지정하면 해당 상태의 접수 건만 보여준다 (예: 대시보드 "답변 대기 문의"에서는 접수/검토중만). 미지정 시 전체. */
+  statuses?: SupportTicketStatus[];
   emptyMessage?: string;
 }
 
+/** 분쟁조정/신고 유형은 어디서 보든(전체 목록에 섞여 있든, 필터링된 목록이든) 대시보드
+ * "긴급 문의" 배지와 같은 톤으로 바로 눈에 띄게 강조한다. */
+const URGENT_TYPES: SupportTicketType[] = ["dispute", "report"];
+
 /** 관리자 고객센터 큐: 1:1 문의 / 분쟁조정 / 신고를 통합 처리한다. 모바일 폭에 맞춘 카드형 목록. */
-export function SupportTicketQueue({ types, emptyMessage }: SupportTicketQueueProps = {}) {
+export function SupportTicketQueue({ types, statuses, emptyMessage }: SupportTicketQueueProps = {}) {
   const { supportTickets, updateSupportTicketStatus, diverProfiles, instructorProfiles, bookings, getTourById } =
     useAppData();
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
@@ -42,7 +48,9 @@ export function SupportTicketQueue({ types, emptyMessage }: SupportTicketQueuePr
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("highlight");
 
-  const filteredTickets = types ? supportTickets.filter((t) => types.includes(t.type)) : supportTickets;
+  const filteredTickets = supportTickets
+    .filter((t) => !types || types.includes(t.type))
+    .filter((t) => !statuses || statuses.includes(t.status));
 
   /** 문의자 아이디로 이름/연락처/역할을 보여준다. */
   const resolveUser = (userId: string) => {
@@ -80,16 +88,23 @@ export function SupportTicketQueue({ types, emptyMessage }: SupportTicketQueuePr
         //  접수 시 연결된 예약을 기준으로 정확한 투어를 보여주도록 수정했다.)
         const relatedBooking = ticket.bookingId ? bookings.find((b) => b.id === ticket.bookingId) : undefined;
         const relatedTour = relatedBooking ? getTourById(relatedBooking.tourId) : undefined;
+        const isUrgent = URGENT_TYPES.includes(ticket.type);
         return (
         <div
           key={ticket.id}
           className={`space-y-2 rounded-xl border p-3 ${
-            ticket.id === highlightId ? "border-primary bg-secondary/60" : "border-border bg-card"
+            ticket.id === highlightId
+              ? "border-primary bg-secondary/60"
+              : isUrgent
+                ? "border-destructive/40 bg-destructive/5"
+                : "border-border bg-card"
           }`}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-sm font-medium text-foreground">{TYPE_LABEL[ticket.type]}</span>
+              <span className={`text-sm font-medium ${isUrgent ? "text-destructive" : "text-foreground"}`}>
+                {TYPE_LABEL[ticket.type]}
+              </span>
               {ticket.category && (
                 <Badge variant="outline" className="text-[10px]">
                   {ticket.category}

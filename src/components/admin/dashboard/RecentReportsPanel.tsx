@@ -28,7 +28,12 @@ export function RecentReportsPanel() {
           <p className="py-4 text-center text-xs text-muted-foreground">접수된 신고가 없습니다.</p>
         ) : (
           recent.map((report) => (
-            <div key={report.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5">
+            <button
+              type="button"
+              key={report.id}
+              onClick={() => navigate(`/admin/reports?highlight=${report.id}`)}
+              className="flex w-full items-center justify-between gap-2 rounded-lg border border-border p-2.5 text-left transition-colors hover:bg-secondary/40"
+            >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold text-foreground">
                   {report.violationType} · {report.targetName}
@@ -38,7 +43,7 @@ export function RecentReportsPanel() {
               <Badge variant={report.status === "pending" ? "secondary" : "default"} className="shrink-0 text-[10px]">
                 {report.status === "pending" ? "처리 대기" : "처리 완료"}
               </Badge>
-            </div>
+            </button>
           ))
         )}
       </CardContent>

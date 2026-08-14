@@ -24,14 +24,22 @@ export function PendingInquiriesPanel() {
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2">
+        <button
+          type="button"
+          onClick={() => navigate("/admin/support?status=pending")}
+          className="flex w-full items-center justify-between rounded-lg bg-secondary/50 px-3 py-2 text-left transition-colors hover:bg-secondary"
+        >
           <span className="text-xs text-muted-foreground">답변 대기 문의</span>
           <span className="text-sm font-bold text-foreground">{pending.length}건</span>
-        </div>
-        <div className="flex items-center justify-between rounded-lg bg-destructive/10 px-3 py-2">
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/admin/support?type=urgent")}
+          className="flex w-full items-center justify-between rounded-lg bg-destructive/10 px-3 py-2 text-left transition-colors hover:bg-destructive/20"
+        >
           <span className="text-xs text-destructive">긴급 문의 (분쟁·신고)</span>
           <Badge variant="destructive" className="text-[10px]">{urgent.length}건</Badge>
-        </div>
+        </button>
       </CardContent>
     </Card>
   );
