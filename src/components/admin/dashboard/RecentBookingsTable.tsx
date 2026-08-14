@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppData } from "@/contexts/AppDataContext";
-import { formatDateKR } from "@/lib/dates";
+import { useAdminPeriod } from "@/contexts/AdminPeriodContext";
+import { formatDateKR, isWithinAdminPeriod } from "@/lib/dates";
 import type { BookingStatus, DepositStatus } from "@/types";
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
@@ -27,11 +28,18 @@ interface RecentBookingsTableProps {
   limit?: number;
 }
 
-/** Dashboard 최근 예약 테이블 — 예약번호/투어명/예약자/예약일/결제상태/예약상태/강사. */
+/** Dashboard 최근 예약 테이블 — 예약번호/투어명/예약자/예약일/결제상태/예약상태/강사.
+ * 상단바의 기간(오늘/이번주/이번달/올해/직접 선택) 선택에 맞춰 목록을 좁힌다 — 예전에는
+ * 이 선택이 대시보드 어디에도 반영되지 않아, 다른 기간으로 바꿔도 아무것도 안 바뀌는
+ * 것처럼 보였다. */
 export function RecentBookingsTable({ limit = 10 }: RecentBookingsTableProps) {
   const { bookings, getTourById, getInstructorById } = useAppData();
+  const { period, customRange } = useAdminPeriod();
   const navigate = useNavigate();
-  const recent = [...bookings].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, limit);
+  const recent = [...bookings]
+    .filter((b) => isWithinAdminPeriod(b.createdAt, period, customRange))
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .slice(0, limit);
 
   return (
     <Card className="accent-top-ocean">
@@ -43,7 +51,7 @@ export function RecentBookingsTable({ limit = 10 }: RecentBookingsTableProps) {
       </CardHeader>
       <CardContent className="space-y-2 p-3 pt-1">
         {recent.length === 0 && (
-          <p className="py-6 text-center text-sm text-muted-foreground">예약 내역이 없습니다.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">선택한 기간에 예약 내역이 없습니다.</p>
         )}
         {recent.map((booking) => {
           const tour = getTourById(booking.tourId);

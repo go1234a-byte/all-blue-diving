@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarIcon, ClipboardCopy, ClipboardList, FileStack, Lock, Plus, RotateCcw, Settings2, Trash2, X } from "lucide-react";
+import { CalendarIcon, ClipboardCopy, ClipboardList, FileStack, Lock, MessageCircleQuestion, Plus, RotateCcw, Settings2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,10 +19,12 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileDropzone } from "@/components/auth/FileDropzone";
 import { CenterFormSection } from "@/components/instructor/CenterFormSection";
 import { SuggestInput } from "@/components/instructor/SuggestInput";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
 import { uploadImageFile, uploadImageFiles } from "@/lib/uploadImage";
 import {
@@ -148,11 +150,46 @@ function LockedFieldNote() {
  * 다이버와의 분쟁을 막기 위해 잠그고 수정할 수 없게 한다.
  */
 export function TourEditForm({ tour }: TourEditFormProps) {
-  const { updateTour, addCenter, bookings } = useAppData();
+  const { updateTour, addCenter, bookings, addSupportTicket } = useAppData();
+  const { user } = useRole();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const hasActiveBooking = bookings.some((b) => b.tourId === tour.id && b.status !== "cancelled");
+
+  // 예약이 있는 투어는 정원을 직접 못 바꾸므로(다이버와의 분쟁 방지), 강사가 조정이
+  // 필요할 때 관리자에게 바로 요청할 수 있는 창구를 인원 섹션에만 둔다.
+  const [capacityRequestOpen, setCapacityRequestOpen] = useState(false);
+  const [capacityRequestText, setCapacityRequestText] = useState("");
+  const [submittingCapacityRequest, setSubmittingCapacityRequest] = useState(false);
+
+  const handleSubmitCapacityRequest = async () => {
+    if (!capacityRequestText.trim()) {
+      toast({ title: "요청 내용을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    if (!user) return;
+    setSubmittingCapacityRequest(true);
+    try {
+      await addSupportTicket({
+        userId: user.id,
+        type: "inquiry",
+        title: `[정원 조정 요청] ${tour.title}`,
+        content: `현재 최대 인원: ${tour.maxParticipants}명\n\n${capacityRequestText.trim()}`,
+      });
+      toast({ title: "관리자에게 정원 조정을 요청했습니다", description: "확인 후 반영해드릴게요." });
+      setCapacityRequestOpen(false);
+      setCapacityRequestText("");
+    } catch (err) {
+      toast({
+        title: "요청 접수에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingCapacityRequest(false);
+    }
+  };
 
   const [title, setTitle] = useState(tour.title);
   const [country, setCountry] = useState<string>(tour.country);
@@ -790,8 +827,45 @@ export function TourEditForm({ tour }: TourEditFormProps) {
             />
           </div>
         </div>
-        {hasActiveBooking && <LockedFieldNote />}
+        {hasActiveBooking && (
+          <div className="space-y-1.5">
+            <LockedFieldNote />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              onClick={() => setCapacityRequestOpen(true)}
+            >
+              <MessageCircleQuestion className="h-3.5 w-3.5" />
+              정원 조정, 관리자에게 문의하기
+            </Button>
+          </div>
+        )}
       </div>
+
+      <Dialog open={capacityRequestOpen} onOpenChange={setCapacityRequestOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>정원 조정 요청</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            예약이 있는 투어는 분쟁 방지를 위해 정원을 직접 수정할 수 없어요. 원하는 인원과 사유를
+            적어주시면 관리자가 확인 후 조정해드립니다. (현재 최대 인원: {tour.maxParticipants}명)
+          </p>
+          <Textarea
+            value={capacityRequestText}
+            onChange={(e) => setCapacityRequestText(e.target.value)}
+            placeholder="예: 최대 인원을 8명에서 10명으로 늘리고 싶습니다. (추가 문의 인원 발생)"
+            rows={4}
+          />
+          <DialogFooter>
+            <Button onClick={handleSubmitCapacityRequest} disabled={submittingCapacityRequest}>
+              {submittingCapacityRequest ? "요청 중..." : "관리자에게 요청 보내기"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="space-y-1.5">
         <Label>투어 소개</Label>
