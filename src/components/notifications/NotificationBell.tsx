@@ -50,7 +50,9 @@ export function NotificationBell() {
                 const isMinCancelled = notification.type === "min_participants_cancelled";
                 const isMinProceed = notification.type === "min_participants_proceed";
                 const isMinDecisionNeeded = notification.type === "min_participants_decision_needed";
-                const isWarning = isPenalty || isMinCancelled || isMinProceed || isMinDecisionNeeded;
+                const isApplicationRejected = notification.type === "application_rejected";
+                const isDocumentReviewCompleted = notification.type === "document_review_completed";
+                const isWarning = isPenalty || isMinCancelled || isMinProceed || isMinDecisionNeeded || isApplicationRejected;
                 const titleText = isPenalty
                   ? "강제 환불 승인 조치"
                   : isMinCancelled
@@ -59,7 +61,19 @@ export function NotificationBell() {
                       ? "최소 인원 미달 - 투어 진행 (책임 안내)"
                       : isMinDecisionNeeded
                         ? "최소 인원 미달 - 결정 필요"
-                        : "신규 투어 예약 완료";
+                        : isApplicationRejected
+                          ? "강사 인증 신청 반려"
+                          : isDocumentReviewCompleted
+                            ? "제출 서류 확인 완료"
+                            : "신규 투어 예약 완료";
+                // application_rejected/document_review_completed는 투어와 무관해 tourId가
+                // ""다. 예전엔 이때도 무조건 /tour/${tourId}로 이동시켜서 빈 id("/tour/")가
+                // 라우트와 안 맞고 그대로 404로 떨어졌다. tourId가 있을 때만 이동한다.
+                const handleNotificationClick = () => {
+                  if (!notification.read) markInstructorNotificationRead(notification.id);
+                  setInstructorPopoverOpen(false);
+                  if (notification.tourId) navigate(`/tour/${notification.tourId}`);
+                };
                 return (
                   <div
                     key={notification.id}
@@ -73,16 +87,10 @@ export function NotificationBell() {
                           ? "border-primary/50 bg-secondary/50"
                           : "border-border",
                     )}
-                    onClick={() => {
-                      if (!notification.read) markInstructorNotificationRead(notification.id);
-                      setInstructorPopoverOpen(false);
-                      navigate(`/tour/${notification.tourId}`);
-                    }}
+                    onClick={handleNotificationClick}
                     onKeyDown={(e) => {
                       if (e.key !== "Enter" && e.key !== " ") return;
-                      if (!notification.read) markInstructorNotificationRead(notification.id);
-                      setInstructorPopoverOpen(false);
-                      navigate(`/tour/${notification.tourId}`);
+                      handleNotificationClick();
                     }}
                   >
                     <p

@@ -203,6 +203,9 @@ export interface Tour {
   meetingTime: string; // 집합 시간 (투어 생성 시 필수 입력)
   /** 관리자가 투어를 검토 후 정지(즉시 예약 차단, 검색 노출 제거)하거나 보류(임시 비공개)한 상태. 없으면 정상. */
   adminStatus?: "suspended" | "held";
+  /** 실제로 취소된 시각. 강사 자진 취소/최소인원 미달 취소/관리자 강제 정지 3곳에서만 채워진다.
+   * status가 "closed"인 것만으로는 "정상적으로 모집만 마감"과 "취소"를 구분할 수 없어서 필요하다. */
+  cancelledAt?: string;
   /** 항공편 정보 (강사가 투어 등록 시 선택 입력). 투어 상세 화면에 강사 프로필 바로 아래 노출된다. */
   flightInfo?: TourFlightInfo;
 }

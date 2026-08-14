@@ -1272,6 +1272,7 @@ export type Database = {
           admin_status: string | null
           auto_close_processed: boolean
           base_price: number
+          cancelled_at: string | null
           center_id: string | null
           certification_level: string
           country: string
@@ -1317,6 +1318,7 @@ export type Database = {
           admin_status?: string | null
           auto_close_processed?: boolean
           base_price: number
+          cancelled_at?: string | null
           center_id?: string | null
           certification_level: string
           country: string
@@ -1362,6 +1364,7 @@ export type Database = {
           admin_status?: string | null
           auto_close_processed?: boolean
           base_price?: number
+          cancelled_at?: string | null
           center_id?: string | null
           certification_level?: string
           country?: string
@@ -1600,12 +1603,15 @@ export type Database = {
         Row: {
           account_holder: string | null
           account_number: string | null
+          avatar_url: string | null
           bank_name: string | null
           bankbook_file_name: string | null
           bankbook_path: string | null
+          bio: string | null
           birth_date: string | null
           c_card_agency: string | null
           c_card_number: string | null
+          c_card_photo_path: string | null
           created_at: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
@@ -1624,12 +1630,15 @@ export type Database = {
         Insert: {
           account_holder?: never
           account_number?: never
+          avatar_url?: string | null
           bank_name?: never
           bankbook_file_name?: never
           bankbook_path?: never
+          bio?: string | null
           birth_date?: never
           c_card_agency?: never
           c_card_number?: never
+          c_card_photo_path?: never
           created_at?: string | null
           emergency_contact_name?: never
           emergency_contact_phone?: never
@@ -1648,12 +1657,15 @@ export type Database = {
         Update: {
           account_holder?: never
           account_number?: never
+          avatar_url?: string | null
           bank_name?: never
           bankbook_file_name?: never
           bankbook_path?: never
+          bio?: string | null
           birth_date?: never
           c_card_agency?: never
           c_card_number?: never
+          c_card_photo_path?: never
           created_at?: string | null
           emergency_contact_name?: never
           emergency_contact_phone?: never

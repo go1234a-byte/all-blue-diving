@@ -48,7 +48,14 @@ export function InstructorMyPageView() {
 
   const myTours = tours.filter((t) => t.instructorId === currentInstructorId);
   const recruitingTours = myTours.filter((t) => t.status === "open" && !isPastDate(t.recruitmentDeadline));
-  const completedTours = myTours.filter((t) => t.status === "closed" || isPastDate(t.endDate));
+  // 예전엔 마감(모집만 종료)과 취소(강사 자진취소/최소인원미달/관리자 강제정지)가 전부
+  // status: "closed"로 동일하게 저장돼서 한 "완료" 탭에 뒤섞여 있었다. cancelledAt이
+  // 채워진 투어만 "취소"로 분리하고, 나머지는 종료일이 지났는지로 마감/완료를 나눈다.
+  const cancelledTours = myTours.filter((t) => t.cancelledAt);
+  const closedTours = myTours.filter(
+    (t) => !t.cancelledAt && t.status === "closed" && !isPastDate(t.endDate),
+  );
+  const completedTours = myTours.filter((t) => !t.cancelledAt && isPastDate(t.endDate));
 
   return (
     <div className="space-y-5">
@@ -115,9 +122,11 @@ export function InstructorMyPageView() {
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-foreground">내가 개설한 투어 관리</h3>
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="recruiting">모집중 ({recruitingTours.length})</TabsTrigger>
+            <TabsTrigger value="closed">마감 ({closedTours.length})</TabsTrigger>
             <TabsTrigger value="completed">완료 ({completedTours.length})</TabsTrigger>
+            <TabsTrigger value="cancelled">취소 ({cancelledTours.length})</TabsTrigger>
           </TabsList>
           <TabsContent value="recruiting" className="space-y-2 pt-3">
             {recruitingTours.length === 0 ? (
@@ -152,6 +161,33 @@ export function InstructorMyPageView() {
               ))
             )}
           </TabsContent>
+          <TabsContent value="closed" className="space-y-2 pt-3">
+            {closedTours.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">마감된 투어가 없습니다.</p>
+            ) : (
+              closedTours.map((tour) => (
+                <Card key={tour.id}>
+                  <Link to={`/chat/${tour.id}`}>
+                    <CardContent className="flex items-center gap-3 p-3">
+                      <img
+                        src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
+                        alt={tour.title}
+                        onError={handleImageFallback}
+                        className="h-12 w-12 shrink-0 rounded-md object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-sm font-medium text-foreground">{tour.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          출발 {formatDateKR(tour.startDate)} 예정 · 모집마감
+                        </p>
+                      </div>
+                      <Badge variant="secondary">마감</Badge>
+                    </CardContent>
+                  </Link>
+                </Card>
+              ))
+            )}
+          </TabsContent>
           <TabsContent value="completed" className="space-y-2 pt-3">
             {completedTours.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">완료된 투어가 없습니다.</p>
@@ -171,6 +207,33 @@ export function InstructorMyPageView() {
                         <p className="text-xs text-muted-foreground">{formatDateKR(tour.endDate)} 종료</p>
                       </div>
                       <Badge variant="secondary">완료</Badge>
+                    </CardContent>
+                  </Link>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+          <TabsContent value="cancelled" className="space-y-2 pt-3">
+            {cancelledTours.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">취소된 투어가 없습니다.</p>
+            ) : (
+              cancelledTours.map((tour) => (
+                <Card key={tour.id}>
+                  <Link to={`/chat/${tour.id}`}>
+                    <CardContent className="flex items-center gap-3 p-3">
+                      <img
+                        src={tour.mainImageUrl || IMAGE_PLACEHOLDER}
+                        alt={tour.title}
+                        onError={handleImageFallback}
+                        className="h-12 w-12 shrink-0 rounded-md object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-sm font-medium text-foreground">{tour.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateKR(tour.cancelledAt!)} 취소
+                        </p>
+                      </div>
+                      <Badge variant="destructive">취소</Badge>
                     </CardContent>
                   </Link>
                 </Card>

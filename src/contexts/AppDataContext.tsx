@@ -298,6 +298,7 @@ function mapTourRow(row: any): Tour {
     instructorNotice: row.instructor_notice ?? undefined,
     itineraryDays: (row.itinerary_days ?? undefined) as Tour["itineraryDays"],
     adminStatus: (row.admin_status ?? undefined) as Tour["adminStatus"],
+    cancelledAt: row.cancelled_at ?? undefined,
     meetingPoint: row.meeting_point ?? "",
     meetingTime: row.meeting_time ?? "",
     flightInfo: (row.flight_info ?? undefined) as Tour["flightInfo"],
@@ -1592,6 +1593,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const tour = tours.find((t) => t.id === tourId);
     if (!tour) return;
 
+    const decidedAt = new Date().toISOString();
+
     setTours((prev) =>
       prev.map((t) =>
         t.id === tourId
@@ -1603,6 +1606,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               // 취소 결정 시 모집 상태도 확실히 "마감"으로 고정한다 — 자동 마감 로직이 이미 처리한 상태이지만,
               // 실제 예약 가능 여부(TourDetail)와 홈/검색 노출이 이 값에 의존하므로 이중으로 보장한다.
               status: decision === "cancel" ? "closed" : t.status,
+              cancelledAt: decision === "cancel" ? decidedAt : t.cancelledAt,
             }
           : t,
       ),
@@ -1613,7 +1617,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         .update({
           under_min_policy: decision,
           under_min_decision_pending: false,
-          ...(decision === "cancel" ? { is_confirmed: false, status: "closed" } : {}),
+          ...(decision === "cancel" ? { is_confirmed: false, status: "closed", cancelled_at: decidedAt } : {}),
         })
         .eq("id", tourId);
       // 이 저장이 실패하면 새로고침 시 결정 대기 패널이 다시 나타나는 문제가 재현되므로,
@@ -1627,7 +1631,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const confirmedBookings = bookings.filter((b) => b.tourId === tourId && b.status === "confirmed");
 
     if (decision === "cancel") {
-      const cancelRequestedAt = new Date().toISOString();
+      const cancelRequestedAt = decidedAt;
       confirmedBookings.forEach((booking) => {
         const refundRate = 1.0; // 출발 미확정 취소이므로 기존 규정상 전액 환불
         const refundAmount = computeRefundAmount(booking.totalPaid, refundRate);
@@ -1757,6 +1761,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       );
     });
 
+    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, cancelledAt: cancelRequestedAt } : t)));
+    await supabase.from("tours").update({ cancelled_at: cancelRequestedAt }).eq("id", tourId);
+
     void fetchTourConfirmedCounts();
     return confirmedBookings.length;
   };
@@ -1810,8 +1817,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       );
     });
 
-    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, status: "closed" } : t)));
-    await supabase.from("tours").update({ status: "closed" }).eq("id", tourId);
+    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, status: "closed", cancelledAt: cancelRequestedAt } : t)));
+    await supabase.from("tours").update({ status: "closed", cancelled_at: cancelRequestedAt }).eq("id", tourId);
 
     const affectedBookingIds = confirmedBookings.map((b) => b.id);
     const { data, error } = await supabase

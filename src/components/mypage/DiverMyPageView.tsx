@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { CalendarCheck, ChevronRight, Lock, MessageCircleQuestion, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LicenseVaultCard } from "@/components/mypage/LicenseVaultCard";
 import { DiverProfileEditCard } from "@/components/mypage/DiverProfileEditCard";
 import { DiverSafetyProfileCard } from "@/components/mypage/DiverSafetyProfileCard";
 import { InquiryHistoryList } from "@/components/mypage/InquiryHistoryList";
@@ -58,13 +57,11 @@ export function DiverMyPageView() {
       {isLoggedIn ? (
         <>
           <DiverProfileEditCard profile={profile} diverId={currentDiverId} />
-          <LicenseVaultCard />
           <DiverSafetyProfileCard profile={profile} diverId={currentDiverId} />
         </>
       ) : (
         <>
           <LockedFeatureCard label="내 프로필" />
-          <LockedFeatureCard label="디지털 라이센스 보관함 (C-Card)" />
           <LockedFeatureCard label="다이빙 자격 · 비상연락처 · 보험" />
         </>
       )}
