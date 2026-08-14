@@ -1289,6 +1289,7 @@ export type Database = {
           is_confirmed: boolean
           itinerary_days: Json | null
           main_image_url: string
+          manual_participant_count: number
           max_participants: number
           meeting_point: string | null
           meeting_time: string | null
@@ -1333,6 +1334,7 @@ export type Database = {
           is_confirmed?: boolean
           itinerary_days?: Json | null
           main_image_url: string
+          manual_participant_count?: number
           max_participants?: number
           meeting_point?: string | null
           meeting_time?: string | null
@@ -1377,6 +1379,7 @@ export type Database = {
           is_confirmed?: boolean
           itinerary_days?: Json | null
           main_image_url?: string
+          manual_participant_count?: number
           max_participants?: number
           meeting_point?: string | null
           meeting_time?: string | null
@@ -1727,7 +1730,11 @@ export type Database = {
         Returns: undefined
       }
       cancel_booking_with_refund: {
-        Args: { p_booking_id: string; p_reason: string; p_full_refund?: boolean }
+        Args: {
+          p_booking_id: string
+          p_full_refund?: boolean
+          p_reason: string
+        }
         Returns: undefined
       }
       create_booking_settlement: {

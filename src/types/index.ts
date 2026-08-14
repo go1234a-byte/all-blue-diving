@@ -178,6 +178,9 @@ export interface Tour {
   rating: number;
   maxParticipants: number;
   minParticipants: number; // 최소 진행 인원
+  /** 전화/현장 접수 등 앱을 거치지 않은 참가자를 위해 관리자가 수동으로 더한 인원수.
+   * 화면에 보이는 "현재인원"은 항상 실제 확정예약 합계 + 이 값이다. 관리자만 조정 가능. */
+  manualParticipantCount: number;
   underMinPolicy: UnderMinParticipantsPolicy; // 최소 인원 미달 시 처리 방침 (강사가 출발 30일 전 결정 시점에 선택한 값)
   autoCloseProcessed: boolean; // 자동 마감/최소인원 평가 로직 중복 실행 방지 플래그
   underMinDecisionPending: boolean; // 출발 30일 전 최소 인원 미달로 강사의 진행/취소 결정이 필요한 상태

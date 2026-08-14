@@ -280,6 +280,7 @@ function mapTourRow(row: any): Tour {
     rating: Number(row.rating ?? 0),
     maxParticipants: row.max_participants,
     minParticipants: row.min_participants ?? 1,
+    manualParticipantCount: row.manual_participant_count ?? 0,
     underMinPolicy: (row.under_min_policy ?? "cancel") as Tour["underMinPolicy"],
     autoCloseProcessed: row.auto_close_processed ?? false,
     underMinDecisionPending: row.under_min_decision_pending ?? false,
@@ -617,6 +618,7 @@ interface UpdateTourInput {
   basePrice?: number;
   maxParticipants?: number;
   minParticipants?: number;
+  manualParticipantCount?: number;
   description?: string;
   inclusions?: string[];
   exclusions?: string[];
@@ -1284,7 +1286,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const getConfirmedParticipantCount = (tourId: string): number => tourConfirmedCounts[tourId] ?? 0;
+  // "현재인원"은 항상 실제 확정예약 합계(뷰 기반) + 관리자가 전화/현장 접수 등을 위해 수동으로
+  // 더한 인원(manualParticipantCount)의 합이다 — 두 값을 한 곳에서만 더해서, 이 값을 쓰는
+  // 모든 화면(투어 상세의 "N/M명 모집", 관리자 투어관리 등)이 항상 일관되게 보이게 한다.
+  const getConfirmedParticipantCount = (tourId: string): number => {
+    const manual = tours.find((t) => t.id === tourId)?.manualParticipantCount ?? 0;
+    return (tourConfirmedCounts[tourId] ?? 0) + manual;
+  };
 
   // 담당 강사/관리자가 아닌 일반 참가자가 채팅방에서 다른 참가자를 보려면, RLS로 제한된
   // bookings 배열 대신 서버에서 이미 이름을 마스킹해 내려주는 이 함수를 써야 한다. 결제 관련
@@ -1927,6 +1935,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (patch.basePrice !== undefined) dbPatch.base_price = patch.basePrice;
     if (patch.maxParticipants !== undefined) dbPatch.max_participants = patch.maxParticipants;
     if (patch.minParticipants !== undefined) dbPatch.min_participants = patch.minParticipants;
+    if (patch.manualParticipantCount !== undefined) dbPatch.manual_participant_count = patch.manualParticipantCount;
     if (patch.description !== undefined) dbPatch.description = patch.description;
     if (patch.inclusions !== undefined) dbPatch.inclusions = patch.inclusions;
     if (patch.exclusions !== undefined) dbPatch.exclusions = patch.exclusions;

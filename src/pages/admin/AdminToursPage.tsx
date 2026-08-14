@@ -156,12 +156,13 @@ const AdminToursPage = () => {
     "all",
   );
   const [adjustingCapacityId, setAdjustingCapacityId] = useState<string | null>(null);
+  const [adjustingHeadcountId, setAdjustingHeadcountId] = useState<string | null>(null);
 
   // 관리자 전용 — 강사가 정원 조정을 문의해 왔을 때, 예약이 있어 강사 본인은 못 바꾸는
-  // 최대 인원을 관리자가 여기서 직접 +/- 로 조정한다. 확정 인원 아래로는 못 내려가게 막는다.
-  // 상세 다이얼로그는 별도 로컬 스냅샷(detailTour)이라 여기서 바꾼 값이 자동 반영되지 않는다
-  // (기존 정지/보류 액션도 같은 이유로 setDetailTour를 직접 갱신한다) — 그래서 실제로 적용된
-  // 값을 반환해 호출부가 필요하면 detailTour도 같이 갱신할 수 있게 한다.
+  // 최대 인원(정원)을 관리자가 여기서 직접 +/- 로 조정한다. 확정+수동 인원 아래로는 못
+  // 내려가게 막는다. 상세 다이얼로그는 별도 로컬 스냅샷(detailTour)이라 여기서 바꾼 값이
+  // 자동 반영되지 않는다(기존 정지/보류 액션도 같은 이유로 setDetailTour를 직접 갱신한다)
+  // — 그래서 실제로 적용된 값을 반환해 호출부가 필요하면 detailTour도 같이 갱신할 수 있게 한다.
   const handleAdjustCapacity = async (tour: Tour, delta: number): Promise<number | undefined> => {
     const confirmedCount = getConfirmedParticipantCount(tour.id);
     const next = tour.maxParticipants + delta;
@@ -169,7 +170,7 @@ const AdminToursPage = () => {
     setAdjustingCapacityId(tour.id);
     try {
       await updateTour(tour.id, { maxParticipants: next });
-      toast({ title: `"${tour.title}" 최대 인원을 ${next}명으로 변경했습니다.` });
+      toast({ title: `"${tour.title}" 정원을 ${next}명으로 변경했습니다.` });
       return next;
     } catch (err) {
       toast({
@@ -180,6 +181,31 @@ const AdminToursPage = () => {
       return undefined;
     } finally {
       setAdjustingCapacityId(null);
+    }
+  };
+
+  // 관리자 전용 — 전화/현장 접수 등 앱을 거치지 않은 참가자를 "현재인원"에 반영한다. 실제
+  // bookings row를 만들지 않는 수동 카운트라, 정원(max_participants)을 넘지 못하게만 막고
+  // (실 예약을 취소하는 게 아니므로) 0 밑으로도 못 내려가게 막는다.
+  const handleAdjustHeadcount = async (tour: Tour, delta: number): Promise<number | undefined> => {
+    const next = tour.manualParticipantCount + delta;
+    if (next < 0) return undefined;
+    const confirmedCount = getConfirmedParticipantCount(tour.id);
+    if (delta > 0 && confirmedCount >= tour.maxParticipants) return undefined;
+    setAdjustingHeadcountId(tour.id);
+    try {
+      await updateTour(tour.id, { manualParticipantCount: next });
+      toast({ title: `"${tour.title}" 현재인원(수동 추가분)을 ${next}명으로 변경했습니다.` });
+      return next;
+    } catch (err) {
+      toast({
+        title: "현재인원 변경에 실패했습니다",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
+      return undefined;
+    } finally {
+      setAdjustingHeadcountId(null);
     }
   };
 
@@ -276,7 +302,36 @@ const AdminToursPage = () => {
             <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
               <span>담당 {instructor?.name ?? "-"}</span>
               <span>{CERTIFICATION_LABELS[tour.certificationLevel]}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
               <div className="flex items-center gap-1">
+                <span>현재인원</span>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className="h-5 w-5"
+                  disabled={adjustingHeadcountId === tour.id || tour.manualParticipantCount <= 0}
+                  onClick={() => handleAdjustHeadcount(tour, -1)}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <span className="min-w-[3rem] text-center font-medium text-foreground">
+                  {participantCount}/{tour.maxParticipants}명
+                </span>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className="h-5 w-5"
+                  disabled={adjustingHeadcountId === tour.id || participantCount >= tour.maxParticipants}
+                  onClick={() => handleAdjustHeadcount(tour, 1)}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>정원</span>
                 <Button
                   type="button"
                   size="icon"
@@ -287,9 +342,7 @@ const AdminToursPage = () => {
                 >
                   <Minus className="h-3 w-3" />
                 </Button>
-                <span className="min-w-[3.5rem] text-center">
-                  {participantCount}/{tour.maxParticipants}명
-                </span>
+                <span className="min-w-[1.5rem] text-center font-medium text-foreground">{tour.maxParticipants}</span>
                 <Button
                   type="button"
                   size="icon"
@@ -357,7 +410,42 @@ const AdminToursPage = () => {
                 </p>
                 <p>담당 강사: {detailInstructor?.name ?? "-"}</p>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span>예약</span>
+                  <span>현재인원</span>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    className="h-5 w-5"
+                    disabled={adjustingHeadcountId === detailTour.id || detailTour.manualParticipantCount <= 0}
+                    onClick={async () => {
+                      const applied = await handleAdjustHeadcount(detailTour, -1);
+                      if (applied !== undefined) setDetailTour({ ...detailTour, manualParticipantCount: applied });
+                    }}
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="min-w-[3rem] text-center">
+                    {getConfirmedParticipantCount(detailTour.id)}/{detailTour.maxParticipants}명
+                  </span>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    className="h-5 w-5"
+                    disabled={
+                      adjustingHeadcountId === detailTour.id ||
+                      getConfirmedParticipantCount(detailTour.id) >= detailTour.maxParticipants
+                    }
+                    onClick={async () => {
+                      const applied = await handleAdjustHeadcount(detailTour, 1);
+                      if (applied !== undefined) setDetailTour({ ...detailTour, manualParticipantCount: applied });
+                    }}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span>정원</span>
                   <Button
                     type="button"
                     size="icon"
@@ -374,9 +462,7 @@ const AdminToursPage = () => {
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="min-w-[3.5rem] text-center">
-                    {detailBookings.filter((b) => b.status === "confirmed").length}/{detailTour.maxParticipants}명
-                  </span>
+                  <span className="min-w-[1.5rem] text-center">{detailTour.maxParticipants}</span>
                   <Button
                     type="button"
                     size="icon"
