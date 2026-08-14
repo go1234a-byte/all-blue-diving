@@ -1726,6 +1726,10 @@ export type Database = {
         Args: { p_booking_id: string; p_refund_amount: number }
         Returns: undefined
       }
+      cancel_booking_with_refund: {
+        Args: { p_booking_id: string; p_reason: string; p_full_refund?: boolean }
+        Returns: undefined
+      }
       create_booking_settlement: {
         Args: { p_booking_id: string }
         Returns: undefined

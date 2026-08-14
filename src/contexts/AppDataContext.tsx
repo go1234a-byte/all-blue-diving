@@ -1638,28 +1638,23 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               : b,
           ),
         );
+        // refund_rate/refund_amount는 서버 컬럼 권한이 회수돼 있어 직접 update로는 못 바꾼다
+        // (마이그레이션 20260813150000) — 반드시 이 RPC를 통해야 하고, 실제 환불율도
+        // 서버에서 다시 계산되므로 위에서 로컬로 계산한 refundRate/refundAmount는 낙관적 UI
+        // 갱신용일 뿐이다.
         void supabase
-          .from("bookings")
-          .update({
-            status: "cancelled",
-            cancel_reason: MIN_PARTICIPANTS_AUTO_CANCEL_REASON,
-            refund_rate: refundRate,
-            refund_amount: refundAmount,
-            cancel_requested_at: cancelRequestedAt,
+          .rpc("cancel_booking_with_refund", {
+            p_booking_id: booking.id,
+            p_reason: MIN_PARTICIPANTS_AUTO_CANCEL_REASON,
+            p_full_refund: true,
           })
-          .eq("id", booking.id)
           .then(({ error }) => {
-            if (error) console.error("[resolveUnderMinDecision] bookings 업데이트 실패:", error);
+            if (error) console.error("[resolveUnderMinDecision] bookings 취소/정산 RPC 실패:", error);
           });
 
         setPayouts((prev) =>
           prev.map((p) => (p.bookingId === booking.id && p.status !== "released" ? { ...p, status: "cancelled" } : p)),
         );
-        void supabase
-          .rpc("cancel_booking_settlement", { p_booking_id: booking.id, p_refund_amount: refundAmount })
-          .then(({ error }) => {
-            if (error) console.error("[resolveUnderMinDecision] 정산(payout) 취소 RPC 실패:", error);
-          });
 
         void persistInstructorNotification({
           instructorId: tour.instructorId,
@@ -1731,28 +1726,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             : b,
         ),
       );
+      // refund_rate/refund_amount는 서버 컬럼 권한이 회수돼 있어(마이그레이션 20260813150000)
+      // 이 RPC로만 취소/전액환불을 반영할 수 있다.
       void supabase
-        .from("bookings")
-        .update({
-          status: "cancelled",
-          cancel_reason: ADMIN_FORCED_CLOSURE_REASON,
-          refund_rate: refundRate,
-          refund_amount: refundAmount,
-          cancel_requested_at: cancelRequestedAt,
+        .rpc("cancel_booking_with_refund", {
+          p_booking_id: booking.id,
+          p_reason: ADMIN_FORCED_CLOSURE_REASON,
+          p_full_refund: true,
         })
-        .eq("id", booking.id)
         .then(({ error }) => {
-          if (error) console.error("[forceCancelTourBookings] bookings 업데이트 실패:", error);
+          if (error) console.error("[forceCancelTourBookings] bookings 취소/정산 RPC 실패:", error);
         });
 
       setPayouts((prev) =>
         prev.map((p) => (p.bookingId === booking.id && p.status !== "released" ? { ...p, status: "cancelled" } : p)),
       );
-      void supabase
-        .rpc("cancel_booking_settlement", { p_booking_id: booking.id, p_refund_amount: refundAmount })
-        .then(({ error }) => {
-          if (error) console.error("[forceCancelTourBookings] 정산(payout) 취소 RPC 실패:", error);
-        });
 
       notifyDiverPush(
         booking.diverId,
@@ -1794,25 +1782,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             : b,
         ),
       );
+      // refund_rate/refund_amount는 서버 컬럼 권한이 회수돼 있어(마이그레이션 20260813150000)
+      // 이 RPC로만 취소/전액환불을 반영할 수 있다. 강사가 자기 투어를 취소하는 경우이므로
+      // owns_tour로 전액환불(p_full_refund)이 허용된다.
       void supabase
-        .from("bookings")
-        .update({
-          status: "cancelled",
-          cancel_reason: cancelReason,
-          refund_rate: refundRate,
-          refund_amount: refundAmount,
-          cancel_requested_at: cancelRequestedAt,
-        })
-        .eq("id", booking.id);
+        .rpc("cancel_booking_with_refund", { p_booking_id: booking.id, p_reason: cancelReason, p_full_refund: true })
+        .then(({ error }) => {
+          if (error) console.error("[cancelTourByInstructor] bookings 취소/정산 RPC 실패:", error);
+        });
 
       setPayouts((prev) =>
         prev.map((p) => (p.bookingId === booking.id && p.status !== "released" ? { ...p, status: "cancelled" } : p)),
       );
-      void supabase
-        .rpc("cancel_booking_settlement", { p_booking_id: booking.id, p_refund_amount: refundAmount })
-        .then(({ error }) => {
-          if (error) console.error("[cancelTourByInstructor] 정산(payout) 취소 RPC 실패:", error);
-        });
 
       notifyDiverPush(
         booking.diverId,
@@ -2985,12 +2966,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           : b,
       ),
     );
-    const { error: cancelBookingError } = await supabase
-      .from("bookings")
-      .update({ status: "cancelled", cancel_reason: reason, refund_rate: refundRate, refund_amount: refundAmount })
-      .eq("id", bookingId);
+    // refund_rate/refund_amount는 서버 컬럼 권한이 회수돼 있어(마이그레이션 20260813150000)
+    // 직접 update로 못 바꾼다 — 실제 환불율은 이 RPC 안에서 서버가 잔여일수 기준으로 다시
+    // 계산한다(클라이언트가 보낸 값을 신뢰하지 않음). 위에서 계산한 refundRate/refundAmount는
+    // 낙관적 UI 갱신과 이 함수의 반환값(호출부의 즉시 안내 문구)용이다.
+    const { error: cancelBookingError } = await supabase.rpc("cancel_booking_with_refund", {
+      p_booking_id: bookingId,
+      p_reason: reason,
+      p_full_refund: false,
+    });
     if (cancelBookingError) {
-      console.error("[cancelBooking] bookings 업데이트 실패:", cancelBookingError);
+      console.error("[cancelBooking] 예약 취소/정산 RPC 실패:", cancelBookingError);
     }
 
     // 트랜잭션 롤백: 이미 지급 완료(released)된 정산은 되돌리지 않고, 예정/보류 상태만 취소 처리한다.
@@ -2999,16 +2985,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         p.bookingId === bookingId && p.status !== "released" ? { ...p, status: "cancelled" } : p,
       ),
     );
-    const { error: cancelSettlementError } = await supabase.rpc("cancel_booking_settlement", {
-      p_booking_id: bookingId,
-      p_refund_amount: refundAmount,
-    });
-    if (cancelSettlementError) {
-      console.error(
-        "[cancelBooking] 정산(payout/invoice) 취소 반영 RPC 실패 (예약 취소는 정상 처리됨):",
-        cancelSettlementError,
-      );
-    }
     void fetchTourConfirmedCounts();
 
     return { refundRate, refundAmount };
@@ -3073,12 +3049,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             : b,
         ),
       );
-      const { error: approveBookingError } = await supabase
-        .from("bookings")
-        .update({ status: "cancelled", refund_rate: 1, refund_amount: booking?.totalPaid })
-        .eq("id", bookingId);
+      // refund_rate/refund_amount는 서버 컬럼 권한이 회수돼 있어(마이그레이션 20260813150000)
+      // 이 RPC로만 승인 처리할 수 있다 — 신청 당시 제출된 사유(cancelReason)를 그대로 유지한다.
+      const { error: approveBookingError } = await supabase.rpc("cancel_booking_with_refund", {
+        p_booking_id: bookingId,
+        p_reason: booking?.cancelReason ?? "관리자 승인",
+        p_full_refund: true,
+      });
       if (approveBookingError) {
-        console.error("[resolveCancellationReview] bookings 업데이트 실패(승인):", approveBookingError);
+        console.error("[resolveCancellationReview] bookings 취소/정산 RPC 실패(승인):", approveBookingError);
       }
 
       setPayouts((prev) =>
@@ -3086,16 +3065,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           p.bookingId === bookingId && p.status !== "released" ? { ...p, status: "cancelled" } : p,
         ),
       );
-      const { error: cancelSettlementError } = await supabase.rpc("cancel_booking_settlement", {
-        p_booking_id: bookingId,
-        p_refund_amount: booking?.totalPaid ?? 0,
-      });
-      if (cancelSettlementError) {
-        console.error(
-          "[resolveCancellationReview] 정산(payout/invoice) 취소 반영 RPC 실패 (강제 환불은 정상 처리됨):",
-          cancelSettlementError,
-        );
-      }
       void fetchTourConfirmedCounts();
 
       // 관리자가 [강제 환불 승인]을 실행하는 즉시 담당 강사에게 고위험 페널티 알림을 발행한다.
