@@ -45,7 +45,7 @@ const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getTourById, getCouponByCode, addBooking, redeemCoupon, toursLoading, getConfirmedParticipantCount } =
+  const { getTourById, getCouponByCode, addBooking, toursLoading, getConfirmedParticipantCount } =
     useAppData();
   const { profile, currentDiverId, isLoggedIn, authLoading } = useRole();
 
@@ -218,10 +218,9 @@ const Checkout = () => {
         companions: participantCount > 1 ? companions : undefined,
       });
 
-      if (invoice.couponCode) {
-        const coupon = getCouponByCode(invoice.couponCode);
-        if (coupon) void redeemCoupon(coupon.id);
-      }
+      // 쿠폰 사용횟수 증가는 이제 addBooking이 거치는 서버 측 가격검증 트리거
+      // (validate_booking_price, 마이그레이션 20260813180000) 안에서 예약 INSERT와 같은
+      // 트랜잭션으로 원자적으로 처리된다 — 여기서 별도로 redeemCoupon을 또 호출하면 이중 차감된다.
 
       navigate(`/payment/success?mock=1&bookingId=${created.id}`);
     } catch (err) {

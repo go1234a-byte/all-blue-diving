@@ -857,7 +857,6 @@ interface AppDataContextValue {
   addCoupon: (input: Omit<Coupon, "id" | "createdAt" | "usedCount">) => Promise<Coupon>;
   toggleCouponActive: (couponId: string) => Promise<void>;
   deleteCoupon: (couponId: string) => Promise<void>;
-  redeemCoupon: (couponId: string) => Promise<void>;
   markInstructorNotificationRead: (notificationId: string) => void;
   cancelBooking: (bookingId: string, reason: string) => Promise<{ refundRate: number; refundAmount: number }>;
   updateBookingRoom: (bookingId: string, roomNo: string | null) => Promise<void>;
@@ -2911,22 +2910,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     await supabase.from("coupons").delete().eq("id", couponId);
   };
 
-  /** 결제 완료 시 쿠폰 사용 횟수를 1 증가시킨다. */
-  const redeemCoupon = async (couponId: string) => {
-    const target = coupons.find((c) => c.id === couponId);
-    if (!target) return;
-    const usedCount = target.usedCount + 1;
-    setCoupons((prev) => prev.map((c) => (c.id === couponId ? { ...c, usedCount } : c)));
-    // 구매자가 이 쿠폰의 소유자(관리자)가 아니므로(RLS 보안 강화 1단계 batch96 참고) 일반
-    // update 대신, 서버에서 원자적으로 +1 하고 한도/활성 여부까지 재검증하는 redeem_coupon()
-    // RPC를 쓴다. (기존 코드는 클라이언트가 계산한 절대값을 그대로 덮어써서 동시 사용 시
-    // 카운트가 씹힐 수 있는 잠재 버그도 있었는데, RPC 쪽이 이 문제도 함께 해결한다.)
-    const { error } = await supabase.rpc("redeem_coupon", { p_coupon_id: couponId });
-    if (error) {
-      console.error("[redeemCoupon] 쿠폰 사용 처리 실패:", error);
-    }
-  };
-
   const deleteReview = async (reviewId: string) => {
     setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, deleted: true } : r)));
     const { error } = await supabase.from("reviews").update({ deleted: true }).eq("id", reviewId);
@@ -3505,7 +3488,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addCoupon,
       toggleCouponActive,
       deleteCoupon,
-      redeemCoupon,
       markInstructorNotificationRead,
       cancelBooking,
       updateBookingRoom,
