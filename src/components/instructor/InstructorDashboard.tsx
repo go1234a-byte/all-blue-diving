@@ -191,8 +191,16 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
                         <AlertDialogCancel>취소</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={async () => {
-                            await closeTourRecruiting(tour.id);
-                            toast({ title: `"${tour.title}" 투어 모집을 마감했습니다.` });
+                            try {
+                              await closeTourRecruiting(tour.id);
+                              toast({ title: `"${tour.title}" 투어 모집을 마감했습니다.` });
+                            } catch (err) {
+                              toast({
+                                title: "모집 마감에 실패했습니다",
+                                description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+                                variant: "destructive",
+                              });
+                            }
                           }}
                         >
                           모집마감

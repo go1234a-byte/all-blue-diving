@@ -246,7 +246,7 @@ const AdminToursPage = () => {
     }
   };
 
-  const handleDelete = (tour: Tour, bookingCount: number) => {
+  const handleDelete = async (tour: Tour, bookingCount: number) => {
     if (bookingCount > 0) {
       toast({
         title: "삭제할 수 없어요",
@@ -255,9 +255,17 @@ const AdminToursPage = () => {
       });
       return;
     }
-    deleteTour(tour.id);
-    toast({ title: `"${tour.title}" 투어를 삭제했습니다.` });
-    setDetailTour(null);
+    try {
+      await deleteTour(tour.id);
+      toast({ title: `"${tour.title}" 투어를 삭제했습니다.` });
+      setDetailTour(null);
+    } catch (err) {
+      toast({
+        title: "삭제에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   const detailInstructor = detailTour ? getInstructorById(detailTour.instructorId) : undefined;

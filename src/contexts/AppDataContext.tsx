@@ -1762,7 +1762,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
 
     setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, cancelledAt: cancelRequestedAt } : t)));
-    await supabase.from("tours").update({ cancelled_at: cancelRequestedAt }).eq("id", tourId);
+    const { error: cancelledAtError } = await supabase
+      .from("tours")
+      .update({ cancelled_at: cancelRequestedAt })
+      .eq("id", tourId);
+    // 예약 취소/환불은 위에서 이미 RPC로 확정됐으므로 여기서 실패해도 롤백하진 않는다 —
+    // 다만 로그는 남겨서 "취소" 표시(cancelledAt)만 저장 안 된 경우를 나중에 추적할 수 있게 한다.
+    if (cancelledAtError) console.error("[forceCancelTourBookings] tours.cancelled_at 업데이트 실패:", cancelledAtError);
 
     void fetchTourConfirmedCounts();
     return confirmedBookings.length;
@@ -1818,7 +1824,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
 
     setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, status: "closed", cancelledAt: cancelRequestedAt } : t)));
-    await supabase.from("tours").update({ status: "closed", cancelled_at: cancelRequestedAt }).eq("id", tourId);
+    const { error: statusUpdateError } = await supabase
+      .from("tours")
+      .update({ status: "closed", cancelled_at: cancelRequestedAt })
+      .eq("id", tourId);
+    if (statusUpdateError) console.error("[cancelTourByInstructor] tours 상태 업데이트 실패:", statusUpdateError);
 
     const affectedBookingIds = confirmedBookings.map((b) => b.id);
     const { data, error } = await supabase
@@ -2026,14 +2036,38 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   /** 강사 본인 — 모집중인 투어를 수동으로 마감(모집 종료) 처리한다. */
   const closeTourRecruiting = async (tourId: string) => {
-    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, status: "closed" } : t)));
-    await supabase.from("tours").update({ status: "closed" }).eq("id", tourId);
+    let previous: Tour | undefined;
+    setTours((prev) => {
+      previous = prev.find((t) => t.id === tourId);
+      return prev.map((t) => (t.id === tourId ? { ...t, status: "closed" } : t));
+    });
+    const { error } = await supabase.from("tours").update({ status: "closed" }).eq("id", tourId);
+    if (error) {
+      console.error("[closeTourRecruiting] tours 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setTours((prev) => prev.map((t) => (t.id === tourId ? rolledBack : t)));
+      }
+      throw new Error(error.message ? `모집 마감에 실패했습니다: ${error.message}` : "모집 마감에 실패했습니다.");
+    }
   };
 
   /** 관리자 — 투어를 완전히 삭제한다. 예약 기록을 보존해야 하는 투어는 정지 처리를 권장한다. */
   const deleteTour = async (tourId: string) => {
-    setTours((prev) => prev.filter((t) => t.id !== tourId));
-    await supabase.from("tours").delete().eq("id", tourId);
+    let previous: Tour | undefined;
+    setTours((prev) => {
+      previous = prev.find((t) => t.id === tourId);
+      return prev.filter((t) => t.id !== tourId);
+    });
+    const { error } = await supabase.from("tours").delete().eq("id", tourId);
+    if (error) {
+      console.error("[deleteTour] tours 삭제 실패:", error);
+      if (previous) {
+        const restored = previous;
+        setTours((prev) => [...prev, restored]);
+      }
+      throw new Error(error.message ? `투어 삭제에 실패했습니다: ${error.message}` : "투어 삭제에 실패했습니다.");
+    }
   };
 
   /** 다이버 본인 — 참가자 대시보드 [더보기] 탭에서 본인 항공/여권 정보를 등록한다. */
@@ -2488,7 +2522,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const remainingCount = penalties.filter(
       (p) => p.instructorId === instructorId && !p.voided && p.id !== penaltyId,
     ).length;
-    await supabase.from("instructors").update({ penalty_count: remainingCount }).eq("id", instructorId);
+    // instructors.penalty_count는 penalties_log에서 매번 다시 계산하는 값이 아니라 별도로
+    // 저장된 값이라, 이 update가 실패하면 되돌리지 않는 한 새로고침해도 계속 어긋난 채로
+    // 남는다(위 voided 처리 자체는 이미 성공했으므로 여기서 던지는 에러는 "이력은 정정됐지만
+    // 누적 경고 횟수 표시가 갱신되지 않았다"는 뜻이다).
+    const { error: countError } = await supabase
+      .from("instructors")
+      .update({ penalty_count: remainingCount })
+      .eq("id", instructorId);
+    if (countError) {
+      console.error("[voidPenalty] instructors.penalty_count 업데이트 실패:", countError);
+      throw new Error("이력은 정정됐지만 누적 경고 횟수 갱신에 실패했습니다: " + countError.message);
+    }
     setInstructors((prev) =>
       prev.map((i) => (i.id === instructorId ? { ...i, penaltyCount: remainingCount } : i)),
     );
