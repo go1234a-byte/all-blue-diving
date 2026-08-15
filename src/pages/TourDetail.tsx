@@ -116,7 +116,7 @@ const TourDetail = () => {
           ? "정지된 투어예요"
           : tour.adminStatus === "held"
           ? "보류중인 투어예요"
-          : !tour.isConfirmed
+          : tour.cancelledAt
           ? "취소된 투어예요"
           : "마감된 투어예요",
         description: "현재 예약을 받을 수 없는 투어입니다.",
@@ -198,8 +198,8 @@ const TourDetail = () => {
                 ? "관리자에 의해 정지된 투어입니다. 예약을 받을 수 없습니다."
                 : tour.adminStatus === "held"
                 ? "관리자 검토로 보류중인 투어입니다. 검토가 끝날 때까지 예약을 받을 수 없습니다."
-                : !tour.isConfirmed
-                ? "모집 마감 후 최소 인원 미달로 취소된 투어입니다. 예약을 받을 수 없습니다."
+                : tour.cancelledAt
+                ? "취소된 투어입니다. 예약을 받을 수 없습니다."
                 : "모집이 마감된 투어입니다. 더 이상 예약을 받을 수 없습니다."}
             </span>
           </div>
