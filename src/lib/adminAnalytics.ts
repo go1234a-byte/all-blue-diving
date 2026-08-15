@@ -86,8 +86,12 @@ export function computeRevenueKpi(bookings: Booking[]) {
   const thisYear = now.getFullYear();
   const prevMonthDate = new Date(thisYear, thisMonth - 1, 1);
 
+  // 취소된 예약은 환불율만큼(대부분 100%) 되돌려줘서 실제로는 매출이 아니거나 훨씬 적은데,
+  // status 필터가 없어서 취소 건의 platformFee 전액을 그대로 매출에 합산하고 있었다 —
+  // 조기 취소(100% 환불)가 몰리면 실제로는 매출이 줄었는데도 대시보드엔 늘어난 것처럼 보였다.
   const thisMonthRevenue = bookings
     .filter((b) => {
+      if (b.status === "cancelled") return false;
       const d = new Date(b.createdAt);
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     })
@@ -95,6 +99,7 @@ export function computeRevenueKpi(bookings: Booking[]) {
 
   const prevMonthRevenue = bookings
     .filter((b) => {
+      if (b.status === "cancelled") return false;
       const d = new Date(b.createdAt);
       return d.getMonth() === prevMonthDate.getMonth() && d.getFullYear() === prevMonthDate.getFullYear();
     })
@@ -271,7 +276,10 @@ function bucketKeyFor(date: Date, granularity: RevenueGranularity): string {
 export function computeRevenueSeries(bookings: Booking[], granularity: RevenueGranularity = "month") {
   const buckets = new Map<string, { total: number; settlement: number; fee: number }>();
 
+  // computeRevenueKpi와 동일한 이유로 취소된 예약은 제외한다 — 환불된 금액을 매출로 잡으면
+  // 취소가 몰린 구간일수록 차트가 실제보다 부풀려 보인다.
   for (const b of bookings) {
+    if (b.status === "cancelled") continue;
     const key = bucketKeyFor(new Date(b.createdAt), granularity);
     const entry = buckets.get(key) ?? { total: 0, settlement: 0, fee: 0 };
     entry.total += b.totalPaid;
