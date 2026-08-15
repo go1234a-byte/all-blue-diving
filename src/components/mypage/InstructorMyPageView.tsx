@@ -47,7 +47,12 @@ export function InstructorMyPageView() {
   }
 
   const myTours = tours.filter((t) => t.instructorId === currentInstructorId);
-  const recruitingTours = myTours.filter((t) => t.status === "open" && !isPastDate(t.recruitmentDeadline));
+  // recruitmentDeadline은 상세페이지에 표시만 되는 안내용 날짜일 뿐, 실제 예약 가능 여부는
+  // status로만 결정된다(TourDetail 예약 버튼도 deadline을 보지 않는다). 자동마감은 출발일
+  // 30일 전(recruitmentDeadline과 무관한 별개 기준)에만 status를 "closed"로 바꾸므로, 예전엔
+  // 이 필터가 deadline이 지났지만 아직 자동마감은 안 된 투어를 모집중 탭에서 빼버렸고, 그
+  // 투어는 마감/완료/취소 어느 탭에도 안 걸려 통째로 안 보였다.
+  const recruitingTours = myTours.filter((t) => t.status === "open");
   // 예전엔 마감(모집만 종료)과 취소(강사 자진취소/최소인원미달/관리자 강제정지)가 전부
   // status: "closed"로 동일하게 저장돼서 한 "완료" 탭에 뒤섞여 있었다. cancelledAt이
   // 채워진 투어만 "취소"로 분리하고, 나머지는 종료일이 지났는지로 마감/완료를 나눈다.
