@@ -15,7 +15,7 @@ interface InstructorChatPanelProps {
  * 그룹채팅(ChatThread)을 표시한다. 투어 종료 48시간 경과 시 채팅방은 자동으로 접근이 차단된다.
  */
 export function InstructorChatPanel({ instructorId }: InstructorChatPanelProps) {
-  const { tours, bookings } = useAppData();
+  const { tours, getConfirmedParticipantCount } = useAppData();
   const myTours = tours.filter((t) => t.instructorId === instructorId);
   const [selectedTourId, setSelectedTourId] = useState<string | undefined>(myTours[0]?.id);
   const selectedTour = myTours.find((t) => t.id === selectedTourId);
@@ -33,9 +33,11 @@ export function InstructorChatPanel({ instructorId }: InstructorChatPanelProps) 
         <div className="space-y-1.5 overflow-x-auto md:overflow-visible">
           <div className="flex gap-1.5 md:flex-col">
             {myTours.map((tour) => {
-              const participantCount = bookings.filter(
-                (b) => b.tourId === tour.id && b.status === "confirmed",
-              ).length;
+              // getConfirmedParticipantCount(실제 확정예약 참가인원 합 + 수동추가인원)를 써야
+              // 그룹예약(participant_count>1)이나 관리자 수동추가인원이 있을 때도 앱 다른 곳(투어
+              // 카드, 관리자 대시보드 등)과 같은 "현재인원"을 보여준다 — 예전엔 확정 예약 건수만
+              // 세서 그룹예약/수동추가인원이 있으면 실제보다 적게 표시됐다.
+              const participantCount = getConfirmedParticipantCount(tour.id);
               const accessible = isChatAccessible(tour);
               const active = tour.id === selectedTourId;
               return (

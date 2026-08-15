@@ -143,9 +143,27 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
                   </p>
                 </div>
                 <Badge
-                  variant={!tour.isConfirmed ? "destructive" : tour.status === "open" ? "default" : "secondary"}
+                  variant={
+                    tour.cancelledAt || tour.adminStatus
+                      ? "destructive"
+                      : tour.status === "open"
+                        ? "default"
+                        : "secondary"
+                  }
                 >
-                  {!tour.isConfirmed ? "취소됨" : tour.status === "open" ? "모집중" : "마감"}
+                  {/* 취소(강사 자진취소/최소인원미달/관리자 강제정지) 3곳 다 cancelledAt을 채운다 —
+                      예전엔 isConfirmed만 봤는데, 관리자 강제정지(forceCancelTourBookings)는
+                      isConfirmed도 status도 안 건드려서 정지+환불된 투어가 계속 "모집중"으로
+                      보였다. cancelledAt/adminStatus를 최우선으로 본다. */}
+                  {tour.cancelledAt
+                    ? "취소됨"
+                    : tour.adminStatus === "suspended"
+                      ? "정지됨"
+                      : tour.adminStatus === "held"
+                        ? "보류중"
+                        : tour.status === "open"
+                          ? "모집중"
+                          : "마감"}
                 </Badge>
               </Link>
               <div className="flex gap-1.5">
@@ -155,7 +173,7 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
                     수정
                   </Link>
                 </Button>
-                {tour.status === "open" && (
+                {tour.status === "open" && !tour.adminStatus && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button size="sm" variant="outline" className="flex-1 text-xs">
