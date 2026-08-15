@@ -3264,8 +3264,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   /** 관리자 — 이용센터 정보를 수정한다. */
   const updateCenter = async (centerId: string, updates: NewCenterInput): Promise<void> => {
-    setCenters((prev) => prev.map((c) => (c.id === centerId ? { ...c, ...updates } : c)));
-    await supabase
+    let previous: Center | undefined;
+    setCenters((prev) => {
+      previous = prev.find((c) => c.id === centerId);
+      return prev.map((c) => (c.id === centerId ? { ...c, ...updates } : c));
+    });
+    const { error } = await supabase
       .from("centers")
       .update({
         name: updates.name,
@@ -3278,12 +3282,46 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         features: updates.features,
       })
       .eq("id", centerId);
+    if (error) {
+      console.error("[updateCenter] centers 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setCenters((prev) => prev.map((c) => (c.id === centerId ? rolledBack : c)));
+      }
+      throw new Error(
+        error.message ? `센터 정보 저장에 실패했습니다: ${error.message}` : "센터 정보 저장에 실패했습니다.",
+      );
+    }
   };
 
-  /** 관리자 — 이용센터를 삭제한다. */
+  /**
+   * 관리자 — 이용센터를 삭제한다. tours.center_id가 이 센터를 참조 중이면 FK 제약(NO ACTION)에
+   * 걸려 실제 DELETE는 실패하는데, 예전엔 이 에러를 잡지 않고 낙관적으로 먼저 목록에서
+   * 지워버려서 "삭제했습니다" 토스트까지 뜨고 화면에서도 사라졌다가, 새로고침하면 실제로는
+   * 안 지워진 센터가 다시 나타나는 문제가 있었다. 실패 시 되돌리고 에러를 던져 호출부가
+   * 실패를 알 수 있게 한다.
+   */
   const deleteCenter = async (centerId: string): Promise<void> => {
-    setCenters((prev) => prev.filter((c) => c.id !== centerId));
-    await supabase.from("centers").delete().eq("id", centerId);
+    let previous: Center | undefined;
+    setCenters((prev) => {
+      previous = prev.find((c) => c.id === centerId);
+      return prev.filter((c) => c.id !== centerId);
+    });
+    const { error } = await supabase.from("centers").delete().eq("id", centerId);
+    if (error) {
+      console.error("[deleteCenter] centers 삭제 실패:", error);
+      if (previous) {
+        const restored = previous;
+        setCenters((prev) => [...prev, restored]);
+      }
+      throw new Error(
+        error.code === "23503"
+          ? "이 센터를 사용 중인 투어가 있어 삭제할 수 없습니다. 먼저 해당 투어를 정리해주세요."
+          : error.message
+            ? `센터 삭제에 실패했습니다: ${error.message}`
+            : "센터 삭제에 실패했습니다.",
+      );
+    }
   };
 
   /**

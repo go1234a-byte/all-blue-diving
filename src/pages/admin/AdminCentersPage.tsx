@@ -111,14 +111,30 @@ const AdminCentersPage = () => {
         toast({ title: "센터 정보가 저장되었습니다" });
       }
       closeDialog();
+    } catch (err) {
+      // addCenter/updateCenter는 실패 시 에러를 던지는데 여기서 안 잡고 있었다 — catch가
+      // 없어서 실패해도 사용자에게는 아무 표시 없이 조용히 아무 일도 안 일어난 것처럼 보였다.
+      toast({
+        title: "저장에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (center: Center) => {
-    await deleteCenter(center.id);
-    toast({ title: `"${center.name}" 센터를 삭제했습니다.` });
+    try {
+      await deleteCenter(center.id);
+      toast({ title: `"${center.name}" 센터를 삭제했습니다.` });
+    } catch (err) {
+      toast({
+        title: "삭제에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleApprove = async (center: Center) => {
