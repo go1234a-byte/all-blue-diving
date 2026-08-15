@@ -1903,20 +1903,61 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   /** 강사 — 참가자 대시보드/그룹채팅 상단에 고정되는 공지사항을 갱신한다. */
   const updateTourNotice = async (tourId: string, notice: string) => {
-    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, instructorNotice: notice } : t)));
-    await supabase.from("tours").update({ instructor_notice: notice }).eq("id", tourId);
+    let previous: Tour | undefined;
+    setTours((prev) => {
+      previous = prev.find((t) => t.id === tourId);
+      return prev.map((t) => (t.id === tourId ? { ...t, instructorNotice: notice } : t));
+    });
+    const { error } = await supabase.from("tours").update({ instructor_notice: notice }).eq("id", tourId);
+    if (error) {
+      console.error("[updateTourNotice] tours 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setTours((prev) => prev.map((t) => (t.id === tourId ? rolledBack : t)));
+      }
+      throw new Error(error.message ? `공지 저장에 실패했습니다: ${error.message}` : "공지 저장에 실패했습니다.");
+    }
   };
 
   /** 강사 — 참가자 대시보드 [일정] 탭의 일자별 일정을 갱신한다. */
   const updateTourItinerary = async (tourId: string, days: TourItineraryDay[]) => {
-    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, itineraryDays: days } : t)));
-    await supabase.from("tours").update({ itinerary_days: days }).eq("id", tourId);
+    let previous: Tour | undefined;
+    setTours((prev) => {
+      previous = prev.find((t) => t.id === tourId);
+      return prev.map((t) => (t.id === tourId ? { ...t, itineraryDays: days } : t));
+    });
+    const { error } = await supabase.from("tours").update({ itinerary_days: days }).eq("id", tourId);
+    if (error) {
+      console.error("[updateTourItinerary] tours 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setTours((prev) => prev.map((t) => (t.id === tourId ? rolledBack : t)));
+      }
+      throw new Error(error.message ? `일정 저장에 실패했습니다: ${error.message}` : "일정 저장에 실패했습니다.");
+    }
   };
 
   /** 강사 — 집합 장소/시간을 갱신한다(투어 생성 시 입력한 값을 이후에도 수정/저장할 수 있도록). */
   const updateTourMeetingInfo = async (tourId: string, meetingPoint: string, meetingTime: string) => {
-    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, meetingPoint, meetingTime } : t)));
-    await supabase.from("tours").update({ meeting_point: meetingPoint, meeting_time: meetingTime }).eq("id", tourId);
+    let previous: Tour | undefined;
+    setTours((prev) => {
+      previous = prev.find((t) => t.id === tourId);
+      return prev.map((t) => (t.id === tourId ? { ...t, meetingPoint, meetingTime } : t));
+    });
+    const { error } = await supabase
+      .from("tours")
+      .update({ meeting_point: meetingPoint, meeting_time: meetingTime })
+      .eq("id", tourId);
+    if (error) {
+      console.error("[updateTourMeetingInfo] tours 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setTours((prev) => prev.map((t) => (t.id === tourId ? rolledBack : t)));
+      }
+      throw new Error(
+        error.message ? `집합 정보 저장에 실패했습니다: ${error.message}` : "집합 정보 저장에 실패했습니다.",
+      );
+    }
   };
 
   /**
@@ -2000,17 +2041,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     bookingId: string,
     input: { flightInfo?: string; passportInfo?: string },
   ) => {
-    setBookings((prev) =>
-      prev.map((b) =>
+    let previous: Booking | undefined;
+    setBookings((prev) => {
+      previous = prev.find((b) => b.id === bookingId);
+      return prev.map((b) =>
         b.id === bookingId
           ? { ...b, flightInfo: input.flightInfo ?? b.flightInfo, passportInfo: input.passportInfo ?? b.passportInfo }
           : b,
-      ),
-    );
-    await supabase
+      );
+    });
+    const { error } = await supabase
       .from("bookings")
       .update({ flight_info: input.flightInfo, passport_info: input.passportInfo })
       .eq("id", bookingId);
+    if (error) {
+      console.error("[updateBookingTravelInfo] bookings 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setBookings((prev) => prev.map((b) => (b.id === bookingId ? rolledBack : b)));
+      }
+      throw new Error(
+        error.message ? `항공/여권 정보 저장에 실패했습니다: ${error.message}` : "항공/여권 정보 저장에 실패했습니다.",
+      );
+    }
   };
 
   /** 다이버 본인 — 마이페이지에서 C-Card/로그수/비상연락처/보험 정보를 갱신한다. */

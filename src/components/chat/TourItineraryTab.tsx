@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import type { Tour, TourItineraryDay } from "@/types";
 
 interface TourItineraryTabProps {
@@ -25,6 +26,7 @@ const EMPTY_DAY = (dayNumber: number): TourItineraryDay => ({
 /** 참가자 대시보드 [일정] 탭 — 집합 정보 + 일자별 브리핑/다이빙일정/식사/자유시간. */
 export function TourItineraryTab({ tour, isInstructor }: TourItineraryTabProps) {
   const { updateTourItinerary, updateTourMeetingInfo } = useAppData();
+  const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [days, setDays] = useState<TourItineraryDay[]>(tour.itineraryDays ?? []);
   const [meetingPoint, setMeetingPoint] = useState(tour.meetingPoint ?? "");
@@ -52,7 +54,14 @@ export function TourItineraryTab({ tour, isInstructor }: TourItineraryTabProps) 
         updateTourItinerary(tour.id, days),
         updateTourMeetingInfo(tour.id, meetingPoint.trim(), meetingTime.trim()),
       ]);
+      toast({ title: "일정이 저장되었습니다" });
       setEditing(false);
+    } catch (err) {
+      toast({
+        title: "일정 저장에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }

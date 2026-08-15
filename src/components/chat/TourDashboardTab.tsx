@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { formatDateRangeKR, dDayLabel } from "@/lib/dates";
 import type { Booking, Tour } from "@/types";
 
@@ -17,6 +18,7 @@ interface TourDashboardTabProps {
 /** 참가자 대시보드 [대시보드] 탭 — 일정 요약, D-Day, 참가자 수, 강사 공지. */
 export function TourDashboardTab({ tour, isInstructor }: TourDashboardTabProps) {
   const { updateTourNotice, getConfirmedParticipantCount } = useAppData();
+  const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(tour.instructorNotice ?? "");
   const [saving, setSaving] = useState(false);
@@ -29,7 +31,14 @@ export function TourDashboardTab({ tour, isInstructor }: TourDashboardTabProps) 
     setSaving(true);
     try {
       await updateTourNotice(tour.id, draft.trim());
+      toast({ title: "공지가 저장되었습니다" });
       setEditing(false);
+    } catch (err) {
+      toast({
+        title: "공지 저장에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }

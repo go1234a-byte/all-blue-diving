@@ -19,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { CANCELLATION_POLICY_LINES, CANCELLATION_POLICY_NOTE } from "@/lib/refund";
 import { getImmigrationGuide } from "@/lib/immigrationGuide";
 import { maskName } from "@/lib/masking";
@@ -58,6 +59,7 @@ function useChecklist(tourId: string, items: string[]) {
 
 export function TourMoreInfoTab({ tour, bookings, myBooking, isInstructor }: TourMoreInfoTabProps) {
   const { updateBookingTravelInfo, diverProfiles } = useAppData();
+  const { toast } = useToast();
   const checklistItems = (tour.prepNotes ?? "").split("\n").map((s) => s.trim()).filter(Boolean);
   const { checked, toggle } = useChecklist(tour.id, checklistItems);
 
@@ -70,6 +72,13 @@ export function TourMoreInfoTab({ tour, bookings, myBooking, isInstructor }: Tou
     setSaving(true);
     try {
       await updateBookingTravelInfo(myBooking.id, { flightInfo: flightDraft, passportInfo: passportDraft });
+      toast({ title: "저장되었습니다" });
+    } catch (err) {
+      toast({
+        title: "저장에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
