@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { formatDateTimeKR } from "@/lib/dates";
 import { SUPPORT_TICKET_STATUSES, type SupportTicketStatus, type SupportTicketType } from "@/types";
 
@@ -43,6 +44,7 @@ const URGENT_TYPES: SupportTicketType[] = ["dispute", "report"];
 export function SupportTicketQueue({ types, statuses, emptyMessage }: SupportTicketQueueProps = {}) {
   const { supportTickets, updateSupportTicketStatus, diverProfiles, instructorProfiles, bookings, getTourById } =
     useAppData();
+  const { toast } = useToast();
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
@@ -66,6 +68,13 @@ export function SupportTicketQueue({ types, statuses, emptyMessage }: SupportTic
     setSavingId(ticketId);
     try {
       await updateSupportTicketStatus(ticketId, status, replyDrafts[ticketId]);
+      toast({ title: "저장했습니다." });
+    } catch (err) {
+      toast({
+        title: "저장에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSavingId(null);
     }

@@ -3,6 +3,7 @@ import { Flag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { formatDateTimeKR } from "@/lib/dates";
 
 /**
@@ -13,8 +14,22 @@ import { formatDateTimeKR } from "@/lib/dates";
  */
 export function UserReportQueue() {
   const { reports, resolveReport } = useAppData();
+  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("highlight");
+
+  const handleResolve = async (reportId: string) => {
+    try {
+      await resolveReport(reportId);
+      toast({ title: "처리 완료로 변경했습니다." });
+    } catch (err) {
+      toast({
+        title: "처리 상태 변경에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const sorted = [...reports].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
@@ -46,7 +61,7 @@ export function UserReportQueue() {
           <p className="text-xs text-muted-foreground">{report.description}</p>
           <p className="text-[11px] text-muted-foreground">접수일시: {formatDateTimeKR(report.createdAt)}</p>
           {report.status === "pending" && (
-            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => resolveReport(report.id)}>
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => void handleResolve(report.id)}>
               처리 완료로 변경
             </Button>
           )}

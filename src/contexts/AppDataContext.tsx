@@ -2469,7 +2469,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const instructor = instructors.find((i) => i.id === instructorId);
 
     // instructors 테이블: 이름/소속/레벨/로그수/자기소개/자격증 파일명/프로필 사진 갱신
-    await supabase
+    // 예전엔 이 두 update 호출 다 에러를 전혀 확인하지 않고 항상 로컬 상태를 낙관적으로
+    // 반영해서, 저장이 실패해도 "저장되었습니다"로 보이다가 새로고침하면 원래 값으로
+    // 돌아가는 문제가 있었다(다이버 쪽 updateDiverProfile은 이미 이렇게 고쳐져 있었는데
+    // 강사 쪽은 빠져 있었다). 실패하면 로컬 상태를 건드리지 않고 에러를 던진다.
+    const { error: instructorUpdateError } = await supabase
       .from("instructors")
       .update({
         ...(updates.name !== undefined ? { name: updates.name } : {}),
@@ -2492,6 +2496,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ...(updates.businessType !== undefined ? { business_type: updates.businessType } : {}),
       })
       .eq("id", instructorId);
+    if (instructorUpdateError) {
+      console.error("[updateInstructorProfile] instructors 업데이트 실패:", instructorUpdateError);
+      throw new Error(
+        instructorUpdateError.message
+          ? `프로필 저장에 실패했습니다: ${instructorUpdateError.message}`
+          : "프로필 저장에 실패했습니다.",
+      );
+    }
 
     setInstructors((prev) =>
       prev.map((i) =>
@@ -2523,13 +2535,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     // profiles 테이블: 이름/연락처 갱신 (instructors.profile_id로 연결된 row)
     if (instructor?.profileId && (updates.name !== undefined || updates.phone !== undefined)) {
-      await supabase
+      const { error: profileUpdateError } = await supabase
         .from("profiles")
         .update({
           ...(updates.name !== undefined ? { name: updates.name } : {}),
           ...(updates.phone !== undefined ? { phone: updates.phone } : {}),
         })
         .eq("id", instructor.profileId);
+      if (profileUpdateError) {
+        console.error("[updateInstructorProfile] profiles 업데이트 실패:", profileUpdateError);
+        throw new Error(
+          profileUpdateError.message
+            ? `프로필 저장에 실패했습니다: ${profileUpdateError.message}`
+            : "프로필 저장에 실패했습니다.",
+        );
+      }
 
       setInstructorProfiles((prev) =>
         prev.map((p) =>
@@ -2796,8 +2816,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const resolveReport = async (reportId: string) => {
-    setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, status: "resolved" } : r)));
-    await supabase.from("reports").update({ status: "resolved" }).eq("id", reportId);
+    let previous: Report | undefined;
+    setReports((prev) => {
+      previous = prev.find((r) => r.id === reportId);
+      return prev.map((r) => (r.id === reportId ? { ...r, status: "resolved" } : r));
+    });
+    const { error } = await supabase.from("reports").update({ status: "resolved" }).eq("id", reportId);
+    if (error) {
+      console.error("[resolveReport] reports 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setReports((prev) => prev.map((r) => (r.id === reportId ? rolledBack : r)));
+      }
+      throw new Error(error.message ? `신고 처리에 실패했습니다: ${error.message}` : "신고 처리에 실패했습니다.");
+    }
   };
 
   const addChatMessage = async (input: Omit<ChatMessage, "id" | "createdAt">) => {
@@ -2925,13 +2957,23 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   /** 담당 강사가 자신의 투어에 달린 후기에 답글을 작성/수정한다. */
   const replyToReview = async (reviewId: string, reply: string) => {
     const replyAt = new Date().toISOString();
-    setReviews((prev) =>
-      prev.map((r) => (r.id === reviewId ? { ...r, instructorReply: reply, instructorReplyAt: replyAt } : r)),
-    );
-    await supabase
+    let previous: Review | undefined;
+    setReviews((prev) => {
+      previous = prev.find((r) => r.id === reviewId);
+      return prev.map((r) => (r.id === reviewId ? { ...r, instructorReply: reply, instructorReplyAt: replyAt } : r));
+    });
+    const { error } = await supabase
       .from("reviews")
       .update({ instructor_reply: reply, instructor_reply_at: replyAt })
       .eq("id", reviewId);
+    if (error) {
+      console.error("[replyToReview] reviews 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setReviews((prev) => prev.map((r) => (r.id === reviewId ? rolledBack : r)));
+      }
+      throw new Error(error.message ? `답글 저장에 실패했습니다: ${error.message}` : "답글 저장에 실패했습니다.");
+    }
   };
 
   const getCouponByCode = (code: string) => coupons.find((c) => c.code === code.trim().toUpperCase());
@@ -2977,13 +3019,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (!target) return;
     const nextActive = !target.active;
     setCoupons((prev) => prev.map((c) => (c.id === couponId ? { ...c, active: nextActive } : c)));
-    await supabase.from("coupons").update({ active: nextActive }).eq("id", couponId);
+    const { error } = await supabase.from("coupons").update({ active: nextActive }).eq("id", couponId);
+    if (error) {
+      console.error("[toggleCouponActive] coupons 업데이트 실패:", error);
+      setCoupons((prev) => prev.map((c) => (c.id === couponId ? { ...c, active: target.active } : c)));
+      throw new Error(error.message ? `쿠폰 상태 변경에 실패했습니다: ${error.message}` : "쿠폰 상태 변경에 실패했습니다.");
+    }
   };
 
   /** 관리자 — 쿠폰 삭제. */
   const deleteCoupon = async (couponId: string) => {
-    setCoupons((prev) => prev.filter((c) => c.id !== couponId));
-    await supabase.from("coupons").delete().eq("id", couponId);
+    let previous: Coupon | undefined;
+    setCoupons((prev) => {
+      previous = prev.find((c) => c.id === couponId);
+      return prev.filter((c) => c.id !== couponId);
+    });
+    const { error } = await supabase.from("coupons").delete().eq("id", couponId);
+    if (error) {
+      console.error("[deleteCoupon] coupons 삭제 실패:", error);
+      if (previous) {
+        const restored = previous;
+        setCoupons((prev) => [...prev, restored]);
+      }
+      throw new Error(error.message ? `쿠폰 삭제에 실패했습니다: ${error.message}` : "쿠폰 삭제에 실패했습니다.");
+    }
   };
 
   const deleteReview = async (reviewId: string) => {
@@ -3100,13 +3159,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   /** 천재지변/의료 사유 등 즉시 환불이 아닌 운영팀 심사가 필요한 취소 요청을 접수한다. */
   const submitCancellationForReview = async (bookingId: string, reason: string, evidenceFileNames: string[]) => {
     const cancelRequestedAt = new Date().toISOString();
-    setBookings((prev) =>
-      prev.map((b) =>
+    let previous: Booking | undefined;
+    setBookings((prev) => {
+      previous = prev.find((b) => b.id === bookingId);
+      return prev.map((b) =>
         b.id === bookingId
           ? { ...b, status: "cancel_pending_review", cancelReason: reason, evidenceFileNames, cancelRequestedAt }
           : b,
-      ),
-    );
+      );
+    });
     const { error } = await supabase
       .from("bookings")
       .update({
@@ -3116,7 +3177,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         cancel_requested_at: cancelRequestedAt,
       })
       .eq("id", bookingId);
-    if (error) console.error("[submitCancellationForReview] 업데이트 실패:", error);
+    if (error) {
+      console.error("[submitCancellationForReview] 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setBookings((prev) => prev.map((b) => (b.id === bookingId ? rolledBack : b)));
+      }
+      throw new Error(
+        error.message ? `취소 요청 접수에 실패했습니다: ${error.message}` : "취소 요청 접수에 실패했습니다.",
+      );
+    }
   };
 
   /**
@@ -3472,10 +3542,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     status: SupportTicketStatus,
     adminReply?: string,
   ): Promise<void> => {
-    await supabase
+    const { error } = await supabase
       .from("support_tickets")
       .update({ status, admin_reply: adminReply, updated_at: new Date().toISOString() })
       .eq("id", ticketId);
+    if (error) {
+      console.error("[updateSupportTicketStatus] support_tickets 업데이트 실패:", error);
+      throw new Error(
+        error.message ? `문의 답변 저장에 실패했습니다: ${error.message}` : "문의 답변 저장에 실패했습니다.",
+      );
+    }
     setSupportTickets((prev) =>
       prev.map((t) => (t.id === ticketId ? { ...t, status, adminReply: adminReply ?? t.adminReply } : t)),
     );

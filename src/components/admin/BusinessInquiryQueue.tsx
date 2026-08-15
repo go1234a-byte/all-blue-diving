@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { formatDateTimeKR } from "@/lib/dates";
 import { BUSINESS_INQUIRY_STATUSES, type BusinessInquiryStatus } from "@/types";
 
@@ -15,6 +16,7 @@ const STATUS_VARIANT: Record<BusinessInquiryStatus, "secondary" | "outline"> = {
 /** 관리자 전용 기업/단체 문의 게시판 큐. support_tickets 큐와 동일한 카드형 목록 UI. */
 export function BusinessInquiryQueue() {
   const { businessInquiries, businessInquiriesLoading, updateBusinessInquiryStatus } = useAppData();
+  const { toast } = useToast();
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
@@ -24,6 +26,13 @@ export function BusinessInquiryQueue() {
     setSavingId(inquiryId);
     try {
       await updateBusinessInquiryStatus(inquiryId, status, replyDrafts[inquiryId]);
+      toast({ title: "저장했습니다." });
+    } catch (err) {
+      toast({
+        title: "저장에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSavingId(null);
     }

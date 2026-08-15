@@ -33,6 +33,31 @@ const AdminCouponsPage = () => {
 
   const sorted = [...coupons].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
+  const handleToggleActive = async (couponId: string) => {
+    try {
+      await toggleCouponActive(couponId);
+    } catch (err) {
+      toast({
+        title: "쿠폰 상태 변경에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (couponId: string) => {
+    try {
+      await deleteCoupon(couponId);
+      toast({ title: "쿠폰을 삭제했습니다." });
+    } catch (err) {
+      toast({
+        title: "쿠폰 삭제에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSubmit = async () => {
     if (!code.trim() || !discountValue || Number(discountValue) <= 0) {
       toast({ title: "쿠폰 코드와 할인 값을 입력해주세요", variant: "destructive" });
@@ -163,12 +188,12 @@ const AdminCouponsPage = () => {
                     {exhausted && <Badge variant="destructive" className="text-[10px]">소진됨</Badge>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Switch checked={coupon.active} onCheckedChange={() => toggleCouponActive(coupon.id)} />
+                    <Switch checked={coupon.active} onCheckedChange={() => void handleToggleActive(coupon.id)} />
                     <Button
                       size="icon"
                       variant="ghost"
                       className="h-7 w-7 shrink-0 text-destructive"
-                      onClick={() => deleteCoupon(coupon.id)}
+                      onClick={() => void handleDelete(coupon.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>

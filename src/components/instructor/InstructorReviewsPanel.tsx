@@ -62,6 +62,12 @@ export function InstructorReviewsPanel({ instructorId }: InstructorReviewsPanelP
     try {
       await replyToReview(reviewId, reply);
       toast({ title: "답글이 등록되었습니다" });
+    } catch (err) {
+      toast({
+        title: "답글 저장에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSubmittingId(null);
     }
