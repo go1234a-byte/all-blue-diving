@@ -2745,10 +2745,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * 관리자 — 정산 상태를 변경한다(즉시 승인/보류/보류 해제). 예전엔 RPC가 실패해도
+   * 낙관적으로 바꾼 상태를 되돌리지 않고 console.error만 남겨서, 실제로는 정산이 안 됐는데도
+   * 화면엔 "정산 완료"로 계속 남아있는(새로고침 전까지 아무도 못 알아채는) 문제가 있었다.
+   * 실패 시 되돌리고 에러를 던져 호출부가 실패를 알 수 있게 한다.
+   */
   const setPayoutStatus = async (payoutId: string, status: Payout["status"]) => {
-    setPayouts((prev) => prev.map((p) => (p.id === payoutId ? { ...p, status } : p)));
+    let previous: Payout | undefined;
+    setPayouts((prev) => {
+      previous = prev.find((p) => p.id === payoutId);
+      return prev.map((p) => (p.id === payoutId ? { ...p, status } : p));
+    });
     const { error } = await supabase.rpc("admin_set_payout_status", { p_payout_id: payoutId, p_status: status });
-    if (error) console.error("[setPayoutStatus] 정산 상태 변경 RPC 실패:", error);
+    if (error) {
+      console.error("[setPayoutStatus] 정산 상태 변경 RPC 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setPayouts((prev) => prev.map((p) => (p.id === payoutId ? rolledBack : p)));
+      }
+      throw new Error(
+        error.message ? `정산 상태 변경에 실패했습니다: ${error.message}` : "정산 상태 변경에 실패했습니다.",
+      );
+    }
   };
 
   const addReport = async (input: Omit<Report, "id" | "createdAt" | "status">) => {

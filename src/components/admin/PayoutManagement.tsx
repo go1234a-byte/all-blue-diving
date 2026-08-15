@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Lock, Unlock } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { formatKRW } from "@/lib/pricing";
 import type { PayoutStatus } from "@/types";
 
@@ -23,8 +25,26 @@ const STATUS_VARIANT: Record<PayoutStatus, "default" | "secondary" | "destructiv
 /** 모바일 폭에 맞춘 카드형 정산 목록 — 기존 데스크톱 표 대신 사용한다. */
 export function PayoutManagement() {
   const { payouts, instructors, setPayoutStatus } = useAppData();
+  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("highlight");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const handleStatusChange = async (payoutId: string, status: PayoutStatus, successLabel: string) => {
+    setUpdatingId(payoutId);
+    try {
+      await setPayoutStatus(payoutId, status);
+      toast({ title: successLabel });
+    } catch (err) {
+      toast({
+        title: "정산 상태 변경에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   return (
     <div className="space-y-2">
@@ -90,7 +110,8 @@ export function PayoutManagement() {
                 size="sm"
                 variant="outline"
                 className="w-full gap-1 text-xs"
-                onClick={() => setPayoutStatus(payout.id, "released")}
+                disabled={updatingId === payout.id}
+                onClick={() => void handleStatusChange(payout.id, "released", "정산 보류를 해제했습니다.")}
               >
                 <Unlock className="h-3.5 w-3.5" />
                 보류 해제
@@ -102,7 +123,8 @@ export function PayoutManagement() {
                   size="sm"
                   variant="outline"
                   className="flex-1 gap-1 text-xs"
-                  onClick={() => setPayoutStatus(payout.id, "released")}
+                  disabled={updatingId === payout.id}
+                  onClick={() => void handleStatusChange(payout.id, "released", "정산을 즉시 승인했습니다.")}
                 >
                   <Unlock className="h-3.5 w-3.5" />
                   즉시 승인
@@ -111,7 +133,8 @@ export function PayoutManagement() {
                   size="sm"
                   variant="destructive"
                   className="flex-1 gap-1 text-xs"
-                  onClick={() => setPayoutStatus(payout.id, "held")}
+                  disabled={updatingId === payout.id}
+                  onClick={() => void handleStatusChange(payout.id, "held", "정산을 보류 처리했습니다.")}
                 >
                   <Lock className="h-3.5 w-3.5" />
                   정산 보류
