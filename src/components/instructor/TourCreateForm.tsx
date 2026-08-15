@@ -34,7 +34,7 @@ import {
   TOUR_TAG_OPTIONS,
   STANDARD_TOUR_OPTION_DEFS,
 } from "@/lib/constants";
-import { addMonths, formatDateKR, isPastDate, toISODate } from "@/lib/dates";
+import { formatDateKR, isPastDate, toISODate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type {
   ActivityType,
@@ -134,8 +134,6 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   // 달에 출발하는(마감되지 않은) 투어가 이미 있는지로 판단한다(아래 startDate 선택 이후).
   const myTours = tours.filter((t) => t.instructorId === instructorId && t.status !== "closed");
   const hasReachedTotalLimit = myTours.length >= 3;
-  // 투어 출발일은 오늘로부터 3개월 이내로만 등록할 수 있다.
-  const maxStartDate = addMonths(new Date(), 3);
 
   const [title, setTitle] = useState("");
   const [country, setCountry] = useState<string>("");
@@ -368,13 +366,6 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       toast({
         title: "같은 출발월에 이미 등록된 투어가 있습니다",
         description: "투어는 같은 달에 1개까지만 등록할 수 있습니다. 다른 달로 출발일을 선택해주세요.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (startDate && toISODate(startDate) > toISODate(maxStartDate)) {
-      toast({
-        title: "투어 출발일은 3개월 이내로만 설정할 수 있습니다",
         variant: "destructive",
       });
       return;
@@ -658,7 +649,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <DatePickerField label="투어 출발일" value={startDate} onChange={handleStartDateChange} maxDate={maxStartDate} />
+        <DatePickerField label="투어 출발일" value={startDate} onChange={handleStartDateChange} />
         <DatePickerField label="투어 종료일" value={endDate} onChange={setEndDate} minDate={startDate} />
         <DatePickerField label="투어모집 마감일" value={deadline} onChange={setDeadline} maxDate={startDate} />
       </div>
