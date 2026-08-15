@@ -2987,9 +2987,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteReview = async (reviewId: string) => {
-    setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, deleted: true } : r)));
+    let previous: Review | undefined;
+    setReviews((prev) => {
+      previous = prev.find((r) => r.id === reviewId);
+      return prev.map((r) => (r.id === reviewId ? { ...r, deleted: true } : r));
+    });
     const { error } = await supabase.from("reviews").update({ deleted: true }).eq("id", reviewId);
-    if (error) console.error("[deleteReview] 업데이트 실패:", error);
+    if (error) {
+      console.error("[deleteReview] 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setReviews((prev) => prev.map((r) => (r.id === reviewId ? rolledBack : r)));
+      }
+      throw new Error(error.message ? `후기 삭제에 실패했습니다: ${error.message}` : "후기 삭제에 실패했습니다.");
+    }
   };
 
   const markInstructorNotificationRead = (notificationId: string) => {

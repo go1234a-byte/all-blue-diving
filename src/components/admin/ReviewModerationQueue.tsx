@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { cn } from "@/lib/utils";
@@ -50,7 +51,21 @@ function ReviewPhotoThumbnails({ photos }: { photos?: string[] }) {
 /** 관리자용 신고된 후기 관리 큐. 신고된(reported) 후기를 나열하고 소프트 삭제(deleted)할 수 있다. */
 export function ReviewModerationQueue() {
   const { reviews, deleteReview } = useAppData();
+  const { toast } = useToast();
   const reportedReviews = reviews.filter((r) => r.reported && !r.deleted);
+
+  const handleDelete = async (reviewId: string) => {
+    try {
+      await deleteReview(reviewId);
+      toast({ title: "후기를 삭제했습니다." });
+    } catch (err) {
+      toast({
+        title: "후기 삭제에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (reportedReviews.length === 0) {
     return <p className="py-6 text-center text-sm text-muted-foreground">신고된 후기가 없습니다.</p>;
@@ -81,7 +96,7 @@ export function ReviewModerationQueue() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => deleteReview(review.id)}>삭제</AlertDialogAction>
+                  <AlertDialogAction onClick={() => void handleDelete(review.id)}>삭제</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -98,8 +113,22 @@ export function ReviewModerationQueue() {
  */
 export function AllReviewsAdminPanel() {
   const { reviews, deleteReview, getTourById } = useAppData();
+  const { toast } = useToast();
   const [openId, setOpenId] = useState<string | null>(null);
   const allReviews = reviews.filter((r: Review) => !r.deleted);
+
+  const handleDelete = async (reviewId: string) => {
+    try {
+      await deleteReview(reviewId);
+      toast({ title: "후기를 삭제했습니다." });
+    } catch (err) {
+      toast({
+        title: "후기 삭제에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (allReviews.length === 0) {
     return <p className="py-6 text-center text-sm text-muted-foreground">등록된 후기가 없습니다.</p>;
@@ -160,7 +189,7 @@ export function AllReviewsAdminPanel() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>취소</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => deleteReview(review.id)}>삭제</AlertDialogAction>
+                      <AlertDialogAction onClick={() => void handleDelete(review.id)}>삭제</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
