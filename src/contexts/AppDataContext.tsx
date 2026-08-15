@@ -797,7 +797,7 @@ interface AppDataContextValue {
   addInstructorSignup: (input: NewInstructorSignupInput) => Promise<InstructorProfile>;
   addDiverSignup: (input: NewDiverSignupInput) => Profile;
   registerDiverProfile: (profile: Profile) => void;
-  setProfileStatus: (profileId: string, status: Profile["status"]) => void;
+  setProfileStatus: (profileId: string, status: Profile["status"]) => Promise<void>;
   setPayoutStatus: (payoutId: string, status: Payout["status"]) => Promise<void>;
   addReport: (input: Omit<Report, "id" | "createdAt" | "status">) => Promise<void>;
   resolveReport: (reportId: string) => Promise<void>;
@@ -1965,8 +1965,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
    * adminStatus를 undefined로 넘기면 정상 상태로 복귀(재개)시킨다.
    */
   const setTourAdminStatus = async (tourId: string, adminStatus: Tour["adminStatus"]) => {
-    setTours((prev) => prev.map((t) => (t.id === tourId ? { ...t, adminStatus } : t)));
-    await supabase.from("tours").update({ admin_status: adminStatus ?? null }).eq("id", tourId);
+    let previous: Tour | undefined;
+    setTours((prev) => {
+      previous = prev.find((t) => t.id === tourId);
+      return prev.map((t) => (t.id === tourId ? { ...t, adminStatus } : t));
+    });
+    const { error } = await supabase.from("tours").update({ admin_status: adminStatus ?? null }).eq("id", tourId);
+    if (error) {
+      console.error("[setTourAdminStatus] tours 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setTours((prev) => prev.map((t) => (t.id === tourId ? rolledBack : t)));
+      }
+      throw new Error(
+        error.message ? `투어 상태 변경에 실패했습니다: ${error.message}` : "투어 상태 변경에 실패했습니다.",
+      );
+    }
   };
 
   /** 강사 본인 — 모집중인 투어를 수동으로 마감(모집 종료) 처리한다. */
@@ -2295,7 +2309,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const setInstructorVerified = async (instructorId: string, verified: boolean, verifiedBy?: string): Promise<void> => {
     const verifiedAt = verified ? new Date().toISOString() : undefined;
-    await supabase
+    const { error } = await supabase
       .from("instructors")
       .update({
         verified_status: verified,
@@ -2306,6 +2320,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         rejection_reason: verified ? null : undefined,
       })
       .eq("id", instructorId);
+    if (error) {
+      console.error("[setInstructorVerified] instructors 업데이트 실패:", error);
+      throw new Error(
+        error.message ? `강사 인증 상태 변경에 실패했습니다: ${error.message}` : "강사 인증 상태 변경에 실패했습니다.",
+      );
+    }
     setInstructors((prev) =>
       prev.map((i) =>
         i.id === instructorId
@@ -2363,18 +2383,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   ): Promise<void> => {
     // 경고를 해제(0회)할 때는 사유도 함께 비운다. 경고를 새로 부여할 때만 사유를 저장한다.
     const penaltyReason = penaltyCount > 0 ? reason : undefined;
-    // 호출부(InstructorPublicProfile/AdminInstructorsPage)가 이 함수를 기다리지 않고
-    // 곧바로 "처리했습니다" 토스트를 띄우는 구조라, 여기서 실패를 던져도 사용자에게
-    // 전달되지 않는다. 그래서 예전처럼 먼저 화면(로컬 상태)부터 낙관적으로 바꾸지 않고,
-    // DB 업데이트가 성공했을 때만 화면에 반영한다 — 실패하면 화면은 그대로 남아있어
-    // "실제로는 적용 안 됐는데 화면엔 적용된 것처럼" 어긋나는 상태를 막는다.
+    // 호출부(InstructorPublicProfile/AdminInstructorsPage)가 이제 이 함수를 await하고
+    // 실패 시 에러 토스트를 보여주도록 고쳐졌으므로, 여기서도 실패를 삼키지 않고 던진다.
+    // 낙관적 업데이트는 여전히 하지 않는다 — 실제 DB 반영이 확인된 뒤에만 화면에 반영한다.
     const { error } = await supabase
       .from("instructors")
       .update({ penalty_count: penaltyCount, penalty_reason: penaltyReason ?? null })
       .eq("id", instructorId);
     if (error) {
       console.error("[setInstructorPenalty] instructors 업데이트 실패:", error);
-      return;
+      throw new Error(
+        error.message ? `패널티 처리에 실패했습니다: ${error.message}` : "패널티 처리에 실패했습니다.",
+      );
     }
     setInstructors((prev) =>
       prev.map((i) => (i.id === instructorId ? { ...i, penaltyCount, penaltyReason } : i)),
@@ -2690,18 +2710,39 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const setProfileStatus = (profileId: string, status: Profile["status"]) => {
-    setDiverProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, status } : p)));
-    setInstructorProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, status } : p)));
+  const setProfileStatus = async (profileId: string, status: Profile["status"]): Promise<void> => {
+    let previousDiver: Profile | undefined;
+    let previousInstructor: Profile | undefined;
+    setDiverProfiles((prev) => {
+      previousDiver = prev.find((p) => p.id === profileId);
+      return prev.map((p) => (p.id === profileId ? { ...p, status } : p));
+    });
+    setInstructorProfiles((prev) => {
+      previousInstructor = prev.find((p) => p.id === profileId);
+      return prev.map((p) => (p.id === profileId ? { ...p, status } : p));
+    });
     // profiles.status는 컬럼 권한이 회수돼 있어(마이그레이션 20260813120000) 일반 UPDATE로는
     // 절대 못 바꾸고 반드시 이 RPC(내부에서 is_admin() 확인)를 통해야 한다 — 예전엔 여기서
     // .from("profiles").update({status})를 직접 호출했는데, profiles_update_own RLS가
     // 본인 row만 허용해서 관리자가 "다른" 사용자를 정지 처리하면 항상 조용히 실패하고 있었다.
-    supabase.rpc("admin_set_profile_status", { p_profile_id: profileId, p_status: status }).then(({ error }) => {
-      if (error) {
-        console.error("[setProfileStatus] admin_set_profile_status RPC 실패:", error);
+    // 예전엔 이 함수 자체가 동기 함수라 호출부가 기다리지 않고 곧바로 성공 토스트를 띄웠는데,
+    // 그러면 이 RPC가 실패해도 사용자는 성공했다고 오해했다. await 가능한 함수로 바꾸고
+    // 실패 시 낙관적으로 바꾼 상태를 되돌린 뒤 에러를 던져 호출부가 실패를 알 수 있게 한다.
+    const { error } = await supabase.rpc("admin_set_profile_status", { p_profile_id: profileId, p_status: status });
+    if (error) {
+      console.error("[setProfileStatus] admin_set_profile_status RPC 실패:", error);
+      if (previousDiver) {
+        const rolledBack = previousDiver;
+        setDiverProfiles((prev) => prev.map((p) => (p.id === profileId ? rolledBack : p)));
       }
-    });
+      if (previousInstructor) {
+        const rolledBack = previousInstructor;
+        setInstructorProfiles((prev) => prev.map((p) => (p.id === profileId ? rolledBack : p)));
+      }
+      throw new Error(
+        error.message ? `회원 상태 변경에 실패했습니다: ${error.message}` : "회원 상태 변경에 실패했습니다.",
+      );
+    }
   };
 
   const setPayoutStatus = async (payoutId: string, status: Payout["status"]) => {

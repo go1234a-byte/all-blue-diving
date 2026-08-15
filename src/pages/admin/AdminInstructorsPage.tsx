@@ -100,64 +100,112 @@ const AdminInstructorsPage = () => {
       return sortOrder === "oldest" ? -diff : diff;
     });
 
-  const handleRevokeVerified = (instructorId: string, instructorName: string) => {
-    void setInstructorVerified(instructorId, false);
-    toast({ title: `${instructorName} 강사의 인증을 회수했습니다.`, variant: "destructive" });
+  const handleRevokeVerified = async (instructorId: string, instructorName: string) => {
+    try {
+      await setInstructorVerified(instructorId, false);
+      toast({ title: `${instructorName} 강사의 인증을 회수했습니다.`, variant: "destructive" });
+    } catch (err) {
+      toast({
+        title: "인증 회수에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   // 예전에는 한 번 반려된 강사는 승인 큐(InstructorApplicationQueue)에서 아예 제외돼서
   // 다시 승인할 방법이 없었다 — 강사 본인이 재가입하지 않는 한 영구히 "반려됨" 상태로
   // 남았다. 관리자관리 목록에서 반려된 강사에게 "인증 승인" 버튼을 추가해, 반려 사유가
   // 해소됐을 때(예: 강사가 서류를 다시 보내온 경우) 관리자가 직접 승인할 수 있게 한다.
-  const handleApproveRejected = (instructorId: string, instructorName: string) => {
-    void setInstructorVerified(instructorId, true);
-    toast({ title: `${instructorName} 강사의 인증을 승인했습니다.` });
+  const handleApproveRejected = async (instructorId: string, instructorName: string) => {
+    try {
+      await setInstructorVerified(instructorId, true);
+      toast({ title: `${instructorName} 강사의 인증을 승인했습니다.` });
+    } catch (err) {
+      toast({
+        title: "인증 승인에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleWarn = (instructorId: string, instructorName: string, currentPenalty: number) => {
+  const handleWarn = async (instructorId: string, instructorName: string, currentPenalty: number) => {
     const reason = warnReasonDrafts[instructorId]?.trim() || undefined;
     if (!reason) {
       toast({ title: "패널티 사유를 입력해주세요", variant: "destructive" });
       return;
     }
     const next = currentPenalty + 1;
-    setInstructorPenalty(instructorId, next, reason);
-    setWarnReasonDrafts((prev) => ({ ...prev, [instructorId]: "" }));
-    if (next >= FEATURE_RESTRICTION_THRESHOLD) {
+    try {
+      await setInstructorPenalty(instructorId, next, reason);
+      setWarnReasonDrafts((prev) => ({ ...prev, [instructorId]: "" }));
+      if (next >= FEATURE_RESTRICTION_THRESHOLD) {
+        toast({
+          title: `${instructorName} 강사에게 경고를 부여했습니다 (${next}회) — 신규 투어 생성 기능이 제한됩니다.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: `${instructorName} 강사에게 경고를 부여했습니다 (${next}회).` });
+      }
+    } catch (err) {
       toast({
-        title: `${instructorName} 강사에게 경고를 부여했습니다 (${next}회) — 신규 투어 생성 기능이 제한됩니다.`,
+        title: "경고 부여에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
         variant: "destructive",
       });
-    } else {
-      toast({ title: `${instructorName} 강사에게 경고를 부여했습니다 (${next}회).` });
     }
   };
 
-  const handleClearWarning = (instructorId: string, instructorName: string) => {
-    setInstructorPenalty(instructorId, 0);
-    toast({ title: `${instructorName} 강사의 경고를 모두 해제했습니다.` });
+  const handleClearWarning = async (instructorId: string, instructorName: string) => {
+    try {
+      await setInstructorPenalty(instructorId, 0);
+      toast({ title: `${instructorName} 강사의 경고를 모두 해제했습니다.` });
+    } catch (err) {
+      toast({
+        title: "경고 해제에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handlePermanentBan = (instructorId: string, instructorName: string, profileId: string) => {
-    setInstructorPenalty(instructorId, PERMANENT_BAN_THRESHOLD);
-    setProfileStatus(profileId, "suspended");
-    // 영구정지 시 이 강사의 예정된(아직 끝나지 않은) 투어도 함께 정지 처리한다
-    // (InstructorPublicProfile.tsx의 영구정지 플로우와 동일하게 맞춰서, 관리자 화면마다
-    // 다르게 동작하던 문제를 없앤다).
-    const upcomingTours = tours.filter((t) => t.instructorId === instructorId && !isPastDate(t.endDate));
-    upcomingTours.forEach((t) => setTourAdminStatus(t.id, "suspended"));
-    toast({
-      title: `${instructorName} 강사를 영구정지 처리했습니다.${
-        upcomingTours.length > 0 ? ` (예정된 투어 ${upcomingTours.length}건도 함께 정지)` : ""
-      }`,
-      variant: "destructive",
-    });
+  const handlePermanentBan = async (instructorId: string, instructorName: string, profileId: string) => {
+    try {
+      await setInstructorPenalty(instructorId, PERMANENT_BAN_THRESHOLD);
+      await setProfileStatus(profileId, "suspended");
+      // 영구정지 시 이 강사의 예정된(아직 끝나지 않은) 투어도 함께 정지 처리한다
+      // (InstructorPublicProfile.tsx의 영구정지 플로우와 동일하게 맞춰서, 관리자 화면마다
+      // 다르게 동작하던 문제를 없앤다).
+      const upcomingTours = tours.filter((t) => t.instructorId === instructorId && !isPastDate(t.endDate));
+      await Promise.all(upcomingTours.map((t) => setTourAdminStatus(t.id, "suspended")));
+      toast({
+        title: `${instructorName} 강사를 영구정지 처리했습니다.${
+          upcomingTours.length > 0 ? ` (예정된 투어 ${upcomingTours.length}건도 함께 정지)` : ""
+        }`,
+        variant: "destructive",
+      });
+    } catch (err) {
+      toast({
+        title: "영구정지 처리에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleReinstate = (instructorId: string, instructorName: string, profileId: string) => {
-    setInstructorPenalty(instructorId, 0);
-    setProfileStatus(profileId, "active");
-    toast({ title: `${instructorName} 강사의 영구정지를 해제했습니다.` });
+  const handleReinstate = async (instructorId: string, instructorName: string, profileId: string) => {
+    try {
+      await setInstructorPenalty(instructorId, 0);
+      await setProfileStatus(profileId, "active");
+      toast({ title: `${instructorName} 강사의 영구정지를 해제했습니다.` });
+    } catch (err) {
+      toast({
+        title: "영구정지 해제에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

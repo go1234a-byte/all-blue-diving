@@ -62,9 +62,17 @@ const AdminUserDetailPage = () => {
     );
   }
 
-  const handleStatusChange = (status: ProfileStatus) => {
-    setProfileStatus(diver.id, status);
-    toast({ title: `${diver.name}님을 ${STATUS_LABEL[status]} 처리했습니다.` });
+  const handleStatusChange = async (status: ProfileStatus) => {
+    try {
+      await setProfileStatus(diver.id, status);
+      toast({ title: `${diver.name}님을 ${STATUS_LABEL[status]} 처리했습니다.` });
+    } catch (err) {
+      toast({
+        title: "상태 변경에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

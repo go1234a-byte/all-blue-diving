@@ -71,9 +71,17 @@ export function UserTable() {
       return sortOrder === "oldest" ? -diff : diff;
     });
 
-  const handleStatusChange = (userId: string, userName: string, status: ProfileStatus) => {
-    setProfileStatus(userId, status);
-    toast({ title: `${userName}님을 ${STATUS_LABEL[status]} 처리했습니다.` });
+  const handleStatusChange = async (userId: string, userName: string, status: ProfileStatus) => {
+    try {
+      await setProfileStatus(userId, status);
+      toast({ title: `${userName}님을 ${STATUS_LABEL[status]} 처리했습니다.` });
+    } catch (err) {
+      toast({
+        title: "상태 변경에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   /** 강사는 profile.id와 instructors.id가 별개 PK라서, 프로필 상세로 가려면 instructors 테이블에서 매칭되는 id를 찾아야 한다. */

@@ -179,7 +179,7 @@ const InstructorPublicProfile = () => {
   // 애초에 값이 비어 있고, 관리자라도 is_profile_staff_for 조건 통과 시에만 값이 채워진다.)
   const documentProfile = instructor ? getInstructorProfileById(instructor.profileId) : undefined;
 
-  const handleWarn = () => {
+  const handleWarn = async () => {
     if (!instructor) return;
     const reason = warnReasonDraft.trim();
     if (!reason) {
@@ -187,45 +187,77 @@ const InstructorPublicProfile = () => {
       return;
     }
     const next = instructor.penaltyCount + 1;
-    setInstructorPenalty(instructor.id, next, reason);
-    setWarnReasonDraft("");
-    if (next >= PERMANENT_BAN_THRESHOLD) {
+    try {
+      await setInstructorPenalty(instructor.id, next, reason);
+      setWarnReasonDraft("");
+      if (next >= PERMANENT_BAN_THRESHOLD) {
+        toast({
+          title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회) — 영구정지 처리되었습니다.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회).` });
+      }
+    } catch (err) {
       toast({
-        title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회) — 영구정지 처리되었습니다.`,
+        title: "경고 부여에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
         variant: "destructive",
       });
-    } else {
-      toast({ title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회).` });
     }
   };
 
-  const handleClearWarning = () => {
+  const handleClearWarning = async () => {
     if (!instructor) return;
-    setInstructorPenalty(instructor.id, 0);
-    toast({ title: `${instructor.name} 강사의 경고를 모두 해제했습니다.` });
-  };
-
-  const handlePermanentBanConfirm = () => {
-    if (!instructor) return;
-    setInstructorPenalty(instructor.id, PERMANENT_BAN_THRESHOLD);
-    setProfileStatus(instructor.profileId, "suspended");
-    if (endToursToo) {
-      upcomingTours.forEach((t) => setTourAdminStatus(t.id, "suspended"));
+    try {
+      await setInstructorPenalty(instructor.id, 0);
+      toast({ title: `${instructor.name} 강사의 경고를 모두 해제했습니다.` });
+    } catch (err) {
+      toast({
+        title: "경고 해제에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     }
-    toast({
-      title: `${instructor.name} 강사를 영구정지 처리했습니다.${
-        endToursToo && upcomingTours.length > 0 ? ` (예정된 투어 ${upcomingTours.length}건도 함께 정지)` : ""
-      }`,
-      variant: "destructive",
-    });
-    setBanDialogOpen(false);
   };
 
-  const handleReinstate = () => {
+  const handlePermanentBanConfirm = async () => {
     if (!instructor) return;
-    setInstructorPenalty(instructor.id, 0);
-    setProfileStatus(instructor.profileId, "active");
-    toast({ title: `${instructor.name} 강사의 영구정지를 해제했습니다.` });
+    try {
+      await setInstructorPenalty(instructor.id, PERMANENT_BAN_THRESHOLD);
+      await setProfileStatus(instructor.profileId, "suspended");
+      if (endToursToo) {
+        await Promise.all(upcomingTours.map((t) => setTourAdminStatus(t.id, "suspended")));
+      }
+      toast({
+        title: `${instructor.name} 강사를 영구정지 처리했습니다.${
+          endToursToo && upcomingTours.length > 0 ? ` (예정된 투어 ${upcomingTours.length}건도 함께 정지)` : ""
+        }`,
+        variant: "destructive",
+      });
+      setBanDialogOpen(false);
+    } catch (err) {
+      toast({
+        title: "영구정지 처리에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReinstate = async () => {
+    if (!instructor) return;
+    try {
+      await setInstructorPenalty(instructor.id, 0);
+      await setProfileStatus(instructor.profileId, "active");
+      toast({ title: `${instructor.name} 강사의 영구정지를 해제했습니다.` });
+    } catch (err) {
+      toast({
+        title: "영구정지 해제에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   const reviews = instructor ? getReviewsByInstructorId(instructor.id) : [];

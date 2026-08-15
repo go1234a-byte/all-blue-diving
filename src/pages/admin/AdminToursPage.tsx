@@ -223,18 +223,26 @@ const AdminToursPage = () => {
   });
 
   const handleAdminStatusChange = async (tour: Tour, adminStatus: Tour["adminStatus"]) => {
-    setTourAdminStatus(tour.id, adminStatus);
-    if (adminStatus === "suspended") {
-      const cancelledCount = await forceCancelTourBookings(tour.id);
+    try {
+      await setTourAdminStatus(tour.id, adminStatus);
+      if (adminStatus === "suspended") {
+        const cancelledCount = await forceCancelTourBookings(tour.id);
+        toast({
+          title: `"${tour.title}" 투어를 정지 처리했습니다.${
+            cancelledCount > 0 ? ` 확정 예약 ${cancelledCount}건을 전액 환불 취소했습니다.` : ""
+          }`,
+        });
+      } else if (adminStatus) {
+        toast({ title: `"${tour.title}" 투어를 ${ADMIN_STATUS_LABEL[adminStatus]} 처리했습니다.` });
+      } else {
+        toast({ title: `"${tour.title}" 투어를 정상 상태로 재개했습니다.` });
+      }
+    } catch (err) {
       toast({
-        title: `"${tour.title}" 투어를 정지 처리했습니다.${
-          cancelledCount > 0 ? ` 확정 예약 ${cancelledCount}건을 전액 환불 취소했습니다.` : ""
-        }`,
+        title: "투어 상태 변경에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
       });
-    } else if (adminStatus) {
-      toast({ title: `"${tour.title}" 투어를 ${ADMIN_STATUS_LABEL[adminStatus]} 처리했습니다.` });
-    } else {
-      toast({ title: `"${tour.title}" 투어를 정상 상태로 재개했습니다.` });
     }
   };
 
