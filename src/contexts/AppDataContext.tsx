@@ -3062,9 +3062,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   /** 강사가 방을 배정/수정할 때 사용. roomNo를 null로 넘기면 배정 해제(미배정으로 되돌림). */
   const updateBookingRoom = async (bookingId: string, roomNo: string | null) => {
-    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, roomNo: roomNo ?? undefined } : b)));
+    let previous: Booking | undefined;
+    setBookings((prev) => {
+      previous = prev.find((b) => b.id === bookingId);
+      return prev.map((b) => (b.id === bookingId ? { ...b, roomNo: roomNo ?? undefined } : b));
+    });
     const { error } = await supabase.from("bookings").update({ room_no: roomNo }).eq("id", bookingId);
-    if (error) console.error("[updateBookingRoom] 업데이트 실패:", error);
+    if (error) {
+      console.error("[updateBookingRoom] 업데이트 실패:", error);
+      if (previous) {
+        const rolledBack = previous;
+        setBookings((prev) => prev.map((b) => (b.id === bookingId ? rolledBack : b)));
+      }
+      throw new Error(error.message ? `방 배정 저장에 실패했습니다: ${error.message}` : "방 배정 저장에 실패했습니다.");
+    }
   };
 
   /** 예약 1건에 동반자가 여러 명 있을 때, 동반자 개인의 방 번호만 따로 배정/수정한다.
@@ -3073,12 +3084,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateCompanionRoom = async (bookingId: string, companionIndex: number, roomNo: string | null) => {
     const target = bookings.find((b) => b.id === bookingId);
     if (!target) return;
+    const previousCompanions = target.companions;
     const nextCompanions = (target.companions ?? []).map((c, idx) =>
       idx === companionIndex ? { ...c, roomNo: roomNo ?? undefined } : c,
     );
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, companions: nextCompanions } : b)));
     const { error } = await supabase.from("bookings").update({ companions: nextCompanions }).eq("id", bookingId);
-    if (error) console.error("[updateCompanionRoom] 업데이트 실패:", error);
+    if (error) {
+      console.error("[updateCompanionRoom] 업데이트 실패:", error);
+      setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, companions: previousCompanions } : b)));
+      throw new Error(error.message ? `방 배정 저장에 실패했습니다: ${error.message}` : "방 배정 저장에 실패했습니다.");
+    }
   };
 
   /** 천재지변/의료 사유 등 즉시 환불이 아닌 운영팀 심사가 필요한 취소 요청을 접수한다. */

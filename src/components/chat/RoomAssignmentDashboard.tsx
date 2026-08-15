@@ -67,15 +67,32 @@ export function RoomAssignmentDashboard({ bookings, isInstructor }: RoomAssignme
         }
       }
       toast({ title: "성별/선호 기준으로 자동 배정했어요", description: "필요하면 아래에서 방 번호를 직접 수정할 수 있어요." });
+    } catch (err) {
+      toast({
+        title: "자동 배정에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setApplying(false);
     }
   };
 
-  const handleRoomInputBlur = (occupant: RoomOccupant, value: string) => {
+  // 예전엔 이 함수가 결과를 기다리지 않고(void) 실패를 그냥 버려서, 방 번호를 입력해도
+  // 저장이 실패하면 사용자는 저장됐다고 착각한 채 넘어갔다(입력창엔 방금 입력한 값이
+  // 그대로 남아있어 더 그렇게 보임). 실패 시 알림을 띄운다.
+  const handleRoomInputBlur = async (occupant: RoomOccupant, value: string) => {
     const next = value.trim();
     if (next === (occupant.roomNo ?? "")) return;
-    void applyRoomNo(occupant, next || null);
+    try {
+      await applyRoomNo(occupant, next || null);
+    } catch (err) {
+      toast({
+        title: "방 번호 저장에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -134,7 +151,7 @@ export function RoomAssignmentDashboard({ bookings, isInstructor }: RoomAssignme
                           defaultValue={o.roomNo ?? ""}
                           placeholder="방 번호 (예: M-01)"
                           className="h-7 text-xs"
-                          onBlur={(e) => handleRoomInputBlur(o, e.target.value)}
+                          onBlur={(e) => void handleRoomInputBlur(o, e.target.value)}
                         />
                       )}
                     </li>
@@ -160,7 +177,7 @@ export function RoomAssignmentDashboard({ bookings, isInstructor }: RoomAssignme
                   defaultValue=""
                   placeholder="방 번호 입력"
                   className="h-7 w-32 text-xs"
-                  onBlur={(e) => handleRoomInputBlur(o, e.target.value)}
+                  onBlur={(e) => void handleRoomInputBlur(o, e.target.value)}
                 />
               </div>
             ))}
