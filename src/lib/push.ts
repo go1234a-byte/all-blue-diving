@@ -1,22 +1,33 @@
+import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * ALL BLUE — 실제 OS 웹푸시(Web Push) 클라이언트 진입점.
+ * ALL BLUE — OS 푸시 클라이언트 진입점. 안드로이드 네이티브(Capacitor) 앱에서는 FCM을,
+ * 모바일 웹에서는 Web Push를 사용한다 — 이 파일의 공개 함수들은 두 경로를 내부에서
+ * 분기하므로 호출부(PushNotificationToggle 등)는 플랫폼을 신경 쓸 필요가 없다.
  *
- * TODO: 실푸시 연동 필요 — VAPID 키 발급 후 아래를 완성하세요.
+ * 네이티브(FCM) 경로는 안드로이드 프로젝트에 Firebase의 google-services.json이 있어야
+ * 동작한다(android/app/build.gradle이 이 파일 존재 여부로 구글 서비스 플러그인 적용
+ * 여부를 자동 판단). 서버에서 실제로 발송하려면 supabase/functions/send-push가 FCM
+ * 서비스 계정 시크릿(FCM_PROJECT_ID/FCM_SERVICE_ACCOUNT_JSON)을 필요로 한다 — 둘 다
+ * 없으면 이 파일의 함수들은 에러 없이 "설정 전" 상태로 조용히 동작한다.
+ *
+ * Web Push 경로(TODO: 실푸시 연동 필요 — VAPID 키 발급 후 완성):
  * 1. 로컬에서 `npx web-push generate-vapid-keys`로 VAPID 공개/개인 키 쌍을 생성한다.
  * 2. 공개 키를 프론트엔드 빌드 환경변수 `VITE_VAPID_PUBLIC_KEY`로 등록한다(Netlify 환경변수).
  * 3. 개인 키는 `supabase_add_secret` 도구로 Supabase Edge Function 시크릿
  *    "VAPID_PRIVATE_KEY"(그리고 공개 키도 "VAPID_PUBLIC_KEY")로 등록한다.
- * 4. `supabase/migrations/migration_20260719_070000000`를 Supabase SQL Editor에서 실행해
- *    push_subscriptions 테이블을 생성한다.
- * 5. `supabase/functions/send-push` Edge Function을 Supabase CLI로 배포한다
+ * 4. `supabase/functions/send-push` Edge Function을 Supabase CLI로 배포한다
  *    (`supabase functions deploy send-push`).
- *
- * 위 설정이 없으면 구독 요청은 콘솔 경고만 남기고 조용히 스킵된다(스켈레톤 모드).
  */
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+const NATIVE_TOKEN_STORAGE_KEY = "allblue-fcm-token";
+
+function isNative(): boolean {
+  return Capacitor.isNativePlatform();
+}
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -30,21 +41,65 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export function isPushSupported(): boolean {
+  if (isNative()) return true;
   return typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window;
 }
 
 export function isPushConfigured(): boolean {
+  if (isNative()) return true; // FCM은 VAPID 없이도 동작 — google-services.json 부재는 등록 시점에 개별 에러로 드러난다.
   return Boolean(VAPID_PUBLIC_KEY);
 }
 
-/** 현재 브라우저가 이 기기에서 이미 푸시 구독 중인지 확인한다. */
+/** 현재 기기에서 이미 푸시를 허용했는지 확인한다 (네이티브: FCM 권한, 웹: 브라우저 알림 권한). */
 export async function getPushSubscriptionStatus(): Promise<"granted" | "denied" | "default" | "unsupported"> {
+  if (isNative()) {
+    const result = await PushNotifications.checkPermissions();
+    if (result.receive === "granted") return "granted";
+    if (result.receive === "denied") return "denied";
+    return "default";
+  }
   if (!isPushSupported()) return "unsupported";
   return Notification.permission;
 }
 
+/** 안드로이드 네이티브 앱: FCM 권한 요청 → 토큰 발급 → fcm_tokens에 저장. */
+async function subscribeToNativePush(profileId: string): Promise<{ success: boolean; reason?: string }> {
+  let permission = await PushNotifications.checkPermissions();
+  if (permission.receive === "prompt" || permission.receive === "prompt-with-rationale") {
+    permission = await PushNotifications.requestPermissions();
+  }
+  if (permission.receive !== "granted") {
+    return { success: false, reason: "알림 권한이 허용되지 않았습니다." };
+  }
+
+  return new Promise((resolve) => {
+    const successListener = PushNotifications.addListener("registration", async (token) => {
+      void successListener.then((l) => l.remove());
+      void errorListener.then((l) => l.remove());
+      const { error } = await supabase
+        .from("fcm_tokens")
+        .upsert({ profile_id: profileId, token: token.value, platform: "android" }, { onConflict: "token" });
+      if (error) {
+        console.error("[push] FCM 토큰 저장 실패:", error.message);
+        resolve({ success: false, reason: "토큰 저장에 실패했습니다." });
+        return;
+      }
+      window.localStorage.setItem(NATIVE_TOKEN_STORAGE_KEY, token.value);
+      resolve({ success: true });
+    });
+    const errorListener = PushNotifications.addListener("registrationError", (err) => {
+      void successListener.then((l) => l.remove());
+      void errorListener.then((l) => l.remove());
+      console.error("[push] FCM 등록 실패(google-services.json 미설정이라면 정상):", err);
+      resolve({ success: false, reason: "이 기기에 알림을 등록하지 못했습니다." });
+    });
+    void PushNotifications.register();
+  });
+}
+
 /** 알림 권한을 요청하고, 허용되면 구독을 생성해 Supabase에 저장한다. */
 export async function subscribeToPush(profileId: string): Promise<{ success: boolean; reason?: string }> {
+  if (isNative()) return subscribeToNativePush(profileId);
   if (!isPushSupported()) {
     return { success: false, reason: "이 브라우저는 푸시 알림을 지원하지 않습니다." };
   }
@@ -97,6 +152,13 @@ export async function subscribeToPush(profileId: string): Promise<{ success: boo
 
 /** 이 기기의 푸시 구독을 해제하고 Supabase에서도 삭제한다. */
 export async function unsubscribeFromPush(): Promise<void> {
+  if (isNative()) {
+    const token = window.localStorage.getItem(NATIVE_TOKEN_STORAGE_KEY);
+    if (!token) return;
+    await supabase.from("fcm_tokens").delete().eq("token", token);
+    window.localStorage.removeItem(NATIVE_TOKEN_STORAGE_KEY);
+    return;
+  }
   if (!isPushSupported()) return;
   const registration = await navigator.serviceWorker.getRegistration("/sw.js");
   const subscription = await registration?.pushManager.getSubscription();
