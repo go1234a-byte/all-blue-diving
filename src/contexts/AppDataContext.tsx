@@ -3185,6 +3185,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     const refundRate = computeRefundRate(tour);
     const refundAmount = computeRefundAmount(booking.totalPaid, refundRate);
+    const previous = booking;
 
     setBookings((prev) =>
       prev.map((b) =>
@@ -3204,6 +3205,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
     if (cancelBookingError) {
       console.error("[cancelBooking] 예약 취소/정산 RPC 실패:", cancelBookingError);
+      setBookings((prev) => prev.map((b) => (b.id === bookingId ? previous : b)));
+      throw new Error(
+        cancelBookingError.message
+          ? `예약 취소에 실패했습니다: ${cancelBookingError.message}`
+          : "예약 취소에 실패했습니다.",
+      );
     }
 
     // 트랜잭션 롤백: 이미 지급 완료(released)된 정산은 되돌리지 않고, 예정/보류 상태만 취소 처리한다.

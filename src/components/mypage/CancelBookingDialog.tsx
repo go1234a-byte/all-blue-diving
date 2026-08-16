@@ -72,6 +72,12 @@ export function CancelBookingDialog({ open, onOpenChange, booking, tour }: Cance
         description: `총 결제 금액의 ${Math.round(result.refundRate * 100)}%(${formatKRW(result.refundAmount)})가 환불 처리됩니다.`,
       });
       handleClose(false);
+    } catch (err) {
+      toast({
+        title: "예약 취소에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -90,6 +96,12 @@ export function CancelBookingDialog({ open, onOpenChange, booking, tour }: Cance
         description: "운영팀 심사 후 환불 여부가 결정됩니다. (심사 대기)",
       });
       handleClose(false);
+    } catch (err) {
+      toast({
+        title: "취소 요청 접수에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
