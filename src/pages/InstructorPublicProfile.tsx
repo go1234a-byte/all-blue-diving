@@ -61,8 +61,14 @@ import { maskName } from "@/lib/masking";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types";
 
-/** 2회 경고 누적 시 자동으로 영구정지 처리한다 (AdminInstructorsPage와 동일 기준). */
+/** '영구정지' 버튼으로 즉시 계정을 정지할 때 함께 기록되는 경고 횟수 값(기록용) —
+ * 경고 누적만으로는 자동 정지되지 않는다(QA #39 대응 시 2회 자동 영구정지 로직은 제거함).
+ * AdminInstructorsPage.tsx와 동일 기준. */
 const PERMANENT_BAN_THRESHOLD = 2;
+/** 경고 누적이 이 값 이상이면 신규 투어 생성 기능이 제한된다(InstructorConsole.tsx에서 처리).
+ * 계정 자체는 정지되지 않는다 — 즉시 정지하려면 '영구정지' 버튼을 사용한다.
+ * AdminInstructorsPage.tsx와 동일 기준. */
+const FEATURE_RESTRICTION_THRESHOLD = 5;
 
 /** 응답률/응답속도 — 다이버 메시지 이후 강사가 실제로 답장했는지, 얼마나 빨리 답했는지 채팅 로그로부터 계산. */
 function computeResponseStats(messages: ChatMessage[], instructorProfileId: string) {
@@ -190,9 +196,9 @@ const InstructorPublicProfile = () => {
     try {
       await setInstructorPenalty(instructor.id, next, reason);
       setWarnReasonDraft("");
-      if (next >= PERMANENT_BAN_THRESHOLD) {
+      if (next >= FEATURE_RESTRICTION_THRESHOLD) {
         toast({
-          title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회) — 영구정지 처리되었습니다.`,
+          title: `${instructor.name} 강사에게 경고를 부여했습니다 (${next}회) — 신규 투어 생성 기능이 제한됩니다.`,
           variant: "destructive",
         });
       } else {
@@ -263,7 +269,15 @@ const InstructorPublicProfile = () => {
   const reviews = instructor ? getReviewsByInstructorId(instructor.id) : [];
   const avgRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
 
-  const totalParticipants = myBookings.filter((b) => b.status === "confirmed").length;
+  // 확정 예약 건수가 아니라 실제 참가 인원(그룹예약의 participant_count 합 + 관리자 수동추가
+  // 인원)을 더해야 한다 — 건수로만 세면 한 예약에 동반자가 여러 명인 경우(그룹예약)나 전화/
+  // 현장 접수로 수동 추가된 인원이 실제보다 적게 집계된다(InstructorChatPanel과 동일한 유형의
+  // 버그였다).
+  const totalParticipants =
+    myBookings
+      .filter((b) => b.status === "confirmed")
+      .reduce((sum, b) => sum + b.participantCount, 0) +
+    myTours.reduce((sum, t) => sum + t.manualParticipantCount, 0);
 
   const cancellationRate = useMemo(() => {
     if (myBookings.length === 0) return null;
@@ -618,7 +632,7 @@ const InstructorPublicProfile = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>{instructor.name} 강사에게 경고를 주시겠습니까?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          경고 {PERMANENT_BAN_THRESHOLD}회 누적 시 자동으로 영구정지됩니다. 현재 누적 경고:{" "}
+                          경고 {FEATURE_RESTRICTION_THRESHOLD}회 누적 시 신규 투어 생성 기능이 제한됩니다 (계정 정지는 아닙니다). 현재 누적 경고:{" "}
                           {instructor.penaltyCount}회
                         </AlertDialogDescription>
                       </AlertDialogHeader>
