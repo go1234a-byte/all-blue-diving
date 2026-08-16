@@ -3312,6 +3312,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       });
       if (approveBookingError) {
         console.error("[resolveCancellationReview] bookings 취소/정산 RPC 실패(승인):", approveBookingError);
+        if (booking) {
+          const rolledBack = booking;
+          setBookings((prev) => prev.map((b) => (b.id === bookingId ? rolledBack : b)));
+        }
+        throw new Error(
+          approveBookingError.message
+            ? `강제 환불 승인에 실패했습니다: ${approveBookingError.message}`
+            : "강제 환불 승인에 실패했습니다.",
+        );
       }
 
       setPayouts((prev) =>
@@ -3351,6 +3360,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         .eq("id", bookingId);
       if (rejectBookingError) {
         console.error("[resolveCancellationReview] bookings 업데이트 실패(반려):", rejectBookingError);
+        if (booking) {
+          const rolledBack = booking;
+          setBookings((prev) => prev.map((b) => (b.id === bookingId ? rolledBack : b)));
+        }
+        throw new Error(
+          rejectBookingError.message ? `기각 처리에 실패했습니다: ${rejectBookingError.message}` : "기각 처리에 실패했습니다.",
+        );
       }
 
       // 반려 사유를 다이버에게 즉시 전달한다 (컬럼 미존재로 영구 저장은 아직 불가, 우선 실시간 알림으로 전달).

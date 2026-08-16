@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
 
 /**
@@ -26,8 +27,39 @@ import { formatDateKR } from "@/lib/dates";
  */
 export function CancellationReviewQueue() {
   const { bookings, getTourById, resolveCancellationReview, arbitrationMessages } = useAppData();
+  const { toast } = useToast();
   const pending = bookings.filter((b) => b.status === "cancel_pending_review");
   const [rejectReasonDrafts, setRejectReasonDrafts] = useState<Record<string, string>>({});
+
+  // 예전엔 "강제 환불 승인"(실제 돈이 움직이는 되돌릴 수 없는 조치)이 확인창도 없이 버튼
+  // 한 번에 바로 실행됐고(옆의 "기각" 버튼만 AlertDialog로 확인을 받았다), 성공/실패
+  // 피드백도 전혀 없었다 — 관리자가 실수로 눌러도 막을 방법이 없고, 실패해도 알 방법이
+  // 없었다. 두 액션 다 실패 시 알림을 띄우게 한다.
+  const handleApprove = async (bookingId: string) => {
+    try {
+      await resolveCancellationReview(bookingId, true);
+      toast({ title: "강제 환불 승인을 처리했습니다." });
+    } catch (err) {
+      toast({
+        title: "강제 환불 승인에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReject = async (bookingId: string) => {
+    try {
+      await resolveCancellationReview(bookingId, false, rejectReasonDrafts[bookingId]);
+      toast({ title: "취소 신청을 기각했습니다." });
+    } catch (err) {
+      toast({
+        title: "기각 처리에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (pending.length === 0) {
     return (
@@ -87,14 +119,35 @@ export function CancellationReviewQueue() {
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  className="flex-1 gap-1 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
-                  onClick={() => resolveCancellationReview(booking.id, true)}
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  중재 결정: 강제 환불 승인
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="flex-1 gap-1 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      중재 결정: 강제 환불 승인
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>강제 환불을 승인하시겠습니까?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {booking.diverName}님에게 결제 금액 전액이 즉시 환불되고, 담당 강사에게 정산 차감/보류
+                        조치가 함께 적용됩니다. 이 작업은 되돌릴 수 없습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                        onClick={() => void handleApprove(booking.id)}
+                      >
+                        강제 환불 승인
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="secondary" className="flex-1 gap-1 text-xs">
@@ -120,11 +173,7 @@ export function CancellationReviewQueue() {
                     />
                     <AlertDialogFooter>
                       <AlertDialogCancel>취소</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() =>
-                          resolveCancellationReview(booking.id, false, rejectReasonDrafts[booking.id])
-                        }
-                      >
+                      <AlertDialogAction onClick={() => void handleReject(booking.id)}>
                         기각 확정
                       </AlertDialogAction>
                     </AlertDialogFooter>
