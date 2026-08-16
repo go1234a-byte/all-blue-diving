@@ -868,6 +868,10 @@ interface AppDataContextValue {
   updateCompanionRoom: (bookingId: string, companionIndex: number, roomNo: string | null) => Promise<void>;
   submitCancellationForReview: (bookingId: string, reason: string, evidenceFileNames: string[]) => Promise<void>;
   resolveCancellationReview: (bookingId: string, approved: boolean, rejectReason?: string) => Promise<void>;
+  /** addBooking 성공 직후 create_booking_settlement RPC가 실패해 정산(payouts)이 누락된
+   * 예약을 관리자가 다시 시도할 때 사용. 예약 자체는 이미 확정된 상태라 되돌리지 않고,
+   * 정산 생성만 재시도한다. */
+  retryBookingSettlement: (bookingId: string) => Promise<void>;
   addArbitrationMessage: (input: Omit<ArbitrationMessage, "id" | "createdAt">) => Promise<void>;
   addInstructorAdminNote: (input: Omit<InstructorAdminNote, "id" | "createdAt">) => Promise<void>;
   addCenter: (input: NewCenterInput) => Promise<Center>;
@@ -2301,6 +2305,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
 
     return booking;
+  };
+
+  /** addBooking 안에서 create_booking_settlement RPC가 실패해 정산이 누락된 예약을 관리자가
+   * 다시 시도할 때 사용. 예약은 이미 확정돼 있으므로 손대지 않고 정산 생성만 재시도한다. */
+  const retryBookingSettlement = async (bookingId: string) => {
+    const { error } = await supabase.rpc("create_booking_settlement", { p_booking_id: bookingId });
+    if (error) {
+      console.error("[retryBookingSettlement] 정산 재시도 RPC 실패:", error);
+      throw new Error(
+        error.message ? `정산 재시도에 실패했습니다: ${error.message}` : "정산 재시도에 실패했습니다.",
+      );
+    }
+    const { data, error: fetchError } = await supabase
+      .from("payouts_directory")
+      .select("*")
+      .eq("booking_id", bookingId);
+    if (!fetchError && data) {
+      setPayouts((prev) => [...prev.filter((p) => p.bookingId !== bookingId), ...data.map(mapPayoutRow)]);
+    }
   };
 
   const addInstructorSignup = async (input: NewInstructorSignupInput): Promise<InstructorProfile> => {
@@ -3832,6 +3855,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateCompanionRoom,
       submitCancellationForReview,
       resolveCancellationReview,
+      retryBookingSettlement,
       addArbitrationMessage,
       addInstructorAdminNote,
       addCenter,
