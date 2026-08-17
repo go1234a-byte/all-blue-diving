@@ -37,6 +37,7 @@ import { computeSettlement } from "@/lib/pricing";
 import { computeRefundRate, computeRefundAmount } from "@/lib/refund";
 import { shouldEvaluateAutoClose, MIN_PARTICIPANTS_AUTO_CANCEL_REASON, ADMIN_FORCED_CLOSURE_REASON } from "@/lib/tourAutoClose";
 import { sendPushToProfile } from "@/lib/push";
+import { sendEmailToProfile } from "@/lib/email";
 import { maskName } from "@/lib/masking";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/contexts/RoleContext";
@@ -987,12 +988,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const instructor = instructors.find((i) => i.id === instructorId);
     if (instructor?.profileId) {
       void sendPushToProfile(instructor.profileId, { title, body, url });
+      void sendEmailToProfile(instructor.profileId, { subject: title, body });
     }
   };
 
-  /** 다이버(profiles.id === diverId)에게 실제 OS 푸시를 시도한다. */
+  /** 다이버(profiles.id === diverId)에게 실제 OS 푸시 + 이메일을 시도한다. */
   const notifyDiverPush = (diverId: string, title: string, body: string, url?: string) => {
     void sendPushToProfile(diverId, { title, body, url });
+    void sendEmailToProfile(diverId, { subject: title, body });
   };
 
   // Enter Cloud(Supabase) `instructors` 테이블에서 강사 신뢰 데이터를 가져온다.

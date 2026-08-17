@@ -2,3 +2,5 @@ node_modules
 dist
 .env
 enter-AllBlueDiveMarketplace/
+.vercel
+.env*
