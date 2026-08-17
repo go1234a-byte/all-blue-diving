@@ -7,11 +7,19 @@ import { supabase } from "@/integrations/supabase/client";
  * 모바일 웹에서는 Web Push를 사용한다 — 이 파일의 공개 함수들은 두 경로를 내부에서
  * 분기하므로 호출부(PushNotificationToggle 등)는 플랫폼을 신경 쓸 필요가 없다.
  *
- * 네이티브(FCM) 경로는 안드로이드 프로젝트에 Firebase의 google-services.json이 있어야
- * 동작한다(android/app/build.gradle이 이 파일 존재 여부로 구글 서비스 플러그인 적용
- * 여부를 자동 판단). 서버에서 실제로 발송하려면 supabase/functions/send-push가 FCM
- * 서비스 계정 시크릿(FCM_PROJECT_ID/FCM_SERVICE_ACCOUNT_JSON)을 필요로 한다 — 둘 다
- * 없으면 이 파일의 함수들은 에러 없이 "설정 전" 상태로 조용히 동작한다.
+ * 네이티브(FCM) 경로 — TODO: google-services.json 반영 후 VITE_FCM_CONFIGURED=true로
+ * 바꾸고 재빌드할 것. google-services.json이 없는 상태에서 PushNotifications.register()를
+ * 호출하면 안드로이드 네이티브 레이어(FirebaseApp 미초기화)에서 즉시 앱이 죽는 것을
+ * 에뮬레이터로 직접 확인했다(JS try/catch로 못 잡는 네이티브 크래시 —
+ * "FATAL EXCEPTION: CapacitorPlugins / IllegalStateException: Default FirebaseApp is
+ * not initialized"). Web Push가 VAPID_PUBLIC_KEY 유무로 스스로를 게이팅하는 것과 똑같은
+ * 패턴으로, 이 플래그가 꺼져 있으면 네이티브 앱에서도 토글이 비활성화된 채 "서비스 준비
+ * 중" 문구만 보여주고 register()를 아예 호출하지 않는다.
+ * 1. Firebase 콘솔에서 안드로이드 앱(com.allblue.diving) 등록 후 google-services.json을
+ *    android/app/에 넣는다.
+ * 2. 프론트엔드 빌드 환경변수 `VITE_FCM_CONFIGURED=true`를 등록한다.
+ * 3. 서버 발송을 위해 supabase/functions/send-push가 필요로 하는 FCM 서비스 계정
+ *    시크릿(FCM_PROJECT_ID/FCM_SERVICE_ACCOUNT_JSON)도 함께 등록한다.
  *
  * Web Push 경로(TODO: 실푸시 연동 필요 — VAPID 키 발급 후 완성):
  * 1. 로컬에서 `npx web-push generate-vapid-keys`로 VAPID 공개/개인 키 쌍을 생성한다.
@@ -23,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+const NATIVE_PUSH_CONFIGURED = import.meta.env.VITE_FCM_CONFIGURED === "true";
 const NATIVE_TOKEN_STORAGE_KEY = "allblue-fcm-token";
 
 function isNative(): boolean {
@@ -46,7 +55,7 @@ export function isPushSupported(): boolean {
 }
 
 export function isPushConfigured(): boolean {
-  if (isNative()) return true; // FCM은 VAPID 없이도 동작 — google-services.json 부재는 등록 시점에 개별 에러로 드러난다.
+  if (isNative()) return NATIVE_PUSH_CONFIGURED;
   return Boolean(VAPID_PUBLIC_KEY);
 }
 
@@ -64,6 +73,13 @@ export async function getPushSubscriptionStatus(): Promise<"granted" | "denied" 
 
 /** 안드로이드 네이티브 앱: FCM 권한 요청 → 토큰 발급 → fcm_tokens에 저장. */
 async function subscribeToNativePush(profileId: string): Promise<{ success: boolean; reason?: string }> {
+  if (!NATIVE_PUSH_CONFIGURED) {
+    // google-services.json 없이 PushNotifications.register()를 호출하면 안드로이드
+    // 네이티브 레이어(FirebaseApp 미초기화)에서 JS로 못 잡는 크래시가 난다 — 반드시
+    // 여기서 막는다. isPushConfigured()가 이미 false를 반환해 토글 자체가 비활성화되어
+    // 있어야 정상이므로, 이 분기는 방어적 이중 체크다.
+    return { success: false, reason: "TODO: FCM 연동 필요 — Firebase 프로젝트가 아직 설정되지 않았습니다." };
+  }
   let permission = await PushNotifications.checkPermissions();
   if (permission.receive === "prompt" || permission.receive === "prompt-with-rationale") {
     permission = await PushNotifications.requestPermissions();
