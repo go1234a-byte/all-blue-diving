@@ -8,6 +8,7 @@ import { SearchForm } from "@/components/search/SearchForm";
 import { TourCard } from "@/components/search/TourCard";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
+import { BUSINESS_INFO } from "@/lib/businessInfo";
 
 interface Feature {
   icon: typeof ShieldCheck;
@@ -147,6 +148,22 @@ const Index = () => {
             </div>
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           </Link>
+        </section>
+
+        {/* 사업자 정보 — 전자상거래법상 표시 의무 항목. 약관/개인정보처리방침 페이지에도
+            동일 정보(BUSINESS_INFO, src/lib/businessInfo.ts)가 있지만, 그건 링크를 타고
+            들어가야 보이므로 홈 화면 하단에도 그대로 노출한다. */}
+        <section className="space-y-1 border-t border-border pt-4 text-[11px] leading-relaxed text-muted-foreground">
+          <p>{BUSINESS_INFO.companyName} | 대표: {BUSINESS_INFO.ceoName}</p>
+          <p>사업자등록번호: {BUSINESS_INFO.businessNumber}</p>
+          <p>통신판매업신고번호: {BUSINESS_INFO.mailOrderNumber}</p>
+          <p>주소: {BUSINESS_INFO.address}</p>
+          <p>고객센터: {BUSINESS_INFO.email} | {BUSINESS_INFO.phone}</p>
+          <div className="flex gap-2 pt-1">
+            <Link to="/terms" className="underline underline-offset-2">이용약관</Link>
+            <Link to="/privacy" className="underline underline-offset-2">개인정보처리방침</Link>
+            <Link to="/refund-policy" className="underline underline-offset-2">환불정책</Link>
+          </div>
         </section>
       </main>
       <BottomNav />

@@ -1,16 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-
-const BUSINESS_INFO = {
-  serviceName: "올블루(ALL BLUE)",
-  companyName: "올블루",
-  ceoName: "박재우",
-  address: "부산광역시 사상구 백양대로494번길 10 102호",
-  officerName: "박재우",
-  officerPosition: "대표",
-  email: "help@allbluedive.com",
-  phone: "010-2604-5661",
-};
+import { BUSINESS_INFO } from "@/lib/businessInfo";
 
 const EFFECTIVE_DATE = "2026-08-08";
 

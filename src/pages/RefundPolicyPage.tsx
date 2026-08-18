@@ -1,14 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { CANCELLATION_POLICY_LINES, CANCELLATION_POLICY_NOTE } from "@/lib/refund";
-
-const BUSINESS_INFO = {
-  companyName: "올블루",
-  ceoName: "박재우",
-  address: "부산광역시 사상구 백양대로494번길 10 102호",
-  email: "help@allbluedive.com",
-  phone: "010-2604-5661",
-};
+import { BUSINESS_INFO } from "@/lib/businessInfo";
 
 const EFFECTIVE_DATE = "2026-08-08";
 
