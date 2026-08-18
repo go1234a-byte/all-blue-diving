@@ -6,10 +6,9 @@ const NAVER_STATE_STORAGE_KEY = "allblue-naver-oauth-state";
 
 /**
  * 네이버 로그인 완료 후 돌아오는 페이지. SocialAuthButtons.tsx의 handleNaverLogin이
- * 발급한 state를 sessionStorage와 대조해 CSRF를 막고, 진짜 요청이면
- * naver-oauth-exchange Edge Function으로 code를 넘겨 매직링크 토큰을 받아
- * supabase.auth.verifyOtp()로 실제 세션을 만든다. 이후 흐름(신규 유저 → /complete-profile)은
- * RootLayout의 기존 가드가 그대로 처리한다.
+ * 발급한 state를 sessionStorage와 대조해 CSRF를 막고, 진짜 요청이면 아래 Edge Function으로
+ * code를 넘겨 매직링크 토큰을 받아 supabase.auth.verifyOtp()로 실제 세션을 만든다. 이후
+ * 흐름(신규 유저 → /complete-profile)은 RootLayout의 기존 가드가 그대로 처리한다.
  */
 export default function NaverCallback() {
   const [searchParams] = useSearchParams();

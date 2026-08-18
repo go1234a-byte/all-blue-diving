@@ -11,9 +11,8 @@ const NAVER_STATE_STORAGE_KEY = "allblue-naver-oauth-state";
  * 바로 붙는다 — Supabase 대시보드(Authentication > Providers)에 각 앱 키/시크릿을 등록해야
  * 실제로 동작한다(등록 전까지는 Supabase가 에러를 돌려주고 아래 catch에서 안내 토스트를 띄운다).
  * 네이버는 Supabase 기본 지원 provider가 아니라서, 네이버 인가 화면으로 직접 보낸 뒤
- * /naver-callback 페이지 + naver-oauth-exchange Edge Function을 거쳐 세션을 만드는 커스텀
- * OAuth 브릿지를 쓴다(NaverCallback.tsx 참고). VITE_NAVER_CLIENT_ID가 없으면 버튼이
- * 비활성화된 안내만 보여준다.
+ * /naver-callback 페이지 + Edge Function(naver-oauth-exchange)을 거쳐 세션을 만드는
+ * 커스텀 OAuth 브릿지를 쓴다. VITE_NAVER_CLIENT_ID가 없으면 버튼이 비활성화된 안내만 보여준다.
  * 최초 로그인 시 profiles row가 없으면 RootLayout이 /complete-profile로 보내 추가 정보를 받는다.
  */
 export function SocialAuthButtons() {
