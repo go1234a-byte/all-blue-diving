@@ -52,6 +52,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreedTerms, setAgreedTerms] = useState(false);
+  const [agreedPolicyCompliance, setAgreedPolicyCompliance] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState<Gender>("male");
@@ -136,6 +137,10 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           toast({ title: "이용약관 및 개인정보처리방침에 동의해주세요", variant: "destructive" });
           return false;
         }
+        if (!agreedPolicyCompliance) {
+          toast({ title: "서비스 운영정책 준수 확인에 동의해주세요", variant: "destructive" });
+          return false;
+        }
         return true;
       case 2:
         if (licenseFiles.length === 0) {
@@ -174,6 +179,11 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
     }
     if (!agreedTerms) {
       toast({ title: "이용약관 및 개인정보처리방침에 동의해주세요", variant: "destructive" });
+      setStep(1);
+      return;
+    }
+    if (!agreedPolicyCompliance) {
+      toast({ title: "서비스 운영정책 준수 확인에 동의해주세요", variant: "destructive" });
       setStep(1);
       return;
     }
@@ -505,6 +515,17 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
               className="mt-0.5"
             />
             <span>ALL BLUE 이용약관 및 개인정보처리방침에 동의합니다. (필수)</span>
+          </label>
+          <label className="flex items-start gap-2 text-xs text-muted-foreground">
+            <Checkbox
+              checked={agreedPolicyCompliance}
+              onCheckedChange={(v) => setAgreedPolicyCompliance(v === true)}
+              className="mt-0.5"
+            />
+            <span>
+              본인은 ALL BLUE를 이용이 제한되는 카테고리(음란물, 도박, 불법 대출 등), 금지된 내용, 금지된
+              행동과 관련된 운영정책을 위반하는 목적으로 이용하지 않을 것을 확인합니다. (필수)
+            </span>
           </label>
         </div>
       )}
