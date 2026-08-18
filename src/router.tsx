@@ -3,6 +3,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import CompleteProfile from "./pages/CompleteProfile";
+import NaverCallback from "./pages/NaverCallback";
 import Search from "./pages/Search";
 import TourDetail from "./pages/TourDetail";
 import Checkout from "./pages/Checkout";
@@ -61,6 +62,7 @@ export const routers = [
       { path: "auth", name: "auth", element: <Auth /> },
       { path: "reset-password", name: "reset-password", element: <ResetPassword /> },
       { path: "complete-profile", name: "complete-profile", element: <CompleteProfile /> },
+      { path: "naver-callback", name: "naver-callback", element: <NaverCallback /> },
       { path: "search", name: "search", element: <Search /> },
       { path: "tour/:tourId", name: "tour-detail", element: <TourDetail /> },
       { path: "checkout/:tourId", name: "checkout", element: <Checkout /> },
