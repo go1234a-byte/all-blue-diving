@@ -15,11 +15,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
 import { NOTICE_CATEGORIES, type NoticeCategory } from "@/types";
 
 const AdminNoticesPage = () => {
   const { notices, addNotice, deleteNotice } = useAppData();
+  const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState<NoticeCategory>("일반");
@@ -31,7 +33,10 @@ const AdminNoticesPage = () => {
   });
 
   const handleSubmit = () => {
-    if (!title.trim() || !content.trim()) return;
+    if (!title.trim() || !content.trim()) {
+      toast({ title: "제목과 내용을 입력해주세요", variant: "destructive" });
+      return;
+    }
     addNotice({ title: title.trim(), content: content.trim(), category, pinned });
     setTitle("");
     setContent("");
