@@ -6,75 +6,26 @@ interface LogoMarkProps {
   className?: string;
 }
 
-/** 고래 꼬리(Fluke) 심벌 — "컨셉 5. Whale Tail" 리브랜딩 시안을 따른 아트워크. */
-const TAIL_PATH =
-  "M60 90 C59 78 56 68 50 60 C44 51 33 46 22 42 C14 39 12 33 16 27 C29 27 42 33 50 43 " +
-  "C55 49 58 54 60 59 C62 54 65 49 70 43 C78 33 91 27 104 27 C108 33 106 39 98 42 " +
-  "C87 46 76 51 70 60 C64 68 61 78 60 90 Z";
-
-/** 꼬리 아래 파도 3줄 — 시안과 동일하게 겹치는 리본 형태(단순 선이 아님)로 채운다. */
-const WAVE_PATHS = [
-  "M18 94 C28 88 38 88 48 94 C58 100 68 100 78 94 C88 88 98 88 108 94 L108 102 " +
-    "C98 96 88 96 78 102 C68 108 58 108 48 102 C38 96 28 96 18 102 Z",
-  "M15 101 C25 95 35 95 45 101 C55 107 65 107 75 101 C85 95 95 95 105 101 L105 108 " +
-    "C95 102 85 102 75 108 C65 114 55 114 45 108 C35 102 25 102 15 108 Z",
-  "M13 107 C23 101 33 101 43 107 C53 113 63 113 73 107 C83 101 93 101 103 107 L103 113 " +
-    "C93 107 83 107 73 113 C63 119 53 119 43 113 C33 107 23 107 13 113 Z",
-];
-
 /**
- * ALL BLUE 심벌 — 흰 배경(둥근 정사각형) 위의 고래 꼬리 심벌, 그 아래 파도 3줄.
- * 이 심벌은 앱 아이콘 / 헤더 / 스플래시에서 항상 동일하게 사용한다.
+ * ALL BLUE 심벌 — 실제 디자인 원본(고래 꼬리 + 파도)을 그대로 쓴다(손으로 그린 근사 벡터가
+ * 아님). 흰 배경(둥근 정사각형) 위에 올려서, 헤더 배경이 다크 테마로 짙어져도 마크의
+ * 원래 색이 그대로 유지되고 대비도 확보된다. 이 심벌은 헤더/사이드바/로그인 화면 등
+ * 인앱에서 항상 동일하게 쓰인다(앱 아이콘/스플래시는 별도 이미지 자산 사용).
  */
-export function LogoMark({ size = 32, tone = "default", className }: LogoMarkProps) {
-  const isInverted = tone === "inverted";
-  const gradFrom = isInverted ? "hsl(var(--primary-foreground))" : "hsl(var(--primary))";
-  const gradTo = isInverted ? "hsl(var(--accent-foreground))" : "hsl(var(--primary-glow))";
-  // 기본(흰 배경) 톤: 배경과 구분되도록 파도마다 실제 색을 다르게 준다(흰 배경 위 흰 선은
-  // 보이지 않았던 기존 버그 수정). 반전(어두운 배경) 톤: 밝은 단색을 투명도로만 층을 준다.
-  const waveColors = isInverted
-    ? ["hsl(var(--primary-foreground))", "hsl(var(--primary-foreground))", "hsl(var(--primary-foreground))"]
-    : ["hsl(var(--primary))", "hsl(var(--primary-glow))", "hsl(var(--accent))"];
-  const waveOpacities = isInverted ? [0.95, 0.65, 0.4] : [0.95, 0.85, 0.85];
-  const gradId = `tail-gradient-${tone}`;
-
+export function LogoMark({ size = 32, className }: LogoMarkProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 120 120"
-      fill="none"
-      className={cn("shrink-0", className)}
-      aria-hidden="true"
+    <span
+      className={cn("inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[23%] bg-white", className)}
+      style={{ width: size, height: size }}
     >
-      <defs>
-        <linearGradient id={gradId} x1="16" y1="27" x2="104" y2="90" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor={gradFrom} />
-          <stop offset="100%" stopColor={gradTo} />
-        </linearGradient>
-      </defs>
-
-      {!isInverted && <rect x="0" y="0" width="120" height="120" rx="28" fill="white" />}
-
-      {WAVE_PATHS.map((d, i) => (
-        <path key={i} d={d} fill={waveColors[i]} opacity={waveOpacities[i]} />
-      ))}
-
-      <path d={TAIL_PATH} fill={`url(#${gradId})`} />
-    </svg>
+      <img src="/logo-mark.png" alt="" className="h-[85%] w-[85%] object-contain" aria-hidden="true" />
+    </span>
   );
 }
 
-/** 배경 워터마크용 — 흰 배지 없이 심벌 아트워크만, currentColor로 채운다(부모의 text 색 상속). */
+/** 배경 워터마크용 — 흰 배지 없이 심벌 아트워크만, 원본 이미지 그대로(투명 배경). */
 export function LogoWatermark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 120 120" fill="none" className={className} aria-hidden="true">
-      {WAVE_PATHS.map((d, i) => (
-        <path key={i} d={d} fill="currentColor" opacity={0.9 - i * 0.15} />
-      ))}
-      <path d={TAIL_PATH} fill="currentColor" />
-    </svg>
-  );
+  return <img src="/logo-mark.png" alt="" className={className} aria-hidden="true" />;
 }
 
 interface LogoProps {
