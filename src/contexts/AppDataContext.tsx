@@ -914,7 +914,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   // SELECT 권한이 있다(비로그인 anon은 401). 아래 부트스트랩 조회들이 로그인 여부와
   // 무관하게 즉시 실행되고 있어서, 비회원이 홈 화면만 열어도 매번 이 3개 뷰에 대해
   // 실패하는 요청이 나갔다(Supabase 로그에서 확인). 로그인 이후에 실행되도록 게이팅한다.
-  const { isLoggedIn, authLoading } = useRole();
+  const { isLoggedIn, authLoading, profile } = useRole();
   const [tours, setTours] = useState<Tour[]>([]);
   const [toursLoading, setToursLoading] = useState(true);
   const [instructors, setInstructors] = useState<InstructorProfile[]>([]);
@@ -978,6 +978,42 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       return [];
     }
   });
+
+  // 로그인 시 서버(favorites 테이블)에서 찜 목록을 불러와 로컬 상태와 동기화한다.
+  // 로그인 전(게스트)에는 localStorage만 쓰다가, 로그인하는 순간 그때까지 로컬에만 있던
+  // 찜을 서버로 업로드(마이그레이션)해서 계정에 묶는다 — 그래야 다른 기기에서 로그인해도
+  // 같은 찜 목록이 보이고, 브라우저 데이터를 지워도 없어지지 않는다.
+  useEffect(() => {
+    if (!profile?.id) return;
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("favorites")
+        .select("target_type, target_id")
+        .eq("profile_id", profile.id);
+      if (!active || error || !data) return;
+
+      const serverTourIds = data.filter((f) => f.target_type === "tour").map((f) => f.target_id);
+      const serverInstructorIds = data.filter((f) => f.target_type === "instructor").map((f) => f.target_id);
+      const localOnlyTours = bookmarkedTourIds.filter((id) => !serverTourIds.includes(id));
+      const localOnlyInstructors = bookmarkedInstructorIds.filter((id) => !serverInstructorIds.includes(id));
+
+      const toInsert = [
+        ...localOnlyTours.map((id) => ({ profile_id: profile.id, target_type: "tour" as const, target_id: id })),
+        ...localOnlyInstructors.map((id) => ({ profile_id: profile.id, target_type: "instructor" as const, target_id: id })),
+      ];
+      if (toInsert.length > 0) {
+        await supabase.from("favorites").insert(toInsert);
+      }
+      if (!active) return;
+      setBookmarkedTourIds([...new Set([...serverTourIds, ...localOnlyTours])]);
+      setBookmarkedInstructorIds([...new Set([...serverInstructorIds, ...localOnlyInstructors])]);
+    })();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   /**
    * 담당 강사(instructorId → instructors.profileId)에게 실제 OS 푸시를 시도한다.
@@ -2977,18 +3013,36 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // 찜 토글: 로컬 상태는 즉시 반영(낙관적 업데이트)하고, 로그인 상태면 서버에도 반영한다.
+  // 게스트는 localStorage에만 남고, 로그인 시 위 useEffect가 서버로 업로드해준다.
   const toggleBookmark = (tourId: string) => {
-    setBookmarkedTourIds((prev) =>
-      prev.includes(tourId) ? prev.filter((id) => id !== tourId) : [...prev, tourId],
-    );
+    const wasBookmarked = bookmarkedTourIds.includes(tourId);
+    setBookmarkedTourIds((prev) => (wasBookmarked ? prev.filter((id) => id !== tourId) : [...prev, tourId]));
+    if (!profile?.id) return;
+    // supabase-js의 쿼리 빌더는 lazy thenable이라 .then()/await 없이 그냥 버리면(void) 실제
+    // fetch가 나가지 않는다 — 반드시 await/then으로 실행해야 한다.
+    const query = wasBookmarked
+      ? supabase.from("favorites").delete().eq("profile_id", profile.id).eq("target_type", "tour").eq("target_id", tourId)
+      : supabase.from("favorites").insert({ profile_id: profile.id, target_type: "tour", target_id: tourId });
+    query.then(({ error }) => {
+      if (error) console.error("[toggleBookmark] 서버 반영 실패:", error.message);
+    });
   };
 
   const isBookmarked = (tourId: string) => bookmarkedTourIds.includes(tourId);
 
   const toggleInstructorBookmark = (instructorId: string) => {
+    const wasBookmarked = bookmarkedInstructorIds.includes(instructorId);
     setBookmarkedInstructorIds((prev) =>
-      prev.includes(instructorId) ? prev.filter((id) => id !== instructorId) : [...prev, instructorId],
+      wasBookmarked ? prev.filter((id) => id !== instructorId) : [...prev, instructorId],
     );
+    if (!profile?.id) return;
+    const query = wasBookmarked
+      ? supabase.from("favorites").delete().eq("profile_id", profile.id).eq("target_type", "instructor").eq("target_id", instructorId)
+      : supabase.from("favorites").insert({ profile_id: profile.id, target_type: "instructor", target_id: instructorId });
+    query.then(({ error }) => {
+      if (error) console.error("[toggleInstructorBookmark] 서버 반영 실패:", error.message);
+    });
   };
 
   const isInstructorBookmarked = (instructorId: string) => bookmarkedInstructorIds.includes(instructorId);
