@@ -24,12 +24,14 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="fixed inset-0 z-[200] overflow-hidden bg-black"
+          className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden bg-black"
         >
+          {/* 세로로 긴 포스터 이미지라 object-cover로 꽉 채우면 데스크톱처럼 가로로 넓은 화면에서
+              얼굴/하단 문구가 잘려나간다 — object-contain으로 전체 그림이 항상 다 보이게 한다. */}
           <img
             src="/splash-diver.jpg"
             alt="ALL BLUE"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         </motion.div>
       )}
