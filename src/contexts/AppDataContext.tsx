@@ -33,7 +33,7 @@ import type {
   TourOption,
   UnderMinParticipantsPolicy, CompanionInfo,} from "@/types";
 import { MOCK_ADMIN_PROFILE, MOCK_DIVE_CENTERS } from "@/data/mockData";
-import { computeSettlement } from "@/lib/pricing";
+import { computeSettlement, formatKRW } from "@/lib/pricing";
 import { computeRefundRate, computeRefundAmount } from "@/lib/refund";
 import { shouldEvaluateAutoClose, MIN_PARTICIPANTS_AUTO_CANCEL_REASON, ADMIN_FORCED_CLOSURE_REASON } from "@/lib/tourAutoClose";
 import { sendPushToProfile } from "@/lib/push";
@@ -2321,6 +2321,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       });
       if (settlementError) {
         console.error("[addBooking] 정산(payout/invoice) 생성 RPC 실패 (예약은 정상 처리됨):", settlementError);
+        // 관리자가 /admin/bookings의 SettlementGapsPanel을 우연히 열어보지 않는 한 아무도
+        // 모르고 지나갈 수 있다(실제로 5인 단체예약 17,600,000원 건이 그렇게 방치됐었다) —
+        // 실패 즉시 관리자에게 이메일로 알려 방치되지 않게 한다.
+        void (async () => {
+          const { data: admins } = await supabase.from("profiles").select("id").eq("role", "admin");
+          for (const admin of admins ?? []) {
+            void sendEmailToProfile(admin.id, {
+              subject: "[긴급] 예약 정산 생성 실패",
+              body:
+                `예약 ID ${booking.id} (${maskName(input.diverName)}, ` +
+                `${formatKRW(input.basePrice + input.optionsCost)})의 정산 생성이 실패했습니다.\n` +
+                `관리자 페이지 > 예약 관리에서 "정산 재시도"를 눌러주세요.\n\n에러: ${settlementError.message}`,
+            });
+          }
+        })();
       }
 
       // 트랜잭션이 확정되는 즉시(=예약 생성 시점) 담당 강사에게 실시간 알림을 발행한다.
@@ -3293,11 +3308,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       );
     }
 
-    // 트랜잭션 롤백: 이미 지급 완료(released)된 정산은 되돌리지 않고, 예정/보류 상태만 취소 처리한다.
+    // 서버(cancel_booking_settlement)와 동일한 규칙: 이미 지급 완료(released)된 정산은
+    // 되돌리지 않는다. 전액환불이면 정산을 취소 처리하고, 부분환불이면 회사가 보유하는
+    // 비율만큼 강사 정산 금액을 비례 축소한다(0원 처리하지 않음 — 늦은 취소에 대해 강사도
+    // 보유분에서는 정상 비율로 정산받아야 하므로).
+    const retainedFraction = Math.max(0, 1 - refundRate);
     setPayouts((prev) =>
-      prev.map((p) =>
-        p.bookingId === bookingId && p.status !== "released" ? { ...p, status: "cancelled" } : p,
-      ),
+      prev.map((p) => {
+        if (p.bookingId !== bookingId || p.status === "released") return p;
+        if (retainedFraction <= 0) return { ...p, status: "cancelled" as const };
+        return {
+          ...p,
+          firstAmount: Math.round(p.firstAmount * retainedFraction),
+          secondAmount: Math.round(p.secondAmount * retainedFraction),
+          withholdingTaxAmount:
+            p.withholdingTaxAmount !== undefined ? Math.round(p.withholdingTaxAmount * retainedFraction) : p.withholdingTaxAmount,
+          netPayoutAmount:
+            p.netPayoutAmount !== undefined ? Math.round(p.netPayoutAmount * retainedFraction) : p.netPayoutAmount,
+        };
+      }),
     );
     void fetchTourConfirmedCounts();
 
