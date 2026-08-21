@@ -49,7 +49,9 @@ const RefundPolicyPage = () => {
               강사(센터) 회원에게 회복할 수 없는 중대한 피해가 예상되는 경우에는 청약철회가 제한될
               수 있으며, 이 경우 4항의 잔여일수 기준 환불율이 적용됩니다. 재화 등의 내용이 표시·광고
               내용과 다르거나 계약내용과 다르게 이행된 경우에는 그 사실을 안 날 또는 알 수 있었던
-              날부터 30일 이내에 청약철회를 할 수 있습니다.
+              날부터 30일 이내에 청약철회를 할 수 있습니다. 만 19세 미만의 미성년자 회원이
+              법정대리인의 동의 없이 결제한 경우, 본인 또는 법정대리인은 「민법」 제5조에 따라
+              해당 계약을 취소할 수 있습니다.
             </p>
           </section>
 
@@ -163,6 +165,8 @@ const RefundPolicyPage = () => {
           <section className="border-t border-border pt-6 text-muted-foreground">
             <p>상호: {BUSINESS_INFO.companyName}</p>
             <p>대표자: {BUSINESS_INFO.ceoName}</p>
+            <p>사업자등록번호: {BUSINESS_INFO.businessNumber}</p>
+            <p>통신판매업신고번호: {BUSINESS_INFO.mailOrderNumber}</p>
             <p>주소: {BUSINESS_INFO.address}</p>
             <p>이메일: {BUSINESS_INFO.email}</p>
             <p>고객센터: {BUSINESS_INFO.phone}</p>
