@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { AppDataProvider } from "@/contexts/AppDataContext";
 import { SplashScreen } from "@/components/SplashScreen";
+import { DiverPopup } from "@/components/DiverPopup";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => {
               <Toaster />
               <Sonner />
               {!splashDone && <SplashScreen onFinish={handleSplashFinish} />}
+              {splashDone && <DiverPopup />}
               <RouterProvider router={router} />
             </AppDataProvider>
           </RoleProvider>
