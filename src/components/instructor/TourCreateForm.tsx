@@ -401,6 +401,10 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       toast({ title: "모집 마감일은 출발일 이후로 설정할 수 없습니다", variant: "destructive" });
       return;
     }
+    if (Number(basePrice) <= 0) {
+      toast({ title: "기본가는 0원보다 커야 합니다", variant: "destructive" });
+      return;
+    }
     if (Number(maxParticipants) <= 0) {
       toast({ title: "모집 정원은 1명 이상이어야 합니다", variant: "destructive" });
       return;
@@ -772,7 +776,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
           <Label>기본가 (원)</Label>
-          <Input type="number" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="890000" />
+          <Input type="number" min={1} value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="890000" />
         </div>
         <div className="space-y-1.5">
           <Label>최대 인원</Label>
