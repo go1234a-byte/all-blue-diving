@@ -14,37 +14,51 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { ArbitrationMessage } from "@/types";
 import { buildDisputeLogLines } from "@/lib/chatExport";
+import { sendEmailToAddress } from "@/lib/email";
 
 interface EmailExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   messages: ArbitrationMessage[];
   roomId: string;
+  instructorId: string;
 }
 
 /**
- * "이메일로 전송하기" — 대상 이메일 입력 후 (시뮬레이션된) SMTP 발송을 트리거한다.
- * 실제 이메일 API 연동 키가 없으므로 짧은 지연 후 성공 토스트로 완료를 알린다.
+ * "이메일로 전송하기" — 대상 이메일로 대화록을 실제로 발송한다(Resend 연동, send-email
+ * 함수의 to/instructorId 모드). 예전에는 실제 발송 없이 성공 토스트만 띄우는 시뮬레이션
+ * 이었다 — 분쟁 증거를 다루는 기능이 "발송됐다"고 거짓 확인을 주는 건 실제 분쟁
+ * 상황에서 증거 유실로 이어질 수 있어 실제 발송으로 교체했다.
  */
-export function EmailExportDialog({ open, onOpenChange, messages, roomId }: EmailExportDialogProps) {
+export function EmailExportDialog({ open, onOpenChange, messages, roomId, instructorId }: EmailExportDialogProps) {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!email.trim() || !email.includes("@")) {
       toast({ title: "올바른 이메일 주소를 입력해주세요", variant: "destructive" });
       return;
     }
     setSending(true);
-    // 실제 SMTP 연동 키가 없어 발송 프로세스를 시뮬레이션합니다.
-    setTimeout(() => {
-      console.info("[Dispute Log Export]", { to: email, roomId, lines: buildDisputeLogLines(messages) });
-      setSending(false);
+    try {
+      const lines = buildDisputeLogLines(messages);
+      await sendEmailToAddress(email.trim(), instructorId, {
+        subject: `ALL BLUE 비밀 중재방 대화록 (${roomId})`,
+        body: lines.length > 0 ? lines.join("\n") : "대화 내역이 없습니다.",
+      });
       setEmail("");
       onOpenChange(false);
-      toast({ title: "📧 대화록이 암호화되어 지정된 이메일로 안전하게 발송되었습니다." });
-    }, 900);
+      toast({ title: "📧 대화록이 지정된 이메일로 발송되었습니다." });
+    } catch (err) {
+      toast({
+        title: "이메일 발송에 실패했습니다",
+        description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -53,7 +67,7 @@ export function EmailExportDialog({ open, onOpenChange, messages, roomId }: Emai
         <DialogHeader>
           <DialogTitle className="break-keep">대화록 이메일로 전송하기</DialogTitle>
           <DialogDescription className="break-keep">
-            대화록은 암호화되어 지정된 이메일 주소로 안전하게 발송됩니다.
+            대화록이 지정된 이메일 주소로 발송됩니다.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1.5">
@@ -67,9 +81,9 @@ export function EmailExportDialog({ open, onOpenChange, messages, roomId }: Emai
           />
         </div>
         <DialogFooter>
-          <Button className="w-full gap-2" onClick={handleSend} disabled={sending}>
+          <Button className="w-full gap-2" onClick={() => void handleSend()} disabled={sending}>
             <Mail className="h-4 w-4" />
-            {sending ? "전송 중..." : "안전하게 전송하기"}
+            {sending ? "전송 중..." : "전송하기"}
           </Button>
         </DialogFooter>
       </DialogContent>

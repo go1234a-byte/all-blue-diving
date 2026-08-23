@@ -15,3 +15,20 @@ export async function sendEmailToProfile(
     console.warn("[email] send-email 호출 실패(설정 전이라면 정상):", error.message);
   }
 }
+
+/**
+ * 시스템에 가입되지 않은 임의 주소(변호사·보험사 등)로 트랜잭션 이메일을 보낸다.
+ * 서버(send-email 함수)가 호출자가 해당 강사 본인이거나 관리자인지 다시 검증한다.
+ */
+export async function sendEmailToAddress(
+  to: string,
+  instructorId: string,
+  payload: { subject: string; body: string },
+): Promise<void> {
+  const { error } = await supabase.functions.invoke("send-email", {
+    body: { to, instructorId, ...payload },
+  });
+  if (error) {
+    throw new Error(error.message || "이메일 발송에 실패했습니다.");
+  }
+}

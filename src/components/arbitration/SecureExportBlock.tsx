@@ -8,6 +8,7 @@ import type { ArbitrationMessage } from "@/types";
 interface SecureExportBlockProps {
   messages: ArbitrationMessage[];
   roomId: string;
+  instructorId: string;
 }
 
 /**
@@ -15,7 +16,7 @@ interface SecureExportBlockProps {
  * - .txt 즉시 다운로드
  * - 이메일 전송 모달 오픈
  */
-export function SecureExportBlock({ messages, roomId }: SecureExportBlockProps) {
+export function SecureExportBlock({ messages, roomId, instructorId }: SecureExportBlockProps) {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   return (
@@ -50,6 +51,7 @@ export function SecureExportBlock({ messages, roomId }: SecureExportBlockProps) 
         onOpenChange={setEmailDialogOpen}
         messages={messages}
         roomId={roomId}
+        instructorId={instructorId}
       />
     </div>
   );

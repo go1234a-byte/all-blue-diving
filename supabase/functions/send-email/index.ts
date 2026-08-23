@@ -18,7 +18,12 @@ const corsHeaders = {
 };
 
 interface SendEmailBody {
-  profileId: string;
+  profileId?: string;
+  // 중재방 대화록을 임의 주소(변호사·보험사 등 시스템에 가입되지 않은 수신자)로 보내는
+  // 용도. profileId 조회 없이 to를 직접 쓰되, 호출자가 해당 강사 본인이거나 관리자인지
+  // instructorId로 검증한다 — 아니면 이 엔드포인트가 임의 발신 릴레이로 악용될 수 있다.
+  to?: string;
+  instructorId?: string;
   subject: string;
   body: string;
 }
@@ -40,9 +45,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { profileId, subject, body }: SendEmailBody = await req.json();
-    if (!profileId || !subject || !body) {
-      return new Response(JSON.stringify({ error: "profileId, subject, body는 필수입니다." }), {
+    const { profileId, to, instructorId, subject, body }: SendEmailBody = await req.json();
+    if ((!profileId && !to) || !subject || !body) {
+      return new Response(JSON.stringify({ error: "profileId 또는 to, 그리고 subject/body는 필수입니다." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -62,13 +67,57 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(profileId);
-    if (userError || !userData?.user?.email) {
-      console.warn("[send-email] 이메일 조회 실패:", userError?.message ?? "no email on user");
-      return new Response(JSON.stringify({ skipped: true, reason: "no email for profile" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+    let recipient: string;
+    if (to) {
+      // 임의 주소 발송 모드 — 호출자가 해당 강사 본인이거나 관리자인지, 호출자의 JWT로
+      // 직접 검증한다(서비스 롤로 바로 신뢰하지 않음).
+      if (!instructorId) {
+        return new Response(JSON.stringify({ error: "to를 쓸 때는 instructorId가 필수입니다." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const supabaseAsCaller = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const [adminResult, ownsResult] = await Promise.all([
+        supabaseAsCaller.rpc("is_admin"),
+        supabaseAsCaller.rpc("owns_instructor", { p_instructor_id: instructorId }),
+      ]);
+      if (!adminResult.data && !ownsResult.data) {
+        return new Response(
+          JSON.stringify({
+            error: "이 강사의 대화록을 발송할 권한이 없습니다.",
+            debug: {
+              hasAuthHeader: !!authHeader,
+              authHeaderPrefix: authHeader.slice(0, 20),
+              adminError: adminResult.error,
+              ownsError: ownsResult.error,
+              adminData: adminResult.data,
+              ownsData: ownsResult.data,
+            },
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+      recipient = to;
+    } else {
+      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(profileId!);
+      if (userError || !userData?.user?.email) {
+        console.warn("[send-email] 이메일 조회 실패:", userError?.message ?? "no email on user");
+        return new Response(JSON.stringify({ skipped: true, reason: "no email for profile" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      recipient = userData.user.email;
     }
 
     const res = await fetch("https://api.resend.com/emails", {
@@ -76,7 +125,7 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from,
-        to: userData.user.email,
+        to: recipient,
         subject,
         html: renderHtml(subject, body),
       }),

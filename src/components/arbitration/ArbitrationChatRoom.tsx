@@ -104,7 +104,7 @@ export function ArbitrationChatRoom({ instructorId, instructorName, viewerRole, 
           의거하여 보관됩니다.
         </p>
         <div className="mt-2.5">
-          <SecureExportBlock messages={messages} roomId={roomId} />
+          <SecureExportBlock messages={messages} roomId={roomId} instructorId={instructorId} />
         </div>
       </div>
 
