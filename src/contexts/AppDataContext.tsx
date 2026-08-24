@@ -3606,6 +3606,38 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         error.message ? `메시지 전송에 실패했습니다: ${error.message}` : "메시지 전송에 실패했습니다.",
       );
     }
+
+    // 비밀 중재방은 강제환불/페널티 등 실제 돈이 걸린 분쟁을 다루는데, 지금까지 상대방에게
+    // 아무 알림도 안 가서 인앱을 직접 열어보지 않으면 새 메시지를 놓칠 수 있었다.
+    // 관리자가 보내면 강사에게 푸시/이메일/알림센터로, 강사가 보내면 관리자 전원에게
+    // 이메일로 알린다(admin 쪽엔 별도 알림벨 UI가 없어 이메일이 유일한 채널).
+    if (input.senderRole === "admin") {
+      const createdAt = new Date().toISOString();
+      void persistInstructorNotification({
+        instructorId: input.instructorId,
+        tourId: "",
+        tourTitle: "비밀 중재방",
+        message: input.body,
+        createdAt,
+        type: "arbitration_message",
+      });
+      notifyInstructorPush(
+        input.instructorId,
+        "비밀 중재방에 새 메시지가 도착했습니다",
+        input.body,
+        "/instructor/arbitration",
+      );
+    } else {
+      void (async () => {
+        const { data: admins } = await supabase.from("profiles").select("id").eq("role", "admin");
+        for (const admin of admins ?? []) {
+          void sendEmailToProfile(admin.id, {
+            subject: `[중재방] ${input.senderName} 강사 메시지 도착`,
+            body: `비밀 중재방에 강사(${input.senderName})가 메시지를 남겼습니다.\n\n${input.body}\n\n관리자 페이지 > 중재방에서 확인해주세요.`,
+          });
+        }
+      })();
+    }
   };
 
   /**

@@ -13,6 +13,7 @@ const TYPE_LABEL: Record<InstructorNotificationType, string> = {
   application_rejected: "강사 인증 반려",
   application_approved: "강사 인증 승인",
   document_review_completed: "제출 서류 확인 완료",
+  arbitration_message: "비밀 중재방 메시지",
 };
 
 /** 모바일 폭에 맞춘 카드형 알림 목록 — 기존 데스크톱 표 대신 사용한다. */

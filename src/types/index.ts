@@ -496,7 +496,8 @@ export type InstructorNotificationType =
   | "min_participants_decision_needed" // 출발 30일 전, 최소 인원 미달로 강사의 진행/취소 결정이 필요함 (투어 단위)
   | "application_rejected" // 관리자가 강사 인증 신청을 반려함
   | "application_approved" // 관리자가 강사 인증 신청을 승인함
-  | "document_review_completed"; // 관리자가 강사의 제출 서류 수정요청을 확인 완료함
+  | "document_review_completed" // 관리자가 강사의 제출 서류 수정요청을 확인 완료함
+  | "arbitration_message"; // 비밀 중재방에 관리자가 새 메시지를 남김
 
 export interface InstructorNotification {
   id: string;

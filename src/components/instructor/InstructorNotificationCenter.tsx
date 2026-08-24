@@ -50,6 +50,7 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
             const isRejected = notification.type === "application_rejected";
             const isApproved = notification.type === "application_approved";
             const isDocReviewCompleted = notification.type === "document_review_completed";
+            const isArbitrationMessage = notification.type === "arbitration_message";
             const label = isPenalty
               ? "[강제 환불 승인 조치]"
               : isMinCancelled
@@ -64,7 +65,9 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                         ? "[강사 인증 승인]"
                         : isDocReviewCompleted
                           ? "[제출 서류 확인 완료]"
-                          : "[신규 투어 예약 완료]";
+                          : isArbitrationMessage
+                            ? "[비밀 중재방 새 메시지]"
+                            : "[신규 투어 예약 완료]";
             const description = isPenalty
               ? "관리자가 이의신청 건에 대해 강제 환불을 승인했습니다."
               : isMinCancelled
@@ -79,19 +82,22 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                         ? notification.message ?? "관리자가 강사 인증을 승인했습니다."
                         : isDocReviewCompleted
                           ? notification.message ?? "제출하신 수정 서류를 관리자가 확인했습니다."
-                          : "어떤 유저가 어떤 옵션을 선택해 결제했습니다.";
+                          : isArbitrationMessage
+                            ? notification.message ?? "관리자가 비밀 중재방에 메시지를 남겼습니다."
+                            : "어떤 유저가 어떤 옵션을 선택해 결제했습니다.";
             return (
               <Card
                 key={notification.id}
                 role="button"
                 tabIndex={0}
                 onClick={() => {
-                  if (notification.tourId) navigate(`/tour/${notification.tourId}`);
+                  if (isArbitrationMessage) navigate("/instructor/arbitration");
+                  else if (notification.tourId) navigate(`/tour/${notification.tourId}`);
                 }}
                 onKeyDown={(e) => {
-                  if ((e.key === "Enter" || e.key === " ") && notification.tourId) {
-                    navigate(`/tour/${notification.tourId}`);
-                  }
+                  if (e.key !== "Enter" && e.key !== " ") return;
+                  if (isArbitrationMessage) navigate("/instructor/arbitration");
+                  else if (notification.tourId) navigate(`/tour/${notification.tourId}`);
                 }}
                 className={cn(
                   "cursor-pointer border-primary/30 transition-shadow hover:shadow-ocean",
