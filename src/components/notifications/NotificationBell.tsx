@@ -51,6 +51,7 @@ export function NotificationBell() {
                 const isMinProceed = notification.type === "min_participants_proceed";
                 const isMinDecisionNeeded = notification.type === "min_participants_decision_needed";
                 const isApplicationRejected = notification.type === "application_rejected";
+                const isApplicationApproved = notification.type === "application_approved";
                 const isDocumentReviewCompleted = notification.type === "document_review_completed";
                 const isWarning = isPenalty || isMinCancelled || isMinProceed || isMinDecisionNeeded || isApplicationRejected;
                 const titleText = isPenalty
@@ -63,9 +64,11 @@ export function NotificationBell() {
                         ? "최소 인원 미달 - 결정 필요"
                         : isApplicationRejected
                           ? "강사 인증 신청 반려"
-                          : isDocumentReviewCompleted
-                            ? "제출 서류 확인 완료"
-                            : "신규 투어 예약 완료";
+                          : isApplicationApproved
+                            ? "강사 인증 승인"
+                            : isDocumentReviewCompleted
+                              ? "제출 서류 확인 완료"
+                              : "신규 투어 예약 완료";
                 // application_rejected/document_review_completed는 투어와 무관해 tourId가
                 // ""다. 예전엔 이때도 무조건 /tour/${tourId}로 이동시켜서 빈 id("/tour/")가
                 // 라우트와 안 맞고 그대로 404로 떨어졌다. tourId가 있을 때만 이동한다.

@@ -2497,6 +2497,27 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           : i,
       ),
     );
+    // 반려(rejectInstructorApplication)는 강사에게 사유를 알려주는데, 승인은 아무 알림도
+    // 가지 않아서 강사가 자기가 승인됐는지 앱을 계속 다시 열어봐야만 알 수 있었다 — 투어
+    // 등록이 이 승인 여부에 막혀있는 첫 관문이라 누락 영향이 컸다.
+    if (verified) {
+      void persistInstructorNotification({
+        instructorId,
+        tourId: "",
+        tourTitle: "강사 인증 신청",
+        message: "관리자가 강사 인증을 승인했습니다. 이제 투어를 등록하고 예약을 받을 수 있어요!",
+        createdAt: verifiedAt ?? new Date().toISOString(),
+        type: "application_approved",
+      });
+      void sendPushToProfile(
+        (instructors.find((i) => i.id === instructorId)?.profileId) ?? "",
+        {
+          title: "강사 인증이 승인되었습니다",
+          body: "이제 투어를 등록하고 예약을 받을 수 있어요!",
+          url: "/instructor",
+        },
+      );
+    }
   };
 
   /**

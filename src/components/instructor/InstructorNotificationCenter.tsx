@@ -48,6 +48,7 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
             const isMinDecisionNeeded = notification.type === "min_participants_decision_needed";
             const isWarning = isPenalty || isMinCancelled || isMinProceed || isMinDecisionNeeded;
             const isRejected = notification.type === "application_rejected";
+            const isApproved = notification.type === "application_approved";
             const isDocReviewCompleted = notification.type === "document_review_completed";
             const label = isPenalty
               ? "[강제 환불 승인 조치]"
@@ -59,9 +60,11 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                     ? "[최소 인원 미달 - 결정 필요]"
                     : isRejected
                       ? "[강사 인증 신청 반려]"
-                      : isDocReviewCompleted
-                        ? "[제출 서류 확인 완료]"
-                        : "[신규 투어 예약 완료]";
+                      : isApproved
+                        ? "[강사 인증 승인]"
+                        : isDocReviewCompleted
+                          ? "[제출 서류 확인 완료]"
+                          : "[신규 투어 예약 완료]";
             const description = isPenalty
               ? "관리자가 이의신청 건에 대해 강제 환불을 승인했습니다."
               : isMinCancelled
@@ -72,9 +75,11 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                     ? "출발 30일 전 기준 최소 인원 미달로 모집이 마감되었습니다. 아래 대시보드에서 진행/취소를 결정해주세요."
                     : isRejected
                       ? notification.message ?? "관리자가 강사 인증 신청을 반려했습니다."
-                      : isDocReviewCompleted
-                        ? notification.message ?? "제출하신 수정 서류를 관리자가 확인했습니다."
-                        : "어떤 유저가 어떤 옵션을 선택해 결제했습니다.";
+                      : isApproved
+                        ? notification.message ?? "관리자가 강사 인증을 승인했습니다."
+                        : isDocReviewCompleted
+                          ? notification.message ?? "제출하신 수정 서류를 관리자가 확인했습니다."
+                          : "어떤 유저가 어떤 옵션을 선택해 결제했습니다.";
             return (
               <Card
                 key={notification.id}
@@ -105,7 +110,7 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                         isWarning || isRejected ? "text-destructive" : "text-foreground",
                       )}
                     >
-                      {isDocReviewCompleted ? (
+                      {isDocReviewCompleted || isApproved ? (
                         <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
                       ) : isWarning || isRejected ? (
                         <AlertOctagon className="h-4 w-4 shrink-0" />

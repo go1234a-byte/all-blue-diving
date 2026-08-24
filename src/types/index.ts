@@ -495,6 +495,7 @@ export type InstructorNotificationType =
   | "min_participants_proceed" // 최소 인원 미달이지만 강사가 "그대로 진행"을 선택해 투어 진행 (투어 단위, 책임 리마인드)
   | "min_participants_decision_needed" // 출발 30일 전, 최소 인원 미달로 강사의 진행/취소 결정이 필요함 (투어 단위)
   | "application_rejected" // 관리자가 강사 인증 신청을 반려함
+  | "application_approved" // 관리자가 강사 인증 신청을 승인함
   | "document_review_completed"; // 관리자가 강사의 제출 서류 수정요청을 확인 완료함
 
 export interface InstructorNotification {

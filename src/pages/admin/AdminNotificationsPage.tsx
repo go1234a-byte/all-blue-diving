@@ -11,6 +11,7 @@ const TYPE_LABEL: Record<InstructorNotificationType, string> = {
   min_participants_proceed: "최소인원 미달 진행",
   min_participants_decision_needed: "최소인원 미달 결정 필요",
   application_rejected: "강사 인증 반려",
+  application_approved: "강사 인증 승인",
   document_review_completed: "제출 서류 확인 완료",
 };
 
