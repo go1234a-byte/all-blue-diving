@@ -3140,6 +3140,27 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
     const review: Review = mapReviewRow(data);
     setReviews((prev) => [review, ...prev]);
+
+    if (input.instructorId) {
+      const tour = tours.find((t) => t.id === input.tourId);
+      const diver = diverProfiles.find((d) => d.id === input.diverId);
+      const createdAt = new Date().toISOString();
+      void persistInstructorNotification({
+        instructorId: input.instructorId,
+        tourId: input.tourId,
+        tourTitle: tour?.title ?? "투어",
+        diverName: diver?.name ? maskName(diver.name) : undefined,
+        message: `별점 ${input.rating}점 후기가 등록되었습니다.${input.comment ? ` "${input.comment.slice(0, 60)}"` : ""}`,
+        createdAt,
+        type: "new_review",
+      });
+      notifyInstructorPush(
+        input.instructorId,
+        "새 후기가 등록되었습니다",
+        `${tour?.title ?? "투어"} - 별점 ${input.rating}점`,
+        `/tour/${input.tourId}`,
+      );
+    }
     return review;
   };
 
@@ -3153,10 +3174,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     reviews.filter((r) => r.instructorId === instructorId && !r.deleted);
 
   const reportReview = async (reviewId: string) => {
+    const reportedReview = reviews.find((r) => r.id === reviewId);
     setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, reported: true } : r)));
     // 신고자가 이 리뷰의 작성자가 아니므로(RLS 보안 강화 1단계 batch96 참고) 일반 update
     // 대신 reported 필드만 안전하게 켜주는 report_review() RPC를 쓴다.
     const { error } = await supabase.rpc("report_review", { p_review_id: reviewId });
+    if (!error && reportedReview) {
+      // 신고 큐(ReviewModerationQueue)를 관리자가 직접 열어보기 전까지는 신고가 접수됐는지
+      // 알 방법이 없었다 — 전원에게 이메일로 알린다(관리자용 알림벨이 따로 없음).
+      void (async () => {
+        const { data: admins } = await supabase.from("profiles").select("id").eq("role", "admin");
+        for (const admin of admins ?? []) {
+          void sendEmailToProfile(admin.id, {
+            subject: "[신고 접수] 후기가 신고되었습니다",
+            body: `후기가 신고 접수되었습니다.\n\n별점: ${reportedReview.rating}점\n내용: ${reportedReview.comment || "(내용 없음)"}\n\n관리자 페이지 > 후기 관리에서 확인해주세요.`,
+          });
+        }
+      })();
+    }
     if (error) {
       console.error("[reportReview] 리뷰 신고 처리 실패:", error);
       // 예전에는 여기서 에러를 삼키기만 하고 호출부(ReviewList)에는 전혀 알리지 않아서,
@@ -3187,6 +3222,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setReviews((prev) => prev.map((r) => (r.id === reviewId ? rolledBack : r)));
       }
       throw new Error(error.message ? `답글 저장에 실패했습니다: ${error.message}` : "답글 저장에 실패했습니다.");
+    }
+    if (previous) {
+      notifyDiverPush(
+        previous.diverId,
+        "작성하신 후기에 강사 답글이 달렸습니다",
+        reply.length > 60 ? `${reply.slice(0, 60)}...` : reply,
+        `/tour/${previous.tourId}`,
+      );
     }
   };
 

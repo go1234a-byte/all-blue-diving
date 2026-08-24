@@ -54,6 +54,7 @@ export function NotificationBell() {
                 const isApplicationApproved = notification.type === "application_approved";
                 const isDocumentReviewCompleted = notification.type === "document_review_completed";
                 const isArbitrationMessage = notification.type === "arbitration_message";
+                const isNewReview = notification.type === "new_review";
                 const isWarning = isPenalty || isMinCancelled || isMinProceed || isMinDecisionNeeded || isApplicationRejected;
                 const titleText = isPenalty
                   ? "강제 환불 승인 조치"
@@ -71,7 +72,9 @@ export function NotificationBell() {
                               ? "제출 서류 확인 완료"
                               : isArbitrationMessage
                                 ? "비밀 중재방 새 메시지"
-                                : "신규 투어 예약 완료";
+                                : isNewReview
+                                  ? "새 후기 등록"
+                                  : "신규 투어 예약 완료";
                 // application_rejected/document_review_completed는 투어와 무관해 tourId가
                 // ""다. 예전엔 이때도 무조건 /tour/${tourId}로 이동시켜서 빈 id("/tour/")가
                 // 라우트와 안 맞고 그대로 404로 떨어졌다. tourId가 있을 때만 이동한다.

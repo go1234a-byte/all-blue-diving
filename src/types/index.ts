@@ -497,7 +497,8 @@ export type InstructorNotificationType =
   | "application_rejected" // 관리자가 강사 인증 신청을 반려함
   | "application_approved" // 관리자가 강사 인증 신청을 승인함
   | "document_review_completed" // 관리자가 강사의 제출 서류 수정요청을 확인 완료함
-  | "arbitration_message"; // 비밀 중재방에 관리자가 새 메시지를 남김
+  | "arbitration_message" // 비밀 중재방에 관리자가 새 메시지를 남김
+  | "new_review"; // 담당 투어에 새 후기가 등록됨
 
 export interface InstructorNotification {
   id: string;

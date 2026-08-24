@@ -51,6 +51,7 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
             const isApproved = notification.type === "application_approved";
             const isDocReviewCompleted = notification.type === "document_review_completed";
             const isArbitrationMessage = notification.type === "arbitration_message";
+            const isNewReview = notification.type === "new_review";
             const label = isPenalty
               ? "[강제 환불 승인 조치]"
               : isMinCancelled
@@ -67,7 +68,9 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                           ? "[제출 서류 확인 완료]"
                           : isArbitrationMessage
                             ? "[비밀 중재방 새 메시지]"
-                            : "[신규 투어 예약 완료]";
+                            : isNewReview
+                              ? "[새 후기 등록]"
+                              : "[신규 투어 예약 완료]";
             const description = isPenalty
               ? "관리자가 이의신청 건에 대해 강제 환불을 승인했습니다."
               : isMinCancelled
@@ -84,7 +87,9 @@ export function InstructorNotificationCenter({ instructorId }: InstructorNotific
                           ? notification.message ?? "제출하신 수정 서류를 관리자가 확인했습니다."
                           : isArbitrationMessage
                             ? notification.message ?? "관리자가 비밀 중재방에 메시지를 남겼습니다."
-                            : "어떤 유저가 어떤 옵션을 선택해 결제했습니다.";
+                            : isNewReview
+                              ? notification.message ?? "새 후기가 등록되었습니다."
+                              : "어떤 유저가 어떤 옵션을 선택해 결제했습니다.";
             return (
               <Card
                 key={notification.id}
