@@ -64,7 +64,10 @@ const BusinessInquiryPage = () => {
 
   return (
     <div className="min-h-full bg-gradient-surface">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/95 px-4 backdrop-blur">
+      <header
+        className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-card/95 px-4 backdrop-blur"
+        style={{ paddingTop: "env(safe-area-inset-top)", height: "calc(3.5rem + env(safe-area-inset-top))" }}
+      >
         <Link to="/" className="text-foreground">
           <ArrowLeft className="h-5 w-5" />
         </Link>

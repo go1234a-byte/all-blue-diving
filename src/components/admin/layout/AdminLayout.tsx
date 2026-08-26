@@ -70,7 +70,10 @@ function AdminTopBar() {
       : PERIOD_LABEL.custom;
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-border bg-card/95 px-4 backdrop-blur md:px-6">
+    <header
+      className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-border bg-card/95 px-4 backdrop-blur md:px-6"
+      style={{ paddingTop: "env(safe-area-inset-top)", height: "calc(3.5rem + env(safe-area-inset-top))" }}
+    >
       <h1 className="line-clamp-1 text-base font-semibold text-foreground">{title}</h1>
       <div className="flex shrink-0 items-center gap-2">
         <Popover open={pickerOpen} onOpenChange={setPickerOpen}>

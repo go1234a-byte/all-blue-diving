@@ -14,10 +14,12 @@
     "pInstall": "pnpm install"
   },
   "dependencies": {
+    "@capacitor-community/safe-area": "^8.0.1",
     "@capacitor/android": "^8.4.2",
     "@capacitor/app": "^8.1.1",
     "@capacitor/cli": "^8.4.2",
     "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.5.0",
     "@capacitor/push-notifications": "^8.1.2",
     "@enter-pro/analytics-sdk": "^0.0.10",
     "@hookform/resolvers": "^5.2.1",

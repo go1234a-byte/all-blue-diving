@@ -19,7 +19,10 @@ const AdminInstructorNotePage = () => {
 
   return (
     <div className="min-h-full bg-background">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card px-4">
+      <header
+        className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-card px-4"
+        style={{ paddingTop: "env(safe-area-inset-top)", height: "calc(3.5rem + env(safe-area-inset-top))" }}
+      >
         <Link to="/admin/instructors" className="text-foreground">
           <ArrowLeft className="h-5 w-5" />
         </Link>

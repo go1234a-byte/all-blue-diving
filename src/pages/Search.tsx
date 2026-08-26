@@ -97,7 +97,10 @@ const Search = () => {
 
   return (
     <div className="min-h-full bg-gradient-surface pb-10">
-      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+      <header
+        className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-4">
           <Link to="/" className="text-foreground">
             <ArrowLeft className="h-5 w-5" />

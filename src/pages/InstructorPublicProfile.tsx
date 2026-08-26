@@ -351,7 +351,10 @@ const InstructorPublicProfile = () => {
 
   return (
     <div className="min-h-full bg-gradient-surface pb-24">
-      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+      <header
+        className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-lg">
           <button type="button" onClick={() => navigate(-1)} className="text-foreground" aria-label="뒤로가기">
             <ArrowLeft className="h-5 w-5" />

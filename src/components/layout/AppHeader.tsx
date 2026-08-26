@@ -17,7 +17,10 @@ export function AppHeader({ title, showLanguage = false }: AppHeaderProps) {
   // 재사용한다. 이 토큰은 라이트 테마에서는 흰 배경에 가깝게, .dark 스코프에서는
   // 짙은 네이비 그라데이션으로 자동 전환되므로 헤더 마크업은 테마와 무관하게 동일하다.
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-gradient-ocean shadow-ocean">
+    <header
+      className="sticky top-0 z-30 border-b border-border bg-gradient-ocean shadow-ocean"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between px-4 md:max-w-lg">
         <Link to="/" className="flex items-center gap-2">
           {title ? (

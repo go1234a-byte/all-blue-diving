@@ -65,7 +65,10 @@ export function BottomNav() {
     role === "admin" ? ADMIN_NAV_ITEMS : role === "instructor" ? INSTRUCTOR_NAV_ITEMS : DIVER_NAV_ITEMS;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 backdrop-blur md:max-w-lg">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 backdrop-blur md:max-w-lg"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
       <div className={cn("grid", GRID_COLS_CLASS[NAV_ITEMS.length] ?? "grid-cols-4")}>
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;

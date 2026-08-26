@@ -11,7 +11,10 @@ const InstructorArbitrationRoom = () => {
 
   return (
     <div className="min-h-full bg-[#050b18]">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/10 bg-[#0a1428] px-4">
+      <header
+        className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/10 bg-[#0a1428] px-4"
+        style={{ paddingTop: "env(safe-area-inset-top)", height: "calc(3.5rem + env(safe-area-inset-top))" }}
+      >
         <Link to="/mypage" className="text-white">
           <ArrowLeft className="h-5 w-5" />
         </Link>
