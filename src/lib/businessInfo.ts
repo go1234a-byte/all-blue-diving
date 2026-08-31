@@ -4,7 +4,7 @@ export const BUSINESS_INFO = {
   ceoName: "박재우",
   businessNumber: "204-31-12475",
   mailOrderNumber: "2026-부산사상구-0348호",
-  address: "백양대로494번길 10",
+  address: "부산광역시 사상구 백양대로494번길 10, 101동 102호",
   officerName: "박재우",
   officerPosition: "대표",
   email: "help@allbluedive.com",
