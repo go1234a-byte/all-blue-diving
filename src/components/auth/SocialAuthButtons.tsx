@@ -7,9 +7,11 @@ const NAVER_CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID as string | undefin
 const NAVER_STATE_STORAGE_KEY = "allblue-naver-oauth-state";
 
 /**
- * SNS 간편 로그인 버튼. 카카오/구글은 Supabase가 기본 지원하는 provider라 signInWithOAuth로
+ * SNS 간편 로그인 버튼. Apple/카카오/구글은 Supabase가 기본 지원하는 provider라 signInWithOAuth로
  * 바로 붙는다 — Supabase 대시보드(Authentication > Providers)에 각 앱 키/시크릿을 등록해야
  * 실제로 동작한다(등록 전까지는 Supabase가 에러를 돌려주고 아래 catch에서 안내 토스트를 띄운다).
+ * Apple provider에는 Services ID, Team ID, Key ID, Sign in with Apple용 .p8 키가 필요하다.
+ * (App Store 심사 Guideline 4.8: 서드파티 소셜 로그인을 제공하면 Apple 로그인도 제공해야 함.)
  * 네이버는 Supabase 기본 지원 provider가 아니라서, 네이버 인가 화면으로 직접 보낸 뒤
  * /naver-callback 페이지 + Edge Function(naver-oauth-exchange)을 거쳐 세션을 만드는
  * 커스텀 OAuth 브릿지를 쓴다. VITE_NAVER_CLIENT_ID가 없으면 버튼이 비활성화된 안내만 보여준다.
@@ -17,6 +19,20 @@ const NAVER_STATE_STORAGE_KEY = "allblue-naver-oauth-state";
  */
 export function SocialAuthButtons() {
   const { toast } = useToast();
+
+  const handleAppleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "apple",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) {
+      toast({
+        title: "Apple 로그인에 실패했습니다",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleKakaoLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -74,6 +90,20 @@ export function SocialAuthButtons() {
         <p className="text-xs font-medium text-muted-foreground">간편 회원가입 / 로그인</p>
         <div className="h-px flex-1 bg-border" />
       </div>
+
+      <button
+        type="button"
+        onClick={handleAppleLogin}
+        className={cn(
+          "flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-80",
+          "bg-black text-white",
+        )}
+      >
+        <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+          <path d="M11.182.008C11.148-.03 9.923.023 8.857 1.18c-1.066 1.156-.902 2.482-.878 2.516.024.034 1.52.087 2.475-1.258.955-1.345.762-2.391.728-2.43Zm3.314 11.733c-.048-.096-2.325-1.234-2.113-3.422.212-2.189 1.675-2.789 1.698-2.854.023-.065-.597-.79-1.254-1.157a3.692 3.692 0 0 0-1.563-.434c-.108-.003-.483-.095-1.254.116-.508.139-1.653.589-1.968.607-.316.018-1.256-.522-2.267-.665-.647-.125-1.333.131-1.824.328-.49.196-1.422.754-2.074 2.237-.652 1.482-.311 3.83-.067 4.56.244.729.625 1.924 1.273 2.796.576.984 1.34 1.667 1.659 1.899.319.232 1.219.386 1.843.067.502-.308 1.408-.485 1.766-.472.357.013 1.061.154 1.782.539.571.197 1.111.115 1.652-.105.541-.221 1.324-1.059 2.238-2.758.347-.79.505-1.217.473-1.282Z" />
+        </svg>
+        Apple로 계속하기
+      </button>
 
       <button
         type="button"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { InclusionsExclusionsCard } from "@/components/tour/InclusionsExclusions
 import { TourOptionsSelector } from "@/components/tour/TourOptionsSelector";
 import { PaymentReceiptBreakdown } from "@/components/checkout/PaymentReceiptBreakdown";
 import { CancellationRefundPolicyCard } from "@/components/checkout/CancellationRefundPolicyCard";
+import { TossPaymentWidget, type TossPaymentWidgetHandle } from "@/components/checkout/TossPaymentWidget";
+import { generateOrderId, savePendingBooking, type PendingBookingPayload } from "@/lib/payment";
 import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -74,6 +76,7 @@ const Checkout = () => {
     setParticipants((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
   };
   const [processing, setProcessing] = useState(false);
+  const tossRef = useRef<TossPaymentWidgetHandle>(null);
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
   const [confirmedInclusions, setConfirmedInclusions] = useState(false);
   // 일정/장소 변경 등으로 강사·센터가 예약자에게 개별 연락해야 할 수 있음을 사전에 고지하고
@@ -142,8 +145,9 @@ const Checkout = () => {
     setCouponInput("");
   };
 
-  // TODO: 실제 토스페이먼츠 연동 복구 시 이 함수를 TossPaymentWidget.requestPayment() 흐름으로 되돌릴 것.
-  // 지금은 결제위젯 없이 "결제 완료"로 바로 처리하는 임시(테스트) 모드다.
+  // 토스페이먼츠 결제위젯으로 결제를 시작한다. 예약(Booking)은 결제 성공 리다이렉트
+  // (/payment/success)에서 서버 검증(verify-payment)을 거친 뒤 생성된다. 그래서 여기서는
+  // 예약에 필요한 정보를 orderId 기준으로 로컬에 임시 저장만 하고 결제창을 띄운다.
   const handlePay = async () => {
     if (tour.adminStatus) {
       toast({
@@ -185,6 +189,21 @@ const Checkout = () => {
       }
       return;
     }
+    if (!tossRef.current?.ready) {
+      toast({
+        title: "결제 수단을 불러오는 중이에요",
+        description: "잠시 후 다시 시도해주세요.",
+      });
+      return;
+    }
+    if (invoice.totalDue < 100) {
+      toast({
+        title: "결제 금액이 올바르지 않아요",
+        description: "결제 금액은 100원 이상이어야 합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
     setProcessing(true);
     try {
       const self = participants[0];
@@ -196,7 +215,7 @@ const Checkout = () => {
         drinking: p.drinking,
         roomNote: p.roomNote.trim() || undefined,
       }));
-      const created = await addBooking({
+      const pending: PendingBookingPayload = {
         tourId: tour.id,
         diverId: currentDiverId || undefined,
         diverName: profile?.name ?? "게스트 다이버",
@@ -208,7 +227,6 @@ const Checkout = () => {
         onSiteBalance: invoice.onSiteBalance,
         couponCode: invoice.couponCode,
         discountAmount: invoice.discountAmount,
-        paymentMethod: "card",
         gender: self.gender,
         snoring: self.snoring,
         smoking: self.smoking,
@@ -216,16 +234,21 @@ const Checkout = () => {
         roomNote: self.roomNote.trim() || undefined,
         participantCount,
         companions: participantCount > 1 ? companions : undefined,
+      };
+      const orderId = generateOrderId();
+      savePendingBooking(orderId, pending);
+      await tossRef.current.requestPayment({
+        orderId,
+        orderName:
+          participantCount > 1 ? `${tour.title} 외 ${participantCount - 1}인` : tour.title,
+        successUrl: `${window.location.origin}/payment/success`,
+        failUrl: `${window.location.origin}/payment/fail`,
+        customerName: profile?.name ?? undefined,
       });
-
-      // 쿠폰 사용횟수 증가는 이제 addBooking이 거치는 서버 측 가격검증 트리거
-      // (validate_booking_price, 마이그레이션 20260813180000) 안에서 예약 INSERT와 같은
-      // 트랜잭션으로 원자적으로 처리된다 — 여기서 별도로 redeemCoupon을 또 호출하면 이중 차감된다.
-
-      navigate(`/payment/success?mock=1&bookingId=${created.id}`);
+      // requestPayment는 결제창으로 브라우저를 이동시키므로, 성공 시 이 아래 코드는 실행되지 않는다.
     } catch (err) {
       toast({
-        title: "예약 생성에 실패했습니다",
+        title: "결제를 시작하지 못했습니다",
         description: err instanceof Error ? err.message : undefined,
         variant: "destructive",
       });
@@ -423,14 +446,14 @@ const Checkout = () => {
 
         <PaymentReceiptBreakdown tourTitle={tour.title} invoice={invoice} participantCount={participantCount} />
 
-        <Card className="border-dashed border-primary/40 bg-secondary/30">
-          <CardContent className="space-y-1 p-4">
-            <h3 className="text-sm font-semibold text-foreground">결제 수단</h3>
-            <p className="text-xs text-muted-foreground">
-              테스트 모드: 실제 결제 연동 전까지 [결제하기]를 누르면 바로 결제 완료로 처리됩니다.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">결제 수단</h3>
+          <TossPaymentWidget
+            ref={tossRef}
+            amount={invoice.totalDue}
+            customerKey={currentDiverId || "guest"}
+          />
+        </div>
 
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-foreground">주요 정책 및 위반 규정</h3>
