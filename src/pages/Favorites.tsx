@@ -64,9 +64,9 @@ const Favorites = () => {
   const bookmarkedTours = tours.filter((t) => bookmarkedTourIds.includes(t.id) && isTourBookable(t));
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-20">
+    <div className="min-h-full bg-gradient-surface pb-20 md:pb-12">
       <AppHeader title="위시리스트" />
-      <main className="mx-auto w-full max-w-md space-y-4 px-4 py-6 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md space-y-4 px-4 py-6 md:max-w-6xl md:px-6">
         <h1 className="text-lg font-bold text-foreground">위시리스트</h1>
         <Tabs defaultValue="tours">
           <TabsList className="grid w-full grid-cols-2">
@@ -77,18 +77,22 @@ const Favorites = () => {
             {bookmarkedTours.length === 0 ? (
               <p className="py-16 text-center text-sm text-muted-foreground">찜한 투어가 없습니다.</p>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
                 {bookmarkedTours.map((tour) => (
                   <TourCard key={tour.id} tour={tour} />
                 ))}
               </div>
             )}
           </TabsContent>
-          <TabsContent value="instructors" className="space-y-3 pt-3">
+          <TabsContent value="instructors" className="pt-3">
             {bookmarkedInstructorIds.length === 0 ? (
               <p className="py-16 text-center text-sm text-muted-foreground">찜한 강사가 없습니다.</p>
             ) : (
-              bookmarkedInstructorIds.map((id) => <BookmarkedInstructorCard key={id} instructorId={id} />)
+              <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-3">
+                {bookmarkedInstructorIds.map((id) => (
+                  <BookmarkedInstructorCard key={id} instructorId={id} />
+                ))}
+              </div>
             )}
           </TabsContent>
         </Tabs>

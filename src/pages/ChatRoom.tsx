@@ -170,7 +170,7 @@ const ChatRoom = () => {
             </button>
           )}
         </header>
-        <main className="mx-auto w-full max-w-md space-y-2 px-4 py-4 md:max-w-lg">
+        <main className="mx-auto w-full max-w-md space-y-2 px-4 py-4 md:max-w-3xl md:px-6">
           <ChatHeaderSummary
             instructor={instructor}
             instructorId={tour.instructorId}
@@ -249,7 +249,7 @@ const ChatRoom = () => {
           </button>
         )}
       </header>
-      <main className="mx-auto w-full max-w-md px-4 py-4 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md px-4 py-4 md:max-w-3xl md:px-6">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard" className="text-xs">대시보드</TabsTrigger>

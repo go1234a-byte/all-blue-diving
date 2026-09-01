@@ -350,12 +350,12 @@ const InstructorPublicProfile = () => {
   }
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-24">
+    <div className="min-h-full bg-gradient-surface pb-24 md:pb-12">
       <header
         className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-lg">
+        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-4xl md:px-6">
           <button type="button" onClick={() => navigate(-1)} className="text-foreground" aria-label="뒤로가기">
             <ArrowLeft className="h-5 w-5" />
           </button>
@@ -388,7 +388,7 @@ const InstructorPublicProfile = () => {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md space-y-4 px-4 py-4 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md space-y-4 px-4 py-4 md:max-w-4xl md:px-6">
         {/* 프로필 헤더 */}
         <Card className="border-primary/20 bg-card">
           <CardContent className="space-y-3 p-4">

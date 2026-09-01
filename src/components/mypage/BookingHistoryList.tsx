@@ -111,9 +111,9 @@ export function BookingHistoryList({ diverId }: BookingHistoryListProps) {
         </TabsList>
       </Tabs>
 
-      <div className="space-y-2">
+      <div className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
         {filtered.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">해당 상태의 예약이 없습니다.</p>
+          <p className="py-8 text-center text-sm text-muted-foreground md:col-span-2">해당 상태의 예약이 없습니다.</p>
         )}
         {filtered.map(({ booking, tour, status }) => {
           const canChat = status === "confirmed" || status === "upcoming" || status === "ongoing";

@@ -257,12 +257,12 @@ const Checkout = () => {
   };
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-28">
+    <div className="min-h-full bg-gradient-surface pb-28 md:pb-14">
       <header
         className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-lg">
+        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-2xl md:px-6">
           <Link to={`/tour/${tour.id}`} className="text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -270,7 +270,7 @@ const Checkout = () => {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md space-y-5 px-4 py-5 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md space-y-5 px-4 py-5 md:max-w-2xl md:px-6">
         <Card>
           <CardContent className="flex gap-3 p-4">
             <img
@@ -476,7 +476,7 @@ const Checkout = () => {
         </label>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:max-w-lg">
+      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:max-w-2xl">
         <Button
           variant="coral"
           size="lg"

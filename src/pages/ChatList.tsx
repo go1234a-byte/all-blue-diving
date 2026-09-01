@@ -89,9 +89,9 @@ const ChatList = () => {
   const latestTicket = myTickets[0];
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-20">
+    <div className="min-h-full bg-gradient-surface pb-20 md:pb-12">
       <AppHeader title="채팅" />
-      <main className="mx-auto w-full max-w-md space-y-2 px-4 py-4 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md space-y-2 px-4 py-4 md:max-w-3xl md:px-6">
         {/* 로그인 직후 session -> profiles 조회가 끝나기 전까지는 role이 아직 "public"이고
             currentDiverId/currentInstructorId도 비어있어, authLoading을 안 보면 실제로는
             채팅방이 있는데도 "채팅방 없음"이 잠깐 잘못 표시된다. MyPage와 동일하게 인증 확인

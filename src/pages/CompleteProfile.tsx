@@ -66,7 +66,7 @@ export default function CompleteProfile() {
 
   return (
     <div className="min-h-full bg-gradient-surface">
-      <div className="mx-auto flex w-full max-w-md flex-col px-4 py-8 md:max-w-lg">
+      <div className="mx-auto flex w-full max-w-md flex-col px-4 py-8 md:max-w-2xl md:px-6">
         <div className="mx-auto mb-6">
           <Logo size="md" showTagline />
         </div>

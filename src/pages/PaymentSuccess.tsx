@@ -159,8 +159,8 @@ const PaymentSuccess = () => {
     : null;
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-24">
-      <main className="mx-auto w-full max-w-md space-y-4 px-4 py-8 md:max-w-lg">
+    <div className="min-h-full bg-gradient-surface pb-24 md:pb-12">
+      <main className="mx-auto w-full max-w-md space-y-4 px-4 py-8 md:max-w-xl md:px-6">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success/15">
           <CheckCircle2 className="h-8 w-8 text-success" />
         </div>

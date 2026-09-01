@@ -9,9 +9,9 @@ const MyBookings = () => {
   const { currentDiverId, authLoading } = useRole();
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-24">
+    <div className="min-h-full bg-gradient-surface pb-24 md:pb-12">
       <AppHeader title="내 예약" />
-      <main className="mx-auto w-full max-w-md px-4 py-6 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md px-4 py-6 md:max-w-4xl md:px-6">
         <h1 className="mb-3 text-lg font-bold text-foreground">내 예약</h1>
         {/* 로그인 직후 session -> profiles 조회가 끝나기 전까지는 currentDiverId가 아직
             빈 문자열이라, authLoading을 안 보면 실제로는 예약이 있는데도 "예약 내역 없음"이

@@ -15,9 +15,9 @@ const MyPage = () => {
   const { role, authLoading } = useRole();
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-20">
+    <div className="min-h-full bg-gradient-surface pb-20 md:pb-12">
       <AppHeader title={TITLE_BY_ROLE[role]} />
-      <main className="mx-auto w-full max-w-md px-4 py-6 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md px-4 py-6 md:max-w-3xl md:px-6">
         {/* 로그인 직후(특히 방금 가입한 경우) session -> profiles 조회가 끝나기 전까지는
             role이 아직 "public"으로 남아있어, authLoading을 안 보면 실제로는 로그인된
             다이버인데도 "게스트 다이버"로 잠깐 잘못 표시된다. RequireRole 가드와 동일하게

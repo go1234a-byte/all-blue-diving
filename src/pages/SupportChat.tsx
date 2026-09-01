@@ -36,7 +36,7 @@ const SupportChat = () => {
         <h1 className="break-keep text-base font-semibold text-foreground">고객센터</h1>
       </header>
 
-      <main className="mx-auto w-full max-w-md flex-1 px-4 py-4 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md flex-1 px-4 py-4 md:max-w-3xl md:px-6">
         {/* 로그인 직후 session -> profiles 조회가 끝나기 전까지는 userId가 아직
             빈 문자열이라, authLoading을 안 보면 "내 문의 보기" 등에서 실제로는 문의 내역이
             있는데도 잠깐 비어보인다. MyPage와 동일하게 인증 확인 중에는 로딩 상태만 보여준다. */}

@@ -74,7 +74,7 @@ const BusinessInquiryPage = () => {
         <h1 className="break-keep text-base font-semibold text-foreground">기업/단체 문의</h1>
       </header>
 
-      <main className="mx-auto w-full max-w-md space-y-4 px-4 py-6 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md space-y-4 px-4 py-6 md:max-w-2xl md:px-6">
         {submitted ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-8 text-center">
             <CheckCircle2 className="h-10 w-10 text-primary" />
