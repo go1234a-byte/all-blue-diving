@@ -19,6 +19,20 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				// 영문·숫자는 Plus Jakarta Sans로, 한글 글리프는 브라우저 per-glyph fallback으로
+				// Pretendard가 자동 렌더된다. (Typography System: English → Jakarta / Korean → Pretendard)
+				sans: [
+					'"Plus Jakarta Sans"',
+					'"Pretendard"',
+					'-apple-system',
+					'BlinkMacSystemFont',
+					'"Apple SD Gothic Neo"',
+					'sans-serif',
+				],
+				// 로고 "ALL BLUE" 워드마크 전용 (Jakarta ExtraBold / 800).
+				brand: ['"Plus Jakarta Sans"', '"Pretendard"', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

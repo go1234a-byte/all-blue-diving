@@ -70,9 +70,10 @@ export function Logo({ size = "sm", showTagline = false, tone = "default", class
     <div className={cn("inline-flex items-center gap-2.5", className)}>
       <LogoMark size={preset.mark} tone={markTone} />
       <div className="flex flex-col leading-tight">
-        <span className={cn("font-bold tracking-tight", preset.word, wordColor)}>ALL BLUE</span>
+        {/* 워드마크는 항상 영문 폰트(Plus Jakarta Sans ExtraBold/800), 자간은 살짝 여유 있게 */}
+        <span className={cn("font-brand font-extrabold tracking-wide", preset.word, wordColor)}>ALL BLUE</span>
         {showTagline && (
-          <span className={cn("font-medium tracking-tight", preset.tagline, taglineColor)}>
+          <span className={cn("font-medium", preset.tagline, taglineColor)}>
             모든 바다가 만나는 곳
           </span>
         )}
