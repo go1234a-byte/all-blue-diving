@@ -157,12 +157,12 @@ const TourDetail = () => {
   };
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-28">
+    <div className="min-h-full bg-gradient-surface pb-28 md:pb-12">
       <header
         className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-lg">
+        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-6xl md:px-6">
           <Link to="/" className="text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -192,7 +192,8 @@ const TourDetail = () => {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md space-y-6 px-4 py-5 md:max-w-lg">
+      <main className="mx-auto w-full max-w-md px-4 py-5 md:grid md:max-w-6xl md:grid-cols-[minmax(0,1fr)_360px] md:items-start md:gap-8 md:px-6 md:py-8">
+       <div className="space-y-6">
         {isBookingBlocked && (
           <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -449,9 +450,43 @@ const TourDetail = () => {
           <h3 className="text-sm font-semibold text-foreground">주요 정책 및 안전 규정</h3>
           <PolicyDisclosure />
         </div>
+       </div>
+
+        {/* 데스크톱 전용 예약 카드 — 스크롤해도 따라오는 sticky. 모바일에서는 아래 고정 바가 이 역할을 한다. */}
+        <aside className="hidden md:block md:sticky md:top-20">
+          <div className="space-y-4 rounded-2xl border border-primary/20 bg-card p-5 shadow-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">
+                1인 기준 · 수수료 포함{selectedOptionsTotal > 0 ? " · 옵션 포함" : ""}
+              </p>
+              <p className="text-2xl font-bold text-primary">{formatKRW(displayTotal)}</p>
+            </div>
+            <div className="space-y-2 border-t border-border pt-3 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 shrink-0" />
+                {formatDateRangeKR(tour.startDate, tour.endDate)}
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 shrink-0" />
+                {confirmedCount}/{tour.maxParticipants}명 모집
+              </div>
+              <div className="text-xs text-warning-foreground">
+                모집 마감일: {formatDateKR(tour.recruitmentDeadline)}까지
+              </div>
+            </div>
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={handleBookNow}
+              disabled={isBookingBlocked || alreadyBooked}
+            >
+              {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
+            </Button>
+          </div>
+        </aside>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-md items-center justify-between gap-4 border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:max-w-lg">
+      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-md items-center justify-between gap-4 border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:hidden">
         <div>
           <p className="text-xs text-muted-foreground">
             1인 기준 · 수수료 포함{selectedOptionsTotal > 0 ? " · 옵션 포함" : ""}
