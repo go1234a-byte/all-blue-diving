@@ -57,7 +57,7 @@ const Index = () => {
   const pinnedNotice = notices.find((n) => n.pinned);
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-20">
+    <div className="min-h-full bg-gradient-surface pb-20 md:pb-12">
       <AppHeader />
 
       {/* 히어로 — bg-gradient-ocean은 라이트 테마에서는 흰 배경에 가깝고, 다크 모드에서는
@@ -66,18 +66,18 @@ const Index = () => {
           그라데이션 톤을 해치지 않게 한다. 공지 배너와 검색 폼(여행지 검색/출발 월/투어
           검색하기)까지 전부 이 영역 안에 포함시켜서, 헤더 아래부터 투어 검색하기 버튼까지
           하나의 배경 영역으로 이어지게 한다. */}
-      <div className="relative overflow-hidden bg-gradient-ocean px-4 pb-8 pt-8 text-center md:pb-10 md:pt-10">
+      <div className="relative overflow-hidden bg-gradient-ocean px-4 pb-8 pt-8 text-center md:pb-16 md:pt-16">
         <LogoWatermark
-          className="pointer-events-none absolute left-1/2 top-0 h-[340px] w-[340px] -translate-x-1/2 -translate-y-16 text-primary opacity-[0.12] md:h-[400px] md:w-[400px]"
+          className="pointer-events-none absolute left-1/2 top-0 h-[340px] w-[340px] -translate-x-1/2 -translate-y-16 text-primary opacity-[0.12] md:h-[520px] md:w-[520px] md:-translate-y-24"
         />
         <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
-        <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-lg">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-primary drop-shadow-[0_1px_6px_hsl(var(--background))] md:text-3xl">
+        <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-2xl">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-primary drop-shadow-[0_1px_6px_hsl(var(--background))] md:text-4xl">
             다이빙의 모든 순간,
             <br />
             ALL BLUE와 함께
           </h1>
-          <p className="text-sm font-medium text-primary/80 drop-shadow-[0_1px_4px_hsl(var(--background))]">
+          <p className="text-sm font-medium text-primary/80 drop-shadow-[0_1px_4px_hsl(var(--background))] md:text-base">
             특별한 바다, 특별한 경험을 찾고 예약할 수 있습니다.
           </p>
           {pinnedNotice && (
@@ -95,13 +95,13 @@ const Index = () => {
         </div>
       </div>
 
-      <main className="mx-auto w-full max-w-md space-y-6 px-4 pt-6 pb-6 md:max-w-lg">
-        <section className="space-y-3">
+      <main className="mx-auto w-full max-w-md space-y-6 px-4 pt-6 pb-6 md:max-w-6xl md:space-y-10 md:px-6 md:pt-10">
+        <section className="space-y-3 md:space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">모집중인 투어</h2>
-            <span className="text-xs text-muted-foreground">{tours.length}개 투어</span>
+            <h2 className="text-base font-semibold text-foreground md:text-xl">모집중인 투어</h2>
+            <span className="text-xs text-muted-foreground md:text-sm">{tours.length}개 투어</span>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
             {tours.map((tour) => (
               <TourCard key={tour.id} tour={tour} />
             ))}
@@ -109,9 +109,9 @@ const Index = () => {
         </section>
 
         {/* ALL BLUE만의 특별함 — 시안 하단 피처 스트립 */}
-        <section className="space-y-3 pt-2">
-          <h2 className="text-base font-semibold text-foreground">ALL BLUE만의 특별함</h2>
-          <div className="grid grid-cols-2 gap-3">
+        <section className="space-y-3 pt-2 md:space-y-5">
+          <h2 className="text-base font-semibold text-foreground md:text-xl">ALL BLUE만의 특별함</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 md:gap-4">
             {FEATURES.map((f) => (
               <div
                 key={f.title}

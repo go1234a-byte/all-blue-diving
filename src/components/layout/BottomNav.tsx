@@ -59,14 +59,18 @@ const GRID_COLS_CLASS: Record<number, string> = {
   6: "grid-cols-6",
 };
 
+/** 역할별 주요 내비 항목 — 모바일 하단 탭과 데스크톱 헤더 내비가 공유한다. */
+export function getNavItems(role: string): NavItem[] {
+  return role === "admin" ? ADMIN_NAV_ITEMS : role === "instructor" ? INSTRUCTOR_NAV_ITEMS : DIVER_NAV_ITEMS;
+}
+
 export function BottomNav() {
   const { role } = useRole();
-  const NAV_ITEMS =
-    role === "admin" ? ADMIN_NAV_ITEMS : role === "instructor" ? INSTRUCTOR_NAV_ITEMS : DIVER_NAV_ITEMS;
+  const NAV_ITEMS = getNavItems(role);
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 backdrop-blur md:max-w-lg"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 backdrop-blur md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className={cn("grid", GRID_COLS_CLASS[NAV_ITEMS.length] ?? "grid-cols-4")}>

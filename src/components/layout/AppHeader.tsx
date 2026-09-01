@@ -1,8 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
+import { getNavItems } from "@/components/layout/BottomNav";
+import { cn } from "@/lib/utils";
 import { useRole } from "@/contexts/RoleContext";
 
 interface AppHeaderProps {
@@ -11,7 +13,8 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title, showLanguage = false }: AppHeaderProps) {
-  const { isLoggedIn } = useRole();
+  const { isLoggedIn, role } = useRole();
+  const navItems = getNavItems(role);
 
   // bg-gradient-ocean/shadow-ocean은 index.css의 브랜드 그라데이션·그림자 토큰을
   // 재사용한다. 이 토큰은 라이트 테마에서는 흰 배경에 가깝게, .dark 스코프에서는
@@ -21,7 +24,7 @@ export function AppHeader({ title, showLanguage = false }: AppHeaderProps) {
       className="sticky top-0 z-30 border-b border-border bg-gradient-ocean shadow-ocean"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between px-4 md:max-w-lg">
+      <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between px-4 md:h-16 md:max-w-6xl md:px-6">
         <Link to="/" className="flex items-center gap-2">
           {title ? (
             <span className="text-base font-bold tracking-tight text-foreground">{title}</span>
@@ -29,6 +32,29 @@ export function AppHeader({ title, showLanguage = false }: AppHeaderProps) {
             <Logo size="sm" tone="header" />
           )}
         </Link>
+
+        {/* 데스크톱 전용 상단 내비 — 모바일에서는 하단 탭바(BottomNav)가 이 역할을 한다. */}
+        <nav className="hidden items-center gap-1 md:flex">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              state={item.state}
+              end={item.end}
+              className={({ isActive }) =>
+                cn(
+                  "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-foreground/10 text-foreground"
+                    : "text-foreground/70 hover:bg-foreground/5 hover:text-foreground",
+                )
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+
         <div className="flex items-center gap-2">
           {!isLoggedIn && (
             <Button
