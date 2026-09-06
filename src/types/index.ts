@@ -153,6 +153,28 @@ export interface TourItineraryDay {
   freeTime?: string;
 }
 
+// 투어 그룹채팅 내 정산 가계부 — 강사만 편집, 다이버는 읽기 전용.
+export interface SettlementExpense {
+  label: string;
+  amount: number;
+}
+export interface SettlementDayEntry {
+  dayNumber: number;
+  participantIds: string[]; // 그 날 참여한 참가자(다이버) id 목록 — 1/n 분모
+  expenses: SettlementExpense[];
+}
+export interface TourSettlement {
+  tourId: string;
+  entries: SettlementDayEntry[];
+  instructorSettledAt?: string; // 설정되면 강사 편집 잠금 + 다이버 확인 단계로 진입
+  updatedAt: string;
+}
+export interface SettlementConfirmation {
+  tourId: string;
+  diverId: string;
+  confirmedAt: string;
+}
+
 export interface Tour {
   id: string;
   instructorId: string;

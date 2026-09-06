@@ -1,4 +1,5 @@
 import { MessageCircle } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,14 @@ const NAVER_STATE_STORAGE_KEY = "allblue-naver-oauth-state";
  */
 export function SocialAuthButtons() {
   const { toast } = useToast();
+
+  // iOS 네이티브 앱에서는 소셜 로그인을 노출하지 않는다.
+  // - App Review Guideline 4: OAuth가 외부 사파리를 열어 인앱 경험을 해침
+  // - Guideline 4.8: 서드파티 소셜 로그인을 제공하면 Sign in with Apple도 제공해야 함
+  //   → iOS에서는 이메일/비밀번호만 제공해 두 지침을 모두 회피. (웹/안드로이드는 그대로 노출)
+  if (Capacitor.getPlatform() === "ios") {
+    return null;
+  }
 
   const handleAppleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({

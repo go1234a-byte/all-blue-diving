@@ -31,6 +31,9 @@ import type {
   TourCancellationClaimStatus,
   TourItineraryDay,
   TourOption,
+  TourSettlement,
+  SettlementConfirmation,
+  SettlementDayEntry,
   UnderMinParticipantsPolicy, CompanionInfo,} from "@/types";
 import { MOCK_ADMIN_PROFILE, MOCK_DIVE_CENTERS } from "@/data/mockData";
 import { computeSettlement, formatKRW } from "@/lib/pricing";
@@ -453,6 +456,31 @@ function mapChatMessageRow(row: any): ChatMessage {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapTourSettlementRow(row: any): TourSettlement {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawEntries: any[] = Array.isArray(row.entries) ? row.entries : [];
+  return {
+    tourId: row.tour_id,
+    entries: rawEntries.map((e) => ({
+      dayNumber: Number(e?.dayNumber) || 0,
+      participantIds: Array.isArray(e?.participantIds) ? e.participantIds : [],
+      expenses: Array.isArray(e?.expenses) ? e.expenses : [],
+    })),
+    instructorSettledAt: row.instructor_settled_at ?? undefined,
+    updatedAt: row.updated_at,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapSettlementConfirmationRow(row: any): SettlementConfirmation {
+  return {
+    tourId: row.tour_id,
+    diverId: row.diver_id,
+    confirmedAt: row.confirmed_at,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapArbitrationMessageRow(row: any): ArbitrationMessage {
   return {
     id: row.id,
@@ -738,6 +766,8 @@ interface AppDataContextValue {
   penalties: Penalty[];
   reports: Report[];
   chatMessages: ChatMessage[];
+  tourSettlements: TourSettlement[];
+  settlementConfirmations: SettlementConfirmation[];
   bookmarkedTourIds: string[];
   bookmarkedInstructorIds: string[];
   reviews: Review[];
@@ -803,6 +833,13 @@ interface AppDataContextValue {
   addReport: (input: Omit<Report, "id" | "createdAt" | "status">) => Promise<void>;
   resolveReport: (reportId: string) => Promise<void>;
   addChatMessage: (input: Omit<ChatMessage, "id" | "createdAt">) => Promise<void>;
+  getTourSettlement: (tourId: string) => TourSettlement | undefined;
+  getSettlementConfirmations: (tourId: string) => SettlementConfirmation[];
+  saveTourSettlement: (tourId: string, entries: SettlementDayEntry[]) => Promise<void>;
+  finalizeTourSettlement: (tourId: string, entries: SettlementDayEntry[]) => Promise<void>;
+  reopenTourSettlement: (tourId: string) => Promise<void>;
+  confirmSettlement: (tourId: string) => Promise<void>;
+  unconfirmSettlement: (tourId: string) => Promise<void>;
   setInstructorVerified: (instructorId: string, verified: boolean, verifiedBy?: string) => Promise<void>;
   rejectInstructorApplication: (instructorId: string, reason: string, rejectedBy?: string) => Promise<void>;
   setInstructorPenalty: (instructorId: string, penaltyCount: number, reason?: string) => Promise<void>;
@@ -929,6 +966,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [penalties, setPenalties] = useState<Penalty[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [tourSettlements, setTourSettlements] = useState<TourSettlement[]>([]);
+  const [settlementConfirmations, setSettlementConfirmations] = useState<SettlementConfirmation[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [instructorNotifications, setInstructorNotifications] = useState<InstructorNotification[]>([]);
@@ -1395,6 +1434,69 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         { event: "INSERT", schema: "public", table: "chat_messages" },
         (payload) => {
           setChatMessages((prev) => [...prev, mapChatMessageRow(payload.new)]);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // `tour_settlements` + `tour_settlement_confirmations` 실시간 구독 (투어 정산 가계부/확인).
+  // chat_messages와 동일한 fetch + realtime 패턴. 정산은 강사가 저장/마감하고 다이버가 확인하므로
+  // 새로고침 없이 양쪽 화면이 실시간으로 갱신되어야 한다.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const [settlementsRes, confirmationsRes] = await Promise.all([
+        supabase.from("tour_settlements").select("*"),
+        supabase.from("tour_settlement_confirmations").select("*"),
+      ]);
+      if (!active) return;
+      if (!settlementsRes.error && settlementsRes.data)
+        setTourSettlements(settlementsRes.data.map(mapTourSettlementRow));
+      if (!confirmationsRes.error && confirmationsRes.data)
+        setSettlementConfirmations(confirmationsRes.data.map(mapSettlementConfirmationRow));
+    })();
+
+    const channel = supabase
+      .channel("tour_settlements_all")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tour_settlements" },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            const oldTourId = (payload.old as { tour_id?: string })?.tour_id;
+            setTourSettlements((prev) => prev.filter((s) => s.tourId !== oldTourId));
+            return;
+          }
+          const incoming = mapTourSettlementRow(payload.new);
+          setTourSettlements((prev) => {
+            const rest = prev.filter((s) => s.tourId !== incoming.tourId);
+            return [...rest, incoming];
+          });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tour_settlement_confirmations" },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            const old = payload.old as { tour_id?: string; diver_id?: string };
+            setSettlementConfirmations((prev) =>
+              prev.filter((c) => !(c.tourId === old?.tour_id && c.diverId === old?.diver_id)),
+            );
+            return;
+          }
+          const incoming = mapSettlementConfirmationRow(payload.new);
+          setSettlementConfirmations((prev) => {
+            const rest = prev.filter(
+              (c) => !(c.tourId === incoming.tourId && c.diverId === incoming.diverId),
+            );
+            return [...rest, incoming];
+          });
         },
       )
       .subscribe();
@@ -3049,6 +3151,90 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ── 투어 정산 가계부 ─────────────────────────────────────────────
+  const getTourSettlement = (tourId: string): TourSettlement | undefined =>
+    tourSettlements.find((s) => s.tourId === tourId);
+
+  const getSettlementConfirmations = (tourId: string): SettlementConfirmation[] =>
+    settlementConfirmations.filter((c) => c.tourId === tourId);
+
+  /** 강사 — 일자별 지출/인원 내역을 저장한다(마감 전에만). realtime 구독이 로컬 state를 갱신한다. */
+  const saveTourSettlement = async (tourId: string, entries: SettlementDayEntry[]) => {
+    const { error } = await supabase
+      .from("tour_settlements")
+      .upsert({ tour_id: tourId, entries, updated_at: new Date().toISOString() }, { onConflict: "tour_id" });
+    if (error) {
+      console.error("[saveTourSettlement] upsert 실패:", error);
+      throw new Error(error.message ? `정산 내역 저장에 실패했습니다: ${error.message}` : "정산 내역 저장에 실패했습니다.");
+    }
+  };
+
+  /** 강사 — 정산을 마감(잠금)한다. 이 시점부터 다이버 "정산 확인" 단계가 시작된다. */
+  const finalizeTourSettlement = async (tourId: string, entries: SettlementDayEntry[]) => {
+    const { error } = await supabase
+      .from("tour_settlements")
+      .upsert(
+        { tour_id: tourId, entries, instructor_settled_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { onConflict: "tour_id" },
+      );
+    if (error) {
+      console.error("[finalizeTourSettlement] upsert 실패:", error);
+      throw new Error(error.message ? `정산 완료 처리에 실패했습니다: ${error.message}` : "정산 완료 처리에 실패했습니다.");
+    }
+  };
+
+  /** 강사 — 마감을 되돌린다(다이버 확인 기록도 함께 삭제). */
+  const reopenTourSettlement = async (tourId: string) => {
+    const { error } = await supabase
+      .from("tour_settlements")
+      .update({ instructor_settled_at: null, updated_at: new Date().toISOString() })
+      .eq("tour_id", tourId);
+    if (error) {
+      console.error("[reopenTourSettlement] update 실패:", error);
+      throw new Error(error.message ? `정산 재개에 실패했습니다: ${error.message}` : "정산 재개에 실패했습니다.");
+    }
+    // 다른 참가자의 확인 기록은 RLS(tsc_delete_own: diver_id = auth.uid())상 강사가 직접 지울 수 없어
+    // 이 호출은 사실상 0건 삭제된다. 대신 재마감 시 instructor_settled_at이 새 시각으로 바뀌고,
+    // chatDeletionCutoffMs / TourSettlementTab이 "instructor_settled_at 이후의 확인"만 유효로 치기 때문에
+    // 재개 후에는 참가자가 다시 "정산 확인"을 눌러야 타이머가 작동한다(재삽입 시 confirmed_at 갱신).
+    const { error: delError } = await supabase
+      .from("tour_settlement_confirmations")
+      .delete()
+      .eq("tour_id", tourId);
+    if (delError) console.error("[reopenTourSettlement] 확인 기록 삭제 실패:", delError);
+  };
+
+  /** 다이버 — 정산 내용을 확인 처리한다. */
+  const confirmSettlement = async (tourId: string) => {
+    if (!profile?.id) throw new Error("로그인이 필요합니다.");
+    // upsert(onConflict) 대신 "본인 행 삭제 후 재삽입"으로 처리한다:
+    //  1) tour_settlement_confirmations에는 UPDATE 정책이 없어서 upsert의 ON CONFLICT DO UPDATE가 RLS에 막힌다.
+    //  2) 강사가 "정산 재개"한 뒤 다시 확인할 때 confirmed_at이 새 시각으로 갱신돼야
+    //     stale 확인 기록으로 48시간 타이머가 조기 작동하는 것을 막을 수 있다.
+    await supabase.from("tour_settlement_confirmations").delete().eq("tour_id", tourId).eq("diver_id", profile.id);
+    const { error } = await supabase
+      .from("tour_settlement_confirmations")
+      .insert({ tour_id: tourId, diver_id: profile.id });
+    if (error) {
+      console.error("[confirmSettlement] insert 실패:", error);
+      throw new Error(error.message ? `정산 확인에 실패했습니다: ${error.message}` : "정산 확인에 실패했습니다.");
+    }
+  };
+
+  /** 다이버 — 정산 확인을 취소한다. */
+  const unconfirmSettlement = async (tourId: string) => {
+    if (!profile?.id) return;
+    const { error } = await supabase
+      .from("tour_settlement_confirmations")
+      .delete()
+      .eq("tour_id", tourId)
+      .eq("diver_id", profile.id);
+    if (error) {
+      console.error("[unconfirmSettlement] delete 실패:", error);
+      throw new Error(error.message ? `정산 확인 취소에 실패했습니다: ${error.message}` : "정산 확인 취소에 실패했습니다.");
+    }
+  };
+
   // 찜 토글: 로컬 상태는 즉시 반영(낙관적 업데이트)하고, 로그인 상태면 서버에도 반영한다.
   // 게스트는 localStorage에만 남고, 로그인 시 위 useEffect가 서버로 업로드해준다.
   const toggleBookmark = (tourId: string) => {
@@ -3969,6 +4155,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       penalties,
       reports,
       chatMessages,
+      tourSettlements,
+      settlementConfirmations,
       bookmarkedTourIds,
       bookmarkedInstructorIds,
       reviews,
@@ -4008,6 +4196,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addReport,
       resolveReport,
       addChatMessage,
+      getTourSettlement,
+      getSettlementConfirmations,
+      saveTourSettlement,
+      finalizeTourSettlement,
+      reopenTourSettlement,
+      confirmSettlement,
+      unconfirmSettlement,
       setInstructorVerified,
       rejectInstructorApplication,
       setInstructorPenalty,
@@ -4071,6 +4266,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       penalties,
       reports,
       chatMessages,
+      tourSettlements,
+      settlementConfirmations,
       bookmarkedTourIds,
       bookmarkedInstructorIds,
       reviews,

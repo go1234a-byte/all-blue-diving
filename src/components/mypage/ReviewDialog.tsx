@@ -16,6 +16,7 @@ import { FileDropzone } from "@/components/auth/FileDropzone";
 import { CategoryStarRow } from "@/components/mypage/CategoryStarRow";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { cn } from "@/lib/utils";
 import { uploadImageFiles } from "@/lib/uploadImage";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
@@ -67,6 +68,10 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
   const handleSubmit = async () => {
     if (rating === 0) {
       toast({ title: "별점을 선택해주세요", variant: "destructive" });
+      return;
+    }
+    if (containsObjectionable(`${title} ${comment}`)) {
+      toast({ title: "등록할 수 없습니다", description: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
     setSubmitting(true);

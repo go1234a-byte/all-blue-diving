@@ -1,12 +1,24 @@
-import { useEffect, useRef, useState } from "react";
-import { Send, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Ban, Send, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
-import { CHAT_RETENTION_NOTICE, isChatAccessible } from "@/lib/chatRetention";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { CHAT_RETENTION_NOTICE, chatDeletionCutoffMs, isChatAccessible } from "@/lib/chatRetention";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { cn } from "@/lib/utils";
 import type { Tour } from "@/types";
 
@@ -16,14 +28,34 @@ interface ChatThreadProps {
 }
 
 export function ChatThread({ tourId, tour }: ChatThreadProps) {
-  const { chatMessages, addChatMessage } = useAppData();
+  const { chatMessages, addChatMessage, bookings, getTourSettlement, getSettlementConfirmations, addSupportTicket } =
+    useAppData();
   const { role, profile } = useRole();
   const { toast } = useToast();
+  const { blockedIds, block } = useBlockedUsers();
   const [text, setText] = useState(""); const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [blockTarget, setBlockTarget] = useState<{ id: string; name: string; role: string } | null>(null);
 
-  const accessible = tour ? isChatAccessible(tour) : true;
-  const messages = accessible ? chatMessages.filter((m) => m.tourId === tourId) : [];
+  // 채팅방 삭제 시점 = 강사 정산 완료 + 예약 다이버 전원 정산 확인 후 48h.
+  const settlement = getTourSettlement(tourId);
+  const bookedDiverIds = bookings
+    .filter((b) => b.tourId === tourId && b.status !== "cancelled")
+    .map((b) => b.diverId);
+  const cutoffMs = chatDeletionCutoffMs({
+    instructorSettledAt: settlement?.instructorSettledAt,
+    confirmations: getSettlementConfirmations(tourId),
+    bookedDiverIds,
+  });
+  const accessible = tour ? isChatAccessible(cutoffMs) : true;
+  // 차단한 사용자의 메시지는 즉시 화면에서 사라진다 (App Store Guideline 1.2).
+  const messages = useMemo(
+    () =>
+      accessible
+        ? chatMessages.filter((m) => m.tourId === tourId && !blockedIds.has(m.senderProfileId))
+        : [],
+    [accessible, chatMessages, tourId, blockedIds],
+  );
 
   // 채팅방을 열었을 때, 그리고 새 메시지가 도착했을 때 항상 최신 메시지가 보이도록
   // 메시지 목록을 맨 아래로 자동 스크롤한다. 이게 없으면 오래된 메시지부터 보여서
@@ -38,9 +70,32 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
   const currentSenderRole = role === "instructor" ? "instructor" : role === "admin" ? "admin" : "diver";
   const currentSenderName = profile?.name ?? (role === "admin" ? "관리자" : "게스트 다이버");
 
+  const handleBlock = async () => {
+    if (!blockTarget) return;
+    block(blockTarget.id, blockTarget.name);
+    setBlockTarget(null);
+    toast({ title: "차단했습니다", description: "이 사용자의 메시지가 더 이상 보이지 않으며, 운영팀에 전달됩니다." });
+    try {
+      // 차단은 운영팀(고객센터 신고 큐)에 통보된다 (Guideline 1.2). 실패해도 차단 자체는 유지.
+      await addSupportTicket({
+        userId: profile?.id ?? "guest",
+        type: "report",
+        category: "기타",
+        title: "사용자 차단",
+        content: `그룹채팅(투어 ${tourId})에서 "${blockTarget.name}"(${blockTarget.id}) 사용자를 차단했습니다. 부적절한 언행 검토 요청.`,
+      });
+    } catch {
+      /* 신고 접수 실패는 조용히 무시 — 차단은 로컬에 반영됨 */
+    }
+  };
+
   const handleSend = async () => {
     if (!text.trim() || !accessible) return;
     const body = text.trim();
+    if (containsObjectionable(body)) {
+      toast({ title: "전송할 수 없습니다", description: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
+      return;
+    }
     // 실패해도 사용자가 계속 대화창을 보고 있을 확률이 높으므로 낙관적으로 먼저 비운다.
     // 다만 예전에는 이 insert가 실패하면 입력했던 내용이 그대로 사라져 다시 타이핑해야
     // 했다 — 실패 시 입력값을 복구하고 실패 사실을 토스트로 알린다.
@@ -74,7 +129,7 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
       {!accessible ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
           <ShieldAlert className="h-8 w-8 text-muted-foreground" />
-          <p className="break-keep">투어 완료 후 48시간이 경과하여 채팅방이 자동으로 삭제되었습니다.</p>
+          <p className="break-keep">정산이 완료되고 48시간이 경과하여 채팅방이 자동으로 삭제되었습니다.</p>
         </div>
       ) : (
         <>
@@ -102,7 +157,24 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
                     {/* 카카오톡처럼 내가 보낸 말풍선에는 이름을 표시하지 않는다(누가 봐도 본인
                         메시지라 안 그러면 오른쪽에 붙는 이름 위치가 애매해 보이는 문제가 있었다).
                         상대방 메시지에만 이름을 보여준다. */}
-                    {!mine && <p className="text-[11px] text-muted-foreground">{msg.senderName}</p>}
+                    {!mine && (
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[11px] text-muted-foreground">{msg.senderName}</p>
+                        {msg.senderProfileId !== "guest" && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBlockTarget({ id: msg.senderProfileId, name: msg.senderName, role: msg.senderRole })
+                            }
+                            className="flex items-center gap-0.5 text-[10px] text-muted-foreground/70 hover:text-destructive"
+                            aria-label={`${msg.senderName} 차단`}
+                          >
+                            <Ban className="h-2.5 w-2.5" />
+                            차단
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <div
                       className={cn(
                         "rounded-2xl px-3 py-2 text-sm",
@@ -136,6 +208,22 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
           </div>
         </>
       )}
+
+      <AlertDialog open={!!blockTarget} onOpenChange={(open) => !open && setBlockTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{blockTarget?.name} 님을 차단할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              차단하면 이 사용자의 메시지가 즉시 보이지 않으며, 부적절 행위로 운영팀에 접수됩니다. 차단은 마이페이지 &gt;
+              차단 관리에서 해제할 수 있습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBlock}>차단하기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

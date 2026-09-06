@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Flag, MessageCircleOff, Users } from "lucide-react";
+import { ArrowLeft, Coins, Flag, MessageCircleOff, Users } from "lucide-react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -13,6 +13,7 @@ import { RoomAssignmentDashboard } from "@/components/chat/RoomAssignmentDashboa
 import { TourInfoPinnedBanner } from "@/components/chat/TourInfoPinnedBanner";
 import { TourDashboardTab } from "@/components/chat/TourDashboardTab";
 import { TourItineraryTab } from "@/components/chat/TourItineraryTab";
+import { TourSettlementTab } from "@/components/chat/TourSettlementTab";
 import { TourMoreInfoTab } from "@/components/chat/TourMoreInfoTab";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -76,6 +77,7 @@ const ChatRoom = () => {
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
   const [tab, setTab] = useState("dashboard");
   const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [settlementOpen, setSettlementOpen] = useState(false);
   // 참가자(다이버)가 이 채팅방(=담당 강사)을 신고할 수 있는 진입점 — 예전에는 채팅방
   // 화면 어디에도 신고 버튼이 없었다.
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -159,6 +161,15 @@ const ChatRoom = () => {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <h1 className="line-clamp-1 flex-1 text-base font-semibold text-foreground">{tour.title}</h1>
+          <button
+            type="button"
+            onClick={() => setSettlementOpen(true)}
+            className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-secondary px-2.5 text-xs font-medium text-foreground hover:bg-secondary/70"
+            aria-label="정산"
+          >
+            <Coins className="h-4 w-4" />
+            정산
+          </button>
           {!isInstructor && currentDiverId && (
             <button
               type="button"
@@ -213,6 +224,16 @@ const ChatRoom = () => {
             </div>
           </SheetContent>
         </Sheet>
+        <Sheet open={settlementOpen} onOpenChange={setSettlementOpen}>
+          <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle>투어 정산</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
+              <TourSettlementTab tour={tour} bookings={participantDisplayBookings} isInstructor={isInstructor} />
+            </div>
+          </SheetContent>
+        </Sheet>
         {currentDiverId && (
           <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
             <DialogContent className="max-h-[85vh] overflow-y-auto">
@@ -251,11 +272,12 @@ const ChatRoom = () => {
       </header>
       <main className="mx-auto w-full max-w-md px-4 py-4 md:max-w-3xl md:px-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard" className="text-xs">대시보드</TabsTrigger>
-            <TabsTrigger value="itinerary" className="text-xs">일정</TabsTrigger>
-            <TabsTrigger value="participants" className="text-xs">참가자</TabsTrigger>
-            <TabsTrigger value="more" className="text-xs">더보기</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="dashboard" className="text-[11px]">대시보드</TabsTrigger>
+            <TabsTrigger value="itinerary" className="text-[11px]">일정</TabsTrigger>
+            <TabsTrigger value="participants" className="text-[11px]">참가자</TabsTrigger>
+            <TabsTrigger value="settlement" className="text-[11px]">정산</TabsTrigger>
+            <TabsTrigger value="more" className="text-[11px]">더보기</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard" className="pt-3">
             <TourDashboardTab tour={tour} bookings={activeTourBookings} isInstructor={isInstructor} />
@@ -273,6 +295,9 @@ const ChatRoom = () => {
               tour={tour}
             />
             <RoomAssignmentDashboard bookings={participantDisplayBookings} isInstructor={isInstructor} />
+          </TabsContent>
+          <TabsContent value="settlement" className="pt-3">
+            <TourSettlementTab tour={tour} bookings={participantDisplayBookings} isInstructor={isInstructor} />
           </TabsContent>
           <TabsContent value="more" className="pt-3">
             <TourMoreInfoTab tour={tour} bookings={activeTourBookings} myBooking={myBooking} isInstructor={isInstructor} />

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { countUnread } from "@/lib/chatReadState";
-import { isChatAccessible } from "@/lib/chatRetention";
+import { chatDeletionCutoffMs, isChatAccessible } from "@/lib/chatRetention";
 import { formatDateKR } from "@/lib/dates";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,7 @@ const EMPTY_MESSAGE: Record<string, string> = {
 
 const ChatList = () => {
   const { role, currentDiverId, currentInstructorId, profile, authLoading } = useRole();
-  const { tours, bookings, chatMessages, supportTickets } = useAppData();
+  const { tours, bookings, chatMessages, supportTickets, getTourSettlement, getSettlementConfirmations } = useAppData();
   const [sortMode, setSortMode] = useState<ChatSortMode>(() => {
     if (typeof window === "undefined") return "recent";
     const stored = window.localStorage.getItem(CHAT_SORT_STORAGE_KEY);
@@ -161,7 +161,16 @@ const ChatList = () => {
           <p className="py-16 text-center text-sm text-muted-foreground">{EMPTY_MESSAGE[role]}</p>
         )}
         {rows.map(({ tour, lastMessage, unreadCount }) => {
-          const accessible = isChatAccessible(tour);
+          const settlement = getTourSettlement(tour.id);
+          const accessible = isChatAccessible(
+            chatDeletionCutoffMs({
+              instructorSettledAt: settlement?.instructorSettledAt,
+              confirmations: getSettlementConfirmations(tour.id),
+              bookedDiverIds: bookings
+                .filter((b) => b.tourId === tour.id && b.status !== "cancelled")
+                .map((b) => b.diverId),
+            }),
+          );
           return (
             <Link
               key={tour.id}

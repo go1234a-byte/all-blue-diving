@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DiverProfileEditCard } from "@/components/mypage/DiverProfileEditCard";
 import { DiverSafetyProfileCard } from "@/components/mypage/DiverSafetyProfileCard";
 import { InquiryHistoryList } from "@/components/mypage/InquiryHistoryList";
+import { BlockedUsersCard } from "@/components/mypage/BlockedUsersCard";
 import { AccountActions } from "@/components/mypage/AccountActions";
 import { PushNotificationToggle } from "@/components/mypage/PushNotificationToggle";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -91,6 +92,8 @@ export function DiverMyPageView() {
         <h3 className="text-sm font-semibold text-foreground">문의 내역</h3>
         <InquiryHistoryList diverId={currentDiverId} />
       </div>
+
+      <BlockedUsersCard />
 
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-foreground">주요 정책 및 안전 규정</h3>

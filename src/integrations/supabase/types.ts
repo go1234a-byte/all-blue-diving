@@ -1298,6 +1298,45 @@ export type Database = {
           },
         ]
       }
+      tour_settlement_confirmations: {
+        Row: {
+          confirmed_at: string
+          diver_id: string
+          tour_id: string
+        }
+        Insert: {
+          confirmed_at?: string
+          diver_id: string
+          tour_id: string
+        }
+        Update: {
+          confirmed_at?: string
+          diver_id?: string
+          tour_id?: string
+        }
+        Relationships: []
+      }
+      tour_settlements: {
+        Row: {
+          entries: Json
+          instructor_settled_at: string | null
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          entries?: Json
+          instructor_settled_at?: string | null
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          entries?: Json
+          instructor_settled_at?: string | null
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tours: {
         Row: {
           activity_types: string[]

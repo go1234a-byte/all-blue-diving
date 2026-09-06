@@ -486,7 +486,10 @@ const TourDetail = () => {
         </aside>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-md items-center justify-between gap-4 border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:hidden">
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-md items-center justify-between gap-4 border-t border-border bg-card/95 px-4 pt-3 backdrop-blur md:hidden"
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+      >
         <div>
           <p className="text-xs text-muted-foreground">
             1인 기준 · 수수료 포함{selectedOptionsTotal > 0 ? " · 옵션 포함" : ""}

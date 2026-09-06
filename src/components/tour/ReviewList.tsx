@@ -1,11 +1,22 @@
 import { useState } from "react";
-import { Flag, Lock, MessageSquareReply, Star } from "lucide-react";
+import { Ban, Flag, Lock, MessageSquareReply, Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { formatDateKR } from "@/lib/dates";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { cn } from "@/lib/utils";
@@ -20,18 +31,38 @@ interface ReviewListProps {
  * 해당 투어의 담당 강사 본인과 관리자에게만 노출한다.
  */
 export function ReviewList({ tourId }: ReviewListProps) {
-  const { getReviewsByTourId, getTourById, reportReview } = useAppData();
-  const { role, currentInstructorId } = useRole();
+  const { getReviewsByTourId, getTourById, reportReview, addSupportTicket } = useAppData();
+  const { role, currentInstructorId, profile } = useRole();
   const { toast } = useToast();
+  const { blockedIds, block } = useBlockedUsers();
   const [reportedIds, setReportedIds] = useState<string[]>([]);
   const [reportingId, setReportingId] = useState<string | null>(null);
+  const [blockTargetDiverId, setBlockTargetDiverId] = useState<string | null>(null);
 
   const tour = getTourById(tourId);
   const isPrivilegedViewer =
     role === "admin" || (role === "instructor" && !!currentInstructorId && currentInstructorId === tour?.instructorId);
   const reviews = getReviewsByTourId(tourId).filter(
-    (r) => r.visibility !== "instructor_only" || isPrivilegedViewer,
+    (r) => (r.visibility !== "instructor_only" || isPrivilegedViewer) && !blockedIds.has(r.diverId),
   );
+
+  const handleBlockReviewer = async () => {
+    if (!blockTargetDiverId) return;
+    block(blockTargetDiverId, "차단한 후기 작성자");
+    setBlockTargetDiverId(null);
+    toast({ title: "차단했습니다", description: "이 작성자의 후기가 보이지 않으며, 운영팀에 전달됩니다." });
+    try {
+      await addSupportTicket({
+        userId: profile?.id ?? "guest",
+        type: "report",
+        category: "기타",
+        title: "후기 작성자 차단",
+        content: `투어 ${tourId} 후기에서 작성자(${blockTargetDiverId})를 차단했습니다. 부적절한 콘텐츠 검토 요청.`,
+      });
+    } catch {
+      /* 신고 접수 실패는 조용히 무시 */
+    }
+  };
 
   if (reviews.length === 0) {
     return (
@@ -121,25 +152,53 @@ export function ReviewList({ tourId }: ReviewListProps) {
                   <p className="break-keep text-xs text-foreground">{review.instructorReply}</p>
                 </div>
               )}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-6 gap-1 px-1.5 text-[10px] text-muted-foreground"
-                disabled={reportedIds.includes(review.id) || review.reported || reportingId === review.id}
-                onClick={() => handleReport(review.id)}
-              >
-                <Flag className="h-3 w-3" />
-                {review.reported || reportedIds.includes(review.id)
-                  ? "신고 접수됨"
-                  : reportingId === review.id
-                    ? "접수 중..."
-                    : "신고"}
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 gap-1 px-1.5 text-[10px] text-muted-foreground"
+                  disabled={reportedIds.includes(review.id) || review.reported || reportingId === review.id}
+                  onClick={() => handleReport(review.id)}
+                >
+                  <Flag className="h-3 w-3" />
+                  {review.reported || reportedIds.includes(review.id)
+                    ? "신고 접수됨"
+                    : reportingId === review.id
+                      ? "접수 중..."
+                      : "신고"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 gap-1 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
+                  onClick={() => setBlockTargetDiverId(review.diverId)}
+                >
+                  <Ban className="h-3 w-3" />
+                  작성자 차단
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      <AlertDialog open={!!blockTargetDiverId} onOpenChange={(open) => !open && setBlockTargetDiverId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 작성자를 차단할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              차단하면 이 작성자의 모든 후기가 즉시 보이지 않으며, 부적절 행위로 운영팀에 접수됩니다. 마이페이지 &gt; 차단
+              관리에서 해제할 수 있습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBlockReviewer}>차단하기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

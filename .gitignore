@@ -4,3 +4,6 @@ dist
 enter-AllBlueDiveMarketplace/
 .vercel
 .env*
+
+# macOS
+.DS_Store
