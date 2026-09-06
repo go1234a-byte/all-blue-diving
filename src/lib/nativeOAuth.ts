@@ -9,7 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const NATIVE_OAUTH_SCHEME = "com.allblue.diving";
 export const NATIVE_OAUTH_REDIRECT = `${NATIVE_OAUTH_SCHEME}://auth-callback`;
-export const NATIVE_NAVER_REDIRECT = `${NATIVE_OAUTH_SCHEME}://naver-callback`;
+// 네이버 로그인 Callback URL은 http(s)만 허용(커스텀 스킴 불가). 그래서 네이티브 앱도
+// redirect_uri는 웹 콜백 페이지를 쓰고, 그 페이지(NaverCallback.tsx)가 state의 "native:" 접두사를
+// 보고 com.allblue.diving://naver-callback 로 다시 바운스해 앱으로 넘겨준다.
+export const WEB_ORIGIN = "https://allbluedive.com";
+export const NATIVE_NAVER_WEB_REDIRECT = `${WEB_ORIGIN}/naver-callback`;
+export const NATIVE_NAVER_SCHEME_REDIRECT = `${NATIVE_OAUTH_SCHEME}://naver-callback`;
+export const NATIVE_STATE_PREFIX = "native:";
 const NAVER_STATE_KEY = "allblue-naver-oauth-state";
 const NAVER_CLIENT_ID =
   (import.meta.env.VITE_NAVER_CLIENT_ID as string | undefined) || "PSqaIFHOT1EyLk93VclD";
@@ -30,12 +36,12 @@ export async function startNativeOAuth(provider: "apple" | "kakao" | "google"): 
 
 /** 네이버 — 커스텀 브릿지. 인앱 브라우저로 네이버 인가 화면을 띄운다. */
 export async function startNativeNaverOAuth(): Promise<void> {
-  const state = crypto.randomUUID();
+  const state = NATIVE_STATE_PREFIX + crypto.randomUUID();
   window.sessionStorage.setItem(NAVER_STATE_KEY, state);
   const params = new URLSearchParams({
     response_type: "code",
     client_id: NAVER_CLIENT_ID,
-    redirect_uri: NATIVE_NAVER_REDIRECT,
+    redirect_uri: NATIVE_NAVER_WEB_REDIRECT,
     state,
   });
   await Browser.open({
@@ -83,7 +89,7 @@ export async function handleOAuthDeepLink(url: string): Promise<boolean> {
       throw new Error("네이버 로그인 요청이 유효하지 않습니다. 다시 시도해주세요.");
     }
     const { data, error: fnError } = await supabase.functions.invoke("naver-oauth-exchange", {
-      body: { code, state, redirectUri: NATIVE_NAVER_REDIRECT },
+      body: { code, state, redirectUri: NATIVE_NAVER_WEB_REDIRECT },
     });
     if (fnError || !data?.tokenHash) {
       throw new Error(data?.error || fnError?.message || "네이버 로그인 처리에 실패했습니다.");

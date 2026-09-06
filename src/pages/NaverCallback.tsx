@@ -24,6 +24,15 @@ export default function NaverCallback() {
       const code = searchParams.get("code");
       const state = searchParams.get("state");
       const naverError = searchParams.get("error_description") || searchParams.get("error");
+
+      // 네이티브 앱 흐름: 이 페이지는 인앱 브라우저(SFSafariViewController) 안에서 열린 것이므로
+      // 여기서 세션을 만들어봤자 앱 웹뷰로 전달되지 않는다. state에 "native:" 접두사가 있으면
+      // 커스텀 스킴으로 다시 던져서 App.tsx의 appUrlOpen 리스너가 처리하게 한다.
+      if (state?.startsWith("native:")) {
+        window.location.replace(`com.allblue.diving://naver-callback${window.location.search}`);
+        return;
+      }
+
       const storedState = window.sessionStorage.getItem(NAVER_STATE_STORAGE_KEY);
       window.sessionStorage.removeItem(NAVER_STATE_STORAGE_KEY);
 
