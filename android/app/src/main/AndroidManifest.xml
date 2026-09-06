@@ -18,6 +18,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- 소셜 로그인 인앱 브라우저 콜백 딥링크 (com.allblue.diving://auth-callback 등) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.allblue.diving" />
+            </intent-filter>
         </activity>
 
         <provider

@@ -1,7 +1,7 @@
 import { MessageCircle } from "lucide-react";
-import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { isNativeApp, startNativeNaverOAuth, startNativeOAuth } from "@/lib/nativeOAuth";
 import { cn } from "@/lib/utils";
 
 // 네이버 로그인 client_id는 비밀이 아니라 클라이언트에 노출되는 값이다(비밀은 서버측 NAVER_CLIENT_SECRET).
@@ -24,58 +24,37 @@ const NAVER_STATE_STORAGE_KEY = "allblue-naver-oauth-state";
 export function SocialAuthButtons() {
   const { toast } = useToast();
 
-  // iOS 네이티브 앱에서는 소셜 로그인을 노출하지 않는다.
-  // - App Review Guideline 4: OAuth가 외부 사파리를 열어 인앱 경험을 해침
-  // - Guideline 4.8: 서드파티 소셜 로그인을 제공하면 Sign in with Apple도 제공해야 함
-  //   → iOS에서는 이메일/비밀번호만 제공해 두 지침을 모두 회피. (웹/안드로이드는 그대로 노출)
-  if (Capacitor.getPlatform() === "ios") {
-    return null;
-  }
-
-  const handleAppleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "apple",
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) {
+  // 네이티브 앱(iOS/Android)에서는 인앱 브라우저(SFSafariViewController / Custom Tabs)로 OAuth를
+  // 진행하고 com.allblue.diving:// 딥링크 콜백을 App.tsx에서 마무리한다 (App Store Guideline 4).
+  // 웹에서는 기존대로 전체 페이지 리다이렉트.
+  const oauth = async (
+    provider: "apple" | "kakao" | "google",
+    label: string,
+  ) => {
+    try {
+      if (isNativeApp()) {
+        await startNativeOAuth(provider);
+        return;
+      }
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) throw error;
+    } catch (err) {
       toast({
-        title: "Apple 로그인에 실패했습니다",
-        description: error.message,
+        title: `${label} 로그인에 실패했습니다`,
+        description: err instanceof Error ? err.message : undefined,
         variant: "destructive",
       });
     }
   };
 
-  const handleKakaoLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "kakao",
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) {
-      toast({
-        title: "카카오 로그인에 실패했습니다",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-    // 성공 시 카카오 로그인 화면으로 브라우저가 이동한다(리다이렉트) — 별도 처리 불필요.
-  };
+  const handleAppleLogin = () => oauth("apple", "Apple");
+  const handleKakaoLogin = () => oauth("kakao", "카카오");
+  const handleGoogleLogin = () => oauth("google", "Google");
 
-  const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) {
-      toast({
-        title: "Google 로그인에 실패했습니다",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleNaverLogin = () => {
+  const handleNaverLogin = async () => {
     if (!NAVER_CLIENT_ID) {
       toast({
         title: "네이버 간편 로그인은 준비 중입니다",
@@ -83,16 +62,27 @@ export function SocialAuthButtons() {
       });
       return;
     }
-    const state = crypto.randomUUID();
-    window.sessionStorage.setItem(NAVER_STATE_STORAGE_KEY, state);
-    const redirectUri = `${window.location.origin}/naver-callback`;
-    const params = new URLSearchParams({
-      response_type: "code",
-      client_id: NAVER_CLIENT_ID,
-      redirect_uri: redirectUri,
-      state,
-    });
-    window.location.href = `https://nid.naver.com/oauth2.0/authorize?${params.toString()}`;
+    try {
+      if (isNativeApp()) {
+        await startNativeNaverOAuth();
+        return;
+      }
+      const state = crypto.randomUUID();
+      window.sessionStorage.setItem(NAVER_STATE_STORAGE_KEY, state);
+      const params = new URLSearchParams({
+        response_type: "code",
+        client_id: NAVER_CLIENT_ID,
+        redirect_uri: `${window.location.origin}/naver-callback`,
+        state,
+      });
+      window.location.href = `https://nid.naver.com/oauth2.0/authorize?${params.toString()}`;
+    } catch (err) {
+      toast({
+        title: "네이버 로그인에 실패했습니다",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
+    }
   };
 
   return (

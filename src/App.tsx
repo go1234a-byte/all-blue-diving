@@ -12,6 +12,8 @@ import { RoleProvider } from "@/contexts/RoleContext";
 import { AppDataProvider } from "@/contexts/AppDataContext";
 import { SplashScreen } from "@/components/SplashScreen";
 import { DiverPopup } from "@/components/DiverPopup";
+import { handleOAuthDeepLink } from "@/lib/nativeOAuth";
+import { toast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,24 @@ const App = () => {
       } else {
         CapacitorApp.exitApp();
       }
+    });
+    return () => {
+      void listenerPromise.then((listener) => listener.remove());
+    };
+  }, []);
+
+  // 네이티브 소셜 로그인: 인앱 브라우저에서 com.allblue.diving:// 스킴으로 돌아온 콜백을 처리해
+  // 세션을 확립한다. (SocialAuthButtons가 startNativeOAuth로 Browser.open 했던 그 흐름의 마무리)
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const listenerPromise = CapacitorApp.addListener("appUrlOpen", ({ url }) => {
+      void handleOAuthDeepLink(url).catch((err) => {
+        toast({
+          title: "소셜 로그인에 실패했습니다",
+          description: err instanceof Error ? err.message : "잠시 후 다시 시도해주세요.",
+          variant: "destructive",
+        });
+      });
     });
     return () => {
       void listenerPromise.then((listener) => listener.remove());
