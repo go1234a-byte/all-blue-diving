@@ -4,7 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const NAVER_CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID as string | undefined;
+// 네이버 로그인 client_id는 비밀이 아니라 클라이언트에 노출되는 값이다(비밀은 서버측 NAVER_CLIENT_SECRET).
+// 로컬/네이티브(Capacitor) 빌드는 Vercel 환경변수를 못 받으므로, 없을 때 실제 값으로 폴백한다.
+const NAVER_CLIENT_ID =
+  (import.meta.env.VITE_NAVER_CLIENT_ID as string | undefined) || "PSqaIFHOT1EyLk93VclD";
 const NAVER_STATE_STORAGE_KEY = "allblue-naver-oauth-state";
 
 /**
