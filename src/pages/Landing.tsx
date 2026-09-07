@@ -189,11 +189,8 @@ export default function Landing() {
         <div className="ab-wrap ab-hero-inner">
           <p className="ab-eyebrow">Diving Tour Platform · Est. 2026</p>
           <h1 className="ab-hero-h">
-            {HERO_LINES.map((line, i) => (
-              <span key={line} className={`ab-hero-line ${i === heroIdx ? "on" : ""}`} aria-hidden={i !== heroIdx}>
-                {line}
-              </span>
-            ))}
+            {/* 한 번에 한 줄만 DOM에 존재(key 교체로 리마운트) → 겹침 없이 페이드 인 */}
+            <span key={heroIdx} className="ab-hero-line on">{HERO_LINES[heroIdx]}</span>
             {/* 레이아웃 높이 확보용(그리지 않음) — 가장 긴 문구 기준 */}
             <span className="ab-hero-line ghost">{HERO_LINES[2]}</span>
           </h1>
@@ -542,9 +539,10 @@ const CSS = `
 .ab-hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,19,32,.5) 0%,rgba(7,19,32,.12) 30%,rgba(7,19,32,.7) 74%,var(--ink) 100%);}
 .ab-hero-inner{padding-top:150px;padding-bottom:clamp(44px,7vw,92px);width:100%;}
 .ab-hero-h{position:relative;font-size:clamp(34px,6.4vw,84px);font-weight:800;max-width:16ch;}
-.ab-hero-line{position:absolute;left:0;top:0;right:0;opacity:0;transform:translateY(12px);transition:opacity .7s ease,transform .7s cubic-bezier(.22,1,.36,1);pointer-events:none;}
-.ab-hero-line.on{opacity:1;transform:none;}
-.ab-hero-line.ghost{position:relative;visibility:hidden;opacity:0;transition:none;}
+.ab-hero-line{position:absolute;left:0;top:0;right:0;pointer-events:none;}
+.ab-hero-line.on{animation:abheadline .6s cubic-bezier(.22,1,.36,1) both;}
+@keyframes abheadline{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.ab-hero-line.ghost{position:relative;visibility:hidden;}
 .ab-hero-lede{margin-top:22px;max-width:46ch;color:#C4D2DC;font-size:clamp(14px,1.5vw,17px);}
 .ab-search{margin-top:34px;display:flex;flex-wrap:wrap;gap:1px;max-width:680px;border:1px solid rgba(201,168,104,.3);border-radius:4px;overflow:hidden;background:rgba(201,168,104,.3);}
 .ab-search-fld{flex:1 1 200px;min-width:0;border:0;outline:0;background:rgba(7,19,32,.66);color:#fff;padding:16px 18px;font-size:14px;font-family:inherit;}
