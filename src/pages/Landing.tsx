@@ -4,10 +4,32 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
-import { formatDateRangeKR, formatNightsDaysKR } from "@/lib/dates";
+import { formatDateRangeKR } from "@/lib/dates";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
+import { DIVE_POINTS, GUIDE_BY_MONTH } from "@/content/divePointGuide";
 import type { Tour } from "@/types";
+
+/** 리브어보드 하루 일과 — 예시. 상품마다 다릅니다. */
+const LIVEABOARD_DAY = [
+  { t: "06:30", label: "기상 · 가벼운 간식" },
+  { t: "07:00", label: "1차 다이빙 브리핑 & 입수" },
+  { t: "09:30", label: "아침 식사 · 휴식" },
+  { t: "11:30", label: "2차 다이빙" },
+  { t: "14:00", label: "점심 · 자유 시간" },
+  { t: "15:30", label: "3차 다이빙" },
+  { t: "18:30", label: "저녁 식사 · 다음날 브리핑" },
+  { t: "20:00", label: "야간 다이빙 (선택)" },
+];
+
+/** 리브어보드가 운영되는 대표 지역 — 예시. 우리 상품의 출발지와 다를 수 있습니다. */
+const LIVEABOARD_REGIONS = [
+  "인도네시아 (코모도 · 라자암팟)",
+  "몰디브",
+  "이집트 홍해",
+  "갈라파고스",
+  "필리핀 (투바타하)",
+];
 
 /**
  * allbluedive.com 웹 전용 랜딩 — 비로그인 웹 방문자에게만 노출된다(앱/로그인 유저는 기존 Index 홈).
@@ -74,14 +96,14 @@ function tourDifficulty(t: Tour): string {
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { tours, instructors, reviews, getConfirmedParticipantCount } = useAppData();
+  const { tours, instructors, reviews } = useAppData();
   const reduced = useReducedMotion();
   const rootRef = useReveal();
 
   const [heroIdx, setHeroIdx] = useState(0);
   const [q, setQ] = useState("");
   const [month, setMonth] = useState<number | "">("");
-  const [showMonth, setShowMonth] = useState(() => new Date().getMonth()); // 목적지 쇼케이스 월 탭
+  const [guideMonth, setGuideMonth] = useState(() => new Date().getMonth()); // 다이빙 포인트 가이드 월 탭 (오늘 기준)
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -101,34 +123,16 @@ export default function Landing() {
     () => tours.filter((t) => !t.adminStatus && t.status === "open"),
     [tours],
   );
-  const isLiveaboard = (t: Tour) => t.activityTypes.includes("liveaboard");
+  const bentoTours = openTours.slice(0, 6);
 
-  // 리브어보드는 별도 섹션으로 분리 — 일반 리스트/쇼케이스에서 제외
-  const liveaboardTours = useMemo(() => openTours.filter(isLiveaboard), [openTours]);
-  const regularTours = useMemo(() => openTours.filter((t) => !isLiveaboard(t)), [openTours]);
-  const bentoTours = regularTours.slice(0, 6);
-
-  // 목적지 쇼케이스: 선택한 "월"에 실제로 출발(startDate)하는 일반 투어만. 성수기 등 검증 안 된 정보는 쓰지 않음.
-  const monthTours = useMemo(
+  // 다이빙 포인트 가이드: TOUR(예약) 데이터와 무관한 정적 콘텐츠. 선택한 달의 추천 포인트만 뽑는다.
+  const guidePoints = useMemo(
     () =>
-      regularTours
-        .filter((t) => new Date(t.startDate).getMonth() === showMonth)
-        .sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate)),
-    [regularTours, showMonth],
+      (GUIDE_BY_MONTH[guideMonth] ?? [])
+        .map((id) => DIVE_POINTS[id])
+        .filter((p): p is (typeof DIVE_POINTS)[string] => Boolean(p)),
+    [guideMonth],
   );
-
-  // 데이터 로드 후, 현재 달에 출발 투어가 없으면 "가장 가까운 출발 달"로 한 번 이동(사용자가 직접 고르기 전까지만).
-  const monthTouched = useRef(false);
-  useEffect(() => {
-    if (monthTouched.current || regularTours.length === 0) return;
-    if (regularTours.some((t) => new Date(t.startDate).getMonth() === showMonth)) return;
-    const now = Date.now();
-    const upcoming = regularTours
-      .map((t) => new Date(t.startDate))
-      .filter((d) => +d >= now)
-      .sort((a, b) => +a - +b)[0];
-    if (upcoming) setShowMonth(upcoming.getMonth());
-  }, [regularTours, showMonth]);
 
   const featuredInstructor = useMemo(
     () => instructors.find((i) => i.verified) ?? instructors[0],
@@ -224,26 +228,27 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* 2. 목적지 쇼케이스 — 월별 탭(실제 출발일 기준) */}
+      {/* 2. 다이빙 포인트 가이드 — 예약 데이터와 무관한 정보성 콘텐츠 (src/content/divePointGuide.ts) */}
       <section id="destinations" className="ab-sec ab-dest">
         <div className="ab-wrap">
           <div className="ab-sec-head r">
-            <h2>어디로 갈지 고민된다면</h2>
-            <p className="ab-marker">가고 싶은 달을 고르세요 · 실제 출발 일정 기준</p>
+            <h2>다이빙 포인트 가이드</h2>
+            <p className="ab-marker">예시 콘텐츠 · 게시 전 확인 필요</p>
           </div>
+          <p className="ab-guide-intro r">
+            아직 목적지를 못 정했다면. 전 세계 유명 다이빙 포인트를 달별로 둘러보세요.
+            예약이 아니라 “알아가는” 코너입니다.
+          </p>
         </div>
         <div className="ab-wrap">
-          <div className="ab-months r" role="tablist" aria-label="출발 월 선택">
+          <div className="ab-months r" role="tablist" aria-label="월 선택">
             {MONTH_LABELS_KR.map((m, i) => (
               <button
                 key={m}
                 role="tab"
-                aria-selected={showMonth === i}
-                className={showMonth === i ? "on" : ""}
-                onClick={() => {
-                  monthTouched.current = true;
-                  setShowMonth(i);
-                }}
+                aria-selected={guideMonth === i}
+                className={guideMonth === i ? "on" : ""}
+                onClick={() => setGuideMonth(i)}
               >
                 {m}
               </button>
@@ -251,80 +256,71 @@ export default function Landing() {
           </div>
         </div>
         <div className="ab-wrap">
-          {monthTours.length === 0 ? (
-            <div className="ab-dest-empty r">
-              <p><b>{MONTH_LABELS_KR[showMonth]}</b>에 출발하는 투어가 아직 없어요.</p>
-              <Link to="/search" className="ab-textlink">다른 달·전체 투어 보기 →</Link>
-            </div>
-          ) : (
-            <div className="ab-dest-row r">
-              {monthTours.map((t) => {
-                const start = new Date(t.startDate);
-                const seats = Math.max(0, t.maxParticipants - getConfirmedParticipantCount(t.id));
-                return (
-                  <Link key={t.id} to={`/tour/${t.id}`} className="ab-dest-card">
-                    <div className="ab-dest-img">
-                      <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} />
-                      <span className="ab-dest-flag">{start.getMonth() + 1}월 {start.getDate()}일 출발</span>
-                    </div>
-                    <div className="ab-dest-body">
-                      <p className="ab-dest-region">{t.country} · {t.site}</p>
-                      <h3>{t.title}</h3>
-                      <p className="ab-dest-diff">
-                        {formatNightsDaysKR(t.startDate, t.endDate)} · {tourDifficulty(t)}
-                      </p>
-                      <dl className="ab-dest-meta">
-                        <div><dt>수온 · 시야</dt><dd>{t.waterTempC}°C / ~{t.visibilityM}m</dd></div>
-                        <div><dt>가격 · 잔여</dt><dd>{formatKRW(applyPlatformFee(t.basePrice))}~ · {seats}석</dd></div>
-                      </dl>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+          <div className="ab-dest-row r">
+            {guidePoints.map((p) => (
+              <article key={p.id} className="ab-dest-card">
+                <div className="ab-dest-img">
+                  <img src={p.image} alt={p.region} onError={handleImageFallback} />
+                </div>
+                <div className="ab-dest-body">
+                  <p className="ab-dest-region">{MONTH_LABELS_KR[guideMonth]} 추천</p>
+                  <h3>{p.region}</h3>
+                  <p className="ab-dest-oneliner">{p.oneLiner}</p>
+                  <dl className="ab-dest-meta">
+                    <div><dt>수온 · 시야</dt><dd>{p.water}</dd></div>
+                  </dl>
+                  <div className="ab-life">
+                    {p.life.map((l) => (
+                      <span key={l}>{l}</span>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* 3. 리브어보드 전용 섹션 — 기존 activityTypes "liveaboard" 값으로만 필터 (새 카테고리 없음) */}
-      {liveaboardTours.length > 0 && (
-        <section id="liveaboard" className="ab-sec ab-liveaboard">
-          <div className="ab-wrap">
-            <div className="ab-sec-head r">
-              <h2>리브어보드</h2>
-              <p className="ab-marker">선상 숙박 · 여러 날 이동하는 특별 상품</p>
+      {/* 3. 리브어보드 정보 섹션 — 정의·출발지역·경험 설명만. 예약 카드/가격/CTA 없음. */}
+      <section id="liveaboard" className="ab-sec ab-lb">
+        <div className="ab-wrap">
+          <div className="ab-sec-head r">
+            <h2>리브어보드란?</h2>
+            <p className="ab-marker">예시 설명 · 게시 전 확인 필요</p>
+          </div>
+
+          <div className="ab-lb-grid">
+            <div className="r">
+              <figure className="ab-lb-fig">
+                <img src="/landing/boat.jpg" alt="리브어보드 보트" onError={handleImageFallback} />
+              </figure>
+              <p className="ab-lb-def">
+                <b>리브어보드(Liveaboard)</b>는 다이빙 전용 보트에서 <b>숙식하며 여러 날에 걸쳐 이동</b>,
+                육지에서 닿기 어려운 원격 포인트를 하루 3~4회씩 다이빙하는 방식입니다.
+                당일·단기 투어와는 리듬이 완전히 다릅니다.
+              </p>
+              <p className="ab-lb-sub">대표 운영 지역 (예시 — 실제 상품 출발지와 다를 수 있음)</p>
+              <div className="ab-lb-regions">
+                {LIVEABOARD_REGIONS.map((rg) => (
+                  <span key={rg}>{rg}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="r">
+              <p className="ab-lb-sub">선상 하루 일과 (예시)</p>
+              <ol className="ab-lb-timeline">
+                {LIVEABOARD_DAY.map((d) => (
+                  <li key={d.t}>
+                    <span className="ab-lb-time">{d.t}</span>
+                    <span className="ab-lb-label">{d.label}</span>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
-          <div className="ab-wrap">
-            <div className="ab-la-row r">
-              {liveaboardTours.map((t) => {
-                const seats = Math.max(0, t.maxParticipants - getConfirmedParticipantCount(t.id));
-                return (
-                  <Link key={t.id} to={`/tour/${t.id}`} className="ab-la-card">
-                    <div className="ab-la-img">
-                      <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} />
-                      <span className="ab-la-nights">{formatNightsDaysKR(t.startDate, t.endDate)}</span>
-                    </div>
-                    <div className="ab-la-body">
-                      <p className="ab-dest-region">{t.country} · {t.site}</p>
-                      <h3>{t.title}</h3>
-                      {(t.tags ?? []).length > 0 && (
-                        <p className="ab-la-course">기항 · 코스: {(t.tags ?? []).slice(0, 4).join(" · ")}</p>
-                      )}
-                      <div className="ab-la-meta">
-                        <span>{formatDateRangeKR(t.startDate, t.endDate)}</span>
-                        <span>수온 {t.waterTempC}°C</span>
-                        <span>잔여 {seats}석</span>
-                      </div>
-                      <p className="ab-la-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* 4. 브랜드 인트로 */}
       <section id="story" className="ab-sec ab-intro">
@@ -360,39 +356,36 @@ export default function Landing() {
             <p className="ab-empty r">현재 모집중인 투어를 준비하고 있어요. 곧 새로운 일정이 열립니다.</p>
           ) : (
             <div className="ab-bento r">
-              {bentoTours.map((t, i) => {
-                const diff =
-                  t.minLogCount && t.minLogCount > 0 ? `로그 ${t.minLogCount}+` : "입문 가능";
-                return (
-                  <Link
-                    key={t.id}
-                    to={`/tour/${t.id}`}
-                    className={`ab-tcard ${i === 0 ? "feat" : ""} ${i === 3 ? "wide" : ""}`}
-                  >
-                    <img
-                      src={t.mainImageUrl || IMAGE_PLACEHOLDER}
-                      alt={t.title}
-                      onError={handleImageFallback}
-                    />
-                    <div className="ab-tcard-badges">
-                      {t.activityTypes.map((a) => (
-                        <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
-                      ))}
-                      {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
+              {bentoTours.map((t, i) => (
+                <Link
+                  key={t.id}
+                  to={`/tour/${t.id}`}
+                  className={`ab-tcard ${i === 0 ? "feat" : ""} ${i === 3 ? "wide" : ""}`}
+                >
+                  <img
+                    src={t.mainImageUrl || IMAGE_PLACEHOLDER}
+                    alt={t.title}
+                    onError={handleImageFallback}
+                  />
+                  <div className="ab-tcard-badges">
+                    {t.activityTypes.map((a) => (
+                      <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
+                    ))}
+                    {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
+                  </div>
+                  <div className="ab-tcard-body">
+                    <p className="ab-tcard-loc">{t.country} · {t.site}</p>
+                    <h3>{t.title}</h3>
+                    <div className="ab-tcard-meta">
+                      <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
+                      <span>💧 {t.waterTempC}°C</span>
+                      <span>👁 ~{t.visibilityM}m</span>
+                      <span>{tourDifficulty(t)}</span>
                     </div>
-                    <div className="ab-tcard-body">
-                      <p className="ab-tcard-loc">{t.country} · {t.site}</p>
-                      <h3>{t.title}</h3>
-                      <div className="ab-tcard-meta">
-                        <span>💧 {t.waterTempC}°C</span>
-                        <span>👁 ~{t.visibilityM}m</span>
-                        <span>{diff}</span>
-                      </div>
-                      <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
-                    </div>
-                  </Link>
-                );
-              })}
+                    <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </div>
@@ -594,27 +587,32 @@ const CSS = `
 .ab-dest-body{padding:16px 16px 18px;}
 .ab-dest-region{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mist);}
 .ab-dest-body h3{margin-top:4px;font-size:17px;font-weight:800;}
-.ab-dest-diff{margin-top:4px;font-size:12px;color:var(--turq2);font-weight:600;}
-.ab-dest-meta{display:flex;gap:14px;margin:14px 0 0;border-top:1px solid rgba(201,168,104,.16);padding-top:12px;}
+.ab-guide-intro{margin-top:14px;max-width:52ch;color:var(--mist);font-size:14px;}
+.ab-dest-oneliner{margin-top:8px;font-size:13px;line-height:1.55;color:#C4D2DC;}
+.ab-dest-meta{display:flex;gap:14px;margin:12px 0 0;border-top:1px solid rgba(201,168,104,.16);padding-top:12px;}
 .ab-dest-meta div{flex:1;}
 .ab-dest-meta dt{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);margin:0;}
-.ab-dest-meta dd{margin:3px 0 0;font-size:12.5px;font-weight:600;color:var(--foam);}
+.ab-dest-meta dd{margin:3px 0 0;font-size:12px;font-weight:600;color:var(--foam);}
+.ab-life{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;}
+.ab-life span{font-size:11px;color:var(--turq2);border:1px solid rgba(47,182,196,.3);border-radius:999px;padding:3px 10px;}
 
-/* 3. LIVEABOARD — 일반 리스트와 시각적으로 구분: 어두운 배경 + 골드 프레임 + 큰 카드 */
-.ab-liveaboard{background:var(--ink);}
-.ab-la-row{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;margin-inline:calc(-1*var(--gut));padding:0 var(--gut) 12px;scrollbar-width:none;}
-.ab-la-row::-webkit-scrollbar{display:none;}
-.ab-la-card{scroll-snap-align:start;flex:0 0 clamp(300px,88vw,440px);border:1px solid rgba(201,168,104,.4);border-radius:8px;overflow:hidden;background:linear-gradient(180deg,var(--navy2),var(--navy));transition:transform .3s ease,border-color .3s ease;}
-.ab-la-card:hover{transform:translateY(-4px);border-color:var(--gold);}
-.ab-la-img{position:relative;aspect-ratio:16/10;overflow:hidden;}
-.ab-la-img img{width:100%;height:100%;object-fit:cover;filter:saturate(.8) contrast(1.04) brightness(.78) hue-rotate(-6deg);transition:transform 1s cubic-bezier(.2,.7,.2,1);}
-.ab-la-card:hover .ab-la-img img{transform:scale(1.06);}
-.ab-la-nights{position:absolute;left:14px;top:14px;font-size:12px;font-weight:800;letter-spacing:.03em;background:var(--gold);color:#20160A;padding:6px 11px;border-radius:2px;}
-.ab-la-body{padding:20px 20px 22px;}
-.ab-la-body h3{margin-top:5px;font-size:21px;font-weight:800;}
-.ab-la-course{margin-top:8px;font-size:12.5px;color:var(--mist);}
-.ab-la-meta{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:#B7C6D0;border-top:1px solid rgba(201,168,104,.2);padding-top:12px;}
-.ab-la-price{margin-top:12px;font-weight:800;color:var(--turq2);font-size:17px;}
+/* 3. LIVEABOARD INFO — 설명 전용(예약 카드 없음) */
+.ab-lb{background:var(--ink);}
+.ab-lb-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(32px,6vw,72px);align-items:start;}
+.ab-lb-fig{margin:0 0 20px;border-radius:8px;overflow:hidden;}
+.ab-lb-fig img{width:100%;aspect-ratio:16/10;object-fit:cover;filter:saturate(.8) contrast(1.04) brightness(.8) hue-rotate(-6deg);}
+.ab-lb-def{font-size:15px;line-height:1.7;color:#D3DEE6;}
+.ab-lb-def b{color:var(--foam);}
+.ab-lb-sub{margin:26px 0 12px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
+.ab-lb-regions{display:flex;flex-wrap:wrap;gap:8px;}
+.ab-lb-regions span{font-size:12px;color:#C4D2DC;border:1px solid rgba(201,168,104,.28);border-radius:3px;padding:7px 12px;}
+.ab-lb-timeline{list-style:none;margin:0;padding:0;border-left:1px solid rgba(201,168,104,.3);}
+.ab-lb-timeline li{position:relative;padding:0 0 18px 22px;}
+.ab-lb-timeline li::before{content:"";position:absolute;left:-4.5px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--turq2);}
+.ab-lb-timeline li:last-child{padding-bottom:0;}
+.ab-lb-time{display:inline-block;min-width:52px;font-family:'Plus Jakarta Sans',monospace;font-size:12px;font-weight:700;color:var(--turq2);}
+.ab-lb-label{font-size:13.5px;color:#D3DEE6;}
+@media(max-width:820px){.ab-lb-grid{grid-template-columns:1fr;}}
 
 /* 4. INTRO */
 .ab-intro{background:var(--navy2);}
