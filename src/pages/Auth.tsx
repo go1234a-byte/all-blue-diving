@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { DiverSignupForm } from "@/components/auth/DiverSignupForm";
 import { InstructorSignupForm } from "@/components/auth/InstructorSignupForm";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { Logo } from "@/components/brand/Logo";
 import { supabase } from "@/integrations/supabase/client";
@@ -279,8 +281,16 @@ const Auth = () => {
     navigate(returnTo ?? "/", { replace: true, state: returnTo ? returnState : undefined });
 
   return (
-    <div className="min-h-full bg-gradient-surface">
-      <div className="mx-auto flex w-full max-w-md flex-col px-4 py-8 md:max-w-lg">
+    <div className="min-h-full bg-gradient-surface pb-20 md:pb-0">
+      <div className="mx-auto flex w-full max-w-md flex-col px-4 pt-8 pb-8 md:max-w-lg">
+        <button
+          type="button"
+          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
+          className="mb-2 -ml-1 inline-flex items-center gap-1 self-start text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          뒤로
+        </button>
         <Link to="/" className="mx-auto mb-6">
           <Logo size="md" showTagline />
         </Link>
@@ -327,6 +337,7 @@ const Auth = () => {
           에 동의하는 것으로 간주됩니다.
         </p>
       </div>
+      <BottomNav />
     </div>
   );
 };
