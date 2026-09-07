@@ -412,8 +412,8 @@ export default function Landing() {
                       <h3>{t.title}</h3>
                       <div className="ab-tcard-meta">
                         <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
-                        <span>수온 {t.waterTempC}°C</span>
-                        <span>시야 ~{t.visibilityM}m</span>
+                        {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
+                        {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
                         <span>{tourDifficulty(t)}</span>
                         <span>잔여 {seats}석</span>
                       </div>
@@ -612,8 +612,8 @@ export default function Landing() {
                     <h3>{t.title}</h3>
                     <div className="ab-tcard-meta">
                       <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
-                      <span>수온 {t.waterTempC}°C</span>
-                      <span>시야 ~{t.visibilityM}m</span>
+                      {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
+                      {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
                       <span>{tourDifficulty(t)}</span>
                     </div>
                     <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
