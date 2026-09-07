@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { DiverSignupForm } from "@/components/auth/DiverSignupForm";
 import { InstructorSignupForm } from "@/components/auth/InstructorSignupForm";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { Logo } from "@/components/brand/Logo";
 import { supabase } from "@/integrations/supabase/client";
@@ -280,8 +281,8 @@ const Auth = () => {
     navigate(returnTo ?? "/", { replace: true, state: returnTo ? returnState : undefined });
 
   return (
-    <div className="min-h-full bg-gradient-surface">
-      <div className="mx-auto flex w-full max-w-md flex-col px-4 py-8 md:max-w-lg">
+    <div className="min-h-full bg-gradient-surface pb-20 md:pb-0">
+      <div className="mx-auto flex w-full max-w-md flex-col px-4 pt-8 pb-8 md:max-w-lg">
         <button
           type="button"
           onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
@@ -336,6 +337,7 @@ const Auth = () => {
           에 동의하는 것으로 간주됩니다.
         </p>
       </div>
+      <BottomNav />
     </div>
   );
 };
