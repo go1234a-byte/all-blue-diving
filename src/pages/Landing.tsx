@@ -117,6 +117,19 @@ export default function Landing() {
     [regularTours, showMonth],
   );
 
+  // 데이터 로드 후, 현재 달에 출발 투어가 없으면 "가장 가까운 출발 달"로 한 번 이동(사용자가 직접 고르기 전까지만).
+  const monthTouched = useRef(false);
+  useEffect(() => {
+    if (monthTouched.current || regularTours.length === 0) return;
+    if (regularTours.some((t) => new Date(t.startDate).getMonth() === showMonth)) return;
+    const now = Date.now();
+    const upcoming = regularTours
+      .map((t) => new Date(t.startDate))
+      .filter((d) => +d >= now)
+      .sort((a, b) => +a - +b)[0];
+    if (upcoming) setShowMonth(upcoming.getMonth());
+  }, [regularTours, showMonth]);
+
   const featuredInstructor = useMemo(
     () => instructors.find((i) => i.verified) ?? instructors[0],
     [instructors],
@@ -227,7 +240,10 @@ export default function Landing() {
                 role="tab"
                 aria-selected={showMonth === i}
                 className={showMonth === i ? "on" : ""}
-                onClick={() => setShowMonth(i)}
+                onClick={() => {
+                  monthTouched.current = true;
+                  setShowMonth(i);
+                }}
               >
                 {m}
               </button>
