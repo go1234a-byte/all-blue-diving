@@ -249,6 +249,7 @@ export default function Landing() {
     [guideMonth],
   );
   useEffect(() => setGuideCount(initialCount), [guideMonth, initialCount]); // 달 바꾸면 처음 개수로
+  useEffect(() => setLbCount(initialCount), [initialCount]); // 뷰포트(모바일/데스크톱) 바뀌면 초기 개수 재적용
 
   const carouselInstructors = useMemo(() => {
     const verified = instructors.filter((i) => i.verified);
