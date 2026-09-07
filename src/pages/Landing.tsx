@@ -1062,14 +1062,15 @@ const CSS = `
 
 /* 6. INSTRUCTORS */
 .ab-inst{background:var(--bg);}
+/* 강사 카드 = 후기 카드와 동일 크기(폭·이미지 높이·본문 폰트) */
 .ab-ic{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;height:100%;}
-.ab-ic-img{aspect-ratio:4/5;overflow:hidden;}
+.ab-ic-img{height:150px;overflow:hidden;}
 .ab-ic-img img{width:100%;height:100%;object-fit:cover;}
 .ab-ic-body{padding:var(--s4);}
-.ab-ic-body h3{font-size:1rem;}
-.ab-ic-agency{margin-top:4px;font-size:.8125rem;color:var(--text-2);}
+.ab-ic-body h3{font-size:.9375rem;}
+.ab-ic-agency{margin-top:4px;font-size:.75rem;color:var(--text-2);}
 .ab-ic-metrics{margin-top:var(--s3);display:flex;gap:var(--s4);}
-.ab-ic-metrics b{display:block;font-family:'Plus Jakarta Sans',sans-serif;font-size:1.25rem;font-weight:800;color:var(--turq);}
+.ab-ic-metrics b{display:block;font-family:'Plus Jakarta Sans',sans-serif;font-size:1.0625rem;font-weight:800;color:var(--turq);}
 .ab-ic-metrics span{font-size:.6875rem;color:var(--text-2);}
 
 /* 7. REVIEWS */
