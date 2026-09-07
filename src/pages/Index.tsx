@@ -3,8 +3,8 @@ import { Megaphone, ShieldCheck, MessageCircle, CalendarCheck, Lock, Users, Star
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { LogoWatermark } from "@/components/brand/Logo";
 import { SearchForm } from "@/components/search/SearchForm";
+import { handleImageFallback } from "@/lib/image";
 import { TourCard } from "@/components/search/TourCard";
 import { WhereToGoGuide } from "@/components/home/WhereToGoGuide";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -65,36 +65,38 @@ const Index = () => {
     <div className="min-h-full bg-gradient-surface pb-20 md:pb-12">
       <AppHeader />
 
-      {/* 히어로 — bg-gradient-ocean은 라이트 테마에서는 흰 배경에 가깝고, 다크 모드에서는
-          오션 그라데이션으로 바뀐다. 텍스트도 text-foreground라 두 테마 모두에서 대비가 맞다.
-          배경은 브랜드 심벌(로고)을 은은하게 확대해 워터마크로 깔아서 텍스트 가독성과 기존
-          그라데이션 톤을 해치지 않게 한다. 공지 배너와 검색 폼(여행지 검색/출발 월/투어
-          검색하기)까지 전부 이 영역 안에 포함시켜서, 헤더 아래부터 투어 검색하기 버튼까지
-          하나의 배경 영역으로 이어지게 한다. */}
-      <div className="relative overflow-hidden bg-gradient-ocean px-4 pb-8 pt-8 text-center md:pb-16 md:pt-16">
-        <LogoWatermark
-          className="pointer-events-none absolute left-1/2 top-0 h-[340px] w-[340px] -translate-x-1/2 -translate-y-16 text-primary opacity-[0.12] md:h-[520px] md:w-[520px] md:-translate-y-24"
+      {/* 히어로 — 웹 랜딩과 같은 톤: 수중 실사 + 옅은 네이비 오버레이(화면 상단 일부에만),
+          흰 헤드라인 + 아래에 흰 카드로 검색 폼. 나머지 화면은 밝은 배경. */}
+      <div className="relative overflow-hidden px-4 pb-6 pt-14 text-center md:pb-10 md:pt-20">
+        <img
+          src="/landing/hero.jpg"
+          alt=""
+          onError={handleImageFallback}
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
-        <div className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(circle_at_30%_20%,white,transparent_45%)]" />
+        <div className="pointer-events-none absolute inset-0 [background:linear-gradient(180deg,rgba(10,27,46,.5),rgba(10,27,46,.18)_38%,rgba(10,27,46,.62))]" />
         <div className="relative mx-auto flex max-w-md flex-col items-center gap-2 md:max-w-2xl">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-primary drop-shadow-[0_1px_6px_hsl(var(--background))] md:text-4xl">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#CFF3F8]">
+            Diving Tour Platform
+          </p>
+          <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-white md:text-4xl">
             다이빙의 모든 순간,
             <br />
             ALL BLUE와 함께
           </h1>
-          <p className="text-sm font-medium text-primary/80 drop-shadow-[0_1px_4px_hsl(var(--background))] md:text-base">
+          <p className="text-sm font-medium text-white/90 md:text-base">
             특별한 바다, 특별한 경험을 찾고 예약할 수 있습니다.
           </p>
           {pinnedNotice && (
             <Link
               to="/support"
-              className="mt-3 flex w-full items-start gap-2 rounded-xl border border-primary/30 bg-secondary/40 p-3 text-left text-xs text-foreground backdrop-blur-sm transition-colors hover:bg-secondary"
+              className="mt-3 flex w-full items-start gap-2 rounded-xl border border-white/25 bg-white/10 p-3 text-left text-xs text-white backdrop-blur-sm transition-colors hover:bg-white/20"
             >
-              <Megaphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              <Megaphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#CFF3F8]" />
               <span className="line-clamp-1 break-keep">{pinnedNotice.title}</span>
             </Link>
           )}
-          <div className="mt-2 w-full text-left">
+          <div className="mt-4 w-full rounded-2xl bg-card p-2 text-left shadow-[0_20px_50px_-20px_rgba(10,27,46,.5)] md:mt-6">
             <SearchForm months={months} onMonthsChange={setMonths} />
           </div>
         </div>
@@ -103,7 +105,7 @@ const Index = () => {
       <main className="mx-auto w-full max-w-md space-y-6 px-4 pt-6 pb-6 md:max-w-6xl md:space-y-10 md:px-6 md:pt-10">
         <section className="space-y-3 md:space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground md:text-xl">모집중인 투어</h2>
+            <h2 className="text-lg font-extrabold tracking-tight text-foreground md:text-2xl">모집중인 투어</h2>
             <span className="text-xs text-muted-foreground md:text-sm">{tours.length}개 투어</span>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
@@ -128,7 +130,7 @@ const Index = () => {
 
         {/* ALL BLUE만의 특별함 — 시안 하단 피처 스트립 */}
         <section className="space-y-3 pt-2 md:space-y-5">
-          <h2 className="text-base font-semibold text-foreground md:text-xl">ALL BLUE만의 특별함</h2>
+          <h2 className="text-lg font-extrabold tracking-tight text-foreground md:text-2xl">ALL BLUE만의 특별함</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 md:gap-4">
             {FEATURES.map((f) => (
               <div
@@ -151,7 +153,7 @@ const Index = () => {
             business_inquiries 테이블)으로 받는다. support_tickets(1:1 문의)와 마찬가지로 로그인한
             다이버/강사(관리자 포함)만 이용 가능 — 게스트가 누르면 라우트 가드가 /auth로 보낸다. */}
         <section className="space-y-3 pt-2">
-          <h2 className="text-base font-semibold text-foreground">기업/단체 문의</h2>
+          <h2 className="text-lg font-extrabold tracking-tight text-foreground">기업/단체 문의</h2>
           <Link
             to="/business-inquiry"
             className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-secondary/40"
