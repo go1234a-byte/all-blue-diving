@@ -927,7 +927,7 @@ const CSS = `
 .ab-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,27,46,.12) 0%,rgba(10,27,46,.3) 34%,rgba(10,27,46,.72) 62%,rgba(10,27,46,.97) 100%);}
 .ab-banner:hover img{transform:scale(1.04);}
 .ab-banner:focus-visible{outline:2px solid var(--turq);outline-offset:2px;}
-.ab-banner-body{position:relative;padding:var(--s7) var(--s6);max-width:52ch;color:#fff;text-shadow:0 1px 14px rgba(10,27,46,.55);}
+.ab-banner-body{position:relative;z-index:1;padding:var(--s7) var(--s6);max-width:52ch;color:#fff;text-shadow:0 1px 14px rgba(10,27,46,.55);}
 .ab-banner-eyebrow{font-size:.75rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#CFF3F8;}
 .ab-banner-body h3{margin-top:10px;font-size:clamp(1.5rem,3.2vw,2.375rem);font-weight:800;color:#fff;line-height:var(--lh-head);}
 .ab-banner-teaser{margin-top:12px;font-size:1rem;line-height:1.6;color:#fff;}
