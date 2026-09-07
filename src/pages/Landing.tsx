@@ -922,16 +922,17 @@ const CSS = `
 .ab-months button.on{background:var(--turq);border-color:var(--turq);color:#fff;}
 
 /* B / 리브어보드 배너 (홈에는 이것만, 클릭 시 전용 뷰) */
-.ab-banner{display:block;position:relative;width:100%;text-align:left;border:0;padding:0;border-radius:16px;overflow:hidden;cursor:pointer;font:inherit;min-height:220px;box-shadow:0 20px 40px -24px rgba(20,50,77,.35);}
+.ab-banner{display:flex;align-items:flex-end;position:relative;width:100%;text-align:left;border:0;padding:0;border-radius:20px;overflow:hidden;cursor:pointer;font:inherit;min-height:50svh;box-shadow:0 24px 48px -24px rgba(20,50,77,.4);}
 .ab-banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1);}
-.ab-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(10,27,46,.82) 0%,rgba(10,27,46,.55) 45%,rgba(10,27,46,.15) 100%);}
-.ab-banner:hover img{transform:scale(1.05);}
+.ab-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,27,46,.15) 0%,rgba(10,27,46,.35) 55%,rgba(10,27,46,.85) 100%);}
+.ab-banner:hover img{transform:scale(1.04);}
 .ab-banner:focus-visible{outline:2px solid var(--turq);outline-offset:2px;}
-.ab-banner-body{position:relative;padding:var(--s6);max-width:46ch;color:#fff;}
-.ab-banner-eyebrow{font-size:.6875rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#BFEFF5;}
-.ab-banner-body h3{margin-top:8px;font-size:clamp(1.25rem,2.4vw,1.75rem);font-weight:800;color:#fff;}
-.ab-banner-teaser{margin-top:10px;font-size:.9375rem;line-height:1.6;color:rgba(255,255,255,.9);}
-.ab-banner-cta{display:inline-block;margin-top:var(--s4);font-size:.9375rem;font-weight:700;color:#fff;border-bottom:2px solid var(--turq);padding-bottom:2px;}
+.ab-banner-body{position:relative;padding:var(--s7) var(--s6);max-width:52ch;color:#fff;}
+.ab-banner-eyebrow{font-size:.75rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#BFEFF5;}
+.ab-banner-body h3{margin-top:10px;font-size:clamp(1.5rem,3.2vw,2.375rem);font-weight:800;color:#fff;line-height:var(--lh-head);}
+.ab-banner-teaser{margin-top:12px;font-size:1rem;line-height:1.6;color:rgba(255,255,255,.92);}
+.ab-banner-cta{display:inline-block;margin-top:var(--s4);font-size:1rem;font-weight:700;color:#fff;border-bottom:2px solid var(--turq);padding-bottom:3px;}
+@media(max-width:640px){.ab-banner{min-height:92svh;border-radius:16px;}}
 
 /* 전용 전체화면 뷰 (Explorer) */
 .ab-explorer{position:fixed;inset:0;z-index:90;background:var(--bg);overflow-y:auto;animation:abexp .28s cubic-bezier(.22,1,.36,1);}
