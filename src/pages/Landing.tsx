@@ -291,19 +291,70 @@ function Explorer({
   );
 }
 
-/** 강사·후기 공용 가로 슬라이드 캐러셀. 데스크톱 3~4 / 태블릿 2 / 모바일 1.1장 + 스와이프. */
+/**
+ * 강사·후기 공용 가로 슬라이드 캐러셀. 데스크톱 3~4 / 태블릿 2 / 모바일 1.1장.
+ * 조작은 (1) 손가락/마우스로 카드를 눌러 좌우 드래그 (주), (2) 좌우 화살표 (보조).
+ * 네이티브 overflow 스크롤에만 의존하지 않고 Pointer 이벤트로 직접 scrollLeft 를 움직인다
+ * → 웹·네이티브 웹뷰(Capacitor)에서 동일하게 동작.
+ */
 function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
   const rowRef = useRef<HTMLDivElement>(null);
-  const scrollByCard = (dir: 1 | -1) => {
+  const drag = useRef({ active: false, startX: 0, startLeft: 0, moved: 0 });
+
+  const step = () => {
+    const row = rowRef.current;
+    const card = row?.querySelector<HTMLElement>(":scope > *");
+    return card ? card.offsetWidth + 20 : (row?.clientWidth ?? 0) * 0.8;
+  };
+  const nudge = (dir: 1 | -1) => rowRef.current?.scrollBy({ left: dir * step(), behavior: "smooth" });
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const row = rowRef.current;
+    if (!row || e.button === 2) return;
+    drag.current = { active: true, startX: e.clientX, startLeft: row.scrollLeft, moved: 0 };
+    row.setPointerCapture(e.pointerId);
+    row.classList.add("dragging");
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const row = rowRef.current;
+    if (!row || !drag.current.active) return;
+    const dx = e.clientX - drag.current.startX;
+    drag.current.moved = Math.max(drag.current.moved, Math.abs(dx));
+    row.scrollLeft = drag.current.startLeft - dx;
+  };
+  const endDrag = (e: React.PointerEvent) => {
     const row = rowRef.current;
     if (!row) return;
-    const card = row.querySelector<HTMLElement>(":scope > *");
-    const step = card ? card.offsetWidth + 20 : row.clientWidth * 0.8;
-    row.scrollBy({ left: dir * step, behavior: "smooth" });
+    drag.current.active = false;
+    row.classList.remove("dragging");
+    try {
+      row.releasePointerCapture(e.pointerId);
+    } catch {
+      /* 이미 해제됨 */
+    }
   };
+  // 드래그였으면 카드의 클릭(링크 이동)을 취소한다.
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (drag.current.moved > 6) {
+      e.preventDefault();
+      e.stopPropagation();
+      drag.current.moved = 0;
+    }
+  };
+
   return (
     <div className="ab-caro">
-      <div className="ab-caro-row" ref={rowRef} role="list" aria-label={label}>
+      <div
+        className="ab-caro-row"
+        ref={rowRef}
+        role="list"
+        aria-label={label}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={onClickCapture}
+      >
         {items.map((c, i) => (
           <div className="ab-caro-item" role="listitem" key={i}>
             {c}
@@ -311,8 +362,8 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
         ))}
       </div>
       <div className="ab-caro-nav">
-        <button type="button" aria-label="이전" onClick={() => scrollByCard(-1)}>‹</button>
-        <button type="button" aria-label="다음" onClick={() => scrollByCard(1)}>›</button>
+        <button type="button" aria-label="이전" onClick={() => nudge(-1)}>‹</button>
+        <button type="button" aria-label="다음" onClick={() => nudge(1)}>›</button>
       </div>
     </div>
   );
@@ -1050,7 +1101,9 @@ const CSS = `
 
 /* CAROUSEL (shared: 강사 + 후기) */
 .ab-caro{position:relative;}
-.ab-caro-row{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:var(--s3);margin-inline:calc(-1*var(--gut));padding-inline:var(--gut);scrollbar-width:none;}
+.ab-caro-row{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:var(--s3);margin-inline:calc(-1*var(--gut));padding-inline:var(--gut);scrollbar-width:none;cursor:grab;touch-action:pan-y;-webkit-overflow-scrolling:touch;}
+.ab-caro-row.dragging{cursor:grabbing;scroll-snap-type:none;user-select:none;}
+.ab-caro-row.dragging *{pointer-events:none;}
 .ab-caro-row::-webkit-scrollbar{display:none;}
 .ab-caro-item{scroll-snap-align:start;flex:0 0 calc((100% - 60px)/4);}
 @media(max-width:1024px){.ab-caro-item{flex-basis:calc((100% - 20px)/2);}}
