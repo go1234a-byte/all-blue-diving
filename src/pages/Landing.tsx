@@ -202,7 +202,8 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { tours, instructors, reviews, publicProfiles, getTourById } = useAppData();
+  const { tours, instructors, reviews, publicProfiles, getTourById, getConfirmedParticipantCount } =
+    useAppData();
   const reduced = useReducedMotion();
   const profileName = (id: string) => publicProfiles.find((p) => p.id === id)?.name ?? "다녀온 다이버";
   const rootRef = useReveal();
@@ -240,7 +241,17 @@ export default function Landing() {
   );
   const bentoTours = openTours.slice(0, 6);
 
-  // 다이빙 포인트 가이드 — TOUR(예약) 데이터와 무관한 정적 콘텐츠.
+  // A. 이번달 출발 투어 — 기존 openTours 필터에 "그 달 출발"만 추가. 새 쿼리 없음.
+  const monthTours = useMemo(
+    () =>
+      openTours
+        .filter((t) => new Date(t.startDate).getMonth() === guideMonth)
+        .sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate))
+        .slice(0, 4),
+    [openTours, guideMonth],
+  );
+
+  // B. 어디로 가고 싶으세요 — TOUR(예약) 데이터와 무관한 정적 콘텐츠.
   const monthPoints = useMemo(
     () =>
       (GUIDE_BY_MONTH[guideMonth] ?? [])
@@ -345,18 +356,17 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* 2. 다이빙 포인트 가이드 — 예약 데이터와 무관, 월 선택 + 더보기 + 카드 클릭 상세 */}
+      {/* 2. 이번달, 어디로 떠날까요 — A: 실제 출발 투어 / B: 정보 카드 (월 선택 공유) */}
       <section id="guide" className="ab-sec ab-guide">
         <div className="wrap">
           <div className="ab-sec-head r">
             <div>
-              <h2>이번 달, 어디로 떠날까요</h2>
+              <h2>이번달, 어디로 떠날까요</h2>
               <p className="ab-sub">
-                아직 목적지를 못 정했다면. 달을 골라 전 세계 유명 다이빙 포인트를 둘러보세요.
-                카드를 누르면 자세한 정보가 열립니다. 예약이 아니라 “알아가는” 코너입니다.
+                달을 고르면 그 달에 출발하는 실제 투어를 보여드려요. 아직 목적지를 못 정했다면
+                아래에서 전 세계 다이빙 포인트를 둘러보세요.
               </p>
             </div>
-            <span className="ab-tag">예시 콘텐츠 · 게시 전 확인 필요</span>
           </div>
 
           <div className="ab-months r" role="tablist" aria-label="월 선택">
@@ -373,6 +383,53 @@ export default function Landing() {
             ))}
           </div>
 
+          {/* A. 이번달 출발 투어 (실제 TOUR 데이터) */}
+          <div className="ab-subhead r">
+            <h3>{MONTH_LABELS_KR[guideMonth]} 출발 투어</h3>
+            <Link to={`/search?months=${guideMonth}`} className="ab-textlink">전체보기 →</Link>
+          </div>
+          {monthTours.length === 0 ? (
+            <p className="ab-sub r" style={{ marginTop: 0 }}>
+              이번 달 출발 예정 투어를 준비 중입니다. 아래에서 가고 싶은 바다를 먼저 둘러보세요.
+            </p>
+          ) : (
+            <div className="ab-tourrow r">
+              {monthTours.map((t) => {
+                const seats = Math.max(0, t.maxParticipants - getConfirmedParticipantCount(t.id));
+                return (
+                  <Link key={t.id} to={`/tour/${t.id}`} className="ab-tcard">
+                    <div className="ab-tcard-img">
+                      <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
+                      <div className="ab-tcard-badges">
+                        {t.activityTypes.map((a) => (
+                          <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
+                        ))}
+                        {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
+                      </div>
+                    </div>
+                    <div className="ab-tcard-body">
+                      <p className="ab-tcard-loc">{t.country} · {t.site}</p>
+                      <h3>{t.title}</h3>
+                      <div className="ab-tcard-meta">
+                        <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
+                        <span>수온 {t.waterTempC}°C</span>
+                        <span>시야 ~{t.visibilityM}m</span>
+                        <span>{tourDifficulty(t)}</span>
+                        <span>잔여 {seats}석</span>
+                      </div>
+                      <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {/* B. 어디로 가고 싶으세요 (정보 카드 — 예약과 무관) */}
+          <div className="ab-subhead r" style={{ marginTop: "var(--s6)" }}>
+            <h3>어디로 가고 싶으세요?</h3>
+            <span className="ab-tag">예시 콘텐츠 · 게시 전 확인 필요</span>
+          </div>
           <div className="ab-big-grid">
             {monthPoints.slice(0, guideCount).map((pt) => (
               <button type="button" className="ab-bigcard r" key={pt.id} onClick={() => setDetail({ kind: "point", data: pt })}>
@@ -466,6 +523,15 @@ export default function Landing() {
               <div><dt>수온 · 시야</dt><dd>{detail.data.water}</dd></div>
               <div><dt>추천 레벨</dt><dd>{detail.data.level}</dd></div>
             </dl>
+            <p className="ab-lbcard-label">대표 다이빙 포인트 (예시)</p>
+            <ul className="ab-sheet-points">
+              {detail.data.points.map((pt) => (
+                <li key={pt.name}>
+                  <b>{pt.name}</b>
+                  <span>{pt.desc}</span>
+                </li>
+              ))}
+            </ul>
             <p className="ab-lbcard-label">만날 수 있는 해양생물 (예시)</p>
             <div className="ab-chips">
               {detail.data.life.map((l) => (
@@ -777,6 +843,15 @@ const CSS = `
 .ab-months button{flex:0 0 auto;background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;color:var(--text-2);font-family:inherit;font-size:.875rem;font-weight:700;padding:9px 16px;cursor:pointer;transition:.15s;}
 .ab-months button:hover{color:var(--navy);border-color:var(--turq);}
 .ab-months button.on{background:var(--turq);border-color:var(--turq);color:#fff;}
+.ab-subhead{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s3);margin-bottom:var(--s4);}
+.ab-subhead h3{font-size:1.125rem;font-weight:800;color:var(--text-1);}
+.ab-tourrow{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s4);margin-bottom:var(--s5);}
+@media(max-width:1024px){.ab-tourrow{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.ab-tourrow{grid-template-columns:1fr;}}
+.ab-sheet-points{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:12px;}
+.ab-sheet-points li{padding-left:14px;border-left:2px solid var(--turq-light);}
+.ab-sheet-points b{display:block;font-size:.9375rem;color:var(--text-1);}
+.ab-sheet-points span{font-size:.875rem;line-height:1.55;color:var(--text-2);}
 /* 큰 카드 그리드 (가이드 + 리브어보드 공용) — 데스크톱 2~3장/줄, 모바일 1장 */
 .ab-big-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);}
 .ab-bigcard{display:flex;flex-direction:column;text-align:left;padding:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg);cursor:pointer;font:inherit;color:inherit;transition:transform .3s ease,box-shadow .3s ease;}
