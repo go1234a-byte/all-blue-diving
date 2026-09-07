@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppData } from "@/contexts/AppDataContext";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
@@ -8,7 +8,23 @@ import { formatDateRangeKR } from "@/lib/dates";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
 import { DIVE_POINTS, GUIDE_BY_MONTH } from "@/content/divePointGuide";
+import { LIVEABOARD_REGIONS } from "@/content/liveaboardGuide";
 import type { Tour } from "@/types";
+
+/**
+ * allbluedive.com 웹 전용 랜딩 — 비로그인 웹 방문자에게만 노출(앱/로그인 유저는 기존 Index 홈).
+ * 라우팅 분기는 src/pages/Home.tsx. 자체 내비/푸터를 갖는 단일 페이지.
+ *
+ * 톤: 밝고 화사한 라이트 배경(#FFFFFF / #F4FAFB) 기본. 다크 네이비(#0A1B2E)는
+ * 히어로 오버레이·푸터 등 전체의 10~15% 이내로만. 포인트는 터콰이즈(#17A8BD),
+ * 골드(#D4AF6A)는 헤어라인·뱃지 5% 이내. 이미지는 임시 라이선스 스톡(public/landing/*).
+ */
+
+const HERO_LINES = [
+  "팔라우, 만타레이와 눈을 마주치는 순간",
+  "몰디브, 수면 아래로 빛이 쏟아지는 채널",
+  "세부, 정어리 수백만 마리의 소용돌이 속으로",
+];
 
 /** 리브어보드 하루 일과 — 예시. 상품마다 다릅니다. */
 const LIVEABOARD_DAY = [
@@ -20,31 +36,6 @@ const LIVEABOARD_DAY = [
   { t: "15:30", label: "3차 다이빙" },
   { t: "18:30", label: "저녁 식사 · 다음날 브리핑" },
   { t: "20:00", label: "야간 다이빙 (선택)" },
-];
-
-/** 리브어보드가 운영되는 대표 지역 — 예시. 우리 상품의 출발지와 다를 수 있습니다. */
-const LIVEABOARD_REGIONS = [
-  "인도네시아 (코모도 · 라자암팟)",
-  "몰디브",
-  "이집트 홍해",
-  "갈라파고스",
-  "필리핀 (투바타하)",
-];
-
-/**
- * allbluedive.com 웹 전용 랜딩 — 비로그인 웹 방문자에게만 노출된다(앱/로그인 유저는 기존 Index 홈).
- * 라우팅 분기는 src/pages/Home.tsx 에서 처리. 앱 셸(AppHeader/BottomNav)을 쓰지 않고
- * 자체 내비게이션/푸터를 갖는 단일 딥오션 무드 페이지.
- *
- * 디자인 토큰: 네이비 베이스(#0A1B2E) + 터콰이즈 포인트(#1B8A9B, 실질 액센트) +
- * 골드(#C9A868, 헤어라인·마커 등 5% 이내) + 오프화이트(#F7F6F2, 강사 섹션).
- * 이미지는 임시 라이선스 스톡(public/landing/*) — 실사 확보 시 교체. 필요한 컷은 하단 보고 참고.
- */
-
-const HERO_LINES = [
-  "팔라우, 만타레이와 눈을 마주치는 순간",
-  "몰디브, 수면 아래로 빛이 쏟아지는 채널",
-  "세부, 정어리 수백만 마리의 소용돌이 속으로",
 ];
 
 function useReducedMotion() {
@@ -59,7 +50,7 @@ function useReducedMotion() {
   return reduced;
 }
 
-/** 스크롤 진입 시 페이드업. 비동기 데이터로 뒤늦게 마운트되는 .r 노드도 MutationObserver로 잡는다. */
+/** 스크롤 진입 시 페이드업. 비동기로 늦게 마운트되는 .r 노드도 MutationObserver로 잡는다. */
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -94,16 +85,45 @@ function tourDifficulty(t: Tour): string {
   return "입문 가능";
 }
 
+/** 강사·후기 공용 가로 슬라이드 캐러셀. 데스크톱 3~4 / 태블릿 2 / 모바일 1.1장 + 스와이프. */
+function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const scrollByCard = (dir: 1 | -1) => {
+    const row = rowRef.current;
+    if (!row) return;
+    const card = row.querySelector<HTMLElement>(":scope > *");
+    const step = card ? card.offsetWidth + 20 : row.clientWidth * 0.8;
+    row.scrollBy({ left: dir * step, behavior: "smooth" });
+  };
+  return (
+    <div className="ab-caro">
+      <div className="ab-caro-row" ref={rowRef} role="list" aria-label={label}>
+        {items.map((c, i) => (
+          <div className="ab-caro-item" role="listitem" key={i}>
+            {c}
+          </div>
+        ))}
+      </div>
+      <div className="ab-caro-nav">
+        <button type="button" aria-label="이전" onClick={() => scrollByCard(-1)}>‹</button>
+        <button type="button" aria-label="다음" onClick={() => scrollByCard(1)}>›</button>
+      </div>
+    </div>
+  );
+}
+
 export default function Landing() {
   const navigate = useNavigate();
-  const { tours, instructors, reviews } = useAppData();
+  const { tours, instructors, reviews, publicProfiles, getTourById } = useAppData();
   const reduced = useReducedMotion();
+  const profileName = (id: string) => publicProfiles.find((p) => p.id === id)?.name ?? "다녀온 다이버";
   const rootRef = useReveal();
 
   const [heroIdx, setHeroIdx] = useState(0);
   const [q, setQ] = useState("");
   const [month, setMonth] = useState<number | "">("");
-  const [guideMonth, setGuideMonth] = useState(() => new Date().getMonth()); // 다이빙 포인트 가이드 월 탭 (오늘 기준)
+  const [guideMonth, setGuideMonth] = useState(() => new Date().getMonth());
+  const [guidePages, setGuidePages] = useState(1); // 무한 스크롤 페이지 수
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -125,25 +145,49 @@ export default function Landing() {
   );
   const bentoTours = openTours.slice(0, 6);
 
-  // 다이빙 포인트 가이드: TOUR(예약) 데이터와 무관한 정적 콘텐츠. 선택한 달의 추천 포인트만 뽑는다.
-  const guidePoints = useMemo(
+  // 다이빙 포인트 가이드 — TOUR(예약) 데이터와 무관한 정적 콘텐츠.
+  const monthPoints = useMemo(
     () =>
       (GUIDE_BY_MONTH[guideMonth] ?? [])
         .map((id) => DIVE_POINTS[id])
         .filter((p): p is (typeof DIVE_POINTS)[string] => Boolean(p)),
     [guideMonth],
   );
+  // 무한 스크롤: 그 달 포인트를 페이지 수만큼 반복해서 계속 이어붙인다(예시 콘텐츠).
+  const guideList = useMemo(() => {
+    const out: { pt: (typeof DIVE_POINTS)[string]; key: string }[] = [];
+    for (let p = 0; p < guidePages; p++) {
+      monthPoints.forEach((pt) => out.push({ pt, key: `${pt.id}-${p}` }));
+    }
+    return out;
+  }, [monthPoints, guidePages]);
 
-  const featuredInstructor = useMemo(
-    () => instructors.find((i) => i.verified) ?? instructors[0],
-    [instructors],
-  );
+  useEffect(() => setGuidePages(1), [guideMonth]); // 달 바꾸면 처음부터
 
-  const realReviews = useMemo(
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) setGuidePages((p) => Math.min(p + 1, 6));
+      },
+      { rootMargin: "400px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const carouselInstructors = useMemo(() => {
+    const verified = instructors.filter((i) => i.verified);
+    return (verified.length >= 3 ? verified : instructors).slice(0, 12);
+  }, [instructors]);
+
+  const carouselReviews = useMemo(
     () =>
       reviews
         .filter((r) => !r.deleted && !r.reported && r.comment.trim().length > 10 && r.rating >= 4)
-        .slice(0, 3),
+        .slice(0, 12),
     [reviews],
   );
 
@@ -161,6 +205,13 @@ export default function Landing() {
     navigate(`/search${p.toString() ? `?${p.toString()}` : ""}`);
   };
 
+  const FALLBACK_REVIEWS = [
+    { key: "a", img: "/landing/turtle.jpg", who: "김서연", place: "세부 · 모알보알", quote: "첫 해외 다이빙이었는데 픽업부터 로그까지 다 챙겨주셔서 바다만 즐기면 됐어요.", meta: "AOW · 42 dives" },
+    { key: "b", img: "/landing/whale.jpg", who: "이준호", place: "몰디브 · 남말레", quote: "만타 클리닝 스테이션에서 20분. 리브어보드 선택하길 정말 잘했습니다.", meta: "Rescue · 130 dives" },
+    { key: "c", img: "/landing/coral.jpg", who: "정민아", place: "팔라우", quote: "강사님 평점이 왜 높은지 알겠더라고요. 브리핑이 남달랐어요.", meta: "OW · 18 dives" },
+    { key: "d", img: "/landing/scuba1.jpg", who: "한지훈", place: "이집트 · 다합", quote: "블루홀 라인을 따라 내려가는 코스가 오래 기억에 남습니다.", meta: "AOW · 76 dives" },
+  ];
+
   return (
     <div className="ab-lp" ref={rootRef}>
       <style>{CSS}</style>
@@ -168,7 +219,7 @@ export default function Landing() {
       <nav className={`ab-nav ${scrollY > 40 ? "solid" : ""}`}>
         <Link to="/" className="ab-brand">ALL BLUE <span>올블루</span></Link>
         <div className="ab-nav-links">
-          <a href="#destinations">목적지</a>
+          <a href="#guide">다이빙 가이드</a>
           <a href="#tours">투어</a>
           <a href="#instructors">강사</a>
           <Link to="/auth">로그인</Link>
@@ -176,28 +227,25 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* 1. HERO */}
+      {/* 1. HERO — 페이지에서 유일한 다크 영역(오버레이) */}
       <header className="ab-hero">
         <div className="ab-hero-media">
           <img
             src="/landing/hero.jpg"
             alt="수면 아래로 하강하는 다이버"
-            style={reduced ? undefined : { transform: `translateY(${scrollY * 0.18}px) scale(1.08)` }}
+            style={reduced ? undefined : { transform: `translateY(${scrollY * 0.16}px) scale(1.06)` }}
           />
           <div className="ab-hero-scrim" />
         </div>
-        <div className="ab-wrap ab-hero-inner">
-          <p className="ab-eyebrow">Diving Tour Platform · Est. 2026</p>
+        <div className="wrap ab-hero-inner">
+          <p className="ab-eyebrow light">Diving Tour Platform · Est. 2026</p>
           <h1 className="ab-hero-h">
-            {/* 한 번에 한 줄만 DOM에 존재(key 교체로 리마운트) → 겹침 없이 페이드 인 */}
             <span key={heroIdx} className="ab-hero-line on">{HERO_LINES[heroIdx]}</span>
-            {/* 레이아웃 높이 확보용(그리지 않음) — 가장 긴 문구 기준 */}
             <span className="ab-hero-line ghost">{HERO_LINES[2]}</span>
           </h1>
           <p className="ab-hero-lede">
             인증된 강사의 스쿠버·프리다이빙 투어만 모았습니다. 일정·강사·안전 기준을 비교하고 바로 예약하세요.
           </p>
-
           <div className="ab-search" role="search">
             <input
               className="ab-search-fld"
@@ -220,24 +268,24 @@ export default function Landing() {
             </select>
             <button className="ab-search-go" onClick={goSearch}>투어 검색</button>
           </div>
-
-          <a href="#destinations" className="ab-scrollcue"><i />목적지 둘러보기</a>
+          <a href="#guide" className="ab-scrollcue"><i />다이빙 가이드 보기</a>
         </div>
       </header>
 
-      {/* 2. 다이빙 포인트 가이드 — 예약 데이터와 무관한 정보성 콘텐츠 (src/content/divePointGuide.ts) */}
-      <section id="destinations" className="ab-sec ab-dest">
-        <div className="ab-wrap">
+      {/* 2. 다이빙 포인트 가이드 — 예약 데이터와 무관, 월 선택 + 무한 스크롤 */}
+      <section id="guide" className="ab-sec ab-guide">
+        <div className="wrap">
           <div className="ab-sec-head r">
-            <h2>다이빙 포인트 가이드</h2>
-            <p className="ab-marker">예시 콘텐츠 · 게시 전 확인 필요</p>
+            <div>
+              <h2>이번 달, 어디로 떠날까요</h2>
+              <p className="ab-sub">
+                아직 목적지를 못 정했다면. 달을 골라 전 세계 유명 다이빙 포인트를 둘러보세요.
+                예약이 아니라 “알아가는” 코너입니다.
+              </p>
+            </div>
+            <span className="ab-tag">예시 콘텐츠 · 게시 전 확인 필요</span>
           </div>
-          <p className="ab-guide-intro r">
-            아직 목적지를 못 정했다면. 전 세계 유명 다이빙 포인트를 달별로 둘러보세요.
-            예약이 아니라 “알아가는” 코너입니다.
-          </p>
-        </div>
-        <div className="ab-wrap">
+
           <div className="ab-months r" role="tablist" aria-label="월 선택">
             {MONTH_LABELS_KR.map((m, i) => (
               <button
@@ -251,23 +299,20 @@ export default function Landing() {
               </button>
             ))}
           </div>
-        </div>
-        <div className="ab-wrap">
-          <div className="ab-dest-row r">
-            {guidePoints.map((p) => (
-              <article key={p.id} className="ab-dest-card">
-                <div className="ab-dest-img">
-                  <img src={p.image} alt={p.region} onError={handleImageFallback} />
+
+          <div className="ab-guide-grid">
+            {guideList.map(({ pt, key }) => (
+              <article className="ab-gcard r" key={key}>
+                <div className="ab-gcard-img">
+                  <img src={pt.image} alt={pt.region} onError={handleImageFallback} loading="lazy" />
                 </div>
-                <div className="ab-dest-body">
-                  <p className="ab-dest-region">{MONTH_LABELS_KR[guideMonth]} 추천</p>
-                  <h3>{p.region}</h3>
-                  <p className="ab-dest-oneliner">{p.oneLiner}</p>
-                  <dl className="ab-dest-meta">
-                    <div><dt>수온 · 시야</dt><dd>{p.water}</dd></div>
-                  </dl>
+                <div className="ab-gcard-body">
+                  <p className="ab-gcard-eyebrow">{MONTH_LABELS_KR[guideMonth]} 추천</p>
+                  <h3>{pt.region}</h3>
+                  <p className="ab-gcard-oneliner">{pt.oneLiner}</p>
+                  <p className="ab-gcard-water">{pt.water}</p>
                   <div className="ab-life">
-                    {p.life.map((l) => (
+                    {pt.life.map((l) => (
                       <span key={l}>{l}</span>
                     ))}
                   </div>
@@ -275,55 +320,67 @@ export default function Landing() {
               </article>
             ))}
           </div>
+          <div ref={sentinelRef} className="ab-sentinel" aria-hidden="true">
+            {guidePages < 6 ? "더 많은 포인트를 불러오는 중…" : "이번 달 추천 포인트를 모두 보셨어요"}
+          </div>
         </div>
       </section>
 
-      {/* 3. 리브어보드 정보 섹션 — 정의·출발지역·경험 설명만. 예약 카드/가격/CTA 없음. */}
+      {/* 3. 리브어보드 정보 — 국가별 기간/여정. 예약 카드·가격·CTA 없음 */}
       <section id="liveaboard" className="ab-sec ab-lb">
-        <div className="ab-wrap">
+        <div className="wrap">
           <div className="ab-sec-head r">
-            <h2>리브어보드란?</h2>
-            <p className="ab-marker">예시 설명 · 게시 전 확인 필요</p>
+            <div>
+              <h2>리브어보드, 나라별로 살펴보기</h2>
+              <p className="ab-sub">
+                보트에서 숙식하며 여러 날에 걸쳐 이동하는 다이빙 방식입니다.
+                어느 나라에서 며칠짜리로, 어떤 포인트를 도는지 미리 감을 잡아보세요.
+              </p>
+            </div>
+            <span className="ab-tag">예시 콘텐츠 · 게시 전 확인 필요</span>
           </div>
 
           <div className="ab-lb-grid">
-            <div className="r">
-              <figure className="ab-lb-fig">
-                <img src="/landing/boat.jpg" alt="리브어보드 보트" onError={handleImageFallback} />
-              </figure>
-              <p className="ab-lb-def">
-                <b>리브어보드(Liveaboard)</b>는 다이빙 전용 보트에서 <b>숙식하며 여러 날에 걸쳐 이동</b>,
-                육지에서 닿기 어려운 원격 포인트를 하루 3~4회씩 다이빙하는 방식입니다.
-                당일·단기 투어와는 리듬이 완전히 다릅니다.
-              </p>
-              <p className="ab-lb-sub">대표 운영 지역 (예시 — 실제 상품 출발지와 다를 수 있음)</p>
-              <div className="ab-lb-regions">
-                {LIVEABOARD_REGIONS.map((rg) => (
-                  <span key={rg}>{rg}</span>
-                ))}
-              </div>
-            </div>
+            {LIVEABOARD_REGIONS.map((rg) => (
+              <article className="ab-lbcard r" key={rg.id}>
+                <div className="ab-lbcard-img">
+                  <img src={rg.image} alt={rg.name} onError={handleImageFallback} loading="lazy" />
+                </div>
+                <div className="ab-lbcard-body">
+                  <h3>{rg.name}</h3>
+                  <p className="ab-lbcard-summary">{rg.summary}</p>
+                  <p className="ab-lbcard-label">기간 옵션</p>
+                  <div className="ab-chips">
+                    {rg.durations.map((d) => (
+                      <span key={d}>{d}</span>
+                    ))}
+                  </div>
+                  <p className="ab-lbcard-label">대표 여정</p>
+                  <p className="ab-lbcard-route">{rg.route.join("  →  ")}</p>
+                </div>
+              </article>
+            ))}
+          </div>
 
-            <div className="r">
-              <p className="ab-lb-sub">선상 하루 일과 (예시)</p>
-              <ol className="ab-lb-timeline">
-                {LIVEABOARD_DAY.map((d) => (
-                  <li key={d.t}>
-                    <span className="ab-lb-time">{d.t}</span>
-                    <span className="ab-lb-label">{d.label}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
+          <div className="ab-lb-day r">
+            <p className="ab-lbcard-label">선상 하루 일과 (예시)</p>
+            <ol className="ab-lb-timeline">
+              {LIVEABOARD_DAY.map((d) => (
+                <li key={d.t}>
+                  <span className="ab-lb-time">{d.t}</span>
+                  <span className="ab-lb-lbl">{d.label}</span>
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
       </section>
 
       {/* 4. 브랜드 인트로 */}
       <section id="story" className="ab-sec ab-intro">
-        <div className="ab-wrap ab-intro-grid">
+        <div className="wrap ab-intro-grid">
           <div className="r">
-            <p className="ab-eyebrow dark">What is ALL BLUE</p>
+            <p className="ab-eyebrow">What is ALL BLUE</p>
             <blockquote>
               우리는 투어를 나열하지 않습니다. 자격·경력·안전 이력을 <em>직접 검증한 강사</em>의
               투어만 올리고, 일정·포함 내역·환불 규정까지 투명하게 공개합니다.
@@ -341,42 +398,39 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* 5. 모집중인 투어 (실데이터 · 벤토) */}
+      {/* 5. 모집중인 투어 (실데이터) */}
       <section id="tours" className="ab-sec ab-tours">
-        <div className="ab-wrap">
+        <div className="wrap">
           <div className="ab-sec-head r">
-            <h2>지금 모집중인 투어</h2>
+            <div>
+              <h2>지금 모집중인 투어</h2>
+              <p className="ab-sub">인증 강사가 진행하는, 예약 가능한 일정입니다.</p>
+            </div>
             <Link to="/search" className="ab-textlink">전체 투어 보기 →</Link>
           </div>
 
           {bentoTours.length === 0 ? (
-            <p className="ab-empty r">현재 모집중인 투어를 준비하고 있어요. 곧 새로운 일정이 열립니다.</p>
+            <p className="ab-sub r">현재 모집중인 투어를 준비하고 있어요. 곧 새로운 일정이 열립니다.</p>
           ) : (
             <div className="ab-bento r">
               {bentoTours.map((t, i) => (
-                <Link
-                  key={t.id}
-                  to={`/tour/${t.id}`}
-                  className={`ab-tcard ${i === 0 ? "feat" : ""} ${i === 3 ? "wide" : ""}`}
-                >
-                  <img
-                    src={t.mainImageUrl || IMAGE_PLACEHOLDER}
-                    alt={t.title}
-                    onError={handleImageFallback}
-                  />
-                  <div className="ab-tcard-badges">
-                    {t.activityTypes.map((a) => (
-                      <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
-                    ))}
-                    {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
+                <Link key={t.id} to={`/tour/${t.id}`} className={`ab-tcard ${i === 0 ? "feat" : ""}`}>
+                  <div className="ab-tcard-img">
+                    <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
+                    <div className="ab-tcard-badges">
+                      {t.activityTypes.map((a) => (
+                        <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
+                      ))}
+                      {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
+                    </div>
                   </div>
                   <div className="ab-tcard-body">
                     <p className="ab-tcard-loc">{t.country} · {t.site}</p>
                     <h3>{t.title}</h3>
                     <div className="ab-tcard-meta">
                       <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
-                      <span>💧 {t.waterTempC}°C</span>
-                      <span>👁 ~{t.visibilityM}m</span>
+                      <span>수온 {t.waterTempC}°C</span>
+                      <span>시야 ~{t.visibilityM}m</span>
                       <span>{tourDifficulty(t)}</span>
                     </div>
                     <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
@@ -388,96 +442,117 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* 6. 강사 신뢰 (오프화이트) */}
-      <section id="instructors" className="ab-sec ab-trust">
-        <div className="ab-wrap ab-trust-grid">
-          <figure className="r">
-            <img src="/landing/instructor.jpg" alt="ALL BLUE 인증 강사" />
-            <figcaption>
-              {featuredInstructor ? `${featuredInstructor.name} 강사` : "ALL BLUE 인증 강사"}
-              {featuredInstructor?.agency ? ` · ${featuredInstructor.agency}` : ""}
-            </figcaption>
-          </figure>
-          <div>
-            <p className="ab-eyebrow gold-e r">Verified Instructors</p>
-            <h2 className="r">자격이 아니라, 기록으로 증명합니다</h2>
-            <p className="ab-trust-lead r">
-              모든 파트너 강사는 자격증·경력·사고 이력·완주율을 사전 검증받습니다.
-              투어가 끝나면 참가자 평가가 프로필에 그대로 쌓입니다.
-            </p>
-            <div className="ab-creds r">
-              {(featuredInstructor
-                ? [
-                    featuredInstructor.agency || "PADI",
-                    `경력 ${featuredInstructor.experienceYears ?? 5}년`,
-                    `로그 ${(featuredInstructor.totalLogs ?? 1200).toLocaleString()}+`,
-                    "보험 가입 확인",
-                  ]
-                : ["PADI IDC", "EFR Instructor", "로그 1,200+", "보험 가입 확인"]
-              ).map((c) => (
-                <span key={c}>{c}</span>
-              ))}
-            </div>
-            <div className="ab-tmetrics r">
-              <div><b>82%</b><span>재참여율</span></div>
-              <div><b>99.1%</b><span>투어 완주율</span></div>
-              <div><b>4.9</b><span>강사 평점</span></div>
+      {/* 6. 강사 신뢰 — 슬라이드 캐러셀 */}
+      <section id="instructors" className="ab-sec ab-inst">
+        <div className="wrap">
+          <div className="ab-sec-head r">
+            <div>
+              <h2>자격이 아니라, 기록으로 증명합니다</h2>
+              <p className="ab-sub">
+                모든 파트너 강사는 자격·경력·사고 이력·완주율을 사전 검증받습니다.
+                투어가 끝나면 참가자 평가가 프로필에 그대로 쌓입니다.
+              </p>
             </div>
           </div>
+        </div>
+        <div className="wrap r">
+          <Carousel label="인증 강사" items={(carouselInstructors.length > 0
+              ? carouselInstructors.map((ins) => (
+                  <article className="ab-ic" key={ins.id}>
+                    <div className="ab-ic-img">
+                      <img
+                        src={ins.avatarUrl || "/landing/instructor.jpg"}
+                        alt={ins.name}
+                        onError={handleImageFallback}
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="ab-ic-body">
+                      <h3>{ins.name} 강사</h3>
+                      <p className="ab-ic-agency">{ins.agency || "PADI"}</p>
+                      <div className="ab-ic-metrics">
+                        <div><b>{(ins.totalLogs ?? 0).toLocaleString()}+</b><span>누적 다이빙</span></div>
+                        <div><b>{ins.experienceYears ?? "—"}년</b><span>경력</span></div>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              : [1, 2, 3, 4].map((k) => (
+                  <article className="ab-ic" key={k}>
+                    <div className="ab-ic-img">
+                      <img src="/landing/instructor.jpg" alt="ALL BLUE 인증 강사" loading="lazy" />
+                    </div>
+                    <div className="ab-ic-body">
+                      <h3>ALL BLUE 인증 강사</h3>
+                      <p className="ab-ic-agency">PADI IDC Staff Instructor</p>
+                      <div className="ab-ic-metrics">
+                        <div><b>1,200+</b><span>누적 다이빙</span></div>
+                        <div><b>7년</b><span>경력</span></div>
+                      </div>
+                    </div>
+                  </article>
+                )))}
+          />
         </div>
       </section>
 
-      {/* 7. 후기 */}
-      <section className="ab-sec ab-reviews">
-        <div className="ab-wrap">
-          <div className="ab-sec-head r"><h2>다녀온 다이버의 기록</h2></div>
-        </div>
-        <div className="ab-wrap">
-          <div className="ab-rrow r">
-            {(realReviews.length > 0
-              ? realReviews.map((r) => ({
-                  key: r.id,
-                  img: "/landing/turtle.jpg",
-                  stars: Math.round(r.rating),
-                  quote: r.comment ?? "",
-                  who: "다녀온 다이버",
-                }))
-              : [
-                  { key: "a", img: "/landing/turtle.jpg", stars: 5, quote: "첫 해외 다이빙이었는데 픽업부터 로그까지 다 챙겨주셔서 바다만 즐기면 됐어요.", who: "김서연 · 세부 모알보알" },
-                  { key: "b", img: "/landing/whale.jpg", stars: 5, quote: "만타 클리닝 스테이션에서 20분. 리브어보드 선택하길 잘했습니다.", who: "이준호 · 몰디브 남말레" },
-                  { key: "c", img: "/landing/coral.jpg", stars: 5, quote: "강사님 평점이 왜 높은지 알겠더라고요. 브리핑이 남달랐어요.", who: "정민아 · 팔라우" },
-                ]
-            ).map((rv) => (
-              <article key={rv.key} className="ab-rcard">
-                <img src={rv.img} alt="" onError={handleImageFallback} />
-                <div className="ab-rcard-body">
-                  <p className="ab-stars">{"★".repeat(rv.stars)}<span>{"★".repeat(5 - rv.stars)}</span></p>
-                  <q>{rv.quote}</q>
-                  <p className="ab-rcard-who">{rv.who}</p>
-                </div>
-              </article>
-            ))}
+      {/* 7. 다녀온 다이버의 기록 — 슬라이드 캐러셀 */}
+      <section className="ab-sec ab-rev">
+        <div className="wrap">
+          <div className="ab-sec-head r">
+            <div>
+              <h2>다녀온 다이버의 기록</h2>
+              <p className="ab-sub">실제 참가자가 남긴 후기입니다.</p>
+            </div>
           </div>
+        </div>
+        <div className="wrap r">
+          <Carousel label="참가자 후기" items={(carouselReviews.length >= 3
+              ? carouselReviews.map((rv) => {
+                  const name = profileName(rv.diverId);
+                  const tour = getTourById(rv.tourId);
+                  const place = tour ? `${tour.country} · ${tour.site}` : "";
+                  return (
+                    <article className="ab-rc" key={rv.id}>
+                      <img src={rv.photos?.[0] || "/landing/turtle.jpg"} alt="" onError={handleImageFallback} loading="lazy" />
+                      <div className="ab-rc-body">
+                        <p className="ab-stars">{"★".repeat(Math.round(rv.rating))}</p>
+                        <q>{rv.comment}</q>
+                        <p className="ab-rc-who">{name}{place ? ` · ${place}` : ""}</p>
+                      </div>
+                    </article>
+                  );
+                })
+              : FALLBACK_REVIEWS.map((rv) => (
+                  <article className="ab-rc" key={rv.key}>
+                    <img src={rv.img} alt="" onError={handleImageFallback} loading="lazy" />
+                    <div className="ab-rc-body">
+                      <p className="ab-stars">★★★★★</p>
+                      <q>{rv.quote}</q>
+                      <p className="ab-rc-who">{rv.who} · {rv.place} · {rv.meta}</p>
+                    </div>
+                  </article>
+                )))}
+          />
         </div>
       </section>
 
       {/* 8. CTA */}
       <section className="ab-sec ab-cta">
-        <img src="/landing/group.jpg" alt="" onError={handleImageFallback} />
-        <div className="ab-wrap">
-          <h2 className="r">다음 다이빙을 찾을 시간입니다</h2>
-          <p className="r">지금 열려 있는 투어를 둘러보고, 강사에게 바로 문의하세요.</p>
-          <Link to="/search" className="ab-btn r">투어 둘러보기 →</Link>
+        <div className="wrap">
+          <h2>다음 다이빙을 찾을 시간입니다</h2>
+          <p className="ab-sub">지금 열려 있는 투어를 둘러보고, 강사에게 바로 문의하세요.</p>
+          <Link to="/search" className="ab-btn">투어 둘러보기 →</Link>
         </div>
       </section>
 
-      {/* 9. 푸터 */}
+      {/* 9. 푸터 — 페이지의 두 번째(마지막) 다크 영역 */}
       <footer className="ab-foot">
-        <div className="ab-wrap">
+        <div className="wrap">
           <div className="ab-foot-top">
             <Link to="/" className="ab-brand">ALL BLUE <span>올블루</span></Link>
             <div className="ab-foot-links">
-              <a href="#destinations">목적지</a>
+              <a href="#guide">다이빙 가이드</a>
               <a href="#tours">투어</a>
               <a href="#instructors">강사</a>
               <Link to="/business-inquiry">기업·단체 문의</Link>
@@ -501,193 +576,211 @@ export default function Landing() {
 }
 
 const CSS = `
-.ab-lp{--navy:#0A1B2E;--navy2:#0D2438;--ink:#071320;--turq:#1B8A9B;--turq2:#2FB6C4;--gold:#C9A868;--off:#F7F6F2;--foam:#EAF1F4;--mist:#93A7B6;
-  background:var(--ink);color:var(--foam);font-family:'Pretendard','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.6;
-  --maxw:1200px;--gut:clamp(20px,5vw,56px);overflow-x:hidden;}
-.ab-lp h1,.ab-lp h2,.ab-lp h3{font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:800;line-height:1.12;letter-spacing:-0.02em;margin:0;text-wrap:balance;word-break:keep-all;}
+.ab-lp{
+  --bg:#FFFFFF;--bg-soft:#F4FAFB;--navy:#14324D;--navy-dark:#0A1B2E;
+  --turq:#17A8BD;--turq-light:#E4F6F8;--gold:#D4AF6A;
+  --text-1:var(--navy);--text-2:rgba(20,50,77,.75);--line:rgba(20,50,77,.12);
+  --fs-h1:clamp(1.75rem,4vw,3rem);--fs-h2:clamp(1.375rem,2.5vw,2rem);--fs-body:1rem;
+  --lh-head:1.2;--lh-body:1.6;
+  --maxw:1200px;--gut:clamp(24px,5vw,64px);
+  --s2:8px;--s3:16px;--s4:24px;--s5:32px;--s6:48px;--s7:64px;
+  background:var(--bg);color:var(--text-1);
+  font-family:'Pretendard','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  font-size:var(--fs-body);line-height:var(--lh-body);-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+.ab-lp *{box-sizing:border-box;}
+.ab-lp h1,.ab-lp h2,.ab-lp h3{font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:800;line-height:var(--lh-head);letter-spacing:-.02em;margin:0;text-wrap:balance;word-break:keep-all;}
+.ab-lp h2{font-size:var(--fs-h2);color:var(--text-1);}
 .ab-lp a{color:inherit;text-decoration:none;}
 .ab-lp img{display:block;max-width:100%;}
-.ab-wrap{max-width:var(--maxw);margin:0 auto;padding-inline:var(--gut);}
-.ab-eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--turq2);display:flex;align-items:center;gap:12px;margin:0 0 18px;}
-.ab-eyebrow::before{content:"";width:32px;height:1px;background:var(--gold);opacity:.7;}
-.ab-eyebrow.dark{color:var(--turq2);}
-.ab-marker{font-size:11px;letter-spacing:.16em;color:var(--mist);font-family:'Plus Jakarta Sans',monospace;white-space:nowrap;}
+.wrap{max-width:var(--maxw);margin:0 auto;padding-inline:var(--gut);}
+.ab-sub{margin-top:var(--s3);font-size:var(--fs-body);line-height:var(--lh-body);color:var(--text-2);max-width:68ch;}
+@media(max-width:560px){.ab-lp{font-size:.9375rem;}} /* 15px, 14px 밑으로 안 내려가게 */
 
-.ab-btn{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px;padding:14px 26px;border-radius:3px;
-  background:var(--turq);color:#fff;border:1px solid var(--turq);position:relative;overflow:hidden;transition:transform .18s ease,background .18s ease;}
-.ab-btn.sm{padding:10px 18px;font-size:13px;}
-.ab-btn:hover{background:var(--turq2);}
-.ab-btn::after{content:"";position:absolute;left:50%;top:50%;width:0;height:0;border-radius:50%;background:rgba(255,255,255,.28);transform:translate(-50%,-50%);transition:width .55s ease,height .55s ease,opacity .6s;opacity:0;}
+.ab-eyebrow{font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;color:var(--turq);font-weight:700;display:flex;align-items:center;gap:12px;margin:0 0 var(--s3);}
+.ab-eyebrow::before{content:"";width:28px;height:2px;background:var(--gold);}
+.ab-eyebrow.light{color:#BFEFF5;}
+.ab-eyebrow.light::before{background:var(--gold);}
+.ab-tag{align-self:flex-start;flex:none;font-size:.6875rem;font-weight:700;letter-spacing:.02em;color:#8a6a2e;background:var(--turq-light);border:1px solid var(--gold);border-radius:999px;padding:6px 12px;white-space:nowrap;}
+
+.ab-btn{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:.9375rem;padding:14px 26px;border-radius:8px;background:var(--turq);color:#fff;border:1px solid var(--turq);position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease;box-shadow:0 6px 20px -8px rgba(23,168,189,.6);}
+.ab-btn.sm{padding:9px 16px;font-size:.875rem;box-shadow:none;}
+.ab-btn:hover{transform:translateY(-1px);box-shadow:0 10px 28px -8px rgba(23,168,189,.7);}
+.ab-btn::after{content:"";position:absolute;left:50%;top:50%;width:0;height:0;border-radius:50%;background:rgba(255,255,255,.35);transform:translate(-50%,-50%);transition:width .55s ease,height .55s ease,opacity .6s;opacity:0;}
 .ab-btn:hover::after{width:260px;height:260px;opacity:1;}
 
 /* NAV */
-.ab-nav{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;
-  padding:16px var(--gut);transition:background .35s,backdrop-filter .35s,border-color .35s;border-bottom:1px solid transparent;}
-.ab-nav.solid{background:rgba(7,19,32,.82);backdrop-filter:blur(12px);border-bottom-color:rgba(201,168,104,.22);}
-.ab-brand{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:19px;letter-spacing:.02em;display:inline-flex;gap:8px;align-items:baseline;}
-.ab-brand span{font-size:10px;letter-spacing:.28em;color:var(--mist);text-transform:uppercase;font-weight:600;}
-.ab-nav-links{display:flex;align-items:center;gap:26px;}
-.ab-nav-links a{font-size:14px;position:relative;padding-block:6px;}
-.ab-nav-links a:not(.ab-btn)::after{content:"";position:absolute;left:0;right:100%;bottom:0;height:1px;background:var(--turq2);transition:right .35s cubic-bezier(.22,1,.36,1);}
-.ab-nav-links a:not(.ab-btn):hover::after{right:0;}
+.ab-nav{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:var(--s3) var(--gut);transition:background .3s,box-shadow .3s;}
+.ab-nav.solid{background:rgba(255,255,255,.9);backdrop-filter:blur(10px);box-shadow:0 1px 0 var(--line);}
+.ab-brand{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.1875rem;letter-spacing:.02em;display:inline-flex;gap:8px;align-items:baseline;color:#fff;}
+.ab-nav.solid .ab-brand{color:var(--navy);}
+.ab-brand span{font-size:.625rem;letter-spacing:.24em;color:currentColor;opacity:.7;text-transform:uppercase;font-weight:600;}
+.ab-nav-links{display:flex;align-items:center;gap:var(--s4);}
+.ab-nav-links a{font-size:.875rem;color:#fff;font-weight:600;}
+.ab-nav.solid .ab-nav-links a{color:var(--navy);}
+.ab-nav-links a.ab-btn{color:#fff;}
 @media(max-width:820px){.ab-nav-links a:not(.ab-btn){display:none;}}
 
 /* HERO */
-.ab-hero{position:relative;min-height:100svh;display:flex;align-items:flex-end;isolation:isolate;}
+.ab-hero{position:relative;min-height:min(88svh,760px);display:flex;align-items:flex-end;isolation:isolate;}
 .ab-hero-media{position:absolute;inset:0;z-index:-1;overflow:hidden;}
-.ab-hero-media img{width:100%;height:100%;object-fit:cover;filter:saturate(.78) contrast(1.05) brightness(.6) hue-rotate(-6deg);will-change:transform;}
-.ab-hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,19,32,.5) 0%,rgba(7,19,32,.12) 30%,rgba(7,19,32,.7) 74%,var(--ink) 100%);}
-.ab-hero-inner{padding-top:150px;padding-bottom:clamp(44px,7vw,92px);width:100%;}
-.ab-hero-h{position:relative;font-size:clamp(34px,6.4vw,84px);font-weight:800;max-width:16ch;}
+.ab-hero-media img{width:100%;height:100%;object-fit:cover;filter:saturate(1.02) contrast(1.02);will-change:transform;}
+.ab-hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,27,46,.5) 0%,rgba(10,27,46,.2) 40%,rgba(10,27,46,.72) 100%);}
+.ab-hero-inner{padding-top:120px;padding-bottom:var(--s7);width:100%;color:#fff;}
+.ab-hero-h{position:relative;font-size:var(--fs-h1);font-weight:800;max-width:20ch;color:#fff;}
 .ab-hero-line{position:absolute;left:0;top:0;right:0;pointer-events:none;}
 .ab-hero-line.on{animation:abheadline .6s cubic-bezier(.22,1,.36,1) both;}
 @keyframes abheadline{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
 .ab-hero-line.ghost{position:relative;visibility:hidden;}
-.ab-hero-lede{margin-top:22px;max-width:46ch;color:#C4D2DC;font-size:clamp(14px,1.5vw,17px);}
-.ab-search{margin-top:34px;display:flex;flex-wrap:wrap;gap:1px;max-width:680px;border:1px solid rgba(201,168,104,.3);border-radius:4px;overflow:hidden;background:rgba(201,168,104,.3);}
-.ab-search-fld{flex:1 1 200px;min-width:0;border:0;outline:0;background:rgba(7,19,32,.66);color:#fff;padding:16px 18px;font-size:14px;font-family:inherit;}
-.ab-search-fld::placeholder{color:var(--mist);}
-.ab-search-sel{flex:0 1 150px;appearance:none;cursor:pointer;}
-.ab-search-sel option{background:var(--navy);}
-.ab-search-go{border:0;cursor:pointer;background:var(--turq);color:#fff;font-weight:700;font-size:14px;padding:0 28px;font-family:inherit;}
-.ab-search-go:hover{background:var(--turq2);}
-.ab-scrollcue{margin-top:46px;display:inline-flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mist);}
-.ab-scrollcue i{width:1px;height:40px;background:linear-gradient(var(--gold),transparent);animation:abdrop 2.4s ease-in-out infinite;transform-origin:top;}
+.ab-hero-lede{margin-top:var(--s4);max-width:52ch;color:rgba(255,255,255,.9);font-size:var(--fs-body);line-height:var(--lh-body);}
+.ab-search{margin-top:var(--s5);display:flex;flex-wrap:wrap;gap:var(--s2);max-width:640px;background:rgba(255,255,255,.96);border-radius:12px;padding:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
+.ab-search-fld{flex:1 1 200px;min-width:0;border:0;outline:0;background:transparent;color:var(--navy);padding:12px 14px;font-size:.9375rem;font-family:inherit;}
+.ab-search-fld::placeholder{color:var(--text-2);}
+.ab-search-sel{flex:0 1 140px;appearance:none;cursor:pointer;border-left:1px solid var(--line);border-radius:0;}
+.ab-search-go{border:0;cursor:pointer;background:var(--turq);color:#fff;font-weight:700;font-size:.9375rem;padding:0 24px;border-radius:8px;font-family:inherit;}
+.ab-search-go:hover{background:#128ea1;}
+.ab-scrollcue{margin-top:var(--s6);display:inline-flex;align-items:center;gap:12px;font-size:.6875rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.85);font-weight:600;}
+.ab-scrollcue i{width:2px;height:36px;background:linear-gradient(#fff,transparent);animation:abdrop 2.4s ease-in-out infinite;transform-origin:top;}
 @keyframes abdrop{0%,100%{transform:scaleY(.35);opacity:.4;}50%{transform:scaleY(1);opacity:1;}}
 
 /* SECTION SHELL */
-.ab-sec{position:relative;padding-block:clamp(72px,11vw,132px);}
-.ab-sec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:clamp(32px,5vw,56px);}
-.ab-sec-head h2{font-size:clamp(26px,4.2vw,50px);max-width:18ch;}
-.ab-textlink{font-size:14px;font-weight:700;color:var(--turq2);white-space:nowrap;}
-.ab-textlink:hover{color:#fff;}
-.ab-empty{color:var(--mist);}
-.r{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s cubic-bezier(.22,1,.36,1);}
+.ab-sec{position:relative;padding-block:clamp(var(--s6),8vw,var(--s7));}
+.ab-sec-head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s4);margin-bottom:var(--s6);}
+.ab-sec-head h2{max-width:20ch;}
+.ab-textlink{font-size:.9375rem;font-weight:700;color:var(--turq);white-space:nowrap;flex:none;margin-top:6px;}
+.ab-textlink:hover{color:#0f8697;}
+.r{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s cubic-bezier(.22,1,.36,1);}
 .r.in{opacity:1;transform:none;}
+@media(max-width:640px){.ab-sec-head{flex-direction:column;}}
 
-/* 2. DEST SHOWCASE */
-.ab-dest{background:var(--navy);}
-.ab-months{display:flex;gap:8px;overflow-x:auto;margin:0 calc(-1*var(--gut)) 28px;padding:0 var(--gut) 4px;scrollbar-width:none;}
+/* 2. GUIDE (light) */
+.ab-guide{background:var(--bg);}
+.ab-months{display:flex;gap:var(--s2);overflow-x:auto;margin:0 calc(-1*var(--gut)) var(--s5);padding:0 var(--gut) 6px;scrollbar-width:none;}
 .ab-months::-webkit-scrollbar{display:none;}
-.ab-months button{flex:0 0 auto;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,104,.16);border-radius:3px;color:var(--mist);font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;cursor:pointer;transition:.18s;}
-.ab-months button:hover{color:var(--foam);border-color:rgba(47,182,196,.4);}
+.ab-months button{flex:0 0 auto;background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;color:var(--text-2);font-family:inherit;font-size:.875rem;font-weight:700;padding:9px 16px;cursor:pointer;transition:.15s;}
+.ab-months button:hover{color:var(--navy);border-color:var(--turq);}
 .ab-months button.on{background:var(--turq);border-color:var(--turq);color:#fff;}
-.ab-dest-empty{display:flex;flex-direction:column;gap:10px;align-items:flex-start;border:1px dashed rgba(201,168,104,.28);border-radius:6px;padding:34px;color:var(--mist);}
-.ab-dest-empty b{color:var(--foam);}
-.ab-dest-row{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px;margin-inline:calc(-1*var(--gut));padding-inline:var(--gut);scrollbar-width:none;}
-.ab-dest-row::-webkit-scrollbar{display:none;}
-.ab-dest-card{scroll-snap-align:start;flex:0 0 clamp(250px,74vw,300px);border:1px solid rgba(201,168,104,.18);border-radius:6px;overflow:hidden;background:var(--navy2);transition:transform .3s ease,border-color .3s ease;}
-.ab-dest-card:hover{transform:translateY(-4px);border-color:rgba(47,182,196,.5);}
-.ab-dest-img{position:relative;aspect-ratio:4/3;overflow:hidden;}
-.ab-dest-img img{width:100%;height:100%;object-fit:cover;filter:saturate(.82) contrast(1.03) brightness(.82) hue-rotate(-6deg);transition:transform 1s cubic-bezier(.2,.7,.2,1);}
-.ab-dest-card:hover .ab-dest-img img{transform:scale(1.08);}
-.ab-dest-flag{position:absolute;left:12px;top:12px;font-size:11px;font-weight:700;letter-spacing:.04em;background:var(--turq);color:#fff;padding:5px 9px;border-radius:2px;}
-.ab-dest-body{padding:16px 16px 18px;}
-.ab-dest-region{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mist);}
-.ab-dest-body h3{margin-top:4px;font-size:17px;font-weight:800;}
-.ab-guide-intro{margin-top:14px;max-width:52ch;color:var(--mist);font-size:14px;}
-.ab-dest-oneliner{margin-top:8px;font-size:13px;line-height:1.55;color:#C4D2DC;}
-.ab-dest-meta{display:flex;gap:14px;margin:12px 0 0;border-top:1px solid rgba(201,168,104,.16);padding-top:12px;}
-.ab-dest-meta div{flex:1;}
-.ab-dest-meta dt{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);margin:0;}
-.ab-dest-meta dd{margin:3px 0 0;font-size:12px;font-weight:600;color:var(--foam);}
+.ab-guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);}
+.ab-gcard{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);transition:transform .3s ease,box-shadow .3s ease;}
+.ab-gcard:hover{transform:translateY(-4px);box-shadow:0 20px 40px -22px rgba(20,50,77,.35);}
+.ab-gcard-img{aspect-ratio:16/10;overflow:hidden;}
+.ab-gcard-img img{width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1);}
+.ab-gcard:hover .ab-gcard-img img{transform:scale(1.06);}
+.ab-gcard-body{padding:var(--s4);}
+.ab-gcard-eyebrow{font-size:.6875rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--turq);}
+.ab-gcard-body h3{margin-top:6px;font-size:1.0625rem;}
+.ab-gcard-oneliner{margin-top:8px;font-size:.875rem;line-height:1.55;color:var(--text-2);}
+.ab-gcard-water{margin-top:10px;font-size:.8125rem;font-weight:600;color:var(--navy);}
 .ab-life{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;}
-.ab-life span{font-size:11px;color:var(--turq2);border:1px solid rgba(47,182,196,.3);border-radius:999px;padding:3px 10px;}
+.ab-life span{font-size:.6875rem;color:#0f8697;background:var(--turq-light);border-radius:999px;padding:4px 10px;}
+.ab-sentinel{margin-top:var(--s5);text-align:center;font-size:.8125rem;color:var(--text-2);}
+@media(max-width:900px){.ab-guide-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.ab-guide-grid{grid-template-columns:1fr;}}
 
-/* 3. LIVEABOARD INFO — 설명 전용(예약 카드 없음) */
-.ab-lb{background:var(--ink);}
-.ab-lb-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(32px,6vw,72px);align-items:start;}
-.ab-lb-fig{margin:0 0 20px;border-radius:8px;overflow:hidden;}
-.ab-lb-fig img{width:100%;aspect-ratio:16/10;object-fit:cover;filter:saturate(.8) contrast(1.04) brightness(.8) hue-rotate(-6deg);}
-.ab-lb-def{font-size:15px;line-height:1.7;color:#D3DEE6;}
-.ab-lb-def b{color:var(--foam);}
-.ab-lb-sub{margin:26px 0 12px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
-.ab-lb-regions{display:flex;flex-wrap:wrap;gap:8px;}
-.ab-lb-regions span{font-size:12px;color:#C4D2DC;border:1px solid rgba(201,168,104,.28);border-radius:3px;padding:7px 12px;}
-.ab-lb-timeline{list-style:none;margin:0;padding:0;border-left:1px solid rgba(201,168,104,.3);}
-.ab-lb-timeline li{position:relative;padding:0 0 18px 22px;}
-.ab-lb-timeline li::before{content:"";position:absolute;left:-4.5px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--turq2);}
+/* 3. LIVEABOARD (soft bg) */
+.ab-lb{background:var(--bg-soft);}
+.ab-lb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);}
+.ab-lbcard{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
+.ab-lbcard-img{aspect-ratio:16/9;overflow:hidden;}
+.ab-lbcard-img img{width:100%;height:100%;object-fit:cover;}
+.ab-lbcard-body{padding:var(--s4);}
+.ab-lbcard-body h3{font-size:1.0625rem;}
+.ab-lbcard-summary{margin-top:8px;font-size:.875rem;line-height:1.55;color:var(--text-2);}
+.ab-lbcard-label{margin:var(--s4) 0 8px;font-size:.6875rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);}
+.ab-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.ab-chips span{font-size:.75rem;font-weight:600;color:var(--navy);background:var(--turq-light);border-radius:6px;padding:5px 10px;}
+.ab-lbcard-route{font-size:.8125rem;line-height:1.7;color:var(--text-1);}
+.ab-lb-day{margin-top:var(--s6);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:var(--s5);}
+.ab-lb-timeline{list-style:none;margin:12px 0 0;padding:0;border-left:2px solid var(--turq-light);}
+.ab-lb-timeline li{position:relative;padding:0 0 var(--s3) var(--s4);}
+.ab-lb-timeline li::before{content:"";position:absolute;left:-5px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--turq);}
 .ab-lb-timeline li:last-child{padding-bottom:0;}
-.ab-lb-time{display:inline-block;min-width:52px;font-family:'Plus Jakarta Sans',monospace;font-size:12px;font-weight:700;color:var(--turq2);}
-.ab-lb-label{font-size:13.5px;color:#D3DEE6;}
-@media(max-width:820px){.ab-lb-grid{grid-template-columns:1fr;}}
+.ab-lb-time{display:inline-block;min-width:52px;font-family:'Plus Jakarta Sans',monospace;font-size:.8125rem;font-weight:700;color:var(--turq);}
+.ab-lb-lbl{font-size:.875rem;color:var(--text-1);}
+@media(max-width:900px){.ab-lb-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.ab-lb-grid{grid-template-columns:1fr;}}
 
 /* 4. INTRO */
-.ab-intro{background:var(--navy2);}
-.ab-intro-grid{display:grid;grid-template-columns:1.4fr .85fr;gap:clamp(36px,6vw,84px);align-items:center;}
-.ab-intro blockquote{margin:0;font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:700;font-size:clamp(21px,2.7vw,34px);line-height:1.32;letter-spacing:-.01em;}
-.ab-intro blockquote em{color:var(--turq2);font-style:normal;}
-.ab-intro-by{margin-top:22px;font-size:13px;letter-spacing:.04em;color:var(--mist);}
-.ab-stats{display:flex;flex-direction:column;border-top:1px solid rgba(201,168,104,.28);}
-.ab-stat{padding:20px 0;border-bottom:1px solid rgba(201,168,104,.28);display:flex;align-items:baseline;justify-content:space-between;gap:16px;}
-.ab-stat b{font-family:'Plus Jakarta Sans',sans-serif;font-size:clamp(30px,3.6vw,46px);font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1;}
-.ab-stat span{font-size:12.5px;color:var(--mist);text-align:right;max-width:13ch;}
-@media(max-width:820px){.ab-intro-grid{grid-template-columns:1fr;}}
+.ab-intro{background:var(--bg);}
+.ab-intro-grid{display:grid;grid-template-columns:1.4fr .9fr;gap:var(--s7);align-items:center;}
+.ab-intro blockquote{margin:0;font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:700;font-size:clamp(1.25rem,2.4vw,1.875rem);line-height:1.4;letter-spacing:-.01em;color:var(--text-1);}
+.ab-intro blockquote em{color:var(--turq);font-style:normal;}
+.ab-intro-by{margin-top:var(--s4);font-size:.875rem;color:var(--text-2);}
+.ab-stats{display:flex;flex-direction:column;border-top:2px solid var(--turq-light);}
+.ab-stat{padding:var(--s4) 0;border-bottom:2px solid var(--turq-light);display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);}
+.ab-stat b{font-family:'Plus Jakarta Sans',sans-serif;font-size:clamp(1.75rem,3.4vw,2.5rem);font-weight:800;color:var(--turq);font-variant-numeric:tabular-nums;line-height:1;}
+.ab-stat span{font-size:.8125rem;color:var(--text-2);text-align:right;max-width:13ch;}
+@media(max-width:820px){.ab-intro-grid{grid-template-columns:1fr;gap:var(--s5);}}
 
-/* 4. TOURS BENTO */
-.ab-tours{background:var(--navy);}
-.ab-bento{display:grid;gap:14px;grid-template-columns:repeat(3,1fr);grid-auto-rows:230px;}
-.ab-tcard{position:relative;overflow:hidden;border-radius:6px;border:1px solid rgba(201,168,104,.16);display:flex;flex-direction:column;justify-content:flex-end;isolation:isolate;}
-.ab-tcard img{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;filter:saturate(.8) contrast(1.03) brightness(.66) hue-rotate(-6deg);transition:transform 1.1s cubic-bezier(.2,.7,.2,1);}
-.ab-tcard::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(7,19,32,.05),rgba(7,19,32,.35) 45%,rgba(7,19,32,.9));}
-.ab-tcard:hover img{transform:scale(1.07);}
-.ab-tcard.feat{grid-column:span 2;grid-row:span 2;}
-.ab-tcard.wide{grid-column:span 2;}
-.ab-tcard-badges{position:absolute;top:12px;left:12px;z-index:1;display:flex;flex-wrap:wrap;gap:6px;}
-.ab-chip{font-size:10px;font-weight:700;letter-spacing:.04em;padding:5px 9px;border-radius:2px;background:rgba(7,19,32,.7);border:1px solid rgba(201,168,104,.2);}
-.ab-chip.solid{background:var(--turq);border-color:var(--turq);color:#fff;}
-.ab-chip.gold{background:var(--gold);border-color:var(--gold);color:#20160A;}
-.ab-tcard-body{padding:18px;}
-.ab-tcard-loc{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#B7C6D0;}
-.ab-tcard-body h3{margin-top:5px;font-size:clamp(15px,1.6vw,19px);font-weight:800;}
-.ab-tcard.feat .ab-tcard-body h3{font-size:clamp(19px,2.4vw,28px);}
-.ab-tcard-meta{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px 12px;font-size:11.5px;color:#B7C6D0;}
-.ab-tcard-price{margin-top:10px;font-weight:800;color:var(--turq2);font-size:15px;}
-@media(max-width:900px){.ab-bento{grid-template-columns:repeat(2,1fr);}.ab-tcard.feat{grid-column:span 2;grid-row:span 2;}.ab-tcard.wide{grid-column:span 2;}}
-@media(max-width:560px){.ab-bento{grid-template-columns:1fr;grid-auto-rows:220px;}.ab-tcard.feat,.ab-tcard.wide{grid-column:span 1;grid-row:span 1;}}
+/* 5. TOURS */
+.ab-tours{background:var(--bg-soft);}
+.ab-bento{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);}
+.ab-tcard{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:transform .3s ease,box-shadow .3s ease;}
+.ab-tcard:hover{transform:translateY(-4px);box-shadow:0 20px 40px -22px rgba(20,50,77,.35);}
+.ab-tcard-img{position:relative;aspect-ratio:16/10;overflow:hidden;}
+.ab-tcard.feat{grid-column:span 2;}
+.ab-tcard.feat .ab-tcard-img{aspect-ratio:16/9;}
+.ab-tcard-img img{width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1);}
+.ab-tcard:hover .ab-tcard-img img{transform:scale(1.06);}
+.ab-tcard-badges{position:absolute;left:12px;top:12px;display:flex;flex-wrap:wrap;gap:6px;}
+.ab-chip{font-size:.625rem;font-weight:700;letter-spacing:.03em;padding:5px 9px;border-radius:6px;background:rgba(255,255,255,.92);color:var(--navy);}
+.ab-chip.solid{background:var(--turq);color:#fff;}
+.ab-chip.gold{background:var(--gold);color:#3a2c10;}
+.ab-tcard-body{padding:var(--s4);}
+.ab-tcard-loc{font-size:.6875rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);font-weight:600;}
+.ab-tcard-body h3{margin-top:6px;font-size:1.0625rem;}
+.ab-tcard.feat .ab-tcard-body h3{font-size:1.25rem;}
+.ab-tcard-meta{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8125rem;color:var(--text-2);}
+.ab-tcard-price{margin-top:12px;font-weight:800;color:var(--turq);font-size:1rem;}
+@media(max-width:900px){.ab-bento{grid-template-columns:repeat(2,1fr);}.ab-tcard.feat{grid-column:span 2;}}
+@media(max-width:560px){.ab-bento{grid-template-columns:1fr;}.ab-tcard.feat{grid-column:span 1;}}
 
-/* 5. TRUST (light) */
-.ab-trust{background:var(--off);color:#16202B;}
-.ab-trust-grid{display:grid;grid-template-columns:.82fr 1fr;gap:clamp(32px,6vw,76px);align-items:center;}
-.ab-trust h2{color:#12202E;font-size:clamp(24px,3.6vw,44px);}
-.ab-trust .ab-eyebrow.gold-e{color:#9a7b3f;}
-.ab-trust .ab-eyebrow.gold-e::before{background:#9a7b3f;}
-.ab-trust figure{margin:0;position:relative;border-radius:6px;overflow:hidden;}
-.ab-trust figure img{width:100%;aspect-ratio:4/5;object-fit:cover;filter:saturate(.9) contrast(1.02);}
-.ab-trust figcaption{position:absolute;left:14px;bottom:14px;font-size:11px;letter-spacing:.08em;color:#fff;background:rgba(10,27,46,.72);padding:7px 11px;border-radius:2px;}
-.ab-trust-lead{margin-top:18px;color:#3C4C5C;max-width:46ch;font-size:14.5px;}
-.ab-creds{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px;}
-.ab-creds span{font-size:11.5px;color:#2B3A48;border:1px solid rgba(20,32,43,.2);border-radius:2px;padding:8px 12px;}
-.ab-tmetrics{margin-top:30px;display:flex;gap:40px;}
-.ab-tmetrics b{display:block;font-family:'Plus Jakarta Sans',sans-serif;font-size:36px;font-weight:800;color:#1B8A9B;font-variant-numeric:tabular-nums;}
-.ab-tmetrics span{font-size:12px;color:#54636F;}
-@media(max-width:820px){.ab-trust-grid{grid-template-columns:1fr;}}
+/* CAROUSEL (shared: 강사 + 후기) */
+.ab-caro{position:relative;}
+.ab-caro-row{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:var(--s3);margin-inline:calc(-1*var(--gut));padding-inline:var(--gut);scrollbar-width:none;}
+.ab-caro-row::-webkit-scrollbar{display:none;}
+.ab-caro-item{scroll-snap-align:start;flex:0 0 calc((100% - 60px)/4);}
+@media(max-width:1024px){.ab-caro-item{flex-basis:calc((100% - 20px)/2);}}
+@media(max-width:640px){.ab-caro-item{flex-basis:82%;}}
+.ab-caro-nav{position:absolute;right:0;top:-52px;display:flex;gap:8px;}
+.ab-caro-nav button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--navy);font-size:1.25rem;line-height:1;cursor:pointer;transition:.15s;}
+.ab-caro-nav button:hover{border-color:var(--turq);color:var(--turq);}
+@media(max-width:640px){.ab-caro-nav{display:none;}}
 
-/* 6. REVIEWS */
-.ab-reviews{background:var(--navy2);}
-.ab-rrow{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;margin-inline:calc(-1*var(--gut));padding:0 var(--gut) 12px;scrollbar-width:none;}
-.ab-rrow::-webkit-scrollbar{display:none;}
-.ab-rcard{scroll-snap-align:start;flex:0 0 clamp(270px,80vw,360px);border:1px solid rgba(201,168,104,.18);border-radius:6px;overflow:hidden;background:var(--navy);}
-.ab-rcard img{width:100%;height:160px;object-fit:cover;filter:saturate(.78) brightness(.72) hue-rotate(-6deg);}
-.ab-rcard-body{padding:20px;}
-.ab-stars{color:var(--gold);letter-spacing:.18em;font-size:12px;margin:0;}
-.ab-stars span{color:rgba(201,168,104,.28);}
-.ab-rcard q{display:block;margin-top:12px;font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:600;font-size:16px;line-height:1.5;}
-.ab-rcard-who{margin-top:14px;font-size:11.5px;letter-spacing:.06em;color:var(--mist);}
+/* 6. INSTRUCTORS */
+.ab-inst{background:var(--bg);}
+.ab-ic{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;height:100%;}
+.ab-ic-img{aspect-ratio:4/5;overflow:hidden;}
+.ab-ic-img img{width:100%;height:100%;object-fit:cover;}
+.ab-ic-body{padding:var(--s4);}
+.ab-ic-body h3{font-size:1rem;}
+.ab-ic-agency{margin-top:4px;font-size:.8125rem;color:var(--text-2);}
+.ab-ic-metrics{margin-top:var(--s3);display:flex;gap:var(--s4);}
+.ab-ic-metrics b{display:block;font-family:'Plus Jakarta Sans',sans-serif;font-size:1.25rem;font-weight:800;color:var(--turq);}
+.ab-ic-metrics span{font-size:.6875rem;color:var(--text-2);}
 
-/* 7. CTA */
-.ab-cta{text-align:center;isolation:isolate;overflow:hidden;}
-.ab-cta img{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;filter:saturate(.6) brightness(.4) hue-rotate(-6deg);}
-.ab-cta::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,var(--navy),rgba(7,19,32,.65) 60%,var(--ink));opacity:.85;}
-.ab-cta h2{font-size:clamp(28px,5vw,60px);max-width:20ch;margin-inline:auto;}
-.ab-cta p{margin:18px auto 30px;color:var(--mist);max-width:42ch;}
+/* 7. REVIEWS */
+.ab-rev{background:var(--bg-soft);}
+.ab-rc{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;height:100%;}
+.ab-rc img{width:100%;height:150px;object-fit:cover;}
+.ab-rc-body{padding:var(--s4);}
+.ab-stars{margin:0;color:var(--gold);letter-spacing:.16em;font-size:.8125rem;}
+.ab-rc q{display:block;margin-top:10px;font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:600;font-size:.9375rem;line-height:1.5;color:var(--text-1);}
+.ab-rc-who{margin-top:12px;font-size:.75rem;color:var(--text-2);}
 
-/* 8. FOOTER */
-.ab-foot{background:var(--ink);border-top:1px solid rgba(201,168,104,.2);padding-block:54px 40px;}
-.ab-foot-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px;align-items:flex-start;}
-.ab-foot-links{display:flex;flex-wrap:wrap;gap:22px;font-size:13px;color:var(--mist);}
-.ab-foot-links a:hover{color:var(--turq2);}
-.ab-bizinfo{margin-top:32px;padding-top:22px;border-top:1px solid rgba(201,168,104,.2);font-size:11.5px;line-height:1.9;color:var(--mist);max-width:74ch;}
+/* 8. CTA */
+.ab-cta{background:var(--turq-light);text-align:center;}
+.ab-cta h2{max-width:20ch;margin-inline:auto;}
+.ab-cta .ab-sub{margin-inline:auto;text-align:center;}
+.ab-cta .ab-btn{margin-top:var(--s5);}
+
+/* 9. FOOTER — 다크 */
+.ab-foot{background:var(--navy-dark);color:rgba(255,255,255,.72);padding-block:var(--s7) var(--s5);}
+.ab-foot .ab-brand{color:#fff;}
+.ab-foot-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:var(--s4);align-items:flex-start;}
+.ab-foot-links{display:flex;flex-wrap:wrap;gap:var(--s4);font-size:.8125rem;}
+.ab-foot-links a:hover{color:#fff;}
+.ab-bizinfo{margin-top:var(--s5);padding-top:var(--s4);border-top:1px solid rgba(255,255,255,.14);font-size:.72rem;line-height:1.9;max-width:74ch;}
 .ab-pol{margin-top:10px;display:flex;gap:14px;}
 .ab-pol a{text-decoration:underline;text-underline-offset:3px;}
 
