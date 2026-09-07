@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { LogoWatermark } from "@/components/brand/Logo";
 import { SearchForm } from "@/components/search/SearchForm";
 import { TourCard } from "@/components/search/TourCard";
+import { WhereToGoGuide } from "@/components/home/WhereToGoGuide";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
@@ -38,6 +39,8 @@ const Index = () => {
   // 아래 "모집중인 투어" 목록을 바로 필터링한다. 복수 선택 가능.
   // (React Hooks 규칙상 아래 조건부 return들보다 반드시 먼저 호출되어야 한다.)
   const [months, setMonths] = useState<number[]>([]);
+  // 홈에서는 모집중인 투어를 최대 5개만 보여주고, "더보기"를 누르면 전체를 펼친다.
+  const [showAllTours, setShowAllTours] = useState(false);
 
   // 로그인 역할에 따라 첫 화면을 분기한다: 강사는 대시보드, 관리자는 관리자 홈,
   // 비회원/다이버만 이 투어 홈 화면을 그대로 본다.
@@ -55,6 +58,8 @@ const Index = () => {
     .filter((t) => !t.adminStatus && t.status === "open")
     .filter((t) => months.length === 0 || months.includes(new Date(t.startDate).getMonth()));
   const pinnedNotice = notices.find((n) => n.pinned);
+  const visibleTours = showAllTours ? tours : tours.slice(0, 5);
+  const hiddenTourCount = tours.length - visibleTours.length;
 
   return (
     <div className="min-h-full bg-gradient-surface pb-20 md:pb-12">
@@ -102,11 +107,24 @@ const Index = () => {
             <span className="text-xs text-muted-foreground md:text-sm">{tours.length}개 투어</span>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
-            {tours.map((tour) => (
+            {visibleTours.map((tour) => (
               <TourCard key={tour.id} tour={tour} />
             ))}
           </div>
+          {tours.length > 5 && (
+            <button
+              type="button"
+              onClick={() => setShowAllTours((v) => !v)}
+              className="flex w-full items-center justify-center gap-1 rounded-xl border border-border bg-card py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50"
+            >
+              {showAllTours ? "접기" : `더보기 (${hiddenTourCount}개)`}
+              <ChevronRight className={showAllTours ? "h-4 w-4 -rotate-90" : "h-4 w-4 rotate-90"} />
+            </button>
+          )}
         </section>
+
+        {/* 어디로 갈지 고민되나요? — 스쿠버·프리다이빙 최적 시기 카드뉴스 */}
+        <WhereToGoGuide />
 
         {/* ALL BLUE만의 특별함 — 시안 하단 피처 스트립 */}
         <section className="space-y-3 pt-2 md:space-y-5">

@@ -1,4 +1,4 @@
-import Index from "./pages/Index";
+import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -58,7 +58,7 @@ export const routers = [
     path: "/",
     element: <RootLayout />,
     children: [
-      { index: true, name: "home", element: <Index /> },
+      { index: true, name: "home", element: <Home /> },
       { path: "auth", name: "auth", element: <Auth /> },
       { path: "reset-password", name: "reset-password", element: <ResetPassword /> },
       { path: "complete-profile", name: "complete-profile", element: <CompleteProfile /> },
