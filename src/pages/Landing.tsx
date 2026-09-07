@@ -539,7 +539,7 @@ export default function Landing() {
           {/* B. 어디로 가고 싶으세요 — 배너 하나. 클릭 시 전용 뷰(Explorer) */}
           <button
             type="button"
-            className="ab-banner r"
+            className="ab-banner"
             style={{ marginTop: "var(--s6)" }}
             onClick={() => setExplorer("guide")}
           >
@@ -559,7 +559,7 @@ export default function Landing() {
       {/* 3. 리브어보드 — 배너 하나. 클릭 시 전용 뷰(Explorer) */}
       <section id="liveaboard" className="ab-sec ab-lb">
         <div className="wrap">
-          <button type="button" className="ab-banner r" onClick={() => setExplorer("liveaboard")}>
+          <button type="button" className="ab-banner" onClick={() => setExplorer("liveaboard")}>
             <img src="/landing/boat.jpg" alt="" onError={handleImageFallback} loading="lazy" />
             <div className="ab-banner-body">
               <p className="ab-banner-eyebrow">Liveaboard</p>
