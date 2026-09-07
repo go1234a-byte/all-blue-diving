@@ -420,7 +420,11 @@ export default function Landing() {
                   <p className="ab-bigcard-eyebrow">리브어보드</p>
                   <h3>{rg.name}</h3>
                   <p className="ab-bigcard-oneliner">{rg.summary}</p>
-                  <p className="ab-bigcard-meta">{rg.durations[0]} ~ {rg.durations[rg.durations.length - 1]}</p>
+                  <p className="ab-bigcard-meta">
+                    {rg.durations.length > 1
+                      ? `${rg.durations[0]} ~ ${rg.durations[rg.durations.length - 1]}`
+                      : rg.durations[0]}
+                  </p>
                   <span className="ab-bigcard-more">기간·여정 보기 →</span>
                 </div>
               </button>
