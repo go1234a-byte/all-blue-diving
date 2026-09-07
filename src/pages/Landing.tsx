@@ -548,7 +548,7 @@ export default function Landing() {
               <p className="ab-banner-eyebrow">Dive Point Guide</p>
               <h3>이번 달, 어디로 떠날까요?</h3>
               <p className="ab-banner-teaser">
-                {MONTH_LABELS_KR[guideMonth]}엔 {monthPoints.slice(0, 2).map((p) => p.region.split(/[ ,(]/)[0]).join(" · ")}가 좋아요.
+                {MONTH_LABELS_KR[guideMonth]}엔 {monthPoints.slice(0, 3).map((p) => p.region.split(/[ ,(]/)[0]).join(" · ")} 쪽 바다가 좋아요.
               </p>
               <span className="ab-banner-cta">다이빙 포인트 둘러보기 →</span>
             </div>
@@ -924,7 +924,7 @@ const CSS = `
 /* B / 리브어보드 배너 (홈에는 이것만, 클릭 시 전용 뷰) */
 .ab-banner{display:flex;align-items:flex-end;position:relative;width:100%;text-align:left;border:0;padding:0;border-radius:20px;overflow:hidden;cursor:pointer;font:inherit;min-height:50svh;box-shadow:0 24px 48px -24px rgba(20,50,77,.4);}
 .ab-banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1);}
-.ab-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,27,46,.15) 0%,rgba(10,27,46,.35) 55%,rgba(10,27,46,.85) 100%);}
+.ab-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,27,46,.1) 0%,rgba(10,27,46,.25) 42%,rgba(10,27,46,.78) 78%,rgba(10,27,46,.94) 100%);}
 .ab-banner:hover img{transform:scale(1.04);}
 .ab-banner:focus-visible{outline:2px solid var(--turq);outline-offset:2px;}
 .ab-banner-body{position:relative;padding:var(--s7) var(--s6);max-width:52ch;color:#fff;}
