@@ -924,13 +924,13 @@ const CSS = `
 /* B / 리브어보드 배너 (홈에는 이것만, 클릭 시 전용 뷰) */
 .ab-banner{display:flex;align-items:flex-end;position:relative;width:100%;text-align:left;border:0;padding:0;border-radius:20px;overflow:hidden;cursor:pointer;font:inherit;min-height:50svh;box-shadow:0 24px 48px -24px rgba(20,50,77,.4);}
 .ab-banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1);}
-.ab-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,27,46,.1) 0%,rgba(10,27,46,.25) 42%,rgba(10,27,46,.78) 78%,rgba(10,27,46,.94) 100%);}
+.ab-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,27,46,.12) 0%,rgba(10,27,46,.3) 34%,rgba(10,27,46,.72) 62%,rgba(10,27,46,.97) 100%);}
 .ab-banner:hover img{transform:scale(1.04);}
 .ab-banner:focus-visible{outline:2px solid var(--turq);outline-offset:2px;}
-.ab-banner-body{position:relative;padding:var(--s7) var(--s6);max-width:52ch;color:#fff;}
-.ab-banner-eyebrow{font-size:.75rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#BFEFF5;}
+.ab-banner-body{position:relative;padding:var(--s7) var(--s6);max-width:52ch;color:#fff;text-shadow:0 1px 14px rgba(10,27,46,.55);}
+.ab-banner-eyebrow{font-size:.75rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#CFF3F8;}
 .ab-banner-body h3{margin-top:10px;font-size:clamp(1.5rem,3.2vw,2.375rem);font-weight:800;color:#fff;line-height:var(--lh-head);}
-.ab-banner-teaser{margin-top:12px;font-size:1rem;line-height:1.6;color:rgba(255,255,255,.92);}
+.ab-banner-teaser{margin-top:12px;font-size:1rem;line-height:1.6;color:#fff;}
 .ab-banner-cta{display:inline-block;margin-top:var(--s4);font-size:1rem;font-weight:700;color:#fff;border-bottom:2px solid var(--turq);padding-bottom:3px;}
 @media(max-width:640px){.ab-banner{min-height:92svh;border-radius:16px;}}
 
