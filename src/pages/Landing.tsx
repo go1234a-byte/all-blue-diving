@@ -7,8 +7,8 @@ import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { formatDateRangeKR } from "@/lib/dates";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
-import { DIVE_POINTS, GUIDE_BY_MONTH } from "@/content/divePointGuide";
-import { LIVEABOARD_REGIONS } from "@/content/liveaboardGuide";
+import { DIVE_POINTS, GUIDE_BY_MONTH, type DivePoint } from "@/content/divePointGuide";
+import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardGuide";
 import type { Tour } from "@/types";
 
 /**
@@ -85,6 +85,94 @@ function tourDifficulty(t: Tour): string {
   return "입문 가능";
 }
 
+function useIsMobile() {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const on = () => setM(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return m;
+}
+
+/**
+ * 다이빙 포인트 가이드 · 리브어보드 공용 상세 뷰.
+ * 데스크톱/태블릿 = 중앙 모달, 모바일 = 하단 바텀시트(스와이프 다운으로 닫힘).
+ * 예약 요소(가격·CTA) 없음 — 순수 정보.
+ */
+function DetailSheet({
+  open,
+  onClose,
+  title,
+  subtitle,
+  images,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  subtitle?: string;
+  images: string[];
+  children: ReactNode;
+}) {
+  const dragStart = useRef<number | null>(null);
+  const [dragY, setDragY] = useState(0);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div className="ab-sheet-overlay" onClick={onClose} role="presentation">
+      <div
+        className="ab-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        style={dragY ? { transform: `translateY(${dragY}px)` } : undefined}
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => {
+          dragStart.current = e.touches[0].clientY;
+        }}
+        onTouchMove={(e) => {
+          if (dragStart.current == null) return;
+          const dy = e.touches[0].clientY - dragStart.current;
+          if (dy > 0) setDragY(dy);
+        }}
+        onTouchEnd={() => {
+          if (dragY > 90) onClose();
+          setDragY(0);
+          dragStart.current = null;
+        }}
+      >
+        <div className="ab-sheet-grip" aria-hidden="true" />
+        <button className="ab-sheet-x" onClick={onClose} aria-label="닫기">✕</button>
+        <div className="ab-sheet-gallery">
+          {images.map((src) => (
+            <img key={src} src={src} alt="" onError={handleImageFallback} />
+          ))}
+        </div>
+        <div className="ab-sheet-body">
+          <h3>{title}</h3>
+          {subtitle && <p className="ab-sheet-sub">{subtitle}</p>}
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** 강사·후기 공용 가로 슬라이드 캐러셀. 데스크톱 3~4 / 태블릿 2 / 모바일 1.1장 + 스와이프. */
 function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
   const rowRef = useRef<HTMLDivElement>(null);
@@ -119,11 +207,18 @@ export default function Landing() {
   const profileName = (id: string) => publicProfiles.find((p) => p.id === id)?.name ?? "다녀온 다이버";
   const rootRef = useReveal();
 
+  const isMobile = useIsMobile();
+  const initialCount = isMobile ? 3 : 5;
+
   const [heroIdx, setHeroIdx] = useState(0);
   const [q, setQ] = useState("");
   const [month, setMonth] = useState<number | "">("");
   const [guideMonth, setGuideMonth] = useState(() => new Date().getMonth());
-  const [guidePages, setGuidePages] = useState(1); // 무한 스크롤 페이지 수
+  const [guideCount, setGuideCount] = useState(initialCount); // 더보기로 늘어남
+  const [lbCount, setLbCount] = useState(initialCount);
+  const [detail, setDetail] = useState<
+    { kind: "point"; data: DivePoint } | { kind: "region"; data: LiveaboardRegion } | null
+  >(null);
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -150,33 +245,10 @@ export default function Landing() {
     () =>
       (GUIDE_BY_MONTH[guideMonth] ?? [])
         .map((id) => DIVE_POINTS[id])
-        .filter((p): p is (typeof DIVE_POINTS)[string] => Boolean(p)),
+        .filter((p): p is DivePoint => Boolean(p)),
     [guideMonth],
   );
-  // 무한 스크롤: 그 달 포인트를 페이지 수만큼 반복해서 계속 이어붙인다(예시 콘텐츠).
-  const guideList = useMemo(() => {
-    const out: { pt: (typeof DIVE_POINTS)[string]; key: string }[] = [];
-    for (let p = 0; p < guidePages; p++) {
-      monthPoints.forEach((pt) => out.push({ pt, key: `${pt.id}-${p}` }));
-    }
-    return out;
-  }, [monthPoints, guidePages]);
-
-  useEffect(() => setGuidePages(1), [guideMonth]); // 달 바꾸면 처음부터
-
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) setGuidePages((p) => Math.min(p + 1, 6));
-      },
-      { rootMargin: "400px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  useEffect(() => setGuideCount(initialCount), [guideMonth, initialCount]); // 달 바꾸면 처음 개수로
 
   const carouselInstructors = useMemo(() => {
     const verified = instructors.filter((i) => i.verified);
@@ -272,7 +344,7 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* 2. 다이빙 포인트 가이드 — 예약 데이터와 무관, 월 선택 + 무한 스크롤 */}
+      {/* 2. 다이빙 포인트 가이드 — 예약 데이터와 무관, 월 선택 + 더보기 + 카드 클릭 상세 */}
       <section id="guide" className="ab-sec ab-guide">
         <div className="wrap">
           <div className="ab-sec-head r">
@@ -280,7 +352,7 @@ export default function Landing() {
               <h2>이번 달, 어디로 떠날까요</h2>
               <p className="ab-sub">
                 아직 목적지를 못 정했다면. 달을 골라 전 세계 유명 다이빙 포인트를 둘러보세요.
-                예약이 아니라 “알아가는” 코너입니다.
+                카드를 누르면 자세한 정보가 열립니다. 예약이 아니라 “알아가는” 코너입니다.
               </p>
             </div>
             <span className="ab-tag">예시 콘텐츠 · 게시 전 확인 필요</span>
@@ -300,33 +372,31 @@ export default function Landing() {
             ))}
           </div>
 
-          <div className="ab-guide-grid">
-            {guideList.map(({ pt, key }) => (
-              <article className="ab-gcard r" key={key}>
-                <div className="ab-gcard-img">
+          <div className="ab-big-grid">
+            {monthPoints.slice(0, guideCount).map((pt) => (
+              <button type="button" className="ab-bigcard r" key={pt.id} onClick={() => setDetail({ kind: "point", data: pt })}>
+                <div className="ab-bigcard-img">
                   <img src={pt.image} alt={pt.region} onError={handleImageFallback} loading="lazy" />
                 </div>
-                <div className="ab-gcard-body">
-                  <p className="ab-gcard-eyebrow">{MONTH_LABELS_KR[guideMonth]} 추천</p>
+                <div className="ab-bigcard-body">
+                  <p className="ab-bigcard-eyebrow">{MONTH_LABELS_KR[guideMonth]} 추천</p>
                   <h3>{pt.region}</h3>
-                  <p className="ab-gcard-oneliner">{pt.oneLiner}</p>
-                  <p className="ab-gcard-water">{pt.water}</p>
-                  <div className="ab-life">
-                    {pt.life.map((l) => (
-                      <span key={l}>{l}</span>
-                    ))}
-                  </div>
+                  <p className="ab-bigcard-oneliner">{pt.oneLiner}</p>
+                  <p className="ab-bigcard-meta">{pt.water}</p>
+                  <span className="ab-bigcard-more">자세히 보기 →</span>
                 </div>
-              </article>
+              </button>
             ))}
           </div>
-          <div ref={sentinelRef} className="ab-sentinel" aria-hidden="true">
-            {guidePages < 6 ? "더 많은 포인트를 불러오는 중…" : "이번 달 추천 포인트를 모두 보셨어요"}
-          </div>
+          {monthPoints.length > guideCount && (
+            <button type="button" className="ab-more r" onClick={() => setGuideCount((c) => c + (isMobile ? 3 : 6))}>
+              더보기 ({monthPoints.length - guideCount})
+            </button>
+          )}
         </div>
       </section>
 
-      {/* 3. 리브어보드 정보 — 국가별 기간/여정. 예약 카드·가격·CTA 없음 */}
+      {/* 3. 리브어보드 정보 — 국가별. 카드는 미리보기, 클릭 시 상세(기간·여정). 예약 CTA 없음 */}
       <section id="liveaboard" className="ab-sec ab-lb">
         <div className="wrap">
           <div className="ab-sec-head r">
@@ -334,33 +404,33 @@ export default function Landing() {
               <h2>리브어보드, 나라별로 살펴보기</h2>
               <p className="ab-sub">
                 보트에서 숙식하며 여러 날에 걸쳐 이동하는 다이빙 방식입니다.
-                어느 나라에서 며칠짜리로, 어떤 포인트를 도는지 미리 감을 잡아보세요.
+                카드를 누르면 며칠짜리 코스가 있고 어떤 포인트를 도는지 볼 수 있습니다.
               </p>
             </div>
             <span className="ab-tag">예시 콘텐츠 · 게시 전 확인 필요</span>
           </div>
 
-          <div className="ab-lb-grid">
-            {LIVEABOARD_REGIONS.map((rg) => (
-              <article className="ab-lbcard r" key={rg.id}>
-                <div className="ab-lbcard-img">
+          <div className="ab-big-grid">
+            {LIVEABOARD_REGIONS.slice(0, lbCount).map((rg) => (
+              <button type="button" className="ab-bigcard r" key={rg.id} onClick={() => setDetail({ kind: "region", data: rg })}>
+                <div className="ab-bigcard-img">
                   <img src={rg.image} alt={rg.name} onError={handleImageFallback} loading="lazy" />
                 </div>
-                <div className="ab-lbcard-body">
+                <div className="ab-bigcard-body">
+                  <p className="ab-bigcard-eyebrow">리브어보드</p>
                   <h3>{rg.name}</h3>
-                  <p className="ab-lbcard-summary">{rg.summary}</p>
-                  <p className="ab-lbcard-label">기간 옵션</p>
-                  <div className="ab-chips">
-                    {rg.durations.map((d) => (
-                      <span key={d}>{d}</span>
-                    ))}
-                  </div>
-                  <p className="ab-lbcard-label">대표 여정</p>
-                  <p className="ab-lbcard-route">{rg.route.join("  →  ")}</p>
+                  <p className="ab-bigcard-oneliner">{rg.summary}</p>
+                  <p className="ab-bigcard-meta">{rg.durations[0]} ~ {rg.durations[rg.durations.length - 1]}</p>
+                  <span className="ab-bigcard-more">기간·여정 보기 →</span>
                 </div>
-              </article>
+              </button>
             ))}
           </div>
+          {LIVEABOARD_REGIONS.length > lbCount && (
+            <button type="button" className="ab-more r" onClick={() => setLbCount((c) => c + (isMobile ? 3 : 6))}>
+              더보기 ({LIVEABOARD_REGIONS.length - lbCount})
+            </button>
+          )}
 
           <div className="ab-lb-day r">
             <p className="ab-lbcard-label">선상 하루 일과 (예시)</p>
@@ -375,6 +445,48 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* 상세 뷰 (가이드·리브어보드 공용) */}
+      <DetailSheet
+        open={detail !== null}
+        onClose={() => setDetail(null)}
+        title={detail ? (detail.kind === "point" ? detail.data.region : detail.data.name) : ""}
+        subtitle={detail?.kind === "point" ? detail.data.oneLiner : detail?.data.summary}
+        images={detail ? [detail.data.image, ...detail.data.gallery] : []}
+      >
+        {detail?.kind === "point" && (
+          <>
+            <p className="ab-sheet-p">{detail.data.detail}</p>
+            <dl className="ab-sheet-dl">
+              <div><dt>수온 · 시야</dt><dd>{detail.data.water}</dd></div>
+              <div><dt>추천 레벨</dt><dd>{detail.data.level}</dd></div>
+            </dl>
+            <p className="ab-lbcard-label">만날 수 있는 해양생물 (예시)</p>
+            <div className="ab-chips">
+              {detail.data.life.map((l) => (
+                <span key={l}>{l}</span>
+              ))}
+            </div>
+          </>
+        )}
+        {detail?.kind === "region" && (
+          <>
+            <p className="ab-sheet-p">{detail.data.detail}</p>
+            <p className="ab-lbcard-label">기간 옵션 (예시)</p>
+            <div className="ab-chips">
+              {detail.data.durations.map((d) => (
+                <span key={d}>{d}</span>
+              ))}
+            </div>
+            <p className="ab-lbcard-label">대표 여정 (예시)</p>
+            <ol className="ab-sheet-route">
+              {detail.data.route.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ol>
+          </>
+        )}
+      </DetailSheet>
 
       {/* 4. 브랜드 인트로 */}
       <section id="story" className="ab-sec ab-intro">
@@ -660,45 +772,62 @@ const CSS = `
 .ab-months button{flex:0 0 auto;background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;color:var(--text-2);font-family:inherit;font-size:.875rem;font-weight:700;padding:9px 16px;cursor:pointer;transition:.15s;}
 .ab-months button:hover{color:var(--navy);border-color:var(--turq);}
 .ab-months button.on{background:var(--turq);border-color:var(--turq);color:#fff;}
-.ab-guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);}
-.ab-gcard{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);transition:transform .3s ease,box-shadow .3s ease;}
-.ab-gcard:hover{transform:translateY(-4px);box-shadow:0 20px 40px -22px rgba(20,50,77,.35);}
-.ab-gcard-img{aspect-ratio:16/10;overflow:hidden;}
-.ab-gcard-img img{width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1);}
-.ab-gcard:hover .ab-gcard-img img{transform:scale(1.06);}
-.ab-gcard-body{padding:var(--s4);}
-.ab-gcard-eyebrow{font-size:.6875rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--turq);}
-.ab-gcard-body h3{margin-top:6px;font-size:1.0625rem;}
-.ab-gcard-oneliner{margin-top:8px;font-size:.875rem;line-height:1.55;color:var(--text-2);}
-.ab-gcard-water{margin-top:10px;font-size:.8125rem;font-weight:600;color:var(--navy);}
-.ab-life{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;}
-.ab-life span{font-size:.6875rem;color:#0f8697;background:var(--turq-light);border-radius:999px;padding:4px 10px;}
-.ab-sentinel{margin-top:var(--s5);text-align:center;font-size:.8125rem;color:var(--text-2);}
-@media(max-width:900px){.ab-guide-grid{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:560px){.ab-guide-grid{grid-template-columns:1fr;}}
+/* 큰 카드 그리드 (가이드 + 리브어보드 공용) — 데스크톱 2~3장/줄, 모바일 1장 */
+.ab-big-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);}
+.ab-bigcard{display:flex;flex-direction:column;text-align:left;padding:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg);cursor:pointer;font:inherit;color:inherit;transition:transform .3s ease,box-shadow .3s ease;}
+.ab-bigcard:hover{transform:translateY(-4px);box-shadow:0 24px 48px -24px rgba(20,50,77,.4);}
+.ab-bigcard:focus-visible{outline:2px solid var(--turq);outline-offset:2px;}
+.ab-bigcard-img{aspect-ratio:4/3;overflow:hidden;}
+.ab-bigcard-img img{width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1);}
+.ab-bigcard:hover .ab-bigcard-img img{transform:scale(1.06);}
+.ab-bigcard-body{padding:var(--s4);display:flex;flex-direction:column;gap:6px;flex:1;}
+.ab-bigcard-eyebrow{font-size:.6875rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--turq);}
+.ab-bigcard-body h3{font-size:1.125rem;}
+.ab-bigcard-oneliner{font-size:.9375rem;line-height:1.55;color:var(--text-2);}
+.ab-bigcard-meta{margin-top:auto;padding-top:8px;font-size:.8125rem;font-weight:600;color:var(--navy);}
+.ab-bigcard-more{font-size:.8125rem;font-weight:700;color:var(--turq);}
+.ab-more{display:block;margin:var(--s5) auto 0;padding:12px 28px;border-radius:8px;border:1px solid var(--turq);background:var(--bg);color:var(--turq);font:inherit;font-weight:700;font-size:.9375rem;cursor:pointer;transition:.15s;}
+.ab-more:hover{background:var(--turq-light);}
+@media(max-width:1024px){.ab-big-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.ab-big-grid{grid-template-columns:1fr;}}
 
 /* 3. LIVEABOARD (soft bg) */
 .ab-lb{background:var(--bg-soft);}
-.ab-lb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);}
-.ab-lbcard{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
-.ab-lbcard-img{aspect-ratio:16/9;overflow:hidden;}
-.ab-lbcard-img img{width:100%;height:100%;object-fit:cover;}
-.ab-lbcard-body{padding:var(--s4);}
-.ab-lbcard-body h3{font-size:1.0625rem;}
-.ab-lbcard-summary{margin-top:8px;font-size:.875rem;line-height:1.55;color:var(--text-2);}
 .ab-lbcard-label{margin:var(--s4) 0 8px;font-size:.6875rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);}
 .ab-chips{display:flex;flex-wrap:wrap;gap:6px;}
-.ab-chips span{font-size:.75rem;font-weight:600;color:var(--navy);background:var(--turq-light);border-radius:6px;padding:5px 10px;}
-.ab-lbcard-route{font-size:.8125rem;line-height:1.7;color:var(--text-1);}
-.ab-lb-day{margin-top:var(--s6);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:var(--s5);}
+.ab-chips span{font-size:.8125rem;font-weight:600;color:var(--navy);background:var(--turq-light);border-radius:6px;padding:6px 11px;}
+.ab-lb-day{margin-top:var(--s6);background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:var(--s5);}
 .ab-lb-timeline{list-style:none;margin:12px 0 0;padding:0;border-left:2px solid var(--turq-light);}
 .ab-lb-timeline li{position:relative;padding:0 0 var(--s3) var(--s4);}
 .ab-lb-timeline li::before{content:"";position:absolute;left:-5px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--turq);}
 .ab-lb-timeline li:last-child{padding-bottom:0;}
 .ab-lb-time{display:inline-block;min-width:52px;font-family:'Plus Jakarta Sans',monospace;font-size:.8125rem;font-weight:700;color:var(--turq);}
-.ab-lb-lbl{font-size:.875rem;color:var(--text-1);}
-@media(max-width:900px){.ab-lb-grid{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:560px){.ab-lb-grid{grid-template-columns:1fr;}}
+.ab-lb-lbl{font-size:.9375rem;color:var(--text-1);}
+
+/* 상세 시트 (모달 / 모바일 바텀시트) */
+.ab-sheet-overlay{position:fixed;inset:0;z-index:100;background:rgba(10,27,46,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:var(--s4);animation:absheetfade .2s ease;}
+@keyframes absheetfade{from{opacity:0;}to{opacity:1;}}
+.ab-sheet{position:relative;background:var(--bg);border-radius:18px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 40px 80px -20px rgba(10,27,46,.5);animation:absheetup .28s cubic-bezier(.22,1,.36,1);}
+@keyframes absheetup{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.ab-sheet-grip{display:none;}
+.ab-sheet-x{position:absolute;right:12px;top:12px;z-index:2;width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.9);color:var(--navy);font-size:.9rem;cursor:pointer;}
+.ab-sheet-gallery{display:flex;gap:2px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;}
+.ab-sheet-gallery::-webkit-scrollbar{display:none;}
+.ab-sheet-gallery img{scroll-snap-align:start;flex:0 0 100%;aspect-ratio:16/10;object-fit:cover;}
+.ab-sheet-body{padding:var(--s5);}
+.ab-sheet-body h3{font-size:1.375rem;}
+.ab-sheet-sub{margin-top:8px;font-size:.9375rem;color:var(--text-2);line-height:1.55;}
+.ab-sheet-p{margin-top:var(--s4);font-size:.9375rem;line-height:1.7;color:var(--text-1);}
+.ab-sheet-dl{margin:var(--s4) 0 0;display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);}
+.ab-sheet-dl dt{font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);}
+.ab-sheet-dl dd{margin:4px 0 0;font-size:.875rem;font-weight:600;color:var(--navy);}
+.ab-sheet-route{margin:8px 0 0;padding-left:20px;font-size:.9375rem;line-height:1.9;color:var(--text-1);}
+@media(max-width:640px){
+  .ab-sheet-overlay{align-items:flex-end;padding:0;}
+  .ab-sheet{max-width:none;border-radius:20px 20px 0 0;max-height:92vh;animation:absheetslide .3s cubic-bezier(.22,1,.36,1);}
+  @keyframes absheetslide{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  .ab-sheet-grip{display:block;width:40px;height:4px;border-radius:2px;background:var(--line);margin:10px auto 0;}
+}
 
 /* 4. INTRO */
 .ab-intro{background:var(--bg);}
