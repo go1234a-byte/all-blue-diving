@@ -20,11 +20,17 @@ import type { Tour } from "@/types";
  * 골드(#D4AF6A)는 헤어라인·뱃지 5% 이내. 이미지는 임시 라이선스 스톡(public/landing/*).
  */
 
-const HERO_LINES = [
-  "팔라우, 만타레이와 눈을 마주치는 순간",
-  "몰디브, 수면 아래로 빛이 쏟아지는 채널",
-  "세부, 정어리 수백만 마리의 소용돌이 속으로",
+/** 히어로 슬라이드 — 목적지 + 감각 카피 + 배경 실사. 로드 시 무작위로 시작해 무작위로 전환. */
+const HERO_SLIDES = [
+  { headline: "팔라우, 빛이 쏟아지는 블루워터 한가운데", image: "/landing/hero.jpg", alt: "수면에서 빛이 내려오는 푸른 바다" },
+  { headline: "라자암팟, 세계에서 가장 화려한 산호 정원", image: "/landing/coral.jpg", alt: "형형색색의 연산호 리프" },
+  { headline: "세부, 정어리 수백만 마리의 소용돌이 속으로", image: "/landing/scuba1.jpg", alt: "물고기 떼 사이의 스쿠버 다이버" },
+  { headline: "몰디브, 수면 아래로 이어지는 리프 채널", image: "/landing/descend.jpg", alt: "리프 벽을 따라 하강하는 다이버" },
+  { headline: "시파단, 백사장 위를 순찰하는 리프샤크", image: "/landing/instructor.jpg", alt: "모래 바닥 위를 헤엄치는 상어" },
+  { headline: "통가, 혹등고래가 숨을 고르는 수면", image: "/landing/whale.jpg", alt: "수면 위로 솟구치는 혹등고래" },
 ];
+/** 세로 공간 확보용 — 가장 긴 헤드라인. */
+const HERO_GHOST = HERO_SLIDES[2].headline;
 
 /** 리브어보드 하루 일과 — 예시. 상품마다 다릅니다. */
 const LIVEABOARD_DAY = [
@@ -377,7 +383,8 @@ export default function Landing() {
   const profileName = (id: string) => publicProfiles.find((p) => p.id === id)?.name ?? "다녀온 다이버";
   const rootRef = useReveal();
 
-  const [heroIdx, setHeroIdx] = useState(0);
+  const [heroIdx, setHeroIdx] = useState(() => Math.floor(Math.random() * HERO_SLIDES.length));
+  const heroPaused = useRef(false);
   const [q, setQ] = useState("");
   const [month, setMonth] = useState<number | "">("");
   const [guideMonth, setGuideMonth] = useState(() => new Date().getMonth());
@@ -389,7 +396,14 @@ export default function Landing() {
 
   useEffect(() => {
     if (reduced) return;
-    const t = setInterval(() => setHeroIdx((i) => (i + 1) % HERO_LINES.length), 3600);
+    const t = setInterval(() => {
+      if (heroPaused.current) return;
+      setHeroIdx((cur) => {
+        let n = cur;
+        while (n === cur) n = Math.floor(Math.random() * HERO_SLIDES.length);
+        return n;
+      });
+    }, 6500);
     return () => clearInterval(t);
   }, [reduced]);
 
@@ -474,20 +488,33 @@ export default function Landing() {
       </nav>
 
       {/* 1. HERO — 페이지에서 유일한 다크 영역(오버레이) */}
-      <header className="ab-hero">
-        <div className="ab-hero-media">
-          <img
-            src="/landing/hero.jpg"
-            alt="수면 아래로 하강하는 다이버"
-            style={reduced ? undefined : { transform: `translateY(${scrollY * 0.16}px) scale(1.06)` }}
-          />
+      <header
+        className="ab-hero"
+        onMouseEnter={() => { heroPaused.current = true; }}
+        onMouseLeave={() => { heroPaused.current = false; }}
+        onTouchStart={() => { heroPaused.current = true; }}
+        onTouchEnd={() => { heroPaused.current = false; }}
+      >
+        <div
+          className="ab-hero-media"
+          style={reduced ? undefined : { transform: `translateY(${scrollY * 0.16}px) scale(1.06)` }}
+        >
+          {HERO_SLIDES.map((s, i) => (
+            <img
+              key={s.image}
+              src={s.image}
+              alt={i === heroIdx ? s.alt : ""}
+              aria-hidden={i === heroIdx ? undefined : true}
+              className={i === heroIdx ? "is-on" : undefined}
+            />
+          ))}
           <div className="ab-hero-scrim" />
         </div>
         <div className="wrap ab-hero-inner">
           <p className="ab-eyebrow light">Diving Tour Platform · Est. 2026</p>
           <h1 className="ab-hero-h">
-            <span key={heroIdx} className="ab-hero-line on">{HERO_LINES[heroIdx]}</span>
-            <span className="ab-hero-line ghost">{HERO_LINES[2]}</span>
+            <span key={heroIdx} className="ab-hero-line on">{HERO_SLIDES[heroIdx].headline}</span>
+            <span className="ab-hero-line ghost">{HERO_GHOST}</span>
           </h1>
           <p className="ab-hero-lede">
             인증된 강사의 스쿠버·프리다이빙 투어만 모았습니다. 일정·강사·안전 기준을 비교하고 바로 예약하세요.
@@ -934,8 +961,10 @@ const CSS = `
 
 /* HERO */
 .ab-hero{position:relative;min-height:min(88svh,760px);display:flex;align-items:flex-end;isolation:isolate;}
-.ab-hero-media{position:absolute;inset:0;z-index:-1;overflow:hidden;}
-.ab-hero-media img{width:100%;height:100%;object-fit:cover;filter:saturate(1.02) contrast(1.02);will-change:transform;}
+.ab-hero-media{position:absolute;inset:0;z-index:-1;overflow:hidden;will-change:transform;}
+.ab-hero-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.02) contrast(1.02);opacity:0;transition:opacity .9s ease;}
+.ab-hero-media img.is-on{opacity:1;}
+@media (prefers-reduced-motion:reduce){.ab-hero-media img{transition:none;}}
 .ab-hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,27,46,.5) 0%,rgba(10,27,46,.2) 40%,rgba(10,27,46,.72) 100%);}
 .ab-hero-inner{padding-top:120px;padding-bottom:var(--s7);width:100%;color:#fff;}
 .ab-hero-h{position:relative;font-size:var(--fs-h1);font-weight:800;max-width:20ch;color:#fff;}
