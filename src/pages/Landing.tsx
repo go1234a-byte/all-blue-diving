@@ -804,8 +804,12 @@ export default function Landing() {
                   <div className="ab-tcard-body">
                     <p className="ab-tcard-loc">{t.country} · {t.site}</p>
                     <h3>{t.title}</h3>
+                    <p className="ab-tcard-date">{formatDateRangeKR(t.startDate, t.endDate)} 출발</p>
+                    {(() => {
+                      const nights = Math.max(1, Math.round((+new Date(t.endDate) - +new Date(t.startDate)) / 86400000));
+                      return <p className="ab-tcard-nights">{nights}박 {nights + 1}일</p>;
+                    })()}
                     <div className="ab-tcard-meta">
-                      <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
                       {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
                       {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
                       <span>{tourDifficulty(t)}</span>
@@ -1210,7 +1214,9 @@ const CSS = `
 .ab-tcard-loc{font-size:.6875rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);font-weight:600;}
 .ab-tcard-body h3{margin-top:6px;font-size:1.0625rem;}
 .ab-tcard.feat .ab-tcard-body h3{font-size:1.25rem;}
-.ab-tcard-meta{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8125rem;color:var(--text-2);}
+.ab-tcard-date{margin-top:10px;font-size:.8125rem;color:var(--text-2);}
+.ab-tcard-nights{margin-top:2px;font-size:.8125rem;font-weight:700;color:var(--text-1);}
+.ab-tcard-meta{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8125rem;color:var(--text-2);}
 .ab-tcard-recruit{margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.75rem;color:var(--text-2);}
 .ab-tcard-recruit span:last-child{font-weight:800;border-radius:5px;padding:2px 7px;}
 .ab-tcard-recruit .ok{background:var(--turq-light);color:var(--navy);}
