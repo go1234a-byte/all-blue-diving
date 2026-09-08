@@ -811,6 +811,20 @@ export default function Landing() {
                       <span>{tourDifficulty(t)}</span>
                     </div>
                     <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
+                    {(() => {
+                      const opts = t.customOptions.filter((o) => o.isActive);
+                      if (!t.inclusions.length && !opts.length) return null;
+                      return (
+                        <div className="ab-tcard-incl">
+                          {t.inclusions.length > 0 && (
+                            <p><b>필수</b><span>{t.inclusions.slice(0, 3).join(" · ")}{t.inclusions.length > 3 ? ` 외 ${t.inclusions.length - 3}` : ""}</span></p>
+                          )}
+                          {opts.length > 0 && (
+                            <p><b>선택</b><span>{opts.slice(0, 3).map((o) => o.name).join(" · ")}{opts.length > 3 ? ` 외 ${opts.length - 3}` : ""}</span></p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </Link>
               ))}
@@ -1186,6 +1200,10 @@ const CSS = `
 .ab-tcard.feat .ab-tcard-body h3{font-size:1.25rem;}
 .ab-tcard-meta{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8125rem;color:var(--text-2);}
 .ab-tcard-price{margin-top:12px;font-weight:800;color:var(--turq);font-size:1rem;}
+.ab-tcard-incl{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px;}
+.ab-tcard-incl p{display:flex;gap:6px;align-items:baseline;font-size:.75rem;line-height:1.4;color:var(--text-2);margin:0;}
+.ab-tcard-incl b{flex:0 0 auto;font-size:.625rem;font-weight:800;letter-spacing:.02em;color:var(--turq);background:var(--turq-light);border-radius:4px;padding:2px 5px;}
+.ab-tcard-incl p span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 @media(max-width:900px){.ab-bento{grid-template-columns:repeat(2,1fr);}.ab-tcard.feat{grid-column:span 2;}}
 @media(max-width:560px){.ab-bento{grid-template-columns:1fr;}.ab-tcard.feat{grid-column:span 1;}}
 
