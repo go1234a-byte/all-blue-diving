@@ -205,7 +205,10 @@ function Explorer({
       document.body.style.overflow = prev;
       if (window.history.state?.abExplorer) window.history.back();
     };
-  }, [onClose]);
+    // 열릴 때 1회 / 닫힐 때 1회만. onClose 는 매 렌더 새 함수라 deps 에 넣으면
+    // 히어로 캐러셀 타이머 리렌더마다 pushState/back 이 반복돼 WebView 히스토리가 깨진다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="ab-explorer">
@@ -430,7 +433,7 @@ export default function Landing() {
   useEffect(() => {
     if (reduced) return;
     const t = setInterval(() => {
-      if (heroPaused.current) return;
+      if (heroPaused.current || explorer) return; // 전체화면 뷰가 열려 있으면 히어로는 안 보이니 리렌더 낭비 금지
       setHeroIdx((cur) => {
         let n = cur;
         while (n === cur) n = Math.floor(Math.random() * HERO_SLIDES.length);
@@ -438,7 +441,7 @@ export default function Landing() {
       });
     }, 6500);
     return () => clearInterval(t);
-  }, [reduced]);
+  }, [reduced, explorer]);
 
   useEffect(() => {
     const on = () => setScrollY(window.scrollY);
