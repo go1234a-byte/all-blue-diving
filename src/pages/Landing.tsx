@@ -426,7 +426,8 @@ export default function Landing() {
       openTours
         .filter((t) => new Date(t.startDate).getMonth() === guideMonth)
         .sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate))
-        .slice(0, 4),
+        // A는 홈에서 최대 3개만 — 나머지는 "전체보기 →"로
+        .slice(0, 3),
     [openTours, guideMonth],
   );
 
@@ -548,14 +549,10 @@ export default function Landing() {
       {/* 2. 이번달, 어디로 떠날까요 — A: 실제 출발 투어 / B: 정보 카드 (월 선택 공유) */}
       <section id="guide" className="ab-sec ab-guide">
         <div className="wrap">
-          <div className="ab-sec-head r">
-            <div>
-              <h2>이번달, 어디로 떠날까요</h2>
-              <p className="ab-sub">
-                달을 고르면 그 달에 출발하는 실제 투어를 보여드려요. 아직 목적지를 못 정했다면
-                아래에서 전 세계 다이빙 포인트를 둘러보세요.
-              </p>
-            </div>
+          {/* A. 이번달 출발 투어 (실제 TOUR 데이터) — 중복 상단 헤더 제거, 월 탭을 이 헤더에 붙임 */}
+          <div className="ab-subhead r">
+            <h3>{MONTH_LABELS_KR[guideMonth]} 출발 투어</h3>
+            <Link to={`/search?months=${guideMonth}`} className="ab-textlink">전체보기 →</Link>
           </div>
 
           <div className="ab-months r" role="tablist" aria-label="월 선택">
@@ -570,12 +567,6 @@ export default function Landing() {
                 {m}
               </button>
             ))}
-          </div>
-
-          {/* A. 이번달 출발 투어 (실제 TOUR 데이터) */}
-          <div className="ab-subhead r">
-            <h3>{MONTH_LABELS_KR[guideMonth]} 출발 투어</h3>
-            <Link to={`/search?months=${guideMonth}`} className="ab-textlink">전체보기 →</Link>
           </div>
           {monthTours.length === 0 ? (
             <p className="ab-sub r" style={{ marginTop: 0 }}>
