@@ -94,20 +94,6 @@ function tourDifficulty(t: Tour): string {
   return "입문 가능";
 }
 
-const NIGHTS = (t: Tour) =>
-  Math.max(1, Math.round((+new Date(t.endDate) - +new Date(t.startDate)) / 86400000));
-/** 투어 레벨 버킷 — 요구 자격/로그 수 기준(실데이터). */
-function tourLevelBucket(t: Tour): "beginner" | "intermediate" | "advanced" {
-  const c = (t.certificationLevel ?? "").toLowerCase();
-  const log = t.minLogCount ?? 0;
-  if (/tec|테크|deep|딥|master|마스터/.test(c) || log >= 50) return "advanced";
-  if (/aow|advanced|어드밴스|adventure|중급/.test(c) || log >= 20) return "intermediate";
-  return "beginner";
-}
-const LEVEL_KR = { beginner: "초급", intermediate: "중급", advanced: "고급" } as const;
-/** 일정 길이로 추정한 다이빙 횟수(하루 3회 가정) — 구조화 필드가 없어 근사치. */
-const estDives = (t: Tour) => NIGHTS(t) * 3;
-
 /**
  * 다이빙 포인트 가이드 · 리브어보드 공용 상세 뷰.
  * 데스크톱/태블릿 = 중앙 모달, 모바일 = 하단 바텀시트(스와이프 다운으로 닫힘).
@@ -467,72 +453,7 @@ export default function Landing() {
   );
   const bentoTours = openTours.slice(0, 6);
 
-  // A. 이번달 출발 투어 — 기존 openTours 필터에 "그 달 출발"만 추가. 새 쿼리 없음.
-  const monthTours = useMemo(
-    () =>
-      openTours
-        .filter((t) => new Date(t.startDate).getMonth() === guideMonth)
-        .sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate))
-        // A는 홈에서 최대 3개만 — 나머지는 "전체보기 →"로
-        .slice(0, 3),
-    [openTours, guideMonth],
-  );
 
-  // ── Dive Match — 조건만 넣으면 맞는 투어를 점수순으로 ──────────
-  const [dmMonth, setDmMonth] = useState<number | "">("");
-  const [dmRegion, setDmRegion] = useState<"" | "domestic" | "abroad">("");
-  const [dmNights, setDmNights] = useState<"" | "short" | "mid" | "long">("");
-  const [dmDives, setDmDives] = useState<"" | "3" | "5" | "8">("");
-  const [dmBudget, setDmBudget] = useState<"" | "50" | "100" | "200" | "200p">("");
-  const [dmLevel, setDmLevel] = useState<"" | "beginner" | "intermediate" | "advanced">("");
-  const [dmRun, setDmRun] = useState(false);
-
-  const matchResults = useMemo(() => {
-    const rank = (t: Tour) => {
-      let got = 0;
-      let max = 0;
-      if (dmMonth !== "") {
-        max += 2;
-        const d = Math.abs(new Date(t.startDate).getMonth() - dmMonth);
-        const diff = Math.min(d, 12 - d);
-        got += diff === 0 ? 2 : diff === 1 ? 1 : 0;
-      }
-      if (dmRegion) {
-        max += 2;
-        const domestic = t.country === "대한민국" || t.country === "한국";
-        if ((dmRegion === "domestic") === domestic) got += 2;
-      }
-      if (dmNights) {
-        max += 2;
-        const n = NIGHTS(t);
-        const b = n <= 2 ? "short" : n <= 4 ? "mid" : "long";
-        got += b === dmNights ? 2 : Math.abs(["short", "mid", "long"].indexOf(b) - ["short", "mid", "long"].indexOf(dmNights)) === 1 ? 1 : 0;
-      }
-      if (dmDives) {
-        max += 2;
-        const need = Number(dmDives);
-        const e = estDives(t);
-        got += e >= need ? 2 : e >= need - 2 ? 1 : 0;
-      }
-      if (dmBudget) {
-        max += 2;
-        const price = applyPlatformFee(t.basePrice);
-        const cap = dmBudget === "200p" ? Infinity : Number(dmBudget) * 10000;
-        got += price <= cap ? 2 : price <= cap * 1.25 ? 1 : 0;
-      }
-      if (dmLevel) {
-        max += 2;
-        const lv = tourLevelBucket(t);
-        const order = ["beginner", "intermediate", "advanced"];
-        got += lv === dmLevel ? 2 : Math.abs(order.indexOf(lv) - order.indexOf(dmLevel)) === 1 ? 1 : 0;
-      }
-      return { t, pct: max === 0 ? null : Math.round((got / max) * 100) };
-    };
-    return openTours
-      .map(rank)
-      .sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0) || +new Date(a.t.startDate) - +new Date(b.t.startDate))
-      .slice(0, 5);
-  }, [openTours, dmMonth, dmRegion, dmNights, dmDives, dmBudget, dmLevel]);
 
   // ── 막판 자리 · 마감 임박 (실데이터만) ────────────────────────
   const urgentTours = useMemo(() => {
@@ -589,66 +510,8 @@ export default function Landing() {
     navigate(`/search${p.toString() ? `?${p.toString()}` : ""}`);
   };
 
-  /** 잔여석·마감 임박 긴급 배지. 실데이터(정원·확정 인원·모집 마감일)만 사용. */
-  const urgency = (t: Tour): { label: string; hot: boolean } | null => {
-    const seats = Math.max(0, t.maxParticipants - getConfirmedParticipantCount(t.id));
-    if (seats === 0) return { label: "모집 마감", hot: false };
-    const days = (new Date(t.recruitmentDeadline).getTime() - Date.now()) / 86400000;
-    if (seats <= 3) return { label: `🔥 ${seats}자리 남음`, hot: true };
-    if (days >= 0 && days <= 7) return { label: "마감 임박", hot: true };
-    return null;
-  };
 
-  /** 인기 다이빙 지역 — 클릭 시 /search?q= 로 이동. */
-  // 인기 다이빙 지역 카드 — 투어 수는 실데이터로 카운트.
-  const REGION_CARDS = [
-    { name: "제주", img: "/landing/descend.jpg", hint: "연산호 · 문섬 · 범섬" },
-    { name: "세부", img: "/landing/scuba1.jpg", hint: "정어리떼 · 모알보알" },
-    { name: "보홀", img: "/landing/turtle.jpg", hint: "발리카삭 · 파나글라오" },
-    { name: "팔라우", img: "/landing/hero.jpg", hint: "블루코너 · 저먼채널" },
-    { name: "오키나와", img: "/landing/coral.jpg", hint: "게라마 · 블루케이브" },
-    { name: "코모도", img: "/landing/whale.jpg", hint: "만타 포인트 · 바투 볼롱" },
-    { name: "몰디브", img: "/landing/whale.jpg", hint: "만타 클리닝 · 채널 드리프트" },
-  ] as const;
-  const regionCount = (name: string) =>
-    openTours.filter((t) => t.country.includes(name) || t.site.includes(name) || t.title.includes(name)).length;
 
-  // 날짜로 찾기 — 투어가 있는 가장 이른 달을 기본으로.
-  const firstTourDate = useMemo(() => {
-    const ds = openTours.map((t) => new Date(t.startDate)).sort((a, b) => +a - +b);
-    return ds[0] ?? new Date();
-  }, [openTours]);
-  const [calYM, setCalYM] = useState<{ y: number; m: number }>(() => ({
-    y: firstTourDate.getFullYear(),
-    m: firstTourDate.getMonth(),
-  }));
-  // 투어 데이터가 로드되면(첫 렌더 땐 비어 있을 수 있음) 가장 이른 투어 달로 맞춘다.
-  useEffect(() => {
-    setCalYM({ y: firstTourDate.getFullYear(), m: firstTourDate.getMonth() });
-  }, [firstTourDate]);
-  const [calDay, setCalDay] = useState<string | null>(null); // "YYYY-MM-DD"
-  const calCells = useMemo(() => {
-    const { y, m } = calYM;
-    const first = new Date(y, m, 1);
-    const lead = first.getDay(); // 0=일
-    const days = new Date(y, m + 1, 0).getDate();
-    const countByDay: Record<number, number> = {};
-    for (const t of openTours) {
-      const d = new Date(t.startDate);
-      if (d.getFullYear() === y && d.getMonth() === m) countByDay[d.getDate()] = (countByDay[d.getDate()] ?? 0) + 1;
-    }
-    const cells: ({ day: number; count: number; iso: string } | null)[] = [];
-    for (let i = 0; i < lead; i++) cells.push(null);
-    for (let d = 1; d <= days; d++) {
-      const iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      cells.push({ day: d, count: countByDay[d] ?? 0, iso });
-    }
-    return cells;
-  }, [calYM, openTours]);
-  const calDayTours = useMemo(
-    () => (calDay ? openTours.filter((t) => t.startDate.slice(0, 10) === calDay).sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate)) : []),
-    [calDay, openTours],
-  );
 
   /** 추천 이유 배지 하나 — 실데이터 기준. */
   const recoBadge = (t: Tour): string | null => {
@@ -752,256 +615,20 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Dive Match — 조건만 넣으면 맞는 투어를 점수순으로 */}
-      <section className="ab-sec ab-match">
-        <div className="wrap">
-          <div className="ab-subhead r">
-            <h3>Dive Match · 나에게 맞는 투어 찾기</h3>
-            {dmRun && (
-              <button
-                type="button"
-                className="ab-textlink"
-                onClick={() => { setDmMonth(""); setDmRegion(""); setDmNights(""); setDmDives(""); setDmBudget(""); setDmLevel(""); setDmRun(false); }}
-              >
-                초기화
-              </button>
-            )}
-          </div>
-          <p className="ab-sub r" style={{ marginTop: 0 }}>
-            시기·지역·기간·다이빙 횟수·예산·레벨만 고르면, 조건에 맞는 투어를 점수순으로 보여드려요.
-          </p>
-
-          <div className="ab-match-form r">
-            <label>시기
-              <select value={dmMonth} onChange={(e) => setDmMonth(e.target.value === "" ? "" : Number(e.target.value))}>
-                <option value="">상관없음</option>
-                {MONTH_LABELS_KR.map((m, i) => <option key={m} value={i}>{m}</option>)}
-              </select>
-            </label>
-            <label>지역
-              <select value={dmRegion} onChange={(e) => setDmRegion(e.target.value as "" | "domestic" | "abroad")}>
-                <option value="">상관없음</option>
-                <option value="domestic">국내</option>
-                <option value="abroad">해외</option>
-              </select>
-            </label>
-            <label>기간
-              <select value={dmNights} onChange={(e) => setDmNights(e.target.value as "" | "short" | "mid" | "long")}>
-                <option value="">상관없음</option>
-                <option value="short">~2박</option>
-                <option value="mid">3~4박</option>
-                <option value="long">5박+</option>
-              </select>
-            </label>
-            <label>다이빙 횟수
-              <select value={dmDives} onChange={(e) => setDmDives(e.target.value as "" | "3" | "5" | "8")}>
-                <option value="">상관없음</option>
-                <option value="3">3회+</option>
-                <option value="5">5회+</option>
-                <option value="8">8회+</option>
-              </select>
-            </label>
-            <label>예산
-              <select value={dmBudget} onChange={(e) => setDmBudget(e.target.value as "" | "50" | "100" | "200" | "200p")}>
-                <option value="">상관없음</option>
-                <option value="50">~50만원</option>
-                <option value="100">~100만원</option>
-                <option value="200">~200만원</option>
-                <option value="200p">200만원+</option>
-              </select>
-            </label>
-            <label>레벨
-              <select value={dmLevel} onChange={(e) => setDmLevel(e.target.value as "" | "beginner" | "intermediate" | "advanced")}>
-                <option value="">상관없음</option>
-                <option value="beginner">초급</option>
-                <option value="intermediate">중급</option>
-                <option value="advanced">고급</option>
-              </select>
-            </label>
-            <button type="button" className="ab-search-go ab-match-go" onClick={() => setDmRun(true)}>내 투어 찾기</button>
-          </div>
-
-          {dmRun && (
-            <div className="ab-tourrow r" style={{ marginTop: "var(--s5)" }}>
-              {matchResults.length === 0 ? (
-                <p className="ab-sub">조건에 맞는 투어가 아직 없어요. 조건을 조금 넓혀보세요.</p>
-              ) : (
-                matchResults.map(({ t, pct }) => (
-                  <Link key={t.id} to={`/tour/${t.id}`} className="ab-tcard">
-                    <div className="ab-tcard-img">
-                      <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
-                      <div className="ab-tcard-badges">
-                        {pct !== null && <span className="ab-chip solid">조건 부합 {pct}%</span>}
-                        {t.activityTypes.map((a) => <span key={a} className="ab-chip">{ACTIVITY_LABEL[a]}</span>)}
-                      </div>
-                    </div>
-                    <div className="ab-tcard-body">
-                      <p className="ab-tcard-loc">{t.country} · {t.site}</p>
-                      <h3>{t.title}</h3>
-                      <div className="ab-tcard-meta">
-                        <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
-                        <span>{NIGHTS(t)}박 · 약 {estDives(t)}회</span>
-                        <span>{LEVEL_KR[tourLevelBucket(t)]}</span>
-                      </div>
-                      <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
-                    </div>
-                  </Link>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 2. 언제 어디로 떠날까요 — A: 실제 출발 투어 / B: 정보 배너 (월 선택 공유) */}
+      {/* 2. 언제 어디로 떠날까요 — 다이빙 포인트 가이드 배너 (클릭 시 Explorer) */}
       <section id="guide" className="ab-sec ab-guide">
         <div className="wrap">
-          {/* A. 이번달 출발 투어 (실제 TOUR 데이터) — 중복 상단 헤더 제거, 월 탭을 이 헤더에 붙임 */}
-          <div className="ab-subhead r">
-            <h3>{MONTH_LABELS_KR[guideMonth]} 출발 투어</h3>
-            <Link to={`/search?months=${guideMonth}`} className="ab-textlink">전체보기 →</Link>
-          </div>
-
-          <div className="ab-months r" role="tablist" aria-label="월 선택">
-            {MONTH_LABELS_KR.map((m, i) => (
-              <button
-                key={m}
-                role="tab"
-                aria-selected={guideMonth === i}
-                className={guideMonth === i ? "on" : ""}
-                onClick={() => setGuideMonth(i)}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-          {monthTours.length === 0 ? (
-            <p className="ab-sub r" style={{ marginTop: 0 }}>
-              이번 달 출발 예정 투어를 준비 중입니다. 아래에서 가고 싶은 바다를 먼저 둘러보세요.
-            </p>
-          ) : (
-            <div className="ab-tourrow r">
-              {monthTours.map((t) => {
-                const seats = Math.max(0, t.maxParticipants - getConfirmedParticipantCount(t.id));
-                return (
-                  <Link key={t.id} to={`/tour/${t.id}`} className="ab-tcard">
-                    <div className="ab-tcard-img">
-                      <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
-                      <div className="ab-tcard-badges">
-                        {t.activityTypes.map((a) => (
-                          <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
-                        ))}
-                        {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
-                      {(() => { const u = urgency(t); return u ? <span className={`ab-chip ${u.hot ? "hot" : "muted"}`}>{u.label}</span> : null; })()}
-                        {(() => { const u = urgency(t); return u ? <span className={`ab-chip ${u.hot ? "hot" : "muted"}`}>{u.label}</span> : null; })()}
-                      </div>
-                    </div>
-                    <div className="ab-tcard-body">
-                      <p className="ab-tcard-loc">{t.country} · {t.site}</p>
-                      <h3>{t.title}</h3>
-                      <div className="ab-tcard-meta">
-                        <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
-                        {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
-                        {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
-                        <span>{tourDifficulty(t)}</span>
-                        <span>잔여 {seats}석</span>
-                      </div>
-                      <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-
-          {/* B. 어디로 가고 싶으세요 — 배너 하나. 클릭 시 전용 뷰(Explorer) */}
-          <button
-            type="button"
-            className="ab-banner"
-            style={{ marginTop: "var(--s6)" }}
-            onClick={() => setExplorer("guide")}
-          >
+          <button type="button" className="ab-banner" onClick={() => setExplorer("guide")}>
             <img src="/landing/coral.jpg" alt="" onError={handleImageFallback} loading="lazy" />
             <div className="ab-banner-body">
               <p className="ab-banner-eyebrow">Dive Point Guide</p>
               <h3>언제 어디로 떠날까요?</h3>
               <p className="ab-banner-teaser">
-                {MONTH_LABELS_KR[guideMonth]}엔 {monthPoints.slice(0, 3).map((p) => p.region.split(/[ ,(]/)[0]).join(" · ")} 쪽 바다가 좋아요.
+                {MONTH_LABELS_KR[guideMonth]}엔 {monthPoints.slice(0, 3).map((pt) => pt.region.split(/[ ,(]/)[0]).join(" · ")} 쪽 바다가 좋아요.
               </p>
               <span className="ab-banner-cta">다이빙 포인트 둘러보기 →</span>
             </div>
           </button>
-
-          {/* 인기 다이빙 지역 — 클릭 시 해당 지역 검색으로 */}
-          <div className="ab-subhead r" style={{ marginTop: "var(--s7)" }}>
-            <h3>어디로 다이빙 갈까요?</h3>
-          </div>
-          <div className="ab-region-grid r">
-            {REGION_CARDS.map((rg) => (
-              <Link key={rg.name} to={`/search?q=${encodeURIComponent(rg.name)}`} className="ab-region-card">
-                <img src={rg.img} alt="" onError={handleImageFallback} loading="lazy" />
-                <div className="ab-region-card-body">
-                  <b>{rg.name}</b>
-                  <span className="ab-region-count">{regionCount(rg.name) > 0 ? `${regionCount(rg.name)} Tours` : "곧 오픈"}</span>
-                  <span className="ab-region-hint">{rg.hint}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          {/* 날짜로 찾기 — 그 날 출발하는 투어 (실데이터) */}
-          <div className="ab-subhead r" style={{ marginTop: "var(--s7)" }}>
-            <h3>내 일정에 맞는 다이빙</h3>
-          </div>
-          <div className="ab-cal r">
-            <div className="ab-cal-head">
-              <button type="button" aria-label="이전 달" onClick={() => setCalYM((s) => ({ y: s.m === 0 ? s.y - 1 : s.y, m: s.m === 0 ? 11 : s.m - 1 }))}>‹</button>
-              <span>{calYM.y}년 {calYM.m + 1}월</span>
-              <button type="button" aria-label="다음 달" onClick={() => setCalYM((s) => ({ y: s.m === 11 ? s.y + 1 : s.y, m: s.m === 11 ? 0 : s.m + 1 }))}>›</button>
-            </div>
-            <div className="ab-cal-grid">
-              {["일", "월", "화", "수", "목", "금", "토"].map((w) => <span key={w} className="ab-cal-w">{w}</span>)}
-              {calCells.map((c, i) =>
-                c === null ? (
-                  <span key={`e${i}`} />
-                ) : (
-                  <button
-                    key={c.iso}
-                    type="button"
-                    className={`ab-cal-cell${c.count ? " has" : ""}${calDay === c.iso ? " on" : ""}`}
-                    disabled={!c.count}
-                    onClick={() => setCalDay(calDay === c.iso ? null : c.iso)}
-                  >
-                    {c.day}
-                    {c.count > 0 && <i>{c.count}</i>}
-                  </button>
-                ),
-              )}
-            </div>
-          </div>
-          {calDay && calDayTours.length > 0 && (
-            <div className="ab-tourrow r" style={{ marginTop: "var(--s4)" }}>
-              {calDayTours.map((t) => (
-                <Link key={t.id} to={`/tour/${t.id}`} className="ab-tcard">
-                  <div className="ab-tcard-img">
-                    <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
-                    <div className="ab-tcard-badges">
-                      {t.activityTypes.map((a) => <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>)}
-                    </div>
-                  </div>
-                  <div className="ab-tcard-body">
-                    <p className="ab-tcard-loc">{t.country} · {t.site}</p>
-                    <h3>{t.title}</h3>
-                    <div className="ab-tcard-meta">
-                      <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
-                      <span>{NIGHTS(t)}박</span>
-                    </div>
-                    <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
       </section>
 
@@ -1404,36 +1031,7 @@ const CSS = `
 .ab-search-act button{border:1px solid var(--line);background:transparent;color:var(--text-2);font-family:inherit;font-size:.8125rem;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;transition:.15s;}
 .ab-search-act button.on{background:var(--turq);border-color:var(--turq);color:#fff;}
 @media(max-width:560px){.ab-search-act{border-left:0;padding-left:0;flex:1 1 100%;}.ab-search-act button{flex:1;}.ab-search-go{flex:1 1 100%;padding:12px;}.ab-search-sel{border-left:0;}}
-.ab-region-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);}
-.ab-region-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);transition:.15s;}
-.ab-region-card:hover{border-color:var(--turq);transform:translateY(-2px);}
-.ab-region-card img{width:100%;height:110px;object-fit:cover;}
-.ab-region-card-body{padding:12px 14px;display:flex;flex-direction:column;gap:3px;}
-.ab-region-card-body b{font-size:1rem;color:var(--text-1);}
-.ab-region-count{font-size:.8125rem;font-weight:700;color:var(--turq);}
-.ab-region-hint{font-size:.75rem;color:var(--text-2);}
-@media(max-width:900px){.ab-region-grid{grid-template-columns:repeat(3,1fr);}}
-@media(max-width:560px){.ab-region-grid{grid-template-columns:repeat(2,1fr);}.ab-region-card img{height:96px;}}
-.ab-cal{max-width:420px;border:1px solid var(--line);border-radius:14px;padding:var(--s3);background:var(--bg);}
-.ab-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-weight:800;color:var(--text-1);}
-.ab-cal-head button{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer;font-size:1rem;color:var(--text-1);}
-.ab-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
-.ab-cal-w{text-align:center;font-size:.6875rem;color:var(--text-2);padding:4px 0;font-weight:700;}
-.ab-cal-cell{position:relative;aspect-ratio:1;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text-2);font-size:.8125rem;font-family:inherit;cursor:default;}
-.ab-cal-cell.has{background:var(--turq-light);color:var(--navy);font-weight:700;cursor:pointer;}
-.ab-cal-cell.has:hover{border-color:var(--turq);}
-.ab-cal-cell.on{background:var(--turq);color:#fff;}
-.ab-cal-cell i{position:absolute;right:3px;bottom:2px;font-style:normal;font-size:.5625rem;background:var(--turq);color:#fff;border-radius:99px;min-width:13px;height:13px;line-height:13px;text-align:center;padding:0 2px;}
-.ab-cal-cell.on i{background:#fff;color:var(--turq);}
 .ab-chip.reco{background:var(--navy);color:#fff;}
-.ab-match{background:var(--bg-soft);}
-.ab-match-form{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3);align-items:end;}
-.ab-match-form label{display:flex;flex-direction:column;gap:6px;font-size:.8125rem;font-weight:700;color:var(--text-2);}
-.ab-match-form select{appearance:none;font-family:inherit;font-size:.9375rem;color:var(--text-1);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:11px 12px;cursor:pointer;}
-.ab-match-form select:focus{outline:2px solid var(--turq);outline-offset:0;}
-.ab-match-go{padding:12px 20px;height:44px;align-self:end;}
-@media(max-width:820px){.ab-match-form{grid-template-columns:repeat(2,1fr);}.ab-match-go{grid-column:1/-1;}}
-@media(max-width:480px){.ab-match-form{grid-template-columns:1fr;}}
 .ab-urgent{background:var(--bg);}
 .ab-scrollcue{margin-top:var(--s6);display:inline-flex;align-items:center;gap:12px;font-size:.6875rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.85);font-weight:600;}
 .ab-scrollcue i{width:2px;height:36px;background:linear-gradient(#fff,transparent);animation:abdrop 2.4s ease-in-out infinite;transform-origin:top;}
