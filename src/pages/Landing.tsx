@@ -243,7 +243,7 @@ function Explorer({
                     <img src={pt.image} alt={pt.region} onError={handleImageFallback} loading="lazy" />
                   </div>
                   <div className="ab-bigcard-body">
-                    <p className="ab-bigcard-eyebrow">{MONTH_LABELS_KR[guideMonth]} 추천</p>
+                    <p className="ab-bigcard-eyebrow">{pt.special ? "특수 다이빙" : `${MONTH_LABELS_KR[guideMonth]} 추천`}</p>
                     <h3>{pt.region}</h3>
                     <p className="ab-bigcard-oneliner">{pt.oneLiner}</p>
                     <p className="ab-bigcard-meta">{pt.water}</p>
@@ -257,8 +257,36 @@ function Explorer({
           <>
             <p className="ab-sub">
               보트에서 숙식하며 여러 날에 걸쳐 이동하는 다이빙 방식입니다.
-              카드를 누르면 며칠짜리 코스가 있고 어떤 포인트를 도는지 볼 수 있어요.
+              아래 카드를 누르면 며칠짜리 코스가 있고 어떤 포인트를 도는지 볼 수 있어요.
             </p>
+
+            <div className="ab-lb-about">
+              <h4>리브어보드란?</h4>
+              <p>
+                보트에서 잠을 자며 하루 3~5회씩 여러 날 다이빙하는 방식입니다. 리조트 기반 다이빙과 달리
+                매일 다른 포인트로 이동하고, 육지에서 배로 몇 시간~며칠 걸리는 외딴 포인트(예: 투바타하,
+                소코로)는 리브어보드로만 갈 수 있는 경우가 많습니다.
+              </p>
+              <h4>보트 위에서의 하루 (예시)</h4>
+              <p>
+                새벽 브리핑 → 오전 다이빙 2회 → 브런치 → 오후 다이빙 1~2회 → 선셋/나이트 다이빙(선택) →
+                저녁 식사 후 로그북 정리·친목. 보통 12~30명 정원에 개별 침대가 있는 선실, 공용 라운지,
+                실내 식당, 선덱을 갖추고 있습니다. 아래 “선상 하루 일과”에 시간대별 예시가 있어요.
+              </p>
+              <h4>식사와 편의시설</h4>
+              <p>
+                보통 뷔페식으로 하루 3~4끼(간식 포함)가 나오고 서양식·현지식이 섞입니다. 와이파이,
+                나이트록스 충전, 개인 사물함 등은 보트마다 다릅니다.
+              </p>
+              <h4>어떤 사람에게 맞나요?</h4>
+              <p>
+                짧은 이동으로 하루에 여러 포인트를 도는 게 목적이거나, 외딴 지역까지 가보고 싶은 다이버에게
+                잘 맞습니다. 뱃멀미가 걱정되거나 매일 육지 활동을 병행하고 싶다면 리조트 기반 다이빙이 더
+                편할 수 있습니다.
+              </p>
+            </div>
+
+            <p className="ab-lbcard-label" style={{ marginTop: "var(--s5)" }}>가볼 만한 지역 (예시)</p>
             <div className="ab-big-grid">
               {LIVEABOARD_REGIONS.map((rg) => (
                 <button type="button" className="ab-bigcard" key={rg.id} onClick={() => onOpenDetail({ kind: "region", data: rg })}>
@@ -665,6 +693,12 @@ export default function Landing() {
         {detail?.kind === "point" && (
           <>
             <p className="ab-sheet-p">{detail.data.detail}</p>
+            {detail.data.special && (
+              <p className="ab-sheet-note">
+                ⚠️ 민물·동굴·화산호수·아이스 등 특수 다이빙입니다. 일반 오픈워터 자격만으로는 참여가
+                제한될 수 있고, 케이브·드라이슈트·아이스 다이빙 등 별도 교육과 장비가 필요할 수 있습니다.
+              </p>
+            )}
             <dl className="ab-sheet-dl">
               <div><dt>수온 · 시야</dt><dd>{detail.data.water}</dd></div>
               <div><dt>추천 레벨</dt><dd>{detail.data.level}</dd></div>
@@ -1073,6 +1107,11 @@ const CSS = `
 .ab-sheet-body h3{font-size:1.375rem;}
 .ab-sheet-sub{margin-top:8px;font-size:.9375rem;color:var(--text-2);line-height:1.55;}
 .ab-sheet-p{margin-top:var(--s4);font-size:.9375rem;line-height:1.7;color:var(--text-1);}
+.ab-sheet-note{margin-top:var(--s3);padding:12px 14px;border-radius:10px;background:#FFF6E5;border:1px solid var(--gold);font-size:.8125rem;line-height:1.6;color:var(--text-1);}
+.ab-lb-about{margin-top:var(--s3);}
+.ab-lb-about h4{font-size:1rem;font-weight:800;color:var(--text-1);margin-top:var(--s4);}
+.ab-lb-about h4:first-child{margin-top:0;}
+.ab-lb-about p{margin-top:6px;font-size:.9375rem;line-height:1.7;color:var(--text-1);max-width:70ch;}
 .ab-sheet-dl{margin:var(--s4) 0 0;display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);}
 .ab-sheet-dl dt{font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);}
 .ab-sheet-dl dd{margin:4px 0 0;font-size:.875rem;font-weight:600;color:var(--navy);}

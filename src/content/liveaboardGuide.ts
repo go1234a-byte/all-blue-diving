@@ -94,4 +94,50 @@ export const LIVEABOARD_REGIONS: LiveaboardRegion[] = [
       "로카 파르티다",
     ],
   },
+  {
+    id: "tubbataha",
+    name: "필리핀 투바타하 리프 (술루해)",
+    image: "/landing/turtle.jpg",
+    summary: "리브어보드로만 접근하는 유네스코 산호초. 시즌은 3월 중순~6월 중순으로 매우 짧다.",
+    gallery: ["/landing/coral.jpg", "/landing/descend.jpg"],
+    detail:
+      "노스·사우스 아톨의 수직 벽과 제슬리 셔벌 리프를 돈다. 개방 기간이 짧아 예약 경쟁이 치열하다. 푸에르토프린세사에서 출발·도착.",
+    durations: ["5박 6일"],
+    route: [
+      "노스 아톨",
+      "사우스 아톨",
+      "델리케이트 리프",
+      "자고 섬 (등대·레인저스테이션)",
+    ],
+  },
+  {
+    id: "gbr",
+    name: "호주 그레이트 배리어 리프·코럴 씨 (케언즈)",
+    image: "/landing/coral.jpg",
+    summary: "포테이토 코드·대형 난파선·상어 다이빙을 한 번에. 날씨가 좋은 8~1월 추천.",
+    gallery: ["/landing/scuba1.jpg", "/landing/turtle.jpg"],
+    detail:
+      "코드홀의 대형 포테이토 코드, SS 용갈라 난파선, 코럴 씨 외곽의 상어 다이빙을 묶는 코스. 케언즈에서 출발·도착.",
+    durations: ["3박 4일", "7박 8일"],
+    route: [
+      "코드홀 (리본리프)",
+      "SS 용갈라 난파선",
+      "오스프리 리프 등 코럴 씨 외곽 포인트",
+    ],
+  },
+  {
+    id: "galapagos",
+    name: "갈라파고스 (에콰도르)",
+    image: "/landing/whale.jpg",
+    summary: "해머헤드 무리·만타레이·바다이구아나. 조류가 강해 숙련자 대상.",
+    gallery: ["/landing/descend.jpg", "/landing/hero.jpg"],
+    detail:
+      "다윈·울프 섬은 데이트립이 불가능해 리브어보드로만 간다. 수온이 낮고 조류가 강해 로그 수·드라이슈트 경험이 요구된다. 산크리스토발에서 출발·도착.",
+    durations: ["7박 8일"],
+    route: [
+      "다윈 섬",
+      "울프 섬",
+      "이사벨라·페르난디나 섬",
+    ],
+  },
 ];
