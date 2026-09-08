@@ -600,7 +600,63 @@ export default function Landing() {
   };
 
   /** 인기 다이빙 지역 — 클릭 시 /search?q= 로 이동. */
-  const POPULAR_REGIONS = ["제주", "세부", "보홀", "팔라우", "몰디브", "오키나와", "코모도"];
+  // 인기 다이빙 지역 카드 — 투어 수는 실데이터로 카운트.
+  const REGION_CARDS = [
+    { name: "제주", img: "/landing/descend.jpg", hint: "연산호 · 문섬 · 범섬" },
+    { name: "세부", img: "/landing/scuba1.jpg", hint: "정어리떼 · 모알보알" },
+    { name: "보홀", img: "/landing/turtle.jpg", hint: "발리카삭 · 파나글라오" },
+    { name: "팔라우", img: "/landing/hero.jpg", hint: "블루코너 · 저먼채널" },
+    { name: "오키나와", img: "/landing/coral.jpg", hint: "게라마 · 블루케이브" },
+    { name: "코모도", img: "/landing/whale.jpg", hint: "만타 포인트 · 바투 볼롱" },
+    { name: "몰디브", img: "/landing/whale.jpg", hint: "만타 클리닝 · 채널 드리프트" },
+  ] as const;
+  const regionCount = (name: string) =>
+    openTours.filter((t) => t.country.includes(name) || t.site.includes(name) || t.title.includes(name)).length;
+
+  // 날짜로 찾기 — 투어가 있는 가장 이른 달을 기본으로.
+  const firstTourDate = useMemo(() => {
+    const ds = openTours.map((t) => new Date(t.startDate)).sort((a, b) => +a - +b);
+    return ds[0] ?? new Date();
+  }, [openTours]);
+  const [calYM, setCalYM] = useState<{ y: number; m: number }>(() => ({
+    y: firstTourDate.getFullYear(),
+    m: firstTourDate.getMonth(),
+  }));
+  // 투어 데이터가 로드되면(첫 렌더 땐 비어 있을 수 있음) 가장 이른 투어 달로 맞춘다.
+  useEffect(() => {
+    setCalYM({ y: firstTourDate.getFullYear(), m: firstTourDate.getMonth() });
+  }, [firstTourDate]);
+  const [calDay, setCalDay] = useState<string | null>(null); // "YYYY-MM-DD"
+  const calCells = useMemo(() => {
+    const { y, m } = calYM;
+    const first = new Date(y, m, 1);
+    const lead = first.getDay(); // 0=일
+    const days = new Date(y, m + 1, 0).getDate();
+    const countByDay: Record<number, number> = {};
+    for (const t of openTours) {
+      const d = new Date(t.startDate);
+      if (d.getFullYear() === y && d.getMonth() === m) countByDay[d.getDate()] = (countByDay[d.getDate()] ?? 0) + 1;
+    }
+    const cells: ({ day: number; count: number; iso: string } | null)[] = [];
+    for (let i = 0; i < lead; i++) cells.push(null);
+    for (let d = 1; d <= days; d++) {
+      const iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      cells.push({ day: d, count: countByDay[d] ?? 0, iso });
+    }
+    return cells;
+  }, [calYM, openTours]);
+  const calDayTours = useMemo(
+    () => (calDay ? openTours.filter((t) => t.startDate.slice(0, 10) === calDay).sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate)) : []),
+    [calDay, openTours],
+  );
+
+  /** 추천 이유 배지 하나 — 실데이터 기준. */
+  const recoBadge = (t: Tour): string | null => {
+    if (t.rating >= 4.8) return "⭐ 평점 우수";
+    if ((Date.now() - new Date(t.createdAt).getTime()) / 86400000 <= 14) return "🆕 신규";
+    if (t.maxParticipants > 0 && getConfirmedParticipantCount(t.id) / t.maxParticipants >= 0.6) return "🔥 인기";
+    return null;
+  };
 
   const FALLBACK_REVIEWS = [
     { key: "a", img: "/landing/turtle.jpg", who: "김서연", place: "세부 · 모알보알", quote: "첫 해외 다이빙이었는데 픽업부터 로그까지 다 챙겨주셔서 바다만 즐기면 됐어요.", meta: "AOW · 42 dives" },
@@ -876,15 +932,76 @@ export default function Landing() {
             </div>
           </button>
 
-          {/* 인기 다이빙 지역 — 클릭 시 검색으로 */}
-          <div className="ab-regions r">
-            <span className="ab-regions-label">인기 다이빙 지역</span>
-            <div className="ab-regions-chips">
-              {POPULAR_REGIONS.map((name) => (
-                <Link key={name} to={`/search?q=${encodeURIComponent(name)}`}>{name}</Link>
-              ))}
+          {/* 인기 다이빙 지역 — 클릭 시 해당 지역 검색으로 */}
+          <div className="ab-subhead r" style={{ marginTop: "var(--s7)" }}>
+            <h3>어디로 다이빙 갈까요?</h3>
+          </div>
+          <div className="ab-region-grid r">
+            {REGION_CARDS.map((rg) => (
+              <Link key={rg.name} to={`/search?q=${encodeURIComponent(rg.name)}`} className="ab-region-card">
+                <img src={rg.img} alt="" onError={handleImageFallback} loading="lazy" />
+                <div className="ab-region-card-body">
+                  <b>{rg.name}</b>
+                  <span className="ab-region-count">{regionCount(rg.name) > 0 ? `${regionCount(rg.name)} Tours` : "곧 오픈"}</span>
+                  <span className="ab-region-hint">{rg.hint}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* 날짜로 찾기 — 그 날 출발하는 투어 (실데이터) */}
+          <div className="ab-subhead r" style={{ marginTop: "var(--s7)" }}>
+            <h3>내 일정에 맞는 다이빙</h3>
+          </div>
+          <div className="ab-cal r">
+            <div className="ab-cal-head">
+              <button type="button" aria-label="이전 달" onClick={() => setCalYM((s) => ({ y: s.m === 0 ? s.y - 1 : s.y, m: s.m === 0 ? 11 : s.m - 1 }))}>‹</button>
+              <span>{calYM.y}년 {calYM.m + 1}월</span>
+              <button type="button" aria-label="다음 달" onClick={() => setCalYM((s) => ({ y: s.m === 11 ? s.y + 1 : s.y, m: s.m === 11 ? 0 : s.m + 1 }))}>›</button>
+            </div>
+            <div className="ab-cal-grid">
+              {["일", "월", "화", "수", "목", "금", "토"].map((w) => <span key={w} className="ab-cal-w">{w}</span>)}
+              {calCells.map((c, i) =>
+                c === null ? (
+                  <span key={`e${i}`} />
+                ) : (
+                  <button
+                    key={c.iso}
+                    type="button"
+                    className={`ab-cal-cell${c.count ? " has" : ""}${calDay === c.iso ? " on" : ""}`}
+                    disabled={!c.count}
+                    onClick={() => setCalDay(calDay === c.iso ? null : c.iso)}
+                  >
+                    {c.day}
+                    {c.count > 0 && <i>{c.count}</i>}
+                  </button>
+                ),
+              )}
             </div>
           </div>
+          {calDay && calDayTours.length > 0 && (
+            <div className="ab-tourrow r" style={{ marginTop: "var(--s4)" }}>
+              {calDayTours.map((t) => (
+                <Link key={t.id} to={`/tour/${t.id}`} className="ab-tcard">
+                  <div className="ab-tcard-img">
+                    <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
+                    <div className="ab-tcard-badges">
+                      {t.activityTypes.map((a) => <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>)}
+                    </div>
+                  </div>
+                  <div className="ab-tcard-body">
+                    <p className="ab-tcard-loc">{t.country} · {t.site}</p>
+                    <h3>{t.title}</h3>
+                    <div className="ab-tcard-meta">
+                      <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
+                      <span>{NIGHTS(t)}박</span>
+                    </div>
+                    <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -1050,6 +1167,7 @@ export default function Landing() {
                   <div className="ab-tcard-img">
                     <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
                     <div className="ab-tcard-badges">
+                      {(() => { const b = recoBadge(t); return b ? <span className="ab-chip reco">{b}</span> : null; })()}
                       {t.activityTypes.map((a) => (
                         <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
                       ))}
@@ -1286,11 +1404,28 @@ const CSS = `
 .ab-search-act button{border:1px solid var(--line);background:transparent;color:var(--text-2);font-family:inherit;font-size:.8125rem;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;transition:.15s;}
 .ab-search-act button.on{background:var(--turq);border-color:var(--turq);color:#fff;}
 @media(max-width:560px){.ab-search-act{border-left:0;padding-left:0;flex:1 1 100%;}.ab-search-act button{flex:1;}.ab-search-go{flex:1 1 100%;padding:12px;}.ab-search-sel{border-left:0;}}
-.ab-regions{margin-top:var(--s6);}
-.ab-regions-label{display:block;font-size:.8125rem;font-weight:700;color:var(--text-2);margin-bottom:10px;}
-.ab-regions-chips{display:flex;flex-wrap:wrap;gap:8px;}
-.ab-regions-chips a{padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:.875rem;font-weight:600;color:var(--text-1);transition:.15s;}
-.ab-regions-chips a:hover{border-color:var(--turq);color:var(--turq);}
+.ab-region-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);}
+.ab-region-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);transition:.15s;}
+.ab-region-card:hover{border-color:var(--turq);transform:translateY(-2px);}
+.ab-region-card img{width:100%;height:110px;object-fit:cover;}
+.ab-region-card-body{padding:12px 14px;display:flex;flex-direction:column;gap:3px;}
+.ab-region-card-body b{font-size:1rem;color:var(--text-1);}
+.ab-region-count{font-size:.8125rem;font-weight:700;color:var(--turq);}
+.ab-region-hint{font-size:.75rem;color:var(--text-2);}
+@media(max-width:900px){.ab-region-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:560px){.ab-region-grid{grid-template-columns:repeat(2,1fr);}.ab-region-card img{height:96px;}}
+.ab-cal{max-width:420px;border:1px solid var(--line);border-radius:14px;padding:var(--s3);background:var(--bg);}
+.ab-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-weight:800;color:var(--text-1);}
+.ab-cal-head button{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer;font-size:1rem;color:var(--text-1);}
+.ab-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.ab-cal-w{text-align:center;font-size:.6875rem;color:var(--text-2);padding:4px 0;font-weight:700;}
+.ab-cal-cell{position:relative;aspect-ratio:1;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text-2);font-size:.8125rem;font-family:inherit;cursor:default;}
+.ab-cal-cell.has{background:var(--turq-light);color:var(--navy);font-weight:700;cursor:pointer;}
+.ab-cal-cell.has:hover{border-color:var(--turq);}
+.ab-cal-cell.on{background:var(--turq);color:#fff;}
+.ab-cal-cell i{position:absolute;right:3px;bottom:2px;font-style:normal;font-size:.5625rem;background:var(--turq);color:#fff;border-radius:99px;min-width:13px;height:13px;line-height:13px;text-align:center;padding:0 2px;}
+.ab-cal-cell.on i{background:#fff;color:var(--turq);}
+.ab-chip.reco{background:var(--navy);color:#fff;}
 .ab-match{background:var(--bg-soft);}
 .ab-match-form{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3);align-items:end;}
 .ab-match-form label{display:flex;flex-direction:column;gap:6px;font-size:.8125rem;font-weight:700;color:var(--text-2);}
