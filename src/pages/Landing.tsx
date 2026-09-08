@@ -546,7 +546,7 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* 2. 이번달, 어디로 떠날까요 — A: 실제 출발 투어 / B: 정보 카드 (월 선택 공유) */}
+      {/* 2. 언제 어디로 떠날까요 — A: 실제 출발 투어 / B: 정보 배너 (월 선택 공유) */}
       <section id="guide" className="ab-sec ab-guide">
         <div className="wrap">
           {/* A. 이번달 출발 투어 (실제 TOUR 데이터) — 중복 상단 헤더 제거, 월 탭을 이 헤더에 붙임 */}
@@ -615,7 +615,7 @@ export default function Landing() {
             <img src="/landing/coral.jpg" alt="" onError={handleImageFallback} loading="lazy" />
             <div className="ab-banner-body">
               <p className="ab-banner-eyebrow">Dive Point Guide</p>
-              <h3>이번 달, 어디로 떠날까요?</h3>
+              <h3>언제 어디로 떠날까요?</h3>
               <p className="ab-banner-teaser">
                 {MONTH_LABELS_KR[guideMonth]}엔 {monthPoints.slice(0, 3).map((p) => p.region.split(/[ ,(]/)[0]).join(" · ")} 쪽 바다가 좋아요.
               </p>
