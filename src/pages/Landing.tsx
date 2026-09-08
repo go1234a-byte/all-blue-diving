@@ -807,9 +807,11 @@ export default function Landing() {
                     <p className="ab-tcard-date">{formatDateRangeKR(t.startDate, t.endDate)} 출발</p>
                     {(() => {
                       const nights = Math.max(1, Math.round((+new Date(t.endDate) - +new Date(t.startDate)) / 86400000));
-                      return <p className="ab-tcard-nights">{nights}박 {nights + 1}일</p>;
+                      const hasPlan = (t.itineraryDays?.length ?? 0) > 0;
+                      return <p className="ab-tcard-nights">{nights}박 {nights + 1}일{hasPlan ? " · 일자별 일정 제공" : ""}</p>;
                     })()}
                     <div className="ab-tcard-meta">
+                      {t.flightInfo?.outbound?.airport && <span>✈️ {t.flightInfo.outbound.airport.split(" → ")[0]} 출발</span>}
                       {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
                       {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
                       <span>{tourDifficulty(t)}</span>

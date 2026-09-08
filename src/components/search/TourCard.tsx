@@ -194,6 +194,9 @@ export function TourCard({ tour }: TourCardProps) {
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-medium text-muted-foreground">
                   {formatNightsDaysKR(tour.startDate, tour.endDate)}
+                  {(tour.itineraryDays?.length ?? 0) > 0 && " · 일정표"}
+                  {tour.flightInfo?.outbound?.airport &&
+                    ` · ✈️ ${tour.flightInfo.outbound.airport.split(" → ")[0]}`}
                 </span>
                 <span
                   className={cn(
