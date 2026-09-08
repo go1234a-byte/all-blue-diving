@@ -624,7 +624,7 @@ export default function Landing() {
               <p className="ab-banner-eyebrow">Dive Point Guide</p>
               <h3>언제 어디로 떠날까요?</h3>
               <p className="ab-banner-teaser">
-                {MONTH_LABELS_KR[guideMonth]}엔 {monthPoints.slice(0, 3).map((pt) => pt.region.split(/[ ,(]/)[0]).join(" · ")} 쪽 바다가 좋아요.
+                {MONTH_LABELS_KR[guideMonth]}엔 {[...new Set(monthPoints.map((pt) => pt.region.split(/[ ,(]/)[0]))].slice(0, 3).join(" · ")} 쪽 바다가 좋아요.
               </p>
               <span className="ab-banner-cta">다이빙 포인트 둘러보기 →</span>
             </div>
