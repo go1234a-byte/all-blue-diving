@@ -408,7 +408,7 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { isLoggedIn } = useRole();
+  const { isLoggedIn, role } = useRole();
   const { tours, instructors, reviews, publicProfiles, getTourById, getConfirmedParticipantCount } =
     useAppData();
   const reduced = useReducedMotion();
@@ -515,6 +515,8 @@ export default function Landing() {
           <a href="#guide">다이빙 가이드</a>
           <a href="#tours">투어</a>
           <a href="#instructors">강사</a>
+          {role === "instructor" && <Link to="/instructor">대시보드</Link>}
+          {role === "admin" && <Link to="/admin/home">대시보드</Link>}
           {isLoggedIn ? <Link to="/mypage">마이페이지</Link> : <Link to="/auth">로그인</Link>}
           <Link to="/search" className="ab-btn sm">투어 찾기</Link>
         </div>
