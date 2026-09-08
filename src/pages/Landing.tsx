@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useRole } from "@/contexts/RoleContext";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
@@ -12,7 +14,8 @@ import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardG
 import type { Tour } from "@/types";
 
 /**
- * allbluedive.com 웹 전용 랜딩 — 비로그인 웹 방문자에게만 노출(앱/로그인 유저는 기존 Index 홈).
+ * "/" 홈 화면 — 비로그인·로그인(다이버) 공통. 웹·네이티브 앱 동일. 강사/관리자는 Home.tsx에서 콘솔로 라우팅.
+ * 로그인 시 상단 nav "로그인" → "마이페이지", 하단에 BottomNav 를 얹는다(모바일).
  * 라우팅 분기는 src/pages/Home.tsx. 자체 내비/푸터를 갖는 단일 페이지.
  *
  * 톤: 밝고 화사한 라이트 배경(#FFFFFF / #F4FAFB) 기본. 다크 네이비(#0A1B2E)는
@@ -405,6 +408,7 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { isLoggedIn } = useRole();
   const { tours, instructors, reviews, publicProfiles, getTourById, getConfirmedParticipantCount } =
     useAppData();
   const reduced = useReducedMotion();
@@ -511,7 +515,7 @@ export default function Landing() {
           <a href="#guide">다이빙 가이드</a>
           <a href="#tours">투어</a>
           <a href="#instructors">강사</a>
-          <Link to="/auth">로그인</Link>
+          {isLoggedIn ? <Link to="/mypage">마이페이지</Link> : <Link to="/auth">로그인</Link>}
           <Link to="/search" className="ab-btn sm">투어 찾기</Link>
         </div>
       </nav>
@@ -934,6 +938,13 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {isLoggedIn && (
+        <>
+          <div className="ab-bn-spacer" aria-hidden="true" />
+          <BottomNav />
+        </>
+      )}
     </div>
   );
 }
@@ -959,6 +970,8 @@ const CSS = `
 .wrap{max-width:var(--maxw);margin:0 auto;padding-inline:var(--gut);}
 .ab-sub{margin-top:var(--s3);font-size:var(--fs-body);line-height:var(--lh-body);color:var(--text-2);max-width:68ch;}
 @media(max-width:560px){.ab-lp{font-size:.9375rem;}} /* 15px, 14px 밑으로 안 내려가게 */
+.ab-bn-spacer{height:calc(56px + env(safe-area-inset-bottom));}
+@media(min-width:768px){.ab-bn-spacer{display:none;}} /* BottomNav 는 md:hidden — 데스크톱엔 여백 불필요 */
 
 .ab-eyebrow{font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;color:var(--turq);font-weight:700;display:flex;align-items:center;gap:12px;margin:0 0 var(--s3);}
 .ab-eyebrow::before{content:"";width:28px;height:2px;background:var(--gold);}
