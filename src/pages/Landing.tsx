@@ -419,6 +419,7 @@ export default function Landing() {
   const heroPaused = useRef(false);
   const [q, setQ] = useState("");
   const [month, setMonth] = useState<number | "">("");
+  const [heroAct, setHeroAct] = useState<"" | "scuba" | "freediving">("");
   const [guideMonth, setGuideMonth] = useState(() => new Date().getMonth());
   const [explorer, setExplorer] = useState<"guide" | "liveaboard" | null>(null);
   const [detail, setDetail] = useState<
@@ -495,8 +496,22 @@ export default function Landing() {
     const p = new URLSearchParams();
     if (q.trim()) p.set("q", q.trim());
     if (month !== "") p.set("months", String(month));
+    if (heroAct) p.set("activities", heroAct);
     navigate(`/search${p.toString() ? `?${p.toString()}` : ""}`);
   };
+
+  /** 잔여석·마감 임박 긴급 배지. 실데이터(정원·확정 인원·모집 마감일)만 사용. */
+  const urgency = (t: Tour): { label: string; hot: boolean } | null => {
+    const seats = Math.max(0, t.maxParticipants - getConfirmedParticipantCount(t.id));
+    if (seats === 0) return { label: "모집 마감", hot: false };
+    const days = (new Date(t.recruitmentDeadline).getTime() - Date.now()) / 86400000;
+    if (seats <= 3) return { label: `🔥 ${seats}자리 남음`, hot: true };
+    if (days >= 0 && days <= 7) return { label: "마감 임박", hot: true };
+    return null;
+  };
+
+  /** 인기 다이빙 지역 — 클릭 시 /search?q= 로 이동. */
+  const POPULAR_REGIONS = ["제주", "세부", "보홀", "팔라우", "몰디브", "오키나와", "코모도"];
 
   const FALLBACK_REVIEWS = [
     { key: "a", img: "/landing/turtle.jpg", who: "김서연", place: "세부 · 모알보알", quote: "첫 해외 다이빙이었는데 픽업부터 로그까지 다 챙겨주셔서 바다만 즐기면 됐어요.", meta: "AOW · 42 dives" },
@@ -552,12 +567,12 @@ export default function Landing() {
             <span className="ab-hero-line ghost">{HERO_GHOST}</span>
           </h1>
           <p className="ab-hero-lede">
-            인증된 강사의 스쿠버·프리다이빙 투어만 모았습니다. 일정·강사·안전 기준을 비교하고 바로 예약하세요.
+            내가 원하는 바다, 내가 원하는 날짜, 내가 원하는 다이빙.
           </p>
           <div className="ab-search" role="search">
             <input
               className="ab-search-fld"
-              placeholder="여행지 · 예: 세부, 다합, 몰디브"
+              placeholder="어디로 갈까요? · 예: 세부, 다합, 몰디브"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && goSearch()}
@@ -569,12 +584,24 @@ export default function Landing() {
               onChange={(e) => setMonth(e.target.value === "" ? "" : Number(e.target.value))}
               aria-label="출발 월"
             >
-              <option value="">출발 월</option>
+              <option value="">날짜 (출발 월)</option>
               {MONTH_LABELS_KR.map((m, i) => (
                 <option key={m} value={i}>{m}</option>
               ))}
             </select>
-            <button className="ab-search-go" onClick={goSearch}>투어 검색</button>
+            <div className="ab-search-act" role="group" aria-label="다이빙 종류">
+              <button
+                type="button"
+                className={heroAct === "scuba" ? "on" : ""}
+                onClick={() => setHeroAct((v) => (v === "scuba" ? "" : "scuba"))}
+              >스쿠버</button>
+              <button
+                type="button"
+                className={heroAct === "freediving" ? "on" : ""}
+                onClick={() => setHeroAct((v) => (v === "freediving" ? "" : "freediving"))}
+              >프리다이빙</button>
+            </div>
+            <button className="ab-search-go" onClick={goSearch}>투어 찾기</button>
           </div>
           <a href="#guide" className="ab-scrollcue"><i />다이빙 가이드 보기</a>
         </div>
@@ -619,6 +646,8 @@ export default function Landing() {
                           <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
                         ))}
                         {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
+                      {(() => { const u = urgency(t); return u ? <span className={`ab-chip ${u.hot ? "hot" : "muted"}`}>{u.label}</span> : null; })()}
+                        {(() => { const u = urgency(t); return u ? <span className={`ab-chip ${u.hot ? "hot" : "muted"}`}>{u.label}</span> : null; })()}
                       </div>
                     </div>
                     <div className="ab-tcard-body">
@@ -656,6 +685,16 @@ export default function Landing() {
               <span className="ab-banner-cta">다이빙 포인트 둘러보기 →</span>
             </div>
           </button>
+
+          {/* 인기 다이빙 지역 — 클릭 시 검색으로 */}
+          <div className="ab-regions r">
+            <span className="ab-regions-label">인기 다이빙 지역</span>
+            <div className="ab-regions-chips">
+              {POPULAR_REGIONS.map((name) => (
+                <Link key={name} to={`/search?q=${encodeURIComponent(name)}`}>{name}</Link>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1019,6 +1058,15 @@ const CSS = `
 .ab-search-sel{flex:0 1 140px;appearance:none;cursor:pointer;border-left:1px solid var(--line);border-radius:0;}
 .ab-search-go{border:0;cursor:pointer;background:var(--turq);color:#fff;font-weight:700;font-size:.9375rem;padding:0 24px;border-radius:8px;font-family:inherit;}
 .ab-search-go:hover{background:#128ea1;}
+.ab-search-act{display:flex;gap:4px;align-items:center;border-left:1px solid var(--line);padding-left:6px;}
+.ab-search-act button{border:1px solid var(--line);background:transparent;color:var(--text-2);font-family:inherit;font-size:.8125rem;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;transition:.15s;}
+.ab-search-act button.on{background:var(--turq);border-color:var(--turq);color:#fff;}
+@media(max-width:560px){.ab-search-act{border-left:0;padding-left:0;flex:1 1 100%;}.ab-search-act button{flex:1;}.ab-search-go{flex:1 1 100%;padding:12px;}.ab-search-sel{border-left:0;}}
+.ab-regions{margin-top:var(--s6);}
+.ab-regions-label{display:block;font-size:.8125rem;font-weight:700;color:var(--text-2);margin-bottom:10px;}
+.ab-regions-chips{display:flex;flex-wrap:wrap;gap:8px;}
+.ab-regions-chips a{padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:.875rem;font-weight:600;color:var(--text-1);transition:.15s;}
+.ab-regions-chips a:hover{border-color:var(--turq);color:var(--turq);}
 .ab-scrollcue{margin-top:var(--s6);display:inline-flex;align-items:center;gap:12px;font-size:.6875rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.85);font-weight:600;}
 .ab-scrollcue i{width:2px;height:36px;background:linear-gradient(#fff,transparent);animation:abdrop 2.4s ease-in-out infinite;transform-origin:top;}
 @keyframes abdrop{0%,100%{transform:scaleY(.35);opacity:.4;}50%{transform:scaleY(1);opacity:1;}}
@@ -1164,6 +1212,8 @@ const CSS = `
 .ab-chip{font-size:.625rem;font-weight:700;letter-spacing:.03em;padding:5px 9px;border-radius:6px;background:rgba(255,255,255,.92);color:var(--navy);}
 .ab-chip.solid{background:var(--turq);color:#fff;}
 .ab-chip.gold{background:var(--gold);color:#3a2c10;}
+.ab-chip.hot{background:#E8484A;color:#fff;}
+.ab-chip.muted{background:rgba(10,27,46,.55);color:#fff;}
 .ab-tcard-body{padding:var(--s4);}
 .ab-tcard-loc{font-size:.6875rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);font-weight:600;}
 .ab-tcard-body h3{margin-top:6px;font-size:1.0625rem;}
