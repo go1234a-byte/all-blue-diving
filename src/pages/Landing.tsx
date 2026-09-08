@@ -810,6 +810,18 @@ export default function Landing() {
                       {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
                       <span>{tourDifficulty(t)}</span>
                     </div>
+                    {(() => {
+                      const joined = getConfirmedParticipantCount(t.id);
+                      const seats = Math.max(0, t.maxParticipants - joined);
+                      return (
+                        <p className="ab-tcard-recruit">
+                          <span>{t.maxParticipants}명 모집 · {joined}명 신청</span>
+                          <span className={seats === 0 ? "full" : seats <= 3 ? "few" : "ok"}>
+                            {seats === 0 ? "모집 마감" : `잔여 ${seats}석`}
+                          </span>
+                        </p>
+                      );
+                    })()}
                     <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
                     {(() => {
                       const opts = t.customOptions.filter((o) => o.isActive);
@@ -1199,7 +1211,12 @@ const CSS = `
 .ab-tcard-body h3{margin-top:6px;font-size:1.0625rem;}
 .ab-tcard.feat .ab-tcard-body h3{font-size:1.25rem;}
 .ab-tcard-meta{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8125rem;color:var(--text-2);}
-.ab-tcard-price{margin-top:12px;font-weight:800;color:var(--turq);font-size:1rem;}
+.ab-tcard-recruit{margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.75rem;color:var(--text-2);}
+.ab-tcard-recruit span:last-child{font-weight:800;border-radius:5px;padding:2px 7px;}
+.ab-tcard-recruit .ok{background:var(--turq-light);color:var(--navy);}
+.ab-tcard-recruit .few{background:#E8484A;color:#fff;}
+.ab-tcard-recruit .full{background:rgba(10,27,46,.12);color:var(--text-2);}
+.ab-tcard-price{margin-top:8px;font-weight:800;color:var(--turq);font-size:1rem;}
 .ab-tcard-incl{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px;}
 .ab-tcard-incl p{display:flex;gap:6px;align-items:baseline;font-size:.75rem;line-height:1.4;color:var(--text-2);margin:0;}
 .ab-tcard-incl b{flex:0 0 auto;font-size:.625rem;font-weight:800;letter-spacing:.02em;color:var(--turq);background:var(--turq-light);border-radius:4px;padding:2px 5px;}
