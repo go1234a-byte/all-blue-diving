@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
+import { AdminHeadcountControl } from "@/components/tour/AdminHeadcountControl";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
@@ -208,6 +209,7 @@ export function TourCard({ tour }: TourCardProps) {
                   {confirmedCount}/{tour.maxParticipants}명
                 </span>
               </div>
+              <AdminHeadcountControl tour={tour} className="pt-0.5" />
             </div>
 
             {instructor && (

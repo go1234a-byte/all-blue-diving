@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { AdminHeadcountControl } from "@/components/tour/AdminHeadcountControl";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
@@ -831,6 +832,7 @@ export default function Landing() {
                         </p>
                       );
                     })()}
+                    <AdminHeadcountControl tour={t} className="mt-2" />
                     <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
                     {(() => {
                       const opts = t.customOptions.filter((o) => o.isActive);
