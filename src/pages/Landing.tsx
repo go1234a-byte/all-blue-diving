@@ -15,6 +15,21 @@ import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardG
 import type { Tour } from "@/types";
 
 /**
+ * 중첩 오버레이(Explorer 위에 DetailSheet)가 순서 뒤죽박죽으로 닫혀도 body 스크롤 잠금이
+ * "hidden" 상태로 영구히 박히지 않게 하는 참조 카운트. 예전엔 각 오버레이가 자기가 열릴 때의
+ * overflow 값을 저장했다가 복원했는데, 중첩 상황에서 저장값이 "hidden"이 돼버려 마지막에
+ * 화면이 스크롤 불가로 먹통이 됐다. 카운트가 0이 되면 무조건 ""로 되돌린다.
+ */
+let abScrollLocks = 0;
+const abLockScroll = () => {
+  if (abScrollLocks++ === 0) document.body.style.overflow = "hidden";
+};
+const abUnlockScroll = () => {
+  abScrollLocks = Math.max(0, abScrollLocks - 1);
+  if (abScrollLocks === 0) document.body.style.overflow = "";
+};
+
+/**
  * "/" 홈 화면 — 비로그인·로그인(다이버) 공통. 웹·네이티브 앱 동일. 강사/관리자는 Home.tsx에서 콘솔로 라우팅.
  * 로그인 시 상단 nav "로그인" → "마이페이지", 하단에 BottomNav 를 얹는다(모바일).
  * 라우팅 분기는 src/pages/Home.tsx. 자체 내비/푸터를 갖는 단일 페이지.
@@ -117,18 +132,30 @@ function DetailSheet({
 }) {
   const dragStart = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
+  // 열릴 때 1회만 — 스크롤 잠금 + 자체 히스토리 항목 + Escape/뒤로가기 처리.
+  // deps 를 [open] 으로 고정한다: onClose 는 매 렌더 새 함수라 deps 에 넣으면 부모(Landing)가
+  // 리렌더될 때마다 effect 가 teardown/재실행되며 예전 overflow 값을 되살려 중첩 모달이
+  // 먹통이 됐다. 최신 onClose 는 ref 로 읽는다.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    abLockScroll();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCloseRef.current();
+    const onPop = () => onCloseRef.current();
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    window.history.pushState({ abOv: "sheet" }, "");
+    window.addEventListener("popstate", onPop);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      window.removeEventListener("popstate", onPop);
+      abUnlockScroll();
+      // ✕/배경/드래그로 닫은 경우엔 우리 히스토리 항목이 아직 남아 있으니 pop 해서 정리한다.
+      // 하드웨어 뒤로가기로 닫힌 경우엔 이미 pop 됐으므로(state.abOv 가 "sheet" 아님) 두 번 pop 하지 않는다.
+      if (window.history.state?.abOv === "sheet") window.history.back();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (
@@ -191,23 +218,29 @@ function Explorer({
   monthPoints: DivePoint[];
   onOpenDetail: (d: { kind: "point"; data: DivePoint } | { kind: "region"; data: LiveaboardRegion }) => void;
 }) {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    abLockScroll();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCloseRef.current();
     // 뒤로가기로 닫히게 — 히스토리에 항목 하나 넣고 popstate 를 잡는다.
-    window.history.pushState({ abExplorer: true }, "");
-    const onPop = () => onClose();
+    window.history.pushState({ abOv: "explorer" }, "");
+    const onPop = () => {
+      // 위에 DetailSheet 가 떠 있어 그 항목이 pop 된 경우엔 지금 상태가 아직 "explorer" 다.
+      // 그럼 시트만 닫히면 되니 Explorer 는 유지한다(브리프: 모달부터 닫히고 전용 뷰는 유지).
+      if (window.history.state?.abOv === "explorer") return;
+      onCloseRef.current();
+    };
+    document.addEventListener("keydown", onKey);
     window.addEventListener("popstate", onPop);
     return () => {
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("popstate", onPop);
-      document.body.style.overflow = prev;
-      if (window.history.state?.abExplorer) window.history.back();
+      abUnlockScroll();
+      if (window.history.state?.abOv === "explorer") window.history.back();
     };
-    // 열릴 때 1회 / 닫힐 때 1회만. onClose 는 매 렌더 새 함수라 deps 에 넣으면
-    // 히어로 캐러셀 타이머 리렌더마다 pushState/back 이 반복돼 WebView 히스토리가 깨진다.
+    // 열릴 때 1회 / 닫힐 때 1회만. onClose 는 ref 로 읽으므로 deps 불필요.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
