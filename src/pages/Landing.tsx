@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
-import { BottomNav } from "@/components/layout/BottomNav";
+import { BottomNav, getNavItems } from "@/components/layout/BottomNav";
 import { AdminHeadcountControl } from "@/components/tour/AdminHeadcountControl";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
@@ -538,13 +538,21 @@ export default function Landing() {
 
       <nav className={`ab-nav ${scrollY > 40 ? "solid" : ""}`}>
         <Link to="/" className="ab-brand">ALL BLUE <span>올블루</span></Link>
+        {/* 데스크톱 전용 상단 메뉴 — 모바일은 BottomNav 가 담당(아래 미디어쿼리로 숨김).
+            로그인 시 역할별 주요 메뉴(BottomNav·AppHeader 와 동일한 getNavItems), 비로그인은 홈+로그인만. */}
         <div className="ab-nav-links">
-          <a href="#guide">다이빙 가이드</a>
-          <a href="#tours">투어</a>
-          <a href="#instructors">강사</a>
-          {role === "instructor" && <Link to="/instructor">대시보드</Link>}
-          {role === "admin" && <Link to="/admin/home">대시보드</Link>}
-          {isLoggedIn ? <Link to="/mypage">마이페이지</Link> : <Link to="/auth">로그인</Link>}
+          {isLoggedIn ? (
+            getNavItems(role).map((item) => (
+              <Link key={item.to} to={item.to} state={item.state}>
+                {item.label}
+              </Link>
+            ))
+          ) : (
+            <>
+              <Link to="/">홈</Link>
+              <Link to="/auth">로그인</Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -985,12 +993,10 @@ export default function Landing() {
         </div>
       </footer>
 
-      {isLoggedIn && (
-        <>
-          <div className="ab-bn-spacer" aria-hidden="true" />
-          <BottomNav />
-        </>
-      )}
+      {/* 모바일 하단 탭바 — 로그인 여부와 무관하게 노출한다(상단 메뉴가 데스크톱 전용이라
+          비로그인 모바일에서 내비게이션이 사라지는 문제를 막는다). BottomNav 는 md:hidden. */}
+      <div className="ab-bn-spacer" aria-hidden="true" />
+      <BottomNav />
     </div>
   );
 }
@@ -1039,8 +1045,7 @@ const CSS = `
 .ab-nav-links{display:flex;align-items:center;gap:var(--s4);}
 .ab-nav-links a{font-size:.875rem;color:#fff;font-weight:600;}
 .ab-nav.solid .ab-nav-links a{color:var(--navy);}
-.ab-nav-links a.ab-btn{color:#fff;}
-@media(max-width:820px){.ab-nav-links a:not(.ab-btn){display:none;}}
+@media(max-width:820px){.ab-nav-links{display:none;}} /* 모바일은 BottomNav 가 내비 담당 */
 
 /* HERO */
 .ab-hero{position:relative;min-height:min(88svh,760px);display:flex;align-items:flex-end;isolation:isolate;}

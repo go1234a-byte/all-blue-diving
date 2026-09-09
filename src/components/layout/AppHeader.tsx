@@ -2,6 +2,7 @@ import { Link, NavLink } from "react-router-dom";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
+import { Home } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { getNavItems } from "@/components/layout/BottomNav";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,9 @@ interface AppHeaderProps {
 
 export function AppHeader({ title, showLanguage = false }: AppHeaderProps) {
   const { isLoggedIn, role } = useRole();
-  const navItems = getNavItems(role);
+  // 로그인 시 역할별 주요 메뉴(모바일 BottomNav·랜딩 상단 nav 와 동일), 비로그인은 홈만
+  // (로그인 버튼은 우측에 별도로 있음).
+  const navItems = isLoggedIn ? getNavItems(role) : [{ to: "/", label: "홈", icon: Home, end: true }];
 
   // bg-gradient-ocean/shadow-ocean은 index.css의 브랜드 그라데이션·그림자 토큰을
   // 재사용한다. 이 토큰은 라이트 테마에서는 흰 배경에 가깝게, .dark 스코프에서는
