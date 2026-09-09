@@ -545,7 +545,6 @@ export default function Landing() {
           {role === "instructor" && <Link to="/instructor">대시보드</Link>}
           {role === "admin" && <Link to="/admin/home">대시보드</Link>}
           {isLoggedIn ? <Link to="/mypage">마이페이지</Link> : <Link to="/auth">로그인</Link>}
-          <Link to="/search" className="ab-btn sm">투어 찾기</Link>
         </div>
       </nav>
 
@@ -1027,7 +1026,6 @@ const CSS = `
 .ab-tag{align-self:flex-start;flex:none;font-size:.6875rem;font-weight:700;letter-spacing:.02em;color:#8a6a2e;background:var(--turq-light);border:1px solid var(--gold);border-radius:999px;padding:6px 12px;white-space:nowrap;}
 
 .ab-btn{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:.9375rem;padding:14px 26px;border-radius:8px;background:var(--turq);color:#fff;border:1px solid var(--turq);position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease;box-shadow:0 6px 20px -8px rgba(23,168,189,.6);}
-.ab-btn.sm{padding:9px 16px;font-size:.875rem;box-shadow:none;}
 .ab-btn:hover{transform:translateY(-1px);box-shadow:0 10px 28px -8px rgba(23,168,189,.7);}
 .ab-btn::after{content:"";position:absolute;left:50%;top:50%;width:0;height:0;border-radius:50%;background:rgba(255,255,255,.35);transform:translate(-50%,-50%);transition:width .55s ease,height .55s ease,opacity .6s;opacity:0;}
 .ab-btn:hover::after{width:260px;height:260px;opacity:1;}

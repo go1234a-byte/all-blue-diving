@@ -25,11 +25,13 @@ export function AppHeader({ title, showLanguage = false }: AppHeaderProps) {
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between px-4 md:h-16 md:max-w-6xl md:px-6">
-        <Link to="/" className="flex items-center gap-2">
-          {title ? (
-            <span className="text-base font-bold tracking-tight text-foreground">{title}</span>
-          ) : (
-            <Logo size="sm" tone="header" />
+        {/* 로고는 항상 노출하고 홈(리디자인 랜딩)으로 이동한다. title 은 로고를 대체하지 않고 옆에 붙인다. */}
+        <Link to="/" className="flex items-center gap-2" aria-label="ALL BLUE 홈으로">
+          <Logo size="sm" tone="header" />
+          {title && (
+            <span className="border-l border-border/50 pl-2 text-base font-bold tracking-tight text-foreground">
+              {title}
+            </span>
           )}
         </Link>
 
