@@ -66,7 +66,10 @@ export function AdminSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="px-3 py-4">
-        <Logo size="sm" />
+        {/* 로고 클릭 시 공개 홈(리디자인 Landing)으로 나간다 */}
+        <NavLink to="/" aria-label="ALL BLUE 홈으로">
+          <Logo size="sm" />
+        </NavLink>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

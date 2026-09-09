@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import { Home } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -74,7 +75,18 @@ function AdminTopBar() {
       className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-border bg-card/95 px-4 backdrop-blur md:px-6"
       style={{ paddingTop: "env(safe-area-inset-top)", height: "calc(3.5rem + env(safe-area-inset-top))" }}
     >
-      <h1 className="line-clamp-1 text-base font-semibold text-foreground">{title}</h1>
+      <div className="flex min-w-0 items-center gap-2">
+        {/* 관리자 콘솔에서 공개 홈(리디자인 Landing)으로 나가는 유일한 출구 —
+            데스크톱은 사이드바 로고로도 가능하지만 모바일은 사이드바가 드로어라 이게 필요하다. */}
+        <Link
+          to="/"
+          aria-label="ALL BLUE 홈으로"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground"
+        >
+          <Home className="h-4 w-4" />
+        </Link>
+        <h1 className="line-clamp-1 text-base font-semibold text-foreground">{title}</h1>
+      </div>
       <div className="flex shrink-0 items-center gap-2">
         <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
           <Select value={period} onValueChange={handlePeriodChange}>
