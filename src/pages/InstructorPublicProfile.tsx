@@ -57,7 +57,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { SupportTicketForm } from "@/components/support/SupportTicketForm";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateKR, formatDateRangeKR, isPastDate } from "@/lib/dates";
-import { maskName } from "@/lib/masking";
+import { maskAccountNumber, maskName } from "@/lib/masking";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types";
 
@@ -548,7 +548,7 @@ const InstructorPublicProfile = () => {
               <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                 <span>은행: {documentProfile?.bankName || "-"}</span>
                 <span>예금주: {documentProfile?.accountHolder || "-"}</span>
-                <span className="col-span-2">계좌번호: {documentProfile?.accountNumber || "-"}</span>
+                <span className="col-span-2">계좌번호: {maskAccountNumber(documentProfile?.accountNumber)}</span>
               </div>
               {instructor.signatureDataUrl && (
                 <div className="space-y-1">

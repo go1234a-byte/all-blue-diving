@@ -12,6 +12,7 @@ import { FileDropzone } from "@/components/auth/FileDropzone";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { INSTRUCTOR_LANGUAGE_OPTIONS, INSTRUCTOR_SPECIALTY_OPTIONS } from "@/lib/constants";
+import { maskAccountNumber } from "@/lib/masking";
 import {
   uploadImageFile,
   uploadInstructorDocument,
@@ -378,7 +379,7 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
             </div>
             {(profile?.bankName || profile?.accountHolder || profile?.accountNumber) && (
               <p className="text-xs text-muted-foreground">
-                정산 계좌: {profile?.bankName || "-"} {profile?.accountHolder || ""} {profile?.accountNumber || ""}
+                정산 계좌: {profile?.bankName || "-"} {profile?.accountHolder || ""} {maskAccountNumber(profile?.accountNumber)}
               </p>
             )}
           </div>
