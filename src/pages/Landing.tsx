@@ -283,8 +283,8 @@ function Explorer({
                     <img src={pt.image} alt={pt.region} onError={handleImageFallback} loading="lazy" />
                   </div>
                   <div className="ab-bigcard-body">
-                    <p className="ab-bigcard-eyebrow">{pt.special ? "특수 다이빙" : `${MONTH_LABELS_KR[guideMonth]} 추천`}</p>
-                    <h3>{pt.region}</h3>
+                    <p className="ab-bigcard-eyebrow">{pt.special ? `특수 다이빙 · ${pt.region}` : pt.region}</p>
+                    <h3>{pt.hook}</h3>
                     <p className="ab-bigcard-oneliner">{pt.oneLiner}</p>
                     <p className="ab-bigcard-meta">{pt.water}</p>
                     <span className="ab-bigcard-more">자세히 보기 →</span>
@@ -743,12 +743,13 @@ export default function Landing() {
       <DetailSheet
         open={detail !== null}
         onClose={() => setDetail(null)}
-        title={detail ? (detail.kind === "point" ? detail.data.region : detail.data.name) : ""}
-        subtitle={detail?.kind === "point" ? detail.data.oneLiner : detail?.data.summary}
+        title={detail ? (detail.kind === "point" ? detail.data.hook : detail.data.name) : ""}
+        subtitle={detail?.kind === "point" ? detail.data.region : detail?.data.summary}
         images={detail ? [detail.data.image, ...detail.data.gallery] : []}
       >
         {detail?.kind === "point" && (
           <>
+            {detail.data.access && <p className="ab-sheet-access">✈️ 가는 길 · {detail.data.access}</p>}
             <p className="ab-sheet-p">{detail.data.detail}</p>
             {detail.data.special && (
               <p className="ab-sheet-note">
@@ -762,9 +763,9 @@ export default function Landing() {
             </dl>
             <p className="ab-lbcard-label">대표 다이빙 포인트 (예시)</p>
             <ul className="ab-sheet-points">
-              {detail.data.points.map((pt) => (
+              {detail.data.points.map((pt, i) => (
                 <li key={pt.name}>
-                  <b>{pt.name}</b>
+                  <b>{i + 1}. {pt.name}</b>
                   <span>{pt.desc}</span>
                 </li>
               ))}
@@ -1209,6 +1210,7 @@ const CSS = `
 .ab-sheet-body h3{font-size:1.375rem;}
 .ab-sheet-sub{margin-top:8px;font-size:.9375rem;color:var(--text-2);line-height:1.55;}
 .ab-sheet-p{margin-top:var(--s4);font-size:.9375rem;line-height:1.7;color:var(--text-1);}
+.ab-sheet-access{margin-top:var(--s3);font-size:.8125rem;font-weight:600;color:var(--turq);}
 .ab-sheet-note{margin-top:var(--s3);padding:12px 14px;border-radius:10px;background:#FFF6E5;border:1px solid var(--gold);font-size:.8125rem;line-height:1.6;color:var(--text-1);}
 .ab-lb-about{margin-top:var(--s3);}
 .ab-lb-about h4{font-size:1rem;font-weight:800;color:var(--text-1);margin-top:var(--s4);}
