@@ -157,7 +157,10 @@ export function AllReviewsAdminPanel() {
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
-                      className={cn("h-3 w-3", star <= review.rating ? "text-warning" : "text-muted-foreground")}
+                      className={cn(
+                        "h-3 w-3",
+                        star <= review.rating ? "fill-warning text-warning" : "text-muted-foreground",
+                      )}
                     />
                   ))}
                   <span className="ml-1 text-[10px] text-muted-foreground">{formatDateKR(review.createdAt)}</span>

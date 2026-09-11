@@ -167,7 +167,7 @@ export function ReviewDialog({ open, onOpenChange, tourId, bookingId, diverId }:
                 className={cn(
                   "h-8 w-8 transition-colors",
                   star <= (hoverRating || rating)
-                    ? "text-warning"
+                    ? "fill-warning text-warning"
                     : "text-muted-foreground",
                 )}
               />

@@ -92,7 +92,7 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
         <Card>
           <CardContent className="space-y-2 p-4 text-center">
             <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-warning/15 text-warning">
-              <Star className="h-4 w-4" />
+              <Star className="h-4 w-4 fill-warning" />
             </div>
             <p className="text-xs text-muted-foreground">평균 평점</p>
             <p className="text-2xl font-bold text-foreground">{instructor.rating.toFixed(1)}</p>
@@ -112,7 +112,7 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
               완료율 {instructor.completionRate}%
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Star className="h-4 w-4" />
+              <Star className="h-4 w-4 fill-warning text-warning" />
               만족도 {instructor.rating.toFixed(1)} / 5.0
             </div>
           </div>

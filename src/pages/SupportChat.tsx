@@ -11,6 +11,44 @@ import { useRole } from "@/contexts/RoleContext";
 type InquiryView = "write" | "history";
 type SupportTab = "faq" | "inquiry" | "dispute" | "report";
 
+/** 문의/분쟁조정/신고 탭 공용 "쓰기 ↔ 접수 내역 보기" 토글. */
+function ViewToggle({
+  view,
+  onChange,
+  writeLabel,
+  historyLabel,
+}: {
+  view: InquiryView;
+  onChange: (v: InquiryView) => void;
+  writeLabel: string;
+  historyLabel: string;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2 rounded-lg bg-secondary/50 p-1 text-sm font-medium">
+      <button
+        type="button"
+        onClick={() => onChange("write")}
+        className={cn(
+          "rounded-md py-1.5 transition-colors",
+          view === "write" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+        )}
+      >
+        {writeLabel}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("history")}
+        className={cn(
+          "rounded-md py-1.5 transition-colors",
+          view === "history" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+        )}
+      >
+        {historyLabel}
+      </button>
+    </div>
+  );
+}
+
 const SupportChat = () => {
   const { profile, authLoading } = useRole();
   // 1:1문의/분쟁조정/신고는 다이버뿐 아니라 강사도 접수할 수 있어야 하므로, 역할별로
@@ -19,6 +57,10 @@ const SupportChat = () => {
   // 그 결과 접수가 DB에 저장되지 않는 채로 성공 토스트만 뜨는 문제가 있었다.)
   const userId = profile?.id ?? "";
   const [inquiryView, setInquiryView] = useState<InquiryView>("write");
+  // 분쟁조정/신고도 문의와 마찬가지로 "쓰기/내가 접수한 내역 보기"가 각각 필요하다.
+  // 예전엔 이 두 탭에 쓰기 폼만 있어서, 접수 후엔 무엇을 썼는지 다시 볼 방법이 없었다.
+  const [disputeView, setDisputeView] = useState<InquiryView>("write");
+  const [reportView, setReportView] = useState<InquiryView>("write");
   // FAQ 탭의 "문의 남기기" 버튼을 눌렀을 때 실제로 접수되는 1:1 문의 탭으로 이동시키기 위해
   // 탭 상태를 여기서 직접 관리한다(기존에는 FAQ 탭 안에서 가짜 실시간 채팅 UI로만 전환되고
   // 실제로는 어디에도 접수되지 않는 문제가 있었다).
@@ -61,39 +103,28 @@ const SupportChat = () => {
             />
           </TabsContent>
           <TabsContent value="inquiry" className="space-y-4 pt-4">
-            <div className="grid grid-cols-2 gap-2 rounded-lg bg-secondary/50 p-1 text-sm font-medium">
-              <button
-                type="button"
-                onClick={() => setInquiryView("write")}
-                className={cn(
-                  "rounded-md py-1.5 transition-colors",
-                  inquiryView === "write" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
-                )}
-              >
-                문의하기
-              </button>
-              <button
-                type="button"
-                onClick={() => setInquiryView("history")}
-                className={cn(
-                  "rounded-md py-1.5 transition-colors",
-                  inquiryView === "history" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
-                )}
-              >
-                내 문의 보기
-              </button>
-            </div>
+            <ViewToggle view={inquiryView} onChange={setInquiryView} writeLabel="문의하기" historyLabel="내 문의 보기" />
             {inquiryView === "write" ? (
               <SupportTicketForm type="inquiry" userId={userId} />
             ) : (
-              <MyInquiriesList userId={userId} />
+              <MyInquiriesList userId={userId} type="inquiry" />
             )}
           </TabsContent>
-          <TabsContent value="dispute" className="pt-4">
-            <SupportTicketForm type="dispute" userId={userId} />
+          <TabsContent value="dispute" className="space-y-4 pt-4">
+            <ViewToggle view={disputeView} onChange={setDisputeView} writeLabel="분쟁조정 신청" historyLabel="내 접수 내역 보기" />
+            {disputeView === "write" ? (
+              <SupportTicketForm type="dispute" userId={userId} />
+            ) : (
+              <MyInquiriesList userId={userId} type="dispute" />
+            )}
           </TabsContent>
-          <TabsContent value="report" className="pt-4">
-            <SupportTicketForm type="report" userId={userId} />
+          <TabsContent value="report" className="space-y-4 pt-4">
+            <ViewToggle view={reportView} onChange={setReportView} writeLabel="신고하기" historyLabel="내 접수 내역 보기" />
+            {reportView === "write" ? (
+              <SupportTicketForm type="report" userId={userId} />
+            ) : (
+              <MyInquiriesList userId={userId} type="report" />
+            )}
           </TabsContent>
         </Tabs>
         )}

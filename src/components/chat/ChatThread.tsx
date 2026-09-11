@@ -67,6 +67,22 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
     return () => cancelAnimationFrame(frame);
   }, [messages.length]);
 
+  // 모바일 키보드가 열리면(특히 iOS Safari) 이 채팅창이 svh 기준 고정 높이라
+  // 레이아웃 뷰포트가 안 줄어들어서, 입력창이 키보드 뒤로 가려 타이핑 중인 내용이
+  // 안 보이는 문제가 있었다. visualViewport 크기 변화(키보드 열림/닫힘)를 감지해
+  // 입력창에 포커스가 있으면 그 위치로 강제 스크롤해 항상 보이게 한다.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const scrollInputIntoView = () => {
+      if (document.activeElement === inputRef.current) {
+        inputRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+      }
+    };
+    vv.addEventListener("resize", scrollInputIntoView);
+    return () => vv.removeEventListener("resize", scrollInputIntoView);
+  }, []);
+
   const currentSenderRole = role === "instructor" ? "instructor" : role === "admin" ? "admin" : "diver";
   const currentSenderName = profile?.name ?? (role === "admin" ? "관리자" : "게스트 다이버");
 
@@ -199,6 +215,13 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
                 // 말풍선이 "에ㅔㅔ"/"ㅔ"처럼 쪼개져서 두 번 전송됨). isComposing이 true인
                 // 동안(조합 확정 Enter)에는 전송하지 않고, 조합이 끝난 뒤의 Enter에서만 보낸다.
                 if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
+              }}
+              onFocus={() => {
+                // 키보드가 올라오는 애니메이션이 끝난 뒤 스크롤해야 자리를 확실히 잡는다.
+                window.setTimeout(
+                  () => inputRef.current?.scrollIntoView({ block: "end", behavior: "smooth" }),
+                  300,
+                );
               }}
               placeholder="메시지를 입력하세요"
             />

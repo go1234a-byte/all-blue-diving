@@ -101,7 +101,7 @@ export function ReviewList({ tourId }: ReviewListProps) {
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">후기 및 평점</h3>
         <div className="flex items-center gap-1 text-sm">
-          <Star className="h-4 w-4 text-warning" />
+          <Star className="h-4 w-4 fill-warning text-warning" />
           <span className="font-bold text-foreground">{averageRating.toFixed(1)}</span>
           <span className="text-xs text-muted-foreground">({reviews.length}개 후기)</span>
         </div>
@@ -128,7 +128,7 @@ export function ReviewList({ tourId }: ReviewListProps) {
                       key={star}
                       className={cn(
                         "h-3.5 w-3.5",
-                        star <= review.rating ? "text-warning" : "text-muted-foreground",
+                        star <= review.rating ? "fill-warning text-warning" : "text-muted-foreground",
                       )}
                     />
                   ))}

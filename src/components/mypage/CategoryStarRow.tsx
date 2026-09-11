@@ -18,7 +18,7 @@ export function CategoryStarRow({ label, value, onChange }: CategoryStarRowProps
             <Star
               className={cn(
                 "h-4 w-4 transition-colors",
-                star <= value ? "text-warning" : "text-muted-foreground",
+                star <= value ? "fill-warning text-warning" : "text-muted-foreground",
               )}
             />
           </button>

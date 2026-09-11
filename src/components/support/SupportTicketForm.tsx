@@ -13,6 +13,7 @@ import {
 import { FileDropzone } from "@/components/auth/FileDropzone";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { DISPUTE_TYPES, REPORT_TICKET_TYPES, type SupportTicketType } from "@/types";
 
 interface SupportTicketFormProps {
@@ -57,6 +58,13 @@ export function SupportTicketForm({ type, userId }: SupportTicketFormProps) {
     }
     if (type !== "inquiry" && !category) {
       toast({ title: `${type === "dispute" ? "분쟁 유형" : "신고 유형"}을 선택해주세요`, variant: "destructive" });
+      return;
+    }
+    // 신고/분쟁조정은 특성상 상대에 대한 불만을 적다 보니 욕설이 섞이기 쉽지만,
+    // 그 내용도 결국 강사에게 전달되거나 운영자가 검토하는 텍스트이므로 채팅·후기와
+    // 동일한 1차 필터를 통과해야 한다.
+    if (containsObjectionable(title) || containsObjectionable(content)) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
     if (!userId) {

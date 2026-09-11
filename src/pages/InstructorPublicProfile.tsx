@@ -810,7 +810,7 @@ const InstructorPublicProfile = () => {
             <h3 className="text-sm font-semibold text-foreground">후기</h3>
             {reviews.length > 0 && (
               <div className="flex items-center gap-1 text-sm">
-                <Star className="h-4 w-4 text-warning" />
+                <Star className="h-4 w-4 fill-warning text-warning" />
                 <span className="font-bold text-foreground">{avgRating.toFixed(1)}</span>
                 <span className="text-xs text-muted-foreground">({reviews.length}개)</span>
               </div>
@@ -832,7 +832,7 @@ const InstructorPublicProfile = () => {
                               key={star}
                               className={
                                 star <= review.rating
-                                  ? "h-3.5 w-3.5 text-warning"
+                                  ? "h-3.5 w-3.5 fill-warning text-warning"
                                   : "h-3.5 w-3.5 text-muted-foreground"
                               }
                             />

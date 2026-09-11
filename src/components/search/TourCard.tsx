@@ -149,7 +149,7 @@ export function TourCard({ tour }: TourCardProps) {
             </div>
             <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
               <div className="flex items-center gap-1 rounded-full bg-background/85 px-2 py-1 text-xs font-semibold text-foreground backdrop-blur">
-                <Star className="h-3 w-3 text-warning" />
+                <Star className="h-3 w-3 fill-warning text-warning" />
                 {tour.rating.toFixed(1)}
               </div>
               <button

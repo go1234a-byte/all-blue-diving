@@ -90,7 +90,10 @@ export function InstructorReviewsPanel({ instructorId }: InstructorReviewsPanelP
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={cn("h-3.5 w-3.5", star <= review.rating ? "text-warning" : "text-muted-foreground")}
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      star <= review.rating ? "fill-warning text-warning" : "text-muted-foreground",
+                    )}
                   />
                 ))}
               </div>
