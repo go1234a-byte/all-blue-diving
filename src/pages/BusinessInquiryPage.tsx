@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 
 /**
  * 기업/단체(워크샵·사내 행사 등) 전용 문의 게시판. router.tsx에서 로그인 가드가 걸려있어
@@ -45,6 +46,10 @@ const BusinessInquiryPage = () => {
     }
     if (!message.trim()) {
       toast({ title: "문의 내용을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    if (containsObjectionable(message)) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
     setSubmitting(true);

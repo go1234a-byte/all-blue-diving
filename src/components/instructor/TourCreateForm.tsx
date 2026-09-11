@@ -24,6 +24,7 @@ import { SuggestInput } from "@/components/instructor/SuggestInput";
 import { TourPledgeAgreement } from "@/components/instructor/TourPledgeAgreement";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { uploadImageFile, uploadImageFiles } from "@/lib/uploadImage";
 import {
   COUNTRIES_SITES,
@@ -399,6 +400,12 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
     }
     if (startDate && deadline && toISODate(deadline) > toISODate(startDate)) {
       toast({ title: "모집 마감일은 출발일 이후로 설정할 수 없습니다", variant: "destructive" });
+      return;
+    }
+    // 투어명/소개는 검색 결과·상세 페이지에 그대로 공개되므로 채팅·후기와 동일한
+    // 1차 필터를 통과해야 한다.
+    if (containsObjectionable(`${title} ${description}`)) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
     if (Number(basePrice) <= 0) {

@@ -26,6 +26,7 @@ import { SuggestInput } from "@/components/instructor/SuggestInput";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { uploadImageFile, uploadImageFiles } from "@/lib/uploadImage";
 import {
   COUNTRIES_SITES,
@@ -420,6 +421,12 @@ export function TourEditForm({ tour }: TourEditFormProps) {
         description: `다음 항목이 비어있어요: ${missingFields.join(", ")}`,
         variant: "destructive",
       });
+      return;
+    }
+    // 투어명/소개는 검색 결과·상세 페이지에 그대로 공개되므로 채팅·후기와 동일한
+    // 1차 필터를 통과해야 한다.
+    if (containsObjectionable(`${title} ${description}`)) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
     if (!hasActiveBooking) {

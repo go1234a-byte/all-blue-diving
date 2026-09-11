@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { formatDateKR } from "@/lib/dates";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,11 @@ export function InstructorReviewsPanel({ instructorId }: InstructorReviewsPanelP
     const reply = (drafts[reviewId] ?? "").trim();
     if (!reply) {
       toast({ title: "답글 내용을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    // 이 답글은 후기와 함께 누구에게나 공개되므로 채팅·후기와 동일한 1차 필터를 통과해야 한다.
+    if (containsObjectionable(reply)) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
     setSubmittingId(reviewId);

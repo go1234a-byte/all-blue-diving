@@ -19,6 +19,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { computeInvoice, formatKRW, validateAndComputeCouponDiscount } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { cn } from "@/lib/utils";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import type { CompanionInfo, Coupon, Gender } from "@/types";
@@ -202,6 +203,11 @@ const Checkout = () => {
         description: "결제 금액은 100원 이상이어야 합니다.",
         variant: "destructive",
       });
+      return;
+    }
+    // 룸 배정 참고사항은 강사가 그대로 읽는 텍스트이므로 채팅과 동일한 1차 필터를 통과해야 한다.
+    if (containsObjectionable(participants.map((p) => p.roomNote).join(" "))) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
     setProcessing(true);

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import type { Tour, TourItineraryDay } from "@/types";
 
 interface TourItineraryTabProps {
@@ -48,6 +49,12 @@ export function TourItineraryTab({ tour, isInstructor }: TourItineraryTabProps) 
   const removeDay = (index: number) => setDays((prev) => prev.filter((_, i) => i !== index));
 
   const handleSave = async () => {
+    // 일정은 예약 다이버 전원에게 그대로 노출되므로 채팅과 동일한 1차 필터를 통과해야 한다.
+    const combined = [meetingPoint, meetingTime, ...days.flatMap((d) => [d.title, d.briefing, d.diving, d.meals, d.freeTime])].join(" ");
+    if (containsObjectionable(combined)) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       await Promise.all([

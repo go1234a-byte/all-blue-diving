@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { formatDateRangeKR, dDayLabel } from "@/lib/dates";
 import type { Booking, Tour } from "@/types";
 
@@ -28,6 +29,11 @@ export function TourDashboardTab({ tour, isInstructor }: TourDashboardTabProps) 
   const confirmedCount = getConfirmedParticipantCount(tour.id);
 
   const handleSave = async () => {
+    // 공지는 예약 다이버 전원에게 그대로 노출되므로 채팅과 동일한 1차 필터를 통과해야 한다.
+    if (containsObjectionable(draft)) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       await updateTourNotice(tour.id, draft.trim());

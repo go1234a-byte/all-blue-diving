@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { INQUIRY_CATEGORIES, type InquiryCategory } from "@/types";
 
 interface InquiryDialogProps {
@@ -50,6 +51,10 @@ export function InquiryDialog({
   const handleSubmit = async () => {
     if (!message.trim()) {
       toast({ title: "문의 내용을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    if (containsObjectionable(message)) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
     setSubmitting(true);

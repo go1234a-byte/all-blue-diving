@@ -14,6 +14,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadInstructorDocument, uploadInstructorDocuments } from "@/lib/uploadImage";
 import { useToast } from "@/hooks/use-toast";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import type { Gender, InstructorBusinessType } from "@/types";
 
 interface InstructorSignupFormProps {
@@ -201,6 +202,12 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
     }
     if (!signature) {
       toast({ title: "서명을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    // 강사 소개는 승인 후 공개 프로필에 그대로 노출되므로 채팅·후기와 동일한
+    // 1차 필터를 통과해야 한다.
+    if (containsObjectionable(bio)) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
     setSubmitting(true);

@@ -12,6 +12,7 @@ import { FileDropzone } from "@/components/auth/FileDropzone";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { INSTRUCTOR_LANGUAGE_OPTIONS, INSTRUCTOR_SPECIALTY_OPTIONS } from "@/lib/constants";
+import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { maskAccountNumber } from "@/lib/masking";
 import {
   uploadImageFile,
@@ -189,6 +190,12 @@ export function InstructorProfileEditCard({ instructor, profile }: InstructorPro
   const handleSave = async () => {
     if (!name.trim()) {
       toast({ title: "이름을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    // 소개/교육 철학/좋아하는 다이빙은 강사 공개 프로필에 그대로 노출되므로
+    // 채팅·후기와 동일한 1차 필터를 통과해야 한다.
+    if (containsObjectionable(`${bio} ${teachingPhilosophy} ${favoriteDiving}`)) {
+      toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
     setSaving(true);
