@@ -39,17 +39,17 @@ const abUnlockScroll = () => {
  * 골드(#D4AF6A)는 헤어라인·뱃지 5% 이내. 이미지는 임시 라이선스 스톡(public/landing/*).
  */
 
-/** 히어로 슬라이드 — 목적지 + 감각 카피 + 배경 실사. 로드 시 무작위로 시작해 무작위로 전환. */
-const HERO_SLIDES = [
-  { headline: "팔라우, 빛이 쏟아지는 블루워터 한가운데", image: "/landing/hero.jpg", alt: "수면에서 빛이 내려오는 푸른 바다" },
-  { headline: "라자암팟, 세계에서 가장 화려한 산호 정원", image: "/landing/coral.jpg", alt: "형형색색의 연산호 리프" },
-  { headline: "세부, 정어리 수백만 마리의 소용돌이 속으로", image: "/landing/scuba1.jpg", alt: "물고기 떼 사이의 스쿠버 다이버" },
-  { headline: "몰디브, 수면 아래로 이어지는 리프 채널", image: "/landing/descend.jpg", alt: "리프 벽을 따라 하강하는 다이버" },
-  { headline: "시파단, 백사장 위를 순찰하는 리프샤크", image: "/landing/instructor.jpg", alt: "모래 바닥 위를 헤엄치는 상어" },
-  { headline: "통가, 혹등고래가 숨을 고르는 수면", image: "/landing/whale.jpg", alt: "수면 위로 솟구치는 혹등고래" },
-];
-/** 세로 공간 확보용 — 가장 긴 헤드라인. */
-const HERO_GHOST = HERO_SLIDES[2].headline;
+/**
+ * 광고 배너 — 첫 화면(히어로) 바로 아래. href 가 http(s)로 시작하면 외부 링크(새 탭),
+ * 아니면 앱 내부 경로(투어 상세 "/tours/:id", 검색 "/search?..." 등)로 이동한다.
+ * 담당자가 image/headline/href 만 바꿔 끼우면 되는 자리표시자.
+ */
+const AD_BANNER = {
+  image: "/landing/boat.jpg",
+  headline: "지금 예약하면 첫 투어 할인 — 자세히 보기",
+  href: "/search",
+};
+const isExternalHref = (href: string) => /^https?:\/\//.test(href);
 
 /** 리브어보드 하루 일과 — 예시. 상품마다 다릅니다. */
 const LIVEABOARD_DAY = [
@@ -452,7 +452,7 @@ export default function Landing() {
   const profileName = (id: string) => publicProfiles.find((p) => p.id === id)?.name ?? "다녀온 다이버";
   const rootRef = useReveal();
 
-  const [heroIdx, setHeroIdx] = useState(() => Math.floor(Math.random() * HERO_SLIDES.length));
+  const [heroIdx, setHeroIdx] = useState(0);
   const heroPaused = useRef(false);
   const [q, setQ] = useState("");
   const [month, setMonth] = useState<number | "">("");
@@ -464,18 +464,34 @@ export default function Landing() {
   >(null);
   const [scrollY, setScrollY] = useState(0);
 
+  // 히어로 = "이번 달 다이빙 떠나기 좋은 곳". guideMonth 는 기본값이 오늘 날짜의 달(위 초기화)이라
+  // 첫 화면은 항상 현재 월 추천으로 뜨고, 아래 가이드 섹션에서 달을 바꾸면 히어로도 같이 바뀐다.
+  const monthPoints = useMemo(
+    () =>
+      (GUIDE_BY_MONTH[guideMonth] ?? [])
+        .map((id) => DIVE_POINTS[id])
+        .filter((p): p is DivePoint => Boolean(p)),
+    [guideMonth],
+  );
+  const heroPoint = monthPoints[heroIdx] ?? monthPoints[0];
+  const heroGhost = useMemo(
+    () => monthPoints.reduce((longest, p) => (p.hook.length > longest.length ? p.hook : longest), ""),
+    [monthPoints],
+  );
+
+  // 달이 바뀌면(가이드 섹션에서 월 탭 클릭) 인덱스를 처음으로.
   useEffect(() => {
-    if (reduced) return;
+    setHeroIdx(0);
+  }, [guideMonth]);
+
+  useEffect(() => {
+    if (reduced || monthPoints.length <= 1) return;
     const t = setInterval(() => {
       if (heroPaused.current || explorer) return; // 전체화면 뷰가 열려 있으면 히어로는 안 보이니 리렌더 낭비 금지
-      setHeroIdx((cur) => {
-        let n = cur;
-        while (n === cur) n = Math.floor(Math.random() * HERO_SLIDES.length);
-        return n;
-      });
+      setHeroIdx((cur) => (cur + 1) % monthPoints.length);
     }, 6500);
     return () => clearInterval(t);
-  }, [reduced, explorer]);
+  }, [reduced, explorer, monthPoints.length]);
 
   useEffect(() => {
     const on = () => setScrollY(window.scrollY);
@@ -511,14 +527,6 @@ export default function Landing() {
       .slice(0, 6);
   }, [openTours, getConfirmedParticipantCount]);
 
-  // B. 어디로 가고 싶으세요 — TOUR(예약) 데이터와 무관한 정적 콘텐츠.
-  const monthPoints = useMemo(
-    () =>
-      (GUIDE_BY_MONTH[guideMonth] ?? [])
-        .map((id) => DIVE_POINTS[id])
-        .filter((p): p is DivePoint => Boolean(p)),
-    [guideMonth],
-  );
   const carouselInstructors = useMemo(() => {
     const verified = instructors.filter((i) => i.verified);
     return (verified.length >= 3 ? verified : instructors).slice(0, 12);
@@ -601,26 +609,38 @@ export default function Landing() {
           className="ab-hero-media"
           style={reduced ? undefined : { transform: `translateY(${scrollY * 0.16}px) scale(1.06)` }}
         >
-          {HERO_SLIDES.map((s, i) => (
+          {monthPoints.map((p, i) => (
             <img
-              key={s.image}
-              src={s.image}
-              alt={i === heroIdx ? s.alt : ""}
+              key={p.id}
+              src={p.image}
+              alt={i === heroIdx ? p.region : ""}
               aria-hidden={i === heroIdx ? undefined : true}
               className={i === heroIdx ? "is-on" : undefined}
+              onError={handleImageFallback}
             />
           ))}
           <div className="ab-hero-scrim" />
         </div>
         <div className="wrap ab-hero-inner">
-          <p className="ab-eyebrow light">Diving Tour Platform · Est. 2026</p>
+          <p className="ab-eyebrow light">{MONTH_LABELS_KR[guideMonth]}, 다이빙 떠나기 좋은 곳</p>
           <h1 className="ab-hero-h">
-            <span key={heroIdx} className="ab-hero-line on">{HERO_SLIDES[heroIdx].headline}</span>
-            <span className="ab-hero-line ghost">{HERO_GHOST}</span>
+            <span key={heroPoint?.id ?? heroIdx} className="ab-hero-line on">
+              {heroPoint?.hook ?? "이번 달 추천 포인트를 준비 중입니다"}
+            </span>
+            <span className="ab-hero-line ghost">{heroGhost}</span>
           </h1>
           <p className="ab-hero-lede">
-            내가 원하는 바다, 내가 원하는 날짜, 내가 원하는 다이빙.
+            {heroPoint ? `${heroPoint.region} · ${heroPoint.oneLiner}` : "내가 원하는 바다, 내가 원하는 날짜, 내가 원하는 다이빙."}
           </p>
+          {heroPoint && (
+            <button
+              type="button"
+              className="ab-hero-more"
+              onClick={() => setDetail({ kind: "point", data: heroPoint })}
+            >
+              {heroPoint.region} 자세히 보기 →
+            </button>
+          )}
           <div className="ab-search" role="search">
             <input
               className="ab-search-fld"
@@ -658,6 +678,32 @@ export default function Landing() {
           <a href="#guide" className="ab-scrollcue"><i />다이빙 가이드 보기</a>
         </div>
       </header>
+
+      {/* 1-1. 광고 배너 — href 가 http(s)면 외부 링크(새 탭), 아니면 앱 내부 경로로 이동 */}
+      <section className="ab-sec ab-adsec">
+        <div className="wrap">
+          <a
+            className="ab-adbanner"
+            href={AD_BANNER.href}
+            target={isExternalHref(AD_BANNER.href) ? "_blank" : undefined}
+            rel={isExternalHref(AD_BANNER.href) ? "noopener noreferrer" : undefined}
+            onClick={
+              isExternalHref(AD_BANNER.href)
+                ? undefined
+                : (e) => {
+                    e.preventDefault();
+                    navigate(AD_BANNER.href);
+                  }
+            }
+          >
+            <img src={AD_BANNER.image} alt="" onError={handleImageFallback} loading="lazy" />
+            <div className="ab-adbanner-body">
+              <span className="ab-adbanner-tag">광고</span>
+              <p>{AD_BANNER.headline}</p>
+            </div>
+          </a>
+        </div>
+      </section>
 
       {/* 2. 언제 어디로 떠날까요 — 다이빙 포인트 가이드 배너 (클릭 시 Explorer) */}
       <section id="guide" className="ab-sec ab-guide">
@@ -1095,6 +1141,23 @@ const CSS = `
 @keyframes abheadline{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
 .ab-hero-line.ghost{position:relative;visibility:hidden;}
 .ab-hero-lede{margin-top:var(--s4);max-width:52ch;color:rgba(255,255,255,.9);font-size:var(--fs-body);line-height:var(--lh-body);}
+.ab-hero-more{display:inline-block;margin-top:12px;background:none;border:0;border-bottom:2px solid var(--turq);padding:0 0 3px;font:inherit;font-weight:700;font-size:.9375rem;color:#fff;cursor:pointer;}
+/* 세로로 긴 모바일 화면에서는 크롭 위치를 살짝 위로, 넓은 데스크톱에선 중앙으로 — 기기 화면비마다 인물/피사체가 안 잘리게 */
+@media(max-width:480px){.ab-hero-media img{object-position:center 35%;}}
+@media(min-width:1400px){.ab-hero-media img{object-position:center 55%;}}
+
+/* 광고 배너 — 히어로 바로 아래, 폭 넓은 화면은 좌우 분할, 좁은 화면은 위아래로 쌓임 */
+.ab-adsec{padding-top:var(--s5);padding-bottom:0;}
+.ab-adbanner{position:relative;display:flex;align-items:stretch;width:100%;min-height:130px;border-radius:16px;overflow:hidden;text-decoration:none;box-shadow:0 12px 32px -20px rgba(20,50,77,.35);}
+.ab-adbanner img{width:38%;min-width:120px;object-fit:cover;}
+.ab-adbanner-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:var(--s5) var(--s6);background:var(--navy);color:#fff;}
+.ab-adbanner-tag{align-self:flex-start;font-size:.625rem;font-weight:700;letter-spacing:.1em;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.16);color:#CFF3F8;}
+.ab-adbanner-body p{margin:0;font-size:1.0625rem;font-weight:700;line-height:1.45;}
+@media(max-width:640px){
+  .ab-adbanner{flex-direction:column;min-height:0;}
+  .ab-adbanner img{width:100%;height:140px;min-width:0;}
+  .ab-adbanner-body{padding:var(--s4) var(--s5);}
+}
 .ab-search{margin-top:var(--s5);display:flex;flex-wrap:wrap;gap:var(--s2);max-width:640px;background:rgba(255,255,255,.96);border-radius:12px;padding:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
 .ab-search-fld{flex:1 1 200px;min-width:0;border:0;outline:0;background:transparent;color:var(--navy);padding:12px 14px;font-size:.9375rem;font-family:inherit;}
 .ab-search-fld::placeholder{color:var(--text-2);}
