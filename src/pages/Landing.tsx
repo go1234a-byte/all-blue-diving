@@ -675,35 +675,60 @@ export default function Landing() {
             </div>
             <button className="ab-search-go" onClick={goSearch}>투어 찾기</button>
           </div>
+          {/* 광고 배너 — 첫 화면(히어로) 안에 함께 노출. 이미지/헤드라인은 href로
+              이동(http(s)면 외부 새 탭, 아니면 앱 내부 경로)하고, 그와 별개로
+              "다이빙 소개 보기" 버튼으로 이번 달 추천 포인트 상세도 그대로 볼 수 있다. */}
+          <div className="ab-adbanner">
+            <a
+              className="ab-adbanner-media"
+              href={AD_BANNER.href}
+              target={isExternalHref(AD_BANNER.href) ? "_blank" : undefined}
+              rel={isExternalHref(AD_BANNER.href) ? "noopener noreferrer" : undefined}
+              onClick={
+                isExternalHref(AD_BANNER.href)
+                  ? undefined
+                  : (e) => {
+                      e.preventDefault();
+                      navigate(AD_BANNER.href);
+                    }
+              }
+              aria-label={AD_BANNER.headline}
+            >
+              <img src={AD_BANNER.image} alt="" onError={handleImageFallback} loading="lazy" />
+            </a>
+            <div className="ab-adbanner-body">
+              <span className="ab-adbanner-tag">광고</span>
+              <a
+                className="ab-adbanner-headline"
+                href={AD_BANNER.href}
+                target={isExternalHref(AD_BANNER.href) ? "_blank" : undefined}
+                rel={isExternalHref(AD_BANNER.href) ? "noopener noreferrer" : undefined}
+                onClick={
+                  isExternalHref(AD_BANNER.href)
+                    ? undefined
+                    : (e) => {
+                        e.preventDefault();
+                        navigate(AD_BANNER.href);
+                      }
+                }
+              >
+                {AD_BANNER.headline}
+              </a>
+              {heroPoint && (
+                <button
+                  type="button"
+                  className="ab-adbanner-info"
+                  onClick={() => setDetail({ kind: "point", data: heroPoint })}
+                >
+                  {heroPoint.region} 다이빙 소개 보기 →
+                </button>
+              )}
+            </div>
+          </div>
+
           <a href="#guide" className="ab-scrollcue"><i />다이빙 가이드 보기</a>
         </div>
       </header>
-
-      {/* 1-1. 광고 배너 — href 가 http(s)면 외부 링크(새 탭), 아니면 앱 내부 경로로 이동 */}
-      <section className="ab-sec ab-adsec">
-        <div className="wrap">
-          <a
-            className="ab-adbanner"
-            href={AD_BANNER.href}
-            target={isExternalHref(AD_BANNER.href) ? "_blank" : undefined}
-            rel={isExternalHref(AD_BANNER.href) ? "noopener noreferrer" : undefined}
-            onClick={
-              isExternalHref(AD_BANNER.href)
-                ? undefined
-                : (e) => {
-                    e.preventDefault();
-                    navigate(AD_BANNER.href);
-                  }
-            }
-          >
-            <img src={AD_BANNER.image} alt="" onError={handleImageFallback} loading="lazy" />
-            <div className="ab-adbanner-body">
-              <span className="ab-adbanner-tag">광고</span>
-              <p>{AD_BANNER.headline}</p>
-            </div>
-          </a>
-        </div>
-      </section>
 
       {/* 2. 언제 어디로 떠날까요 — 다이빙 포인트 가이드 배너 (클릭 시 Explorer) */}
       <section id="guide" className="ab-sec ab-guide">
@@ -1146,16 +1171,18 @@ const CSS = `
 @media(max-width:480px){.ab-hero-media img{object-position:center 35%;}}
 @media(min-width:1400px){.ab-hero-media img{object-position:center 55%;}}
 
-/* 광고 배너 — 히어로 바로 아래, 폭 넓은 화면은 좌우 분할, 좁은 화면은 위아래로 쌓임 */
-.ab-adsec{padding-top:var(--s5);padding-bottom:0;}
-.ab-adbanner{position:relative;display:flex;align-items:stretch;width:100%;min-height:130px;border-radius:16px;overflow:hidden;text-decoration:none;box-shadow:0 12px 32px -20px rgba(20,50,77,.35);}
-.ab-adbanner img{width:38%;min-width:120px;object-fit:cover;}
-.ab-adbanner-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:var(--s5) var(--s6);background:var(--navy);color:#fff;}
-.ab-adbanner-tag{align-self:flex-start;font-size:.625rem;font-weight:700;letter-spacing:.1em;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.16);color:#CFF3F8;}
-.ab-adbanner-body p{margin:0;font-size:1.0625rem;font-weight:700;line-height:1.45;}
+/* 광고 배너 — 히어로(첫 화면) 안에 함께 노출. 폭 넓은 화면은 좌우 분할, 좁은 화면은 위아래로 쌓임.
+   이미지/헤드라인 클릭은 광고 href로, "다이빙 소개 보기"는 별도 버튼으로 상세시트를 연다. */
+.ab-adbanner{position:relative;display:flex;align-items:stretch;width:100%;min-height:130px;margin-top:var(--s5);border-radius:16px;overflow:hidden;box-shadow:0 12px 32px -20px rgba(10,27,46,.6);}
+.ab-adbanner-media{display:block;width:38%;min-width:120px;}
+.ab-adbanner-media img{display:block;width:100%;height:100%;object-fit:cover;}
+.ab-adbanner-body{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;padding:var(--s5) var(--s6);background:var(--navy);color:#fff;}
+.ab-adbanner-tag{font-size:.625rem;font-weight:700;letter-spacing:.1em;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.16);color:#CFF3F8;}
+.ab-adbanner-headline{margin:0;font-size:1.0625rem;font-weight:700;line-height:1.45;color:#fff;}
+.ab-adbanner-info{margin-top:2px;background:none;border:0;padding:0;font:inherit;font-size:.8125rem;font-weight:600;color:#CFF3F8;border-bottom:1px solid rgba(207,243,248,.5);cursor:pointer;}
 @media(max-width:640px){
   .ab-adbanner{flex-direction:column;min-height:0;}
-  .ab-adbanner img{width:100%;height:140px;min-width:0;}
+  .ab-adbanner-media{width:100%;height:140px;min-width:0;}
   .ab-adbanner-body{padding:var(--s4) var(--s5);}
 }
 .ab-search{margin-top:var(--s5);display:flex;flex-wrap:wrap;gap:var(--s2);max-width:640px;background:rgba(255,255,255,.96);border-radius:12px;padding:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
