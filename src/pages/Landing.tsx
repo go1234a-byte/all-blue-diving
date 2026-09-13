@@ -641,6 +641,30 @@ export default function Landing() {
               {heroPoint.region} 자세히 보기 →
             </button>
           )}
+          {/* 광고 — 별도 박스로 떼어놓지 않고 히어로 문구 바로 아래 한 줄 칩으로 자연스럽게
+              끼워 넣는다(따로 떨어진 카드처럼 보이지 않게). 다이빙 소개는 바로 위
+              "자세히 보기" 버튼으로 이미 볼 수 있어 이 칩은 광고 클릭 하나에만 집중한다.
+              href가 http(s)면 외부 새 탭, 아니면 앱 내부 경로로 이동. */}
+          <a
+            className="ab-heroad"
+            href={AD_BANNER.href}
+            target={isExternalHref(AD_BANNER.href) ? "_blank" : undefined}
+            rel={isExternalHref(AD_BANNER.href) ? "noopener noreferrer" : undefined}
+            onClick={
+              isExternalHref(AD_BANNER.href)
+                ? undefined
+                : (e) => {
+                    e.preventDefault();
+                    navigate(AD_BANNER.href);
+                  }
+            }
+          >
+            <img className="ab-heroad-thumb" src={AD_BANNER.image} alt="" onError={handleImageFallback} loading="lazy" />
+            <span className="ab-heroad-tag">광고</span>
+            <span className="ab-heroad-text">{AD_BANNER.headline}</span>
+            <span className="ab-heroad-arrow" aria-hidden="true">→</span>
+          </a>
+
           <div className="ab-search" role="search">
             <input
               className="ab-search-fld"
@@ -674,56 +698,6 @@ export default function Landing() {
               >프리다이빙</button>
             </div>
             <button className="ab-search-go" onClick={goSearch}>투어 찾기</button>
-          </div>
-          {/* 광고 배너 — 첫 화면(히어로) 안에 함께 노출. 이미지/헤드라인은 href로
-              이동(http(s)면 외부 새 탭, 아니면 앱 내부 경로)하고, 그와 별개로
-              "다이빙 소개 보기" 버튼으로 이번 달 추천 포인트 상세도 그대로 볼 수 있다. */}
-          <div className="ab-adbanner">
-            <a
-              className="ab-adbanner-media"
-              href={AD_BANNER.href}
-              target={isExternalHref(AD_BANNER.href) ? "_blank" : undefined}
-              rel={isExternalHref(AD_BANNER.href) ? "noopener noreferrer" : undefined}
-              onClick={
-                isExternalHref(AD_BANNER.href)
-                  ? undefined
-                  : (e) => {
-                      e.preventDefault();
-                      navigate(AD_BANNER.href);
-                    }
-              }
-              aria-label={AD_BANNER.headline}
-            >
-              <img src={AD_BANNER.image} alt="" onError={handleImageFallback} loading="lazy" />
-            </a>
-            <div className="ab-adbanner-body">
-              <span className="ab-adbanner-tag">광고</span>
-              <a
-                className="ab-adbanner-headline"
-                href={AD_BANNER.href}
-                target={isExternalHref(AD_BANNER.href) ? "_blank" : undefined}
-                rel={isExternalHref(AD_BANNER.href) ? "noopener noreferrer" : undefined}
-                onClick={
-                  isExternalHref(AD_BANNER.href)
-                    ? undefined
-                    : (e) => {
-                        e.preventDefault();
-                        navigate(AD_BANNER.href);
-                      }
-                }
-              >
-                {AD_BANNER.headline}
-              </a>
-              {heroPoint && (
-                <button
-                  type="button"
-                  className="ab-adbanner-info"
-                  onClick={() => setDetail({ kind: "point", data: heroPoint })}
-                >
-                  {heroPoint.region} 다이빙 소개 보기 →
-                </button>
-              )}
-            </div>
           </div>
 
           <a href="#guide" className="ab-scrollcue"><i />다이빙 가이드 보기</a>
@@ -1171,20 +1145,14 @@ const CSS = `
 @media(max-width:480px){.ab-hero-media img{object-position:center 35%;}}
 @media(min-width:1400px){.ab-hero-media img{object-position:center 55%;}}
 
-/* 광고 배너 — 히어로(첫 화면) 안에 함께 노출. 폭 넓은 화면은 좌우 분할, 좁은 화면은 위아래로 쌓임.
-   이미지/헤드라인 클릭은 광고 href로, "다이빙 소개 보기"는 별도 버튼으로 상세시트를 연다. */
-.ab-adbanner{position:relative;display:flex;align-items:stretch;width:100%;min-height:130px;margin-top:var(--s5);border-radius:16px;overflow:hidden;box-shadow:0 12px 32px -20px rgba(10,27,46,.6);}
-.ab-adbanner-media{display:block;width:38%;min-width:120px;}
-.ab-adbanner-media img{display:block;width:100%;height:100%;object-fit:cover;}
-.ab-adbanner-body{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;padding:var(--s5) var(--s6);background:var(--navy);color:#fff;}
-.ab-adbanner-tag{font-size:.625rem;font-weight:700;letter-spacing:.1em;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.16);color:#CFF3F8;}
-.ab-adbanner-headline{margin:0;font-size:1.0625rem;font-weight:700;line-height:1.45;color:#fff;}
-.ab-adbanner-info{margin-top:2px;background:none;border:0;padding:0;font:inherit;font-size:.8125rem;font-weight:600;color:#CFF3F8;border-bottom:1px solid rgba(207,243,248,.5);cursor:pointer;}
-@media(max-width:640px){
-  .ab-adbanner{flex-direction:column;min-height:0;}
-  .ab-adbanner-media{width:100%;height:140px;min-width:0;}
-  .ab-adbanner-body{padding:var(--s4) var(--s5);}
-}
+/* 광고 — 별도 카드가 아니라 히어로 문구 사이에 끼워 넣는 한 줄 칩. 반투명 유리질감
+   배경만 줘서 히어로 이미지 위에 자연스럽게 얹혀 보이게 하고, 박스/그림자로 튀지 않게 한다. */
+.ab-heroad{display:inline-flex;max-width:100%;align-items:center;gap:9px;margin-top:14px;padding:6px 14px 6px 6px;border-radius:999px;background:rgba(255,255,255,.14);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);text-decoration:none;}
+.ab-heroad-thumb{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.ab-heroad-tag{flex-shrink:0;font-size:.625rem;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.22);color:#fff;}
+.ab-heroad-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8125rem;font-weight:600;color:#fff;}
+.ab-heroad-arrow{flex-shrink:0;color:#fff;}
+@media(max-width:480px){.ab-heroad-text{max-width:44vw;}}
 .ab-search{margin-top:var(--s5);display:flex;flex-wrap:wrap;gap:var(--s2);max-width:640px;background:rgba(255,255,255,.96);border-radius:12px;padding:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
 .ab-search-fld{flex:1 1 200px;min-width:0;border:0;outline:0;background:transparent;color:var(--navy);padding:12px 14px;font-size:.9375rem;font-family:inherit;}
 .ab-search-fld::placeholder{color:var(--text-2);}
