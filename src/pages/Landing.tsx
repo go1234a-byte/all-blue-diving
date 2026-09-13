@@ -46,7 +46,8 @@ const abUnlockScroll = () => {
  */
 const AD_BANNER = {
   image: "/landing/boat.jpg",
-  headline: "지금 예약하면 첫 투어 할인 — 자세히 보기",
+  headline: "지금 예약하면 첫 투어 할인",
+  sub: "신규 예약자 한정 프로모션 — 지금 확인해보세요.",
   href: "/search",
 };
 const isExternalHref = (href: string) => /^https?:\/\//.test(href);
@@ -473,9 +474,21 @@ export default function Landing() {
         .filter((p): p is DivePoint => Boolean(p)),
     [guideMonth],
   );
-  const heroPoint = monthPoints[heroIdx] ?? monthPoints[0];
+  // 히어로가 순환하는 슬라이드 = 이번 달 추천 포인트들 + 광고 슬라이드 하나. 광고 전용
+  // 칩을 따로 얹는 대신, 히어로 자체가 (이미지·헤드라인·부제·CTA 전부) 광고로 바뀌는
+  // 슬라이드를 하나 더 끼워 넣는다 — 다이빙 포인트 슬라이드가 보여주는 정보 구성은 그대로 두고,
+  // 순환 목록에 항목 하나만 추가하는 형태.
+  const heroSlides = useMemo<({ kind: "point"; data: DivePoint } | { kind: "ad" })[]>(
+    () => [...monthPoints.map((p) => ({ kind: "point" as const, data: p })), { kind: "ad" as const }],
+    [monthPoints],
+  );
+  const heroSlide = heroSlides[heroIdx] ?? heroSlides[0];
   const heroGhost = useMemo(
-    () => monthPoints.reduce((longest, p) => (p.hook.length > longest.length ? p.hook : longest), ""),
+    () =>
+      [...monthPoints.map((p) => p.hook), AD_BANNER.headline].reduce(
+        (longest, s) => (s.length > longest.length ? s : longest),
+        "",
+      ),
     [monthPoints],
   );
 
@@ -485,13 +498,13 @@ export default function Landing() {
   }, [guideMonth]);
 
   useEffect(() => {
-    if (reduced || monthPoints.length <= 1) return;
+    if (reduced || heroSlides.length <= 1) return;
     const t = setInterval(() => {
       if (heroPaused.current || explorer) return; // 전체화면 뷰가 열려 있으면 히어로는 안 보이니 리렌더 낭비 금지
-      setHeroIdx((cur) => (cur + 1) % monthPoints.length);
+      setHeroIdx((cur) => (cur + 1) % heroSlides.length);
     }, 6500);
     return () => clearInterval(t);
-  }, [reduced, explorer, monthPoints.length]);
+  }, [reduced, explorer, heroSlides.length]);
 
   useEffect(() => {
     const on = () => setScrollY(window.scrollY);
@@ -609,11 +622,11 @@ export default function Landing() {
           className="ab-hero-media"
           style={reduced ? undefined : { transform: `translateY(${scrollY * 0.16}px) scale(1.06)` }}
         >
-          {monthPoints.map((p, i) => (
+          {heroSlides.map((s, i) => (
             <img
-              key={p.id}
-              src={p.image}
-              alt={i === heroIdx ? p.region : ""}
+              key={s.kind === "point" ? s.data.id : "ad"}
+              src={s.kind === "point" ? s.data.image : AD_BANNER.image}
+              alt={i === heroIdx ? (s.kind === "point" ? s.data.region : AD_BANNER.headline) : ""}
               aria-hidden={i === heroIdx ? undefined : true}
               className={i === heroIdx ? "is-on" : undefined}
               onError={handleImageFallback}
@@ -622,48 +635,38 @@ export default function Landing() {
           <div className="ab-hero-scrim" />
         </div>
         <div className="wrap ab-hero-inner">
-          <p className="ab-eyebrow light">{MONTH_LABELS_KR[guideMonth]}, 다이빙 떠나기 좋은 곳</p>
+          {/* 광고 슬라이드일 땐 히어로 자체(이미지·문구·CTA)가 통째로 광고로 바뀐다 —
+              순환 목록에 광고를 슬라이드 하나로 끼워 넣은 것뿐, 다이빙 포인트 슬라이드가
+              보여주는 정보 구성(eyebrow/헤드라인/부제/CTA)은 그대로다. */}
+          <p className="ab-eyebrow light">
+            {heroSlide.kind === "ad" ? "광고" : `${MONTH_LABELS_KR[guideMonth]}, 다이빙 떠나기 좋은 곳`}
+          </p>
           <h1 className="ab-hero-h">
-            <span key={heroPoint?.id ?? heroIdx} className="ab-hero-line on">
-              {heroPoint?.hook ?? "이번 달 추천 포인트를 준비 중입니다"}
+            <span key={heroSlide.kind === "point" ? heroSlide.data.id : "ad"} className="ab-hero-line on">
+              {heroSlide.kind === "point" ? heroSlide.data.hook : AD_BANNER.headline}
             </span>
             <span className="ab-hero-line ghost">{heroGhost}</span>
           </h1>
           <p className="ab-hero-lede">
-            {heroPoint ? `${heroPoint.region} · ${heroPoint.oneLiner}` : "내가 원하는 바다, 내가 원하는 날짜, 내가 원하는 다이빙."}
+            {heroSlide.kind === "point" ? `${heroSlide.data.region} · ${heroSlide.data.oneLiner}` : AD_BANNER.sub}
           </p>
-          {heroPoint && (
-            <button
-              type="button"
-              className="ab-hero-more"
-              onClick={() => setDetail({ kind: "point", data: heroPoint })}
-            >
-              {heroPoint.region} 자세히 보기 →
-            </button>
-          )}
-          {/* 광고 — 별도 박스로 떼어놓지 않고 히어로 문구 바로 아래 한 줄 칩으로 자연스럽게
-              끼워 넣는다(따로 떨어진 카드처럼 보이지 않게). 다이빙 소개는 바로 위
-              "자세히 보기" 버튼으로 이미 볼 수 있어 이 칩은 광고 클릭 하나에만 집중한다.
-              href가 http(s)면 외부 새 탭, 아니면 앱 내부 경로로 이동. */}
-          <a
-            className="ab-heroad"
-            href={AD_BANNER.href}
-            target={isExternalHref(AD_BANNER.href) ? "_blank" : undefined}
-            rel={isExternalHref(AD_BANNER.href) ? "noopener noreferrer" : undefined}
-            onClick={
-              isExternalHref(AD_BANNER.href)
-                ? undefined
-                : (e) => {
-                    e.preventDefault();
-                    navigate(AD_BANNER.href);
-                  }
-            }
+          <button
+            type="button"
+            className="ab-hero-more"
+            onClick={() => {
+              if (heroSlide.kind === "point") {
+                setDetail({ kind: "point", data: heroSlide.data });
+                return;
+              }
+              if (isExternalHref(AD_BANNER.href)) {
+                window.open(AD_BANNER.href, "_blank", "noopener,noreferrer");
+              } else {
+                navigate(AD_BANNER.href);
+              }
+            }}
           >
-            <img className="ab-heroad-thumb" src={AD_BANNER.image} alt="" onError={handleImageFallback} loading="lazy" />
-            <span className="ab-heroad-tag">광고</span>
-            <span className="ab-heroad-text">{AD_BANNER.headline}</span>
-            <span className="ab-heroad-arrow" aria-hidden="true">→</span>
-          </a>
+            {heroSlide.kind === "point" ? `${heroSlide.data.region} 자세히 보기 →` : "자세히 보기 →"}
+          </button>
 
           <div className="ab-search" role="search">
             <input
@@ -1145,14 +1148,6 @@ const CSS = `
 @media(max-width:480px){.ab-hero-media img{object-position:center 35%;}}
 @media(min-width:1400px){.ab-hero-media img{object-position:center 55%;}}
 
-/* 광고 — 별도 카드가 아니라 히어로 문구 사이에 끼워 넣는 한 줄 칩. 반투명 유리질감
-   배경만 줘서 히어로 이미지 위에 자연스럽게 얹혀 보이게 하고, 박스/그림자로 튀지 않게 한다. */
-.ab-heroad{display:inline-flex;max-width:100%;align-items:center;gap:9px;margin-top:14px;padding:6px 14px 6px 6px;border-radius:999px;background:rgba(255,255,255,.14);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);text-decoration:none;}
-.ab-heroad-thumb{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;}
-.ab-heroad-tag{flex-shrink:0;font-size:.625rem;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.22);color:#fff;}
-.ab-heroad-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8125rem;font-weight:600;color:#fff;}
-.ab-heroad-arrow{flex-shrink:0;color:#fff;}
-@media(max-width:480px){.ab-heroad-text{max-width:44vw;}}
 .ab-search{margin-top:var(--s5);display:flex;flex-wrap:wrap;gap:var(--s2);max-width:640px;background:rgba(255,255,255,.96);border-radius:12px;padding:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
 .ab-search-fld{flex:1 1 200px;min-width:0;border:0;outline:0;background:transparent;color:var(--navy);padding:12px 14px;font-size:.9375rem;font-family:inherit;}
 .ab-search-fld::placeholder{color:var(--text-2);}
