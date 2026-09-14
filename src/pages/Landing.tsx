@@ -383,9 +383,15 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
   };
   const nudge = (dir: 1 | -1) => rowRef.current?.scrollBy({ left: dir * step(), behavior: "smooth" });
 
+  // 아이폰에서 강사/후기 카드가 옆으로 안 넘어가던 원인 — 이 손잡이 로직이 마우스뿐
+  // 아니라 터치 포인터에도 걸려서 pointerdown 때 setPointerCapture를 잡아버렸다.
+  // iOS Safari는 그러면 그 요소의 네이티브 스와이프 스크롤을 넘겨주지 않고 이후
+  // pointermove를 안정적으로 안 주는 경우가 있어, 터치로는 카드가 꿈쩍도 안 했다.
+  // 마우스 포인터일 때만 이 드래그 로직을 쓰고, 터치는 브라우저 네이티브 스크롤에
+  // 완전히 맡긴다(아래 CSS의 touch-action도 함께 손봤다).
   const onPointerDown = (e: React.PointerEvent) => {
     const row = rowRef.current;
-    if (!row || e.button === 2) return;
+    if (!row || e.button === 2 || e.pointerType !== "mouse") return;
     drag.current = { active: true, startX: e.clientX, startLeft: row.scrollLeft, moved: 0 };
     row.setPointerCapture(e.pointerId);
     row.classList.add("dragging");
@@ -417,6 +423,26 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
     }
   };
 
+  // 터치 중엔 자동 넘김을 잠깐 멈춘다. preventDefault/setPointerCapture를 쓰지
+  // 않는 순수 리스너라 네이티브 스와이프 스크롤을 방해하지 않는다.
+  const touching = useRef(false);
+
+  // 자동으로도 넘어가되, 사용자가 직접 넘기는 중엔 끼어들지 않는다. 끝까지 가면
+  // 처음으로 되돌아가 계속 순환한다.
+  useEffect(() => {
+    const t = setInterval(() => {
+      const row = rowRef.current;
+      if (!row || drag.current.active || touching.current) return;
+      const atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+      if (atEnd) {
+        row.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        row.scrollBy({ left: step(), behavior: "smooth" });
+      }
+    }, 4000);
+    return () => clearInterval(t);
+  }, [items.length]);
+
   return (
     <div className="ab-caro">
       <div
@@ -429,6 +455,9 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onClickCapture={onClickCapture}
+        onTouchStart={() => { touching.current = true; }}
+        onTouchEnd={() => { touching.current = false; }}
+        onTouchCancel={() => { touching.current = false; }}
       >
         {items.map((c, i) => (
           <div className="ab-caro-item" role="listitem" key={i}>
@@ -1338,7 +1367,7 @@ const CSS = `
 
 /* CAROUSEL (shared: 강사 + 후기) */
 .ab-caro{position:relative;}
-.ab-caro-row{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:var(--s3);margin-inline:calc(-1*var(--gut));padding-inline:var(--gut);scrollbar-width:none;cursor:grab;touch-action:pan-y;-webkit-overflow-scrolling:touch;}
+.ab-caro-row{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:var(--s3);margin-inline:calc(-1*var(--gut));padding-inline:var(--gut);scrollbar-width:none;cursor:grab;-webkit-overflow-scrolling:touch;}
 .ab-caro-row.dragging{cursor:grabbing;scroll-snap-type:none;user-select:none;}
 .ab-caro-row.dragging *{pointer-events:none;}
 .ab-caro-row::-webkit-scrollbar{display:none;}
