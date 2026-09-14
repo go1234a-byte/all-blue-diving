@@ -497,14 +497,19 @@ export default function Landing() {
     setHeroIdx(0);
   }, [guideMonth]);
 
+  // Android WebView에서는 시스템 "애니메이션 제거" 설정이 켜져 있으면
+  // prefers-reduced-motion이 true로 잡혀 히어로가 첫 장에서 아예 멈춰 있었다.
+  // 이 순환은 화면을 흔드는 모션이 아니라 "다음 정보/광고를 보여주는" 콘텐츠
+  // 전환이라 reduced-motion과 무관하게 항상 돌아가야 한다(패럴랙스 스크롤 효과만
+  // 아래에서 reduced를 계속 존중한다).
   useEffect(() => {
-    if (reduced || heroSlides.length <= 1) return;
+    if (heroSlides.length <= 1) return;
     const t = setInterval(() => {
       if (heroPaused.current || explorer) return; // 전체화면 뷰가 열려 있으면 히어로는 안 보이니 리렌더 낭비 금지
       setHeroIdx((cur) => (cur + 1) % heroSlides.length);
-    }, 6500);
+    }, 5000);
     return () => clearInterval(t);
-  }, [reduced, explorer, heroSlides.length]);
+  }, [explorer, heroSlides.length]);
 
   useEffect(() => {
     const on = () => setScrollY(window.scrollY);
@@ -611,12 +616,15 @@ export default function Landing() {
       </nav>
 
       {/* 1. HERO — 페이지에서 유일한 다크 영역(오버레이) */}
+      {/* 마우스 호버로만 일시정지한다(데스크톱 전용). 예전엔 터치도 pause/resume
+          쌍으로 처리했는데, 모바일에서 터치가 스크롤로 이어지면 브라우저가 touchend
+          대신 touchcancel을 보내는 경우가 많아 heroPaused가 true에 박힌 채 다시는
+          안 풀려서 히어로가 첫 장에서 영구히 멈췄다(안드로이드에서 재현된 버그).
+          터치 일시정지 자체를 없애 그 경우의 수를 통째로 제거한다. */}
       <header
         className="ab-hero"
         onMouseEnter={() => { heroPaused.current = true; }}
         onMouseLeave={() => { heroPaused.current = false; }}
-        onTouchStart={() => { heroPaused.current = true; }}
-        onTouchEnd={() => { heroPaused.current = false; }}
       >
         <div
           className="ab-hero-media"
