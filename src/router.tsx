@@ -21,6 +21,7 @@ import SupportChat from "./pages/SupportChat";
 import BusinessInquiryPage from "./pages/BusinessInquiryPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
+import DiveComputerPrivacyPage from "./pages/DiveComputerPrivacyPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import InstructorArbitrationRoom from "./pages/InstructorArbitrationRoom";
 import AdminArbitrationRoom from "./pages/AdminArbitrationRoom";
@@ -139,6 +140,7 @@ export const routers = [
       },
       { path: "terms", name: "terms", element: <TermsPage /> },
       { path: "privacy", name: "privacy", element: <PrivacyPage /> },
+      { path: "divecomputer-privacy", name: "divecomputer-privacy", element: <DiveComputerPrivacyPage /> },
       { path: "refund-policy", name: "refund-policy", element: <RefundPolicyPage /> },
       /* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */
       { path: "*", name: "404", element: <NotFound /> },
