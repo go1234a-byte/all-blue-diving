@@ -15,6 +15,7 @@ import { TourMapView } from "@/components/search/TourMapView";
 import { FilterSidebar, DEFAULT_FILTERS, type FilterState } from "@/components/search/FilterSidebar";
 import { useAppData } from "@/contexts/AppDataContext";
 import { applyPlatformFee } from "@/lib/pricing";
+import { monthKeyOf } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { ActivityType } from "@/types";
 
@@ -78,7 +79,7 @@ const Search = () => {
           t.site.toLowerCase().includes(q) ||
           t.title.toLowerCase().includes(q),
       )
-      .filter((t) => months.length === 0 || months.includes(new Date(t.startDate).getMonth()))
+      .filter((t) => months.length === 0 || months.includes(monthKeyOf(t.startDate)))
       .filter((t) => activities.length === 0 || t.activityTypes.some((a) => activities.includes(a)))
       .filter((t) => {
         // 카드/상세에는 플랫폼 수수료(10%)가 포함된 가격이 보이는데, 필터는 수수료 전

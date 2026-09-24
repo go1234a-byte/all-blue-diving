@@ -20,16 +20,19 @@ function Calendar({
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
-        month_caption: "flex justify-center items-center relative h-9",
+        month_caption: "flex justify-center items-center relative h-11",
         caption_label: "text-sm font-medium",
-        nav: "flex items-center justify-between absolute inset-x-0 top-0 h-9 px-1",
+        nav: "flex items-center justify-between absolute inset-x-0 top-0 h-11 px-1",
+        // 아래 day 버튼과 같은 이유로 44px(h-11 w-11) 터치 타깃을 확보한다 —
+        // 기존 h-7 w-7(28px)은 모바일에서 다음달/이전달 화살표가 눌리지 않거나
+        // 오탭되는 원인이었다.
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+          "h-11 w-11 bg-transparent p-0 opacity-50 hover:opacity-100"
         ),
         button_next: cn(
           buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+          "h-11 w-11 bg-transparent p-0 opacity-50 hover:opacity-100"
         ),
         month_grid: "w-full border-collapse space-y-1",
         weekdays: "flex",

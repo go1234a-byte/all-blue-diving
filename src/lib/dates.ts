@@ -67,6 +67,27 @@ export function currentMonthIndex(): number {
   return new Date().getMonth(); // 0-based
 }
 
+/** 연도+월(0-based)을 하나의 정수로 인코딩한다. 월만으로 비교하면 "10월" 필터에
+ * 올해 10월과 내년 10월이 둘 다 걸리는 문제가 있어, 연도까지 포함해 비교한다. */
+export function monthKey(year: number, month0: number): number {
+  return year * 12 + month0;
+}
+
+export function currentMonthKey(): number {
+  const d = new Date();
+  return monthKey(d.getFullYear(), d.getMonth());
+}
+
+export function monthKeyOf(iso: string): number {
+  const d = new Date(iso);
+  return monthKey(d.getFullYear(), d.getMonth());
+}
+
+/** monthKey를 다시 0-based 월로 되돌린다 (MONTH_LABELS 인덱싱용). */
+export function monthOfKey(key: number): number {
+  return ((key % 12) + 12) % 12;
+}
+
 export function hoursSince(iso: string): number {
   return (Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60);
 }

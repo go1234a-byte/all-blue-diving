@@ -7,7 +7,7 @@ import { AdminHeadcountControl } from "@/components/tour/AdminHeadcountControl";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
-import { formatDateRangeKR } from "@/lib/dates";
+import { formatDateRangeKR, currentMonthKey, monthOfKey } from "@/lib/dates";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
 import { DIVE_POINTS, GUIDE_BY_MONTH, type DivePoint } from "@/content/divePointGuide";
@@ -485,7 +485,14 @@ export default function Landing() {
   const [heroIdx, setHeroIdx] = useState(0);
   const heroPaused = useRef(false);
   const [q, setQ] = useState("");
+  // 검색창 "출발 월" 값도 연도까지 포함한 monthKey로 다룬다 — 단순 0~11 월 번호면
+  // 올해 10월과 내년 10월을 구분할 수 없어 /search 결과 필터와 어긋나게 된다.
   const [month, setMonth] = useState<number | "">("");
+  const heroMonthStart = useMemo(() => currentMonthKey(), []);
+  const heroMonthOptions = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => heroMonthStart + i),
+    [heroMonthStart],
+  );
   const [heroAct, setHeroAct] = useState<"" | "scuba" | "freediving">("");
   const [guideMonth, setGuideMonth] = useState(() => new Date().getMonth());
   const [explorer, setExplorer] = useState<"guide" | "liveaboard" | null>(null);
@@ -721,8 +728,11 @@ export default function Landing() {
               aria-label="출발 월"
             >
               <option value="">날짜 (출발 월)</option>
-              {MONTH_LABELS_KR.map((m, i) => (
-                <option key={m} value={i}>{m}</option>
+              {heroMonthOptions.map((key) => (
+                <option key={key} value={key}>
+                  {MONTH_LABELS_KR[monthOfKey(key)]}
+                  {Math.floor(key / 12) > Math.floor(heroMonthStart / 12) ? " (내년)" : ""}
+                </option>
               ))}
             </select>
             <div className="ab-search-act" role="group" aria-label="다이빙 종류">

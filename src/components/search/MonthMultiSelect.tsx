@@ -3,20 +3,26 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MONTH_LABELS } from "@/lib/constants";
-import { currentMonthIndex } from "@/lib/dates";
+import { currentMonthKey, monthOfKey } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
 interface MonthMultiSelectProps {
+  /** 연도까지 포함해 인코딩된 월 값(monthKey). 단순 0~11 월 번호로는 올해 10월과
+   *  내년 10월을 구분할 수 없어 monthKey(연도*12+월)를 사용한다. */
   value: number[];
   onChange: (months: number[]) => void;
 }
 
-// 현재 실제 월부터 올해 12월까지만 표시 (연도를 넘어가는 다음 해 월은 노출하지 않음)
+const MONTHS_AHEAD = 12; // 이번 달부터 12개월(연도를 넘어가도 계속) 표시
+
+// 이번 달부터 향후 12개월을 표시한다 — 예전엔 "올해 12월까지만" 보여줘서
+// 연말에 가까워질수록 고를 수 있는 달이 줄어들고, 다음 해 투어는 아예
+// 선택할 방법이 없었다.
 export function MonthMultiSelect({ value, onChange }: MonthMultiSelectProps) {
   const [open, setOpen] = useState(false);
-  const start = currentMonthIndex();
-  const months = Array.from({ length: 12 - start }, (_, i) => start + i);
+  const start = currentMonthKey();
+  const months = Array.from({ length: MONTHS_AHEAD }, (_, i) => start + i);
 
   const toggle = (month: number) => {
     onChange(value.includes(month) ? value.filter((m) => m !== month) : [...value, month]);
@@ -27,8 +33,8 @@ export function MonthMultiSelect({ value, onChange }: MonthMultiSelectProps) {
       ? "출발 월 선택"
       : value
           .slice()
-          .sort((a, b) => months.indexOf(a) - months.indexOf(b))
-          .map((m) => MONTH_LABELS[m])
+          .sort((a, b) => a - b)
+          .map((m) => MONTH_LABELS[monthOfKey(m)])
           .join(", ");
 
   return (
@@ -56,7 +62,10 @@ export function MonthMultiSelect({ value, onChange }: MonthMultiSelectProps) {
                   : "border-input bg-background hover:bg-secondary",
               )}
             >
-              {MONTH_LABELS[month]}
+              {MONTH_LABELS[monthOfKey(month)]}
+              {Math.floor(month / 12) > Math.floor(start / 12) && (
+                <span className="ml-1 text-[10px] opacity-70">(내년)</span>
+              )}
             </button>
           ))}
         </div>
@@ -64,7 +73,8 @@ export function MonthMultiSelect({ value, onChange }: MonthMultiSelectProps) {
           <div className="mt-3 flex flex-wrap gap-1">
             {value.map((m) => (
               <Badge key={m} variant="secondary">
-                {MONTH_LABELS[m]}
+                {MONTH_LABELS[monthOfKey(m)]}
+                {Math.floor(m / 12) > Math.floor(start / 12) ? " (내년)" : ""}
               </Badge>
             ))}
           </div>
