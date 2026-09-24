@@ -805,7 +805,13 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
 
       <div className="space-y-1.5">
         <Label>투어 소개</Label>
-        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="투어 코스, 준비물, 유의사항 등을 소개해주세요" />
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="투어 코스, 준비물, 유의사항 등을 소개해주세요"
+          rows={12}
+          className="min-h-[280px]"
+        />
       </div>
 
       <CenterFormSection
