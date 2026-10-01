@@ -262,13 +262,43 @@ const Checkout = () => {
     }
   };
 
+  const payButton = (
+    <Button
+      variant="coral"
+      size="lg"
+      className="w-full"
+      onClick={handlePay}
+      disabled={
+        processing ||
+        authLoading ||
+        !agreedToPolicy ||
+        !confirmedInclusions ||
+        !contactConsent ||
+        participantCount > remainingSlots ||
+        remainingSlots < 1
+      }
+    >
+      {processing
+        ? "결제 처리 중..."
+        : authLoading
+          ? "로그인 정보 확인 중..."
+          : !confirmedInclusions
+            ? "포함/불포함 사항을 확인해주세요"
+            : !agreedToPolicy
+              ? "취소 및 환불 규정에 동의해주세요"
+              : !contactConsent
+                ? "일정/장소 변경 안내 연락에 동의해주세요"
+                : `${formatKRW(invoice.totalDue)} 결제하기`}
+    </Button>
+  );
+
   return (
-    <div className="min-h-full bg-gradient-surface pb-28 md:pb-14">
+    <div className="min-h-full bg-gradient-surface pb-28 md:pb-8">
       <header
         className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-2xl md:px-6">
+        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-3 px-4 md:max-w-4xl md:px-6">
           <Link to={`/tour/${tour.id}`} className="text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -276,7 +306,8 @@ const Checkout = () => {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md space-y-5 px-4 py-5 md:max-w-2xl md:px-6">
+      <main className="mx-auto w-full max-w-md px-4 py-5 md:grid md:max-w-4xl md:grid-cols-[minmax(0,1fr)_320px] md:items-start md:gap-8 md:px-6 md:py-8">
+      <div className="space-y-5">
         <Card>
           <CardContent className="flex gap-3 p-4">
             <img
@@ -480,39 +511,28 @@ const Checkout = () => {
             동의합니다.
           </span>
         </label>
+      </div>
+
+        {/* 데스크톱·태블릿(md 이상) 전용 — 결제 요약 + 결제 버튼을 sticky 사이드카드로 */}
+        <aside className="hidden md:block md:sticky md:top-20">
+          <Card>
+            <CardContent className="space-y-4 p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">총 결제 금액</span>
+                <span className="text-lg font-bold text-foreground">{formatKRW(invoice.totalDue)}</span>
+              </div>
+              {payButton}
+            </CardContent>
+          </Card>
+        </aside>
       </main>
 
+      {/* 모바일/앱(md 미만) 전용 — 하단 고정 결제 바 */}
       <div
-        className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 px-4 pt-3 backdrop-blur md:max-w-2xl"
+        className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 px-4 pt-3 backdrop-blur md:hidden"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
-        <Button
-          variant="coral"
-          size="lg"
-          className="w-full"
-          onClick={handlePay}
-          disabled={
-            processing ||
-            authLoading ||
-            !agreedToPolicy ||
-            !confirmedInclusions ||
-            !contactConsent ||
-            participantCount > remainingSlots ||
-            remainingSlots < 1
-          }
-        >
-          {processing
-            ? "결제 처리 중..."
-            : authLoading
-              ? "로그인 정보 확인 중..."
-              : !confirmedInclusions
-                ? "포함/불포함 사항을 확인해주세요"
-                : !agreedToPolicy
-                  ? "취소 및 환불 규정에 동의해주세요"
-                  : !contactConsent
-                    ? "일정/장소 변경 안내 연락에 동의해주세요"
-                    : `${formatKRW(invoice.totalDue)} 결제하기`}
-        </Button>
+        {payButton}
       </div>
     </div>
   );

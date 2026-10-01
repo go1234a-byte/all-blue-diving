@@ -1382,6 +1382,7 @@ const CSS = `
 .ab-caro-row.dragging *{pointer-events:none;}
 .ab-caro-row::-webkit-scrollbar{display:none;}
 .ab-caro-item{scroll-snap-align:start;flex:0 0 calc((100% - 60px)/4);}
+@media(min-width:1536px){.ab-caro-item{flex-basis:calc((100% - 80px)/5);}}
 @media(max-width:1024px){.ab-caro-item{flex-basis:calc((100% - 20px)/2);}}
 @media(max-width:640px){.ab-caro-item{flex-basis:82%;}}
 .ab-caro-nav{position:absolute;right:0;top:-52px;display:flex;gap:8px;}

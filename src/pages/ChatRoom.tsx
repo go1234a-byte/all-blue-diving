@@ -273,19 +273,19 @@ const ChatRoom = () => {
       <main className="mx-auto w-full max-w-md px-4 py-4 md:max-w-3xl md:px-6">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="dashboard" className="text-[11px]">대시보드</TabsTrigger>
-            <TabsTrigger value="itinerary" className="text-[11px]">일정</TabsTrigger>
-            <TabsTrigger value="participants" className="text-[11px]">참가자</TabsTrigger>
-            <TabsTrigger value="settlement" className="text-[11px]">정산</TabsTrigger>
-            <TabsTrigger value="more" className="text-[11px]">더보기</TabsTrigger>
+            <TabsTrigger value="dashboard" className="text-[11px] md:py-2.5 md:text-sm">대시보드</TabsTrigger>
+            <TabsTrigger value="itinerary" className="text-[11px] md:py-2.5 md:text-sm">일정</TabsTrigger>
+            <TabsTrigger value="participants" className="text-[11px] md:py-2.5 md:text-sm">참가자</TabsTrigger>
+            <TabsTrigger value="settlement" className="text-[11px] md:py-2.5 md:text-sm">정산</TabsTrigger>
+            <TabsTrigger value="more" className="text-[11px] md:py-2.5 md:text-sm">더보기</TabsTrigger>
           </TabsList>
-          <TabsContent value="dashboard" className="pt-3">
+          <TabsContent value="dashboard" className="pt-3 md:pt-4">
             <TourDashboardTab tour={tour} bookings={activeTourBookings} isInstructor={isInstructor} />
           </TabsContent>
-          <TabsContent value="itinerary" className="pt-3">
+          <TabsContent value="itinerary" className="pt-3 md:pt-4">
             <TourItineraryTab tour={tour} isInstructor={isInstructor} />
           </TabsContent>
-          <TabsContent value="participants" className="space-y-4 pt-3">
+          <TabsContent value="participants" className="space-y-4 pt-3 md:pt-4">
             <ChatParticipantList
               bookings={participantDisplayBookings}
               instructorId={tour.instructorId}
@@ -296,10 +296,10 @@ const ChatRoom = () => {
             />
             <RoomAssignmentDashboard bookings={participantDisplayBookings} isInstructor={isInstructor} />
           </TabsContent>
-          <TabsContent value="settlement" className="pt-3">
+          <TabsContent value="settlement" className="pt-3 md:pt-4">
             <TourSettlementTab tour={tour} bookings={participantDisplayBookings} isInstructor={isInstructor} />
           </TabsContent>
-          <TabsContent value="more" className="pt-3">
+          <TabsContent value="more" className="pt-3 md:pt-4">
             <TourMoreInfoTab tour={tour} bookings={activeTourBookings} myBooking={myBooking} isInstructor={isInstructor} />
           </TabsContent>
         </Tabs>
