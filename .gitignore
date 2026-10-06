@@ -7,3 +7,6 @@ enter-AllBlueDiveMarketplace/
 
 # macOS
 .DS_Store
+
+# Supabase CLI 임시 파일
+supabase/.temp/
