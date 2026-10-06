@@ -148,4 +148,72 @@ begin
   end;
 end $$;
 
+
+-- S10) 찜한 투어 D-7 알림: 찜한 다이버(기예약 아님)에게 1건, 중복 실행 시 추가 없음
+do $$
+declare fav_profile uuid; n1 int; n2 int; n3 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S10 SKIP'; return; end if;
+  select p.id into fav_profile from public.profiles p
+    where not exists (select 1 from public.bookings b where b.tour_id = (select tour_id from _t) and b.diver_id = p.id::text)
+    limit 1;
+  if fav_profile is null then raise notice 'S10 SKIP: 찜 대상 프로필 없음'; return; end if;
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null,
+    recruitment_deadline = current_date + 7 where id = (select tour_id from _t);
+  insert into public.favorites (profile_id, target_type, target_id) values (fav_profile, 'tour', (select tour_id from _t)::text);
+  select count(*) into n1 from public.tour_diver_notifications where kind = 'deadline_d7';
+  perform public.tour_generate_daily_alerts();
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'deadline_d7';
+  perform public.tour_generate_daily_alerts();
+  select count(*) into n3 from public.tour_diver_notifications where kind = 'deadline_d7';
+  if n2 - n1 <> 1 then raise exception 'S10 실패: D-7 알림 %건 (기대 1)', n2 - n1; end if;
+  if n3 <> n2 then raise exception 'S10 실패: 재실행 시 중복 생성'; end if;
+  raise notice 'S10 OK';
+end $$;
+
+-- S11) 기예약자와 취소 투어는 제외
+do $$
+declare booked_fav uuid; n_before int; n_after int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S11 SKIP'; return; end if;
+  begin booked_fav := (select diver_id from _t limit 1)::uuid; exception when others then raise notice 'S11 SKIP: 예약자 id가 uuid 아님'; return; end;
+  if not exists (select 1 from public.profiles where id = booked_fav) then raise notice 'S11 SKIP: 예약자 프로필 없음'; return; end if;
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null,
+    recruitment_deadline = current_date + 1 where id = (select tour_id from _t);
+  insert into public.favorites (profile_id, target_type, target_id) values (booked_fav, 'tour', (select tour_id from _t)::text)
+    on conflict do nothing;
+  select count(*) into n_before from public.tour_diver_notifications where kind = 'deadline_d1' and diver_id = booked_fav::text;
+  perform public.tour_generate_daily_alerts();
+  select count(*) into n_after from public.tour_diver_notifications where kind = 'deadline_d1' and diver_id = booked_fav::text;
+  if n_after <> n_before then raise exception 'S11 실패: 기예약자에게 마감 알림 발송'; end if;
+  update public.tours set cancelled_at = now() where id = (select tour_id from _t);
+  raise notice 'S11 OK (취소 투어 제외는 아래 S12에서 같은 함수로 확인)';
+end $$;
+
+-- S12) 취소 투어는 D-1이어도 알림 없음 (cancelled_at 설정 상태에서 재실행)
+do $$
+declare n_before int; n_after int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S12 SKIP'; return; end if;
+  update public.tours set cancelled_at = now(), recruitment_deadline = current_date + 1
+    where id = (select tour_id from _t);
+  select count(*) into n_before from public.tour_diver_notifications where kind = 'deadline_d1';
+  perform public.tour_generate_daily_alerts();
+  select count(*) into n_after from public.tour_diver_notifications where kind = 'deadline_d1';
+  if n_after <> n_before then raise exception 'S12 실패: 취소 투어에 마감 알림 발송'; end if;
+  raise notice 'S12 OK';
+end $$;
+
+-- S13) 권한: anon·authenticated는 생성 함수를 실행할 수 없음
+do $$ begin
+  if has_function_privilege('anon', 'public.tour_generate_daily_alerts()', 'execute')
+     or has_function_privilege('authenticated', 'public.tour_generate_daily_alerts()', 'execute') then
+    raise exception 'S13 실패: anon/authenticated 실행 권한 있음';
+  end if;
+  if not has_function_privilege('service_role', 'public.tour_generate_daily_alerts()', 'execute') then
+    raise exception 'S13 실패: service_role 실행 권한 없음';
+  end if;
+  raise notice 'S13 OK';
+end $$;
+
 rollback;

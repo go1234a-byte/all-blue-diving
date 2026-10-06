@@ -14,6 +14,9 @@ create table public.tour_diver_notifications (
   url text,
   dedupe_key text unique,
   push_sent_at timestamptz,
+  push_claimed_at timestamptz,
+  push_attempts int not null default 0,
+  push_error text,
   created_at timestamptz not null default now()
 );
 create index tour_diver_notifications_unsent_idx

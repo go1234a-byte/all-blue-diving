@@ -11,7 +11,8 @@
     "check": "pnpm lint && pnpm exec tsc --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",
-    "pInstall": "pnpm install"
+    "pInstall": "pnpm install",
+    "test": "node --test tests/notifications.test.mjs"
   },
   "dependencies": {
     "@capacitor-community/safe-area": "^8.0.1",
