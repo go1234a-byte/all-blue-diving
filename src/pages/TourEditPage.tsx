@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { TourEditForm } from "@/components/instructor/TourEditForm";
 import { TourCancelByInstructorCard } from "@/components/instructor/TourCancelByInstructorCard";
+import { TourDivePlanEditor } from "@/components/instructor/TourDivePlanEditor";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 
@@ -35,6 +36,7 @@ const TourEditPage = () => {
           <p className="py-10 text-center text-sm text-muted-foreground">투어 정보를 찾을 수 없습니다.</p>
         )}
         {tour && <TourEditForm tour={tour} />}
+        {tour && <TourDivePlanEditor tourId={tour.id} />}
         {tour && <TourCancelByInstructorCard tour={tour} />}
       </main>
       <BottomNav />

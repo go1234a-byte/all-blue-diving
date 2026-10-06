@@ -1087,7 +1087,32 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* 8. CTA */}
+      {/* 8. ALL BLUE 다이빙 컴퓨터 교차 홍보 — 투어 예약(이 앱)과 다이빙 준비(그 앱)를 잇는다 */}
+      <section className="ab-sec ab-dc">
+        <div className="wrap r">
+          <p className="ab-eyebrow light">Partner App</p>
+          <h2>다이빙 전엔, ALL BLUE 다이빙 컴퓨터</h2>
+          <p className="ab-sub">
+            무감압한계·호흡량(SAC) 계산부터 수온별 슈트 가이드, 국내외 날씨·파도 확인까지 —
+            투어는 여기서 예약하고, 다이빙 준비는 그 앱에서 하세요.
+          </p>
+          <div className="ab-dc-feats">
+            <span>무감압한계 계산</span>
+            <span>호흡량(SAC) 계산</span>
+            <span>날씨·파도 확인</span>
+          </div>
+          <a
+            href="https://apps.apple.com/kr/app/id6811542905"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ab-btn"
+          >
+            App Store에서 받기 →
+          </a>
+        </div>
+      </section>
+
+      {/* 9. CTA */}
       <section className="ab-sec ab-cta">
         <div className="wrap">
           <h2>다음 다이빙을 찾을 시간입니다</h2>
@@ -1096,7 +1121,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* 9. 푸터 — 페이지의 두 번째(마지막) 다크 영역 */}
+      {/* 10. 푸터 — 페이지의 두 번째(마지막) 다크 영역 */}
       <footer className="ab-foot">
         <div className="wrap">
           <div className="ab-foot-top">
@@ -1417,6 +1442,13 @@ const CSS = `
 .ab-cta h2{max-width:20ch;margin-inline:auto;}
 .ab-cta .ab-sub{margin-inline:auto;text-align:center;}
 .ab-cta .ab-btn{margin-top:var(--s5);}
+
+.ab-dc{background:var(--navy-dark);text-align:center;}
+.ab-dc h2{color:#fff;max-width:22ch;margin-inline:auto;}
+.ab-dc .ab-sub{color:rgba(255,255,255,.75);margin-inline:auto;text-align:center;}
+.ab-dc-feats{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:var(--s4);}
+.ab-dc-feats span{font-size:.8125rem;font-weight:600;color:#fff;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:7px 14px;}
+.ab-dc .ab-btn{margin-top:var(--s5);}
 
 /* 9. FOOTER — 다크 */
 .ab-foot{background:var(--navy-dark);color:rgba(255,255,255,.72);padding-block:var(--s7) var(--s5);}
