@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Check, EyeOff, RotateCcw } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { GROUP_LABEL, progressPercent, type ChecklistGroup, type ChecklistItem, type ChecklistProgress } from "@/lib/packingChecklist";
+import { GROUP_LABEL, instructorCallName, progressPercent, type ChecklistGroup, type ChecklistItem, type ChecklistProgress } from "@/lib/packingChecklist";
 import { cn } from "@/lib/utils";
 
 export type ChecklistRowItem = ChecklistItem & { checked: boolean };
@@ -32,6 +32,7 @@ export function ChecklistView({
   onRestore,
   onAddOwn,
   busy = false,
+  saveStatus = "idle",
 }: {
   sections: ChecklistSectionView[];
   progress: ChecklistProgress;
@@ -42,6 +43,8 @@ export function ChecklistView({
   onRestore: (key: string) => void;
   onAddOwn: () => void;
   busy?: boolean;
+  /** 저장 상태 표시: 저장 중 / 저장됨 / 아무 표시 없음 */
+  saveStatus?: "idle" | "saving" | "saved";
 }) {
   const percent = progressPercent(progress);
   const left = progress.total - progress.done;
@@ -51,8 +54,10 @@ export function ChecklistView({
         <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
           <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${percent}%` }} />
         </div>
-        <p className="text-[13px] text-muted-foreground">
-          {progress.total > 0 && left === 0 ? "모든 준비물을 챙기셨어요." : `${left}개 남았어요. 항목을 누르면 체크돼요.`}
+        <p className="flex items-center justify-between gap-2 text-[13px] text-muted-foreground">
+          <span>{progress.total > 0 && left === 0 ? "모든 준비물을 챙기셨어요." : `${left}개 남았어요. 항목을 누르면 체크돼요.`}</span>
+          {saveStatus === "saving" && <span className="shrink-0 font-semibold text-primary dark:text-primary-glow" role="status">저장 중…</span>}
+          {saveStatus === "saved" && <span className="shrink-0 font-semibold text-muted-foreground" role="status">저장됨</span>}
         </p>
       </div>
 
@@ -123,7 +128,7 @@ function ChecklistSection({
                 <AvatarImage src={instructor.avatarUrl} alt={instructor.name} />
                 <AvatarFallback className="bg-primary text-[13px] text-primary-foreground">{instructor.name[0]}</AvatarFallback>
               </Avatar>
-              <span className="text-[13px] text-muted-foreground">{instructor.name} 강사님이 꼭 챙겨달래요</span>
+              <span className="text-[13px] text-muted-foreground">{instructorCallName(instructor.name)} 강사님이 꼭 챙겨달래요</span>
             </div>
           )}
         </div>

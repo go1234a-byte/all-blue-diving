@@ -43,7 +43,7 @@ const TripChecklist = () => {
   const booking = bookings.find(
     (b) => b.tourId === tourId && b.diverId === currentDiverId && b.status === "confirmed",
   );
-  const { items, state: stateQuery, save } = useTripChecklist(tourId, currentDiverId, !!booking);
+  const { items, state: stateQuery, updateState, saving, savedAt } = useTripChecklist(tourId, currentDiverId, !!booking);
 
   if (!booking) {
     return (
@@ -67,32 +67,35 @@ const TripChecklist = () => {
   const template = tour ? buildPackingTemplate(tour.activityTypes) : [];
   const merged = mergeChecklist(template, instructorItems, state);
 
-  // 저장: 상태 전체 + 보이는 항목 기준 집계. 리마인드 대상 판단이 이 집계를 쓴다.
-  const persist = async (next: ChecklistState, failTitle: string) => {
-    const counts = mergeChecklist(template, instructorItems, next).progress;
-    try {
-      await save.mutateAsync({ next, totalCount: counts.total, checkedCount: counts.done });
-    } catch (error) {
+  // 변경: 가장 최근 상태에 바뀐 부분만 이어 붙이고, 보이는 항목 기준 집계를 함께 저장한다.
+  const countsOf = (next: ChecklistState) => {
+    const p = mergeChecklist(template, instructorItems, next).progress;
+    return { totalCount: p.total, checkedCount: p.done };
+  };
+  const applyChange = (mutate: (prev: ChecklistState) => ChecklistState, failTitle: string) => {
+    updateState(mutate, countsOf).catch((error) => {
       toast({
         title: failTitle,
         description: error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
         variant: "destructive",
       });
-    }
+    });
   };
 
-  const handleToggle = (key: string, next: boolean) => {
-    const checkedKeys = next
-      ? [...state.checkedKeys.filter((k) => k !== key), key]
-      : state.checkedKeys.filter((k) => k !== key);
-    void persist({ ...state, checkedKeys }, "체크를 저장하지 못했어요");
-  };
+  const handleToggle = (key: string, next: boolean) =>
+    applyChange(
+      (prev) => ({
+        ...prev,
+        checkedKeys: next ? [...prev.checkedKeys.filter((k) => k !== key), key] : prev.checkedKeys.filter((k) => k !== key),
+      }),
+      "체크를 저장하지 못했어요",
+    );
 
   const handleHide = (key: string) =>
-    void persist({ ...state, hiddenKeys: [...state.hiddenKeys.filter((k) => k !== key), key] }, "숨기지 못했어요");
+    applyChange((prev) => ({ ...prev, hiddenKeys: [...prev.hiddenKeys.filter((k) => k !== key), key] }), "숨기지 못했어요");
 
   const handleRestore = (key: string) =>
-    void persist({ ...state, hiddenKeys: state.hiddenKeys.filter((k) => k !== key) }, "복구하지 못했어요");
+    applyChange((prev) => ({ ...prev, hiddenKeys: prev.hiddenKeys.filter((k) => k !== key) }), "복구하지 못했어요");
 
   const handleAddOwn = async (label: string) => {
     const item = buildOwnItem(label);
@@ -101,7 +104,7 @@ const TripChecklist = () => {
       toast({ title: `내 준비물은 ${MAX_OWN_ITEMS}개까지 추가할 수 있어요` });
       return;
     }
-    await persist({ ...state, customItems: [...state.customItems, item] }, "추가하지 못했어요");
+    applyChange((prev) => ({ ...prev, customItems: [...prev.customItems, item] }), "추가하지 못했어요");
     setAddOpen(false);
   };
 
@@ -158,12 +161,13 @@ const TripChecklist = () => {
               onHide={handleHide}
               onRestore={handleRestore}
               onAddOwn={() => setAddOpen(true)}
-              busy={save.isPending}
+              busy={false}
+              saveStatus={saving ? "saving" : savedAt ? "saved" : "idle"}
             />
           </>
         )}
       </main>
-      <AddOwnItemSheet open={addOpen} onOpenChange={setAddOpen} onSubmit={handleAddOwn} saving={save.isPending} />
+      <AddOwnItemSheet open={addOpen} onOpenChange={setAddOpen} onSubmit={handleAddOwn} saving={saving} />
       <BottomNav />
     </div>
   );

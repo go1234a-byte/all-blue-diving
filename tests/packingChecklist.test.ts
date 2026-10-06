@@ -11,6 +11,7 @@ import {
   parseCustomItems,
   parseInstructorItems,
   parseWaterTempInput,
+  instructorCallName,
   rentalIncluded,
   suitHint,
 } from "../src/lib/packingChecklist.ts";
@@ -113,4 +114,11 @@ test("T9 예상 수온 입력: 비우면 0(모름), 0~40 숫자만 허용, 나�
   assert.equal(parseWaterTempInput("41"), null);
   assert.equal(parseWaterTempInput("-1"), null);
   assert.equal(parseWaterTempInput("abc"), null);
+});
+
+test("T10 강사 호칭: 이름이 '강사'로 끝나면 떼고, 아니면 그대로", () => {
+  assert.equal(instructorCallName("SEED 강사"), "SEED");
+  assert.equal(instructorCallName("김해녀"), "김해녀");
+  assert.equal(instructorCallName("강사"), "강사");
+  assert.equal(instructorCallName("  박강사  "), "박");
 });

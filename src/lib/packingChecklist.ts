@@ -200,3 +200,10 @@ export function parseWaterTempInput(text: string): number | null {
   if (!Number.isFinite(value) || value < 0 || value > 40) return null;
   return Math.round(value);
 }
+
+/** 강사 이름 뒤에 "강사님"을 붙일 때 쓰는 이름. 이름이 이미 "강사"로 끝나면 떼서 "강사 강사님"을 막는다. */
+export function instructorCallName(name: string): string {
+  const trimmed = name.trim();
+  const base = trimmed.endsWith("강사") ? trimmed.slice(0, -2).trim() : trimmed;
+  return base || trimmed;
+}

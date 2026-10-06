@@ -63,6 +63,14 @@ function BookmarkedInstructorCard({ instructorId }: { instructorId: string }) {
 }
 
 /** 찜한 투어 카드 위의 상태 배지 (모집 마감 · 마감 임박). 배지가 없으면 아무것도 그리지 않는다. */
+/** 예약할 수 없는 이유 한 줄 (취소 > 모집 마감 > 만석 순). */
+function unavailableReason(tour: { cancelledAt?: string; status: string; maxParticipants: number }, confirmed: number): string {
+  if (tour.cancelledAt) return "취소된 투어";
+  if (tour.status === "closed") return "모집 마감";
+  if (confirmed >= tour.maxParticipants) return "만석";
+  return "예약 불가";
+}
+
 /** 목록은 최신순이라 같은 종류의 첫 항목이 가장 최근 알림이다. */
 function latestNotificationAt(notifications: DiverNotification[], tourId: string, kind: DiverNotification["kind"]) {
   return notifications.find((n) => n.tourId === tourId && n.kind === kind)?.createdAt;
@@ -84,10 +92,13 @@ function FavoriteTourBadge({ tourId, notifications }: { tourId: string; notifica
 }
 
 const Favorites = () => {
-  const { tours, bookmarkedTourIds, bookmarkedInstructorIds } = useAppData();
+  const { tours, bookmarkedTourIds, bookmarkedInstructorIds, getConfirmedParticipantCount } = useAppData();
   const { data: notifications = [] } = useDiverNotifications();
-  // 찜한 이후 마감/취소/정지되어 더 이상 예약할 수 없게 된 투어는 위시리스트에서 노출하지 않는다.
-  const bookmarkedTours = tours.filter((t) => bookmarkedTourIds.includes(t.id) && isTourBookable(t));
+  // 관리자가 정지·보류한 투어는 찜 목록에서도 숨긴다.
+  // 마감·만석·취소된 투어는 "지금은 예약할 수 없어요" 구역에 흐리게 남겨, 찜했던 투어가 사라지지 않게 한다.
+  const favoriteTours = tours.filter((t) => bookmarkedTourIds.includes(t.id) && !t.adminStatus);
+  const bookmarkedTours = favoriteTours.filter((t) => isTourBookable(t) && getConfirmedParticipantCount(t.id) < t.maxParticipants);
+  const unavailableTours = favoriteTours.filter((t) => !bookmarkedTours.includes(t));
 
   return (
     <div className="min-h-full bg-gradient-surface pb-20 md:pb-12">
@@ -96,7 +107,7 @@ const Favorites = () => {
         <h1 className="text-lg font-bold text-foreground">위시리스트</h1>
         <Tabs defaultValue="tours">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="tours">찜한 투어 ({bookmarkedTours.length})</TabsTrigger>
+            <TabsTrigger value="tours">찜한 투어 ({favoriteTours.length})</TabsTrigger>
             <TabsTrigger value="instructors">찜한 강사 ({bookmarkedInstructorIds.length})</TabsTrigger>
           </TabsList>
           <TabsContent value="tours" className="pt-3">
@@ -111,6 +122,21 @@ const Favorites = () => {
                   </div>
                 ))}
               </div>
+            )}
+            {unavailableTours.length > 0 && (
+              <section className="mt-8 space-y-3" aria-label="지금은 예약할 수 없는 찜 투어">
+                <h2 className="text-[16px] font-semibold text-foreground">지금은 예약할 수 없어요</h2>
+                <div className="grid grid-cols-1 gap-4 opacity-60 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
+                  {unavailableTours.map((tour) => (
+                    <div key={tour.id} className="space-y-2">
+                      <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-1 text-[13px] font-semibold text-muted-foreground">
+                        {unavailableReason(tour, getConfirmedParticipantCount(tour.id))}
+                      </span>
+                      <TourCard tour={tour} />
+                    </div>
+                  ))}
+                </div>
+              </section>
             )}
           </TabsContent>
           <TabsContent value="instructors" className="pt-3">
