@@ -4,2019 +4,2605 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[]
+  | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
       arbitration_messages: {
         Row: {
-          attachment_names: string[]
-          attachment_urls: string[]
-          body: string
-          created_at: string
-          id: string
-          instructor_id: string
-          room_id: string
-          sender_name: string
-          sender_role: string
-        }
+          attachment_names: string[];
+          attachment_urls: string[];
+          body: string;
+          created_at: string;
+          id: string;
+          instructor_id: string;
+          room_id: string;
+          sender_name: string;
+          sender_role: string;
+        };
         Insert: {
-          attachment_names?: string[]
-          attachment_urls?: string[]
-          body: string
-          created_at?: string
-          id?: string
-          instructor_id: string
-          room_id: string
-          sender_name: string
-          sender_role: string
-        }
+          attachment_names?: string[];
+          attachment_urls?: string[];
+          body: string;
+          created_at?: string;
+          id?: string;
+          instructor_id: string;
+          room_id: string;
+          sender_name: string;
+          sender_role: string;
+        };
         Update: {
-          attachment_names?: string[]
-          attachment_urls?: string[]
-          body?: string
-          created_at?: string
-          id?: string
-          instructor_id?: string
-          room_id?: string
-          sender_name?: string
-          sender_role?: string
-        }
-        Relationships: []
-      }
+          attachment_names?: string[];
+          attachment_urls?: string[];
+          body?: string;
+          created_at?: string;
+          id?: string;
+          instructor_id?: string;
+          room_id?: string;
+          sender_name?: string;
+          sender_role?: string;
+        };
+        Relationships: [];
+      };
       bookings: {
         Row: {
-          base_price: number
-          cancel_reason: string | null
-          cancel_requested_at: string | null
-          companion_names: string | null
-          companions: Json
-          coupon_code: string | null
-          created_at: string
-          deposit_status: string
-          discount_amount: number | null
-          diver_id: string
-          diver_name: string
-          drinking: boolean
-          evidence_file_names: string[] | null
-          flight_info: string | null
-          gender: string
-          id: string
-          on_site_balance: number
-          options_cost: number
-          participant_count: number
-          passport_info: string | null
-          payment_method: string
-          platform_fee: number
-          refund_amount: number | null
-          refund_rate: number | null
-          room_no: string | null
-          room_note: string | null
-          selected_options: Json
-          smoking: boolean
-          snoring: boolean
-          status: string
-          total_paid: number
-          tour_id: string
-        }
+          base_price: number;
+          cancel_reason: string | null;
+          cancel_requested_at: string | null;
+          companion_names: string | null;
+          companions: NonNullable<Json>;
+          coupon_code: string | null;
+          created_at: string;
+          deposit_status: string;
+          discount_amount: number | null;
+          diver_id: string;
+          diver_name: string;
+          drinking: boolean;
+          evidence_file_names: string[] | null;
+          flight_info: string | null;
+          gender: string;
+          id: string;
+          on_site_balance: number;
+          options_cost: number;
+          participant_count: number;
+          passport_info: string | null;
+          payment_method: string;
+          platform_fee: number;
+          refund_amount: number | null;
+          refund_rate: number | null;
+          room_no: string | null;
+          room_note: string | null;
+          selected_options: NonNullable<Json>;
+          smoking: boolean;
+          snoring: boolean;
+          status: string;
+          total_paid: number;
+          tour_id: string;
+        };
         Insert: {
-          base_price: number
-          cancel_reason?: string | null
-          cancel_requested_at?: string | null
-          companion_names?: string | null
-          companions?: Json
-          coupon_code?: string | null
-          created_at?: string
-          deposit_status?: string
-          discount_amount?: number | null
-          diver_id: string
-          diver_name: string
-          drinking?: boolean
-          evidence_file_names?: string[] | null
-          flight_info?: string | null
-          gender: string
-          id?: string
-          on_site_balance?: number
-          options_cost?: number
-          participant_count?: number
-          passport_info?: string | null
-          payment_method: string
-          platform_fee?: number
-          refund_amount?: number | null
-          refund_rate?: number | null
-          room_no?: string | null
-          room_note?: string | null
-          selected_options?: Json
-          smoking?: boolean
-          snoring?: boolean
-          status?: string
-          total_paid?: number
-          tour_id: string
-        }
+          base_price: number;
+          cancel_reason?: string | null;
+          cancel_requested_at?: string | null;
+          companion_names?: string | null;
+          companions?: NonNullable<Json>;
+          coupon_code?: string | null;
+          created_at?: string;
+          deposit_status?: string;
+          discount_amount?: number | null;
+          diver_id: string;
+          diver_name: string;
+          drinking?: boolean;
+          evidence_file_names?: string[] | null;
+          flight_info?: string | null;
+          gender: string;
+          id?: string;
+          on_site_balance?: number;
+          options_cost?: number;
+          participant_count?: number;
+          passport_info?: string | null;
+          payment_method: string;
+          platform_fee?: number;
+          refund_amount?: number | null;
+          refund_rate?: number | null;
+          room_no?: string | null;
+          room_note?: string | null;
+          selected_options?: NonNullable<Json>;
+          smoking?: boolean;
+          snoring?: boolean;
+          status?: string;
+          total_paid?: number;
+          tour_id: string;
+        };
         Update: {
-          base_price?: number
-          cancel_reason?: string | null
-          cancel_requested_at?: string | null
-          companion_names?: string | null
-          companions?: Json
-          coupon_code?: string | null
-          created_at?: string
-          deposit_status?: string
-          discount_amount?: number | null
-          diver_id?: string
-          diver_name?: string
-          drinking?: boolean
-          evidence_file_names?: string[] | null
-          flight_info?: string | null
-          gender?: string
-          id?: string
-          on_site_balance?: number
-          options_cost?: number
-          participant_count?: number
-          passport_info?: string | null
-          payment_method?: string
-          platform_fee?: number
-          refund_amount?: number | null
-          refund_rate?: number | null
-          room_no?: string | null
-          room_note?: string | null
-          selected_options?: Json
-          smoking?: boolean
-          snoring?: boolean
-          status?: string
-          total_paid?: number
-          tour_id?: string
-        }
+          base_price?: number;
+          cancel_reason?: string | null;
+          cancel_requested_at?: string | null;
+          companion_names?: string | null;
+          companions?: NonNullable<Json>;
+          coupon_code?: string | null;
+          created_at?: string;
+          deposit_status?: string;
+          discount_amount?: number | null;
+          diver_id?: string;
+          diver_name?: string;
+          drinking?: boolean;
+          evidence_file_names?: string[] | null;
+          flight_info?: string | null;
+          gender?: string;
+          id?: string;
+          on_site_balance?: number;
+          options_cost?: number;
+          participant_count?: number;
+          passport_info?: string | null;
+          payment_method?: string;
+          platform_fee?: number;
+          refund_amount?: number | null;
+          refund_rate?: number | null;
+          room_no?: string | null;
+          room_note?: string | null;
+          selected_options?: NonNullable<Json>;
+          smoking?: boolean;
+          snoring?: boolean;
+          status?: string;
+          total_paid?: number;
+          tour_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "bookings_tour_id_fkey"
-            columns: ["tour_id"]
-            isOneToOne: false
-            referencedRelation: "tours"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "bookings_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       business_inquiries: {
         Row: {
-          admin_reply: string | null
-          company_name: string
-          contact_name: string
-          created_at: string
-          email: string
-          id: string
-          message: string
-          phone: string
-          status: string
-          updated_at: string
-        }
+          admin_reply: string | null;
+          company_name: string;
+          contact_name: string;
+          created_at: string;
+          email: string;
+          id: string;
+          message: string;
+          phone: string;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          admin_reply?: string | null
-          company_name: string
-          contact_name: string
-          created_at?: string
-          email: string
-          id?: string
-          message: string
-          phone: string
-          status?: string
-          updated_at?: string
-        }
+          admin_reply?: string | null;
+          company_name: string;
+          contact_name: string;
+          created_at?: string;
+          email: string;
+          id?: string;
+          message: string;
+          phone: string;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          admin_reply?: string | null
-          company_name?: string
-          contact_name?: string
-          created_at?: string
-          email?: string
-          id?: string
-          message?: string
-          phone?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          admin_reply?: string | null;
+          company_name?: string;
+          contact_name?: string;
+          created_at?: string;
+          email?: string;
+          id?: string;
+          message?: string;
+          phone?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       centers: {
         Row: {
-          address: string
-          country: string | null
-          created_at: string
-          features: string[]
-          google_map: string | null
-          homepage: string | null
-          id: string
-          instagram: string | null
-          name: string
-          phone: string | null
-          rejection_reason: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-          updated_at: string
-        }
+          address: string;
+          country: string | null;
+          created_at: string;
+          features: string[];
+          google_map: string | null;
+          homepage: string | null;
+          id: string;
+          instagram: string | null;
+          name: string;
+          phone: string | null;
+          rejection_reason: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          address: string
-          country?: string | null
-          created_at?: string
-          features?: string[]
-          google_map?: string | null
-          homepage?: string | null
-          id?: string
-          instagram?: string | null
-          name: string
-          phone?: string | null
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          updated_at?: string
-        }
+          address: string;
+          country?: string | null;
+          created_at?: string;
+          features?: string[];
+          google_map?: string | null;
+          homepage?: string | null;
+          id?: string;
+          instagram?: string | null;
+          name: string;
+          phone?: string | null;
+          rejection_reason?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          address?: string
-          country?: string | null
-          created_at?: string
-          features?: string[]
-          google_map?: string | null
-          homepage?: string | null
-          id?: string
-          instagram?: string | null
-          name?: string
-          phone?: string | null
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          address?: string;
+          country?: string | null;
+          created_at?: string;
+          features?: string[];
+          google_map?: string | null;
+          homepage?: string | null;
+          id?: string;
+          instagram?: string | null;
+          name?: string;
+          phone?: string | null;
+          rejection_reason?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       chat_messages: {
         Row: {
-          body: string
-          created_at: string
-          id: string
-          sender_name: string
-          sender_profile_id: string
-          sender_role: string
-          tour_id: string
-        }
+          body: string;
+          created_at: string;
+          id: string;
+          sender_name: string;
+          sender_profile_id: string;
+          sender_role: string;
+          tour_id: string;
+        };
         Insert: {
-          body: string
-          created_at?: string
-          id?: string
-          sender_name: string
-          sender_profile_id: string
-          sender_role: string
-          tour_id: string
-        }
+          body: string;
+          created_at?: string;
+          id?: string;
+          sender_name: string;
+          sender_profile_id: string;
+          sender_role: string;
+          tour_id: string;
+        };
         Update: {
-          body?: string
-          created_at?: string
-          id?: string
-          sender_name?: string
-          sender_profile_id?: string
-          sender_role?: string
-          tour_id?: string
-        }
+          body?: string;
+          created_at?: string;
+          id?: string;
+          sender_name?: string;
+          sender_profile_id?: string;
+          sender_role?: string;
+          tour_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "chat_messages_tour_id_fkey"
-            columns: ["tour_id"]
-            isOneToOne: false
-            referencedRelation: "tours"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "chat_messages_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       coupons: {
         Row: {
-          active: boolean
-          code: string
-          created_at: string
-          discount_type: string
-          discount_value: number
-          expires_at: string | null
-          id: string
-          max_discount: number | null
-          min_purchase: number
-          usage_limit: number | null
-          used_count: number
-        }
+          active: boolean;
+          code: string;
+          created_at: string;
+          discount_type: string;
+          discount_value: number;
+          expires_at: string | null;
+          id: string;
+          max_discount: number | null;
+          min_purchase: number;
+          usage_limit: number | null;
+          used_count: number;
+        };
         Insert: {
-          active?: boolean
-          code: string
-          created_at?: string
-          discount_type: string
-          discount_value: number
-          expires_at?: string | null
-          id?: string
-          max_discount?: number | null
-          min_purchase?: number
-          usage_limit?: number | null
-          used_count?: number
-        }
+          active?: boolean;
+          code: string;
+          created_at?: string;
+          discount_type: string;
+          discount_value: number;
+          expires_at?: string | null;
+          id?: string;
+          max_discount?: number | null;
+          min_purchase?: number;
+          usage_limit?: number | null;
+          used_count?: number;
+        };
         Update: {
-          active?: boolean
-          code?: string
-          created_at?: string
-          discount_type?: string
-          discount_value?: number
-          expires_at?: string | null
-          id?: string
-          max_discount?: number | null
-          min_purchase?: number
-          usage_limit?: number | null
-          used_count?: number
-        }
-        Relationships: []
-      }
+          active?: boolean;
+          code?: string;
+          created_at?: string;
+          discount_type?: string;
+          discount_value?: number;
+          expires_at?: string | null;
+          id?: string;
+          max_discount?: number | null;
+          min_purchase?: number;
+          usage_limit?: number | null;
+          used_count?: number;
+        };
+        Relationships: [];
+      };
       deleted_accounts: {
         Row: {
-          deleted_at: string
-          email: string | null
-          id: string
-          original_user_id: string
-          phone: string | null
-        }
+          deleted_at: string;
+          email: string | null;
+          id: string;
+          original_user_id: string;
+          phone: string | null;
+        };
         Insert: {
-          deleted_at?: string
-          email?: string | null
-          id?: string
-          original_user_id: string
-          phone?: string | null
-        }
+          deleted_at?: string;
+          email?: string | null;
+          id?: string;
+          original_user_id: string;
+          phone?: string | null;
+        };
         Update: {
-          deleted_at?: string
-          email?: string | null
-          id?: string
-          original_user_id?: string
-          phone?: string | null
-        }
-        Relationships: []
-      }
+          deleted_at?: string;
+          email?: string | null;
+          id?: string;
+          original_user_id?: string;
+          phone?: string | null;
+        };
+        Relationships: [];
+      };
+      devices: {
+        Row: {
+          created_at: string;
+          id: string;
+          last_sync_at: string | null;
+          model: string | null;
+          name: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+          last_sync_at?: string | null;
+          model?: string | null;
+          name: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          last_sync_at?: string | null;
+          model?: string | null;
+          name?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "devices_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "devices_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles_directory";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "devices_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "public_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      dive_logs: {
+        Row: {
+          algorithm: string | null;
+          avg_depth_m: number;
+          booking_id: string | null;
+          created_at: string;
+          device_id: string | null;
+          duration_sec: number;
+          gas_name: string | null;
+          id: string;
+          max_depth_m: number;
+          payload: NonNullable<Json>;
+          started_at: string;
+          user_id: string;
+          water_temp_c: number | null;
+        };
+        Insert: {
+          algorithm?: string | null;
+          avg_depth_m: number;
+          booking_id?: string | null;
+          created_at?: string;
+          device_id?: string | null;
+          duration_sec: number;
+          gas_name?: string | null;
+          id: string;
+          max_depth_m: number;
+          payload: NonNullable<Json>;
+          started_at: string;
+          user_id: string;
+          water_temp_c?: number | null;
+        };
+        Update: {
+          algorithm?: string | null;
+          avg_depth_m?: number;
+          booking_id?: string | null;
+          created_at?: string;
+          device_id?: string | null;
+          duration_sec?: number;
+          gas_name?: string | null;
+          id?: string;
+          max_depth_m?: number;
+          payload?: NonNullable<Json>;
+          started_at?: string;
+          user_id?: string;
+          water_temp_c?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dive_logs_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dive_logs_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings_directory";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dive_logs_device_id_fkey";
+            columns: ["device_id"];
+            isOneToOne: false;
+            referencedRelation: "devices";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dive_logs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dive_logs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles_directory";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dive_logs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "public_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      favorites: {
+        Row: {
+          created_at: string;
+          id: string;
+          profile_id: string;
+          target_id: string;
+          target_type: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          profile_id: string;
+          target_id: string;
+          target_type: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          profile_id?: string;
+          target_id?: string;
+          target_type?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "favorites_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "favorites_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles_directory";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "favorites_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       fcm_tokens: {
         Row: {
-          created_at: string
-          id: string
-          platform: string
-          profile_id: string
-          token: string
-        }
+          created_at: string;
+          id: string;
+          platform: string;
+          profile_id: string;
+          token: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          platform?: string
-          profile_id: string
-          token: string
-        }
+          created_at?: string;
+          id?: string;
+          platform?: string;
+          profile_id: string;
+          token: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          platform?: string
-          profile_id?: string
-          token?: string
-        }
+          created_at?: string;
+          id?: string;
+          platform?: string;
+          profile_id?: string;
+          token?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "fcm_tokens_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            foreignKeyName: "fcm_tokens_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+          {
+            foreignKeyName: "fcm_tokens_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles_directory";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "fcm_tokens_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       inquiries: {
         Row: {
-          booking_id: string | null
-          category: string
-          created_at: string
-          diver_id: string
-          id: string
-          message: string
-          status: string
-          tour_id: string | null
-        }
+          booking_id: string | null;
+          category: string;
+          created_at: string;
+          diver_id: string;
+          id: string;
+          message: string;
+          status: string;
+          tour_id: string | null;
+        };
         Insert: {
-          booking_id?: string | null
-          category: string
-          created_at?: string
-          diver_id: string
-          id?: string
-          message: string
-          status?: string
-          tour_id?: string | null
-        }
+          booking_id?: string | null;
+          category: string;
+          created_at?: string;
+          diver_id: string;
+          id?: string;
+          message: string;
+          status?: string;
+          tour_id?: string | null;
+        };
         Update: {
-          booking_id?: string | null
-          category?: string
-          created_at?: string
-          diver_id?: string
-          id?: string
-          message?: string
-          status?: string
-          tour_id?: string | null
-        }
+          booking_id?: string | null;
+          category?: string;
+          created_at?: string;
+          diver_id?: string;
+          id?: string;
+          message?: string;
+          status?: string;
+          tour_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "inquiries_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
+            foreignKeyName: "inquiries_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "inquiries_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings_directory"
-            referencedColumns: ["id"]
+            foreignKeyName: "inquiries_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings_directory";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "inquiries_tour_id_fkey"
-            columns: ["tour_id"]
-            isOneToOne: false
-            referencedRelation: "tours"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "inquiries_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       instructor_admin_notes: {
         Row: {
-          body: string
-          created_at: string
-          id: string
-          instructor_id: string
-          sender_name: string
-          sender_role: string
-        }
+          body: string;
+          created_at: string;
+          id: string;
+          instructor_id: string;
+          sender_name: string;
+          sender_role: string;
+        };
         Insert: {
-          body: string
-          created_at?: string
-          id?: string
-          instructor_id: string
-          sender_name: string
-          sender_role: string
-        }
+          body: string;
+          created_at?: string;
+          id?: string;
+          instructor_id: string;
+          sender_name: string;
+          sender_role: string;
+        };
         Update: {
-          body?: string
-          created_at?: string
-          id?: string
-          instructor_id?: string
-          sender_name?: string
-          sender_role?: string
-        }
+          body?: string;
+          created_at?: string;
+          id?: string;
+          instructor_id?: string;
+          sender_name?: string;
+          sender_role?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "instructor_admin_notes_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
-            referencedRelation: "instructors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "instructor_admin_notes_instructor_id_fkey";
+            columns: ["instructor_id"];
+            isOneToOne: false;
+            referencedRelation: "instructors";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       instructor_notifications: {
         Row: {
-          booking_id: string | null
-          created_at: string
-          diver_name: string | null
-          id: string
-          instructor_id: string
-          message: string | null
-          read: boolean
-          selected_option_names: string[] | null
-          settlement_amount: number | null
-          tour_id: string
-          tour_title: string
-          type: string
-        }
+          booking_id: string | null;
+          created_at: string;
+          diver_name: string | null;
+          id: string;
+          instructor_id: string;
+          message: string | null;
+          read: boolean;
+          selected_option_names: string[] | null;
+          settlement_amount: number | null;
+          tour_id: string;
+          tour_title: string;
+          type: string;
+        };
         Insert: {
-          booking_id?: string | null
-          created_at?: string
-          diver_name?: string | null
-          id?: string
-          instructor_id: string
-          message?: string | null
-          read?: boolean
-          selected_option_names?: string[] | null
-          settlement_amount?: number | null
-          tour_id?: string
-          tour_title: string
-          type: string
-        }
+          booking_id?: string | null;
+          created_at?: string;
+          diver_name?: string | null;
+          id?: string;
+          instructor_id: string;
+          message?: string | null;
+          read?: boolean;
+          selected_option_names?: string[] | null;
+          settlement_amount?: number | null;
+          tour_id?: string;
+          tour_title: string;
+          type: string;
+        };
         Update: {
-          booking_id?: string | null
-          created_at?: string
-          diver_name?: string | null
-          id?: string
-          instructor_id?: string
-          message?: string | null
-          read?: boolean
-          selected_option_names?: string[] | null
-          settlement_amount?: number | null
-          tour_id?: string
-          tour_title?: string
-          type?: string
-        }
-        Relationships: []
-      }
+          booking_id?: string | null;
+          created_at?: string;
+          diver_name?: string | null;
+          id?: string;
+          instructor_id?: string;
+          message?: string | null;
+          read?: boolean;
+          selected_option_names?: string[] | null;
+          settlement_amount?: number | null;
+          tour_id?: string;
+          tour_title?: string;
+          type?: string;
+        };
+        Relationships: [];
+      };
       instructors: {
         Row: {
-          agency: string | null
-          avatar_url: string | null
-          bio: string | null
-          business_type: string | null
-          completion_rate: number
-          created_at: string
-          documents_pending_review: boolean
-          experience_years: number
-          favorite_diving: string | null
-          id: string
-          languages: string[] | null
-          level: string | null
-          license_file_names: string[] | null
-          license_file_paths: string[] | null
-          name: string
-          penalty_count: number
-          penalty_reason: string | null
-          pledge_signed: boolean
-          pledge_signed_at: string | null
-          pledge_version: string | null
-          profile_id: string | null
-          rating: number
-          rejected_at: string | null
-          rejected_by: string | null
-          rejection_reason: string | null
-          settlement_consents: Json
-          signature_data_url: string | null
-          sns_blog: string | null
-          sns_facebook: string | null
-          sns_homepage: string | null
-          sns_instagram: string | null
-          sns_youtube: string | null
-          specialty_tags: string[] | null
-          teaching_philosophy: string | null
-          total_logs: number
-          verified_at: string | null
-          verified_by: string | null
-          verified_status: boolean
-        }
+          agency: string | null;
+          avatar_url: string | null;
+          bio: string | null;
+          business_type: string | null;
+          completion_rate: number;
+          created_at: string;
+          documents_pending_review: boolean;
+          experience_years: number;
+          favorite_diving: string | null;
+          id: string;
+          languages: string[] | null;
+          level: string | null;
+          license_file_names: string[] | null;
+          license_file_paths: string[] | null;
+          name: string;
+          penalty_count: number;
+          penalty_reason: string | null;
+          pledge_signed: boolean;
+          pledge_signed_at: string | null;
+          pledge_version: string | null;
+          profile_id: string | null;
+          rating: number;
+          rejected_at: string | null;
+          rejected_by: string | null;
+          rejection_reason: string | null;
+          settlement_consents: NonNullable<Json>;
+          signature_data_url: string | null;
+          sns_blog: string | null;
+          sns_facebook: string | null;
+          sns_homepage: string | null;
+          sns_instagram: string | null;
+          sns_youtube: string | null;
+          specialty_tags: string[] | null;
+          teaching_philosophy: string | null;
+          total_logs: number;
+          verified_at: string | null;
+          verified_by: string | null;
+          verified_status: boolean;
+        };
         Insert: {
-          agency?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          business_type?: string | null
-          completion_rate?: number
-          created_at?: string
-          documents_pending_review?: boolean
-          experience_years?: number
-          favorite_diving?: string | null
-          id: string
-          languages?: string[] | null
-          level?: string | null
-          license_file_names?: string[] | null
-          license_file_paths?: string[] | null
-          name: string
-          penalty_count?: number
-          penalty_reason?: string | null
-          pledge_signed?: boolean
-          pledge_signed_at?: string | null
-          pledge_version?: string | null
-          profile_id?: string | null
-          rating?: number
-          rejected_at?: string | null
-          rejected_by?: string | null
-          rejection_reason?: string | null
-          settlement_consents?: Json
-          signature_data_url?: string | null
-          sns_blog?: string | null
-          sns_facebook?: string | null
-          sns_homepage?: string | null
-          sns_instagram?: string | null
-          sns_youtube?: string | null
-          specialty_tags?: string[] | null
-          teaching_philosophy?: string | null
-          total_logs?: number
-          verified_at?: string | null
-          verified_by?: string | null
-          verified_status?: boolean
-        }
+          agency?: string | null;
+          avatar_url?: string | null;
+          bio?: string | null;
+          business_type?: string | null;
+          completion_rate?: number;
+          created_at?: string;
+          documents_pending_review?: boolean;
+          experience_years?: number;
+          favorite_diving?: string | null;
+          id: string;
+          languages?: string[] | null;
+          level?: string | null;
+          license_file_names?: string[] | null;
+          license_file_paths?: string[] | null;
+          name: string;
+          penalty_count?: number;
+          penalty_reason?: string | null;
+          pledge_signed?: boolean;
+          pledge_signed_at?: string | null;
+          pledge_version?: string | null;
+          profile_id?: string | null;
+          rating?: number;
+          rejected_at?: string | null;
+          rejected_by?: string | null;
+          rejection_reason?: string | null;
+          settlement_consents?: NonNullable<Json>;
+          signature_data_url?: string | null;
+          sns_blog?: string | null;
+          sns_facebook?: string | null;
+          sns_homepage?: string | null;
+          sns_instagram?: string | null;
+          sns_youtube?: string | null;
+          specialty_tags?: string[] | null;
+          teaching_philosophy?: string | null;
+          total_logs?: number;
+          verified_at?: string | null;
+          verified_by?: string | null;
+          verified_status?: boolean;
+        };
         Update: {
-          agency?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          business_type?: string | null
-          completion_rate?: number
-          created_at?: string
-          documents_pending_review?: boolean
-          experience_years?: number
-          favorite_diving?: string | null
-          id?: string
-          languages?: string[] | null
-          level?: string | null
-          license_file_names?: string[] | null
-          license_file_paths?: string[] | null
-          name?: string
-          penalty_count?: number
-          penalty_reason?: string | null
-          pledge_signed?: boolean
-          pledge_signed_at?: string | null
-          pledge_version?: string | null
-          profile_id?: string | null
-          rating?: number
-          rejected_at?: string | null
-          rejected_by?: string | null
-          rejection_reason?: string | null
-          settlement_consents?: Json
-          signature_data_url?: string | null
-          sns_blog?: string | null
-          sns_facebook?: string | null
-          sns_homepage?: string | null
-          sns_instagram?: string | null
-          sns_youtube?: string | null
-          specialty_tags?: string[] | null
-          teaching_philosophy?: string | null
-          total_logs?: number
-          verified_at?: string | null
-          verified_by?: string | null
-          verified_status?: boolean
-        }
-        Relationships: []
-      }
+          agency?: string | null;
+          avatar_url?: string | null;
+          bio?: string | null;
+          business_type?: string | null;
+          completion_rate?: number;
+          created_at?: string;
+          documents_pending_review?: boolean;
+          experience_years?: number;
+          favorite_diving?: string | null;
+          id?: string;
+          languages?: string[] | null;
+          level?: string | null;
+          license_file_names?: string[] | null;
+          license_file_paths?: string[] | null;
+          name?: string;
+          penalty_count?: number;
+          penalty_reason?: string | null;
+          pledge_signed?: boolean;
+          pledge_signed_at?: string | null;
+          pledge_version?: string | null;
+          profile_id?: string | null;
+          rating?: number;
+          rejected_at?: string | null;
+          rejected_by?: string | null;
+          rejection_reason?: string | null;
+          settlement_consents?: NonNullable<Json>;
+          signature_data_url?: string | null;
+          sns_blog?: string | null;
+          sns_facebook?: string | null;
+          sns_homepage?: string | null;
+          sns_instagram?: string | null;
+          sns_youtube?: string | null;
+          specialty_tags?: string[] | null;
+          teaching_philosophy?: string | null;
+          total_logs?: number;
+          verified_at?: string | null;
+          verified_by?: string | null;
+          verified_status?: boolean;
+        };
+        Relationships: [];
+      };
       invoices: {
         Row: {
-          booking_id: string
-          gmv_amount: number
-          id: string
-          instructor_amount: number
-          issued_at: string
-          payout_id: string | null
-          period: string
-          platform_fee_amount: number
-          refund_amount: number
-        }
+          booking_id: string;
+          gmv_amount: number;
+          id: string;
+          instructor_amount: number;
+          issued_at: string;
+          payout_id: string | null;
+          period: string;
+          platform_fee_amount: number;
+          refund_amount: number;
+        };
         Insert: {
-          booking_id: string
-          gmv_amount: number
-          id: string
-          instructor_amount: number
-          issued_at?: string
-          payout_id?: string | null
-          period: string
-          platform_fee_amount: number
-          refund_amount?: number
-        }
+          booking_id: string;
+          gmv_amount: number;
+          id: string;
+          instructor_amount: number;
+          issued_at?: string;
+          payout_id?: string | null;
+          period: string;
+          platform_fee_amount: number;
+          refund_amount?: number;
+        };
         Update: {
-          booking_id?: string
-          gmv_amount?: number
-          id?: string
-          instructor_amount?: number
-          issued_at?: string
-          payout_id?: string | null
-          period?: string
-          platform_fee_amount?: number
-          refund_amount?: number
-        }
+          booking_id?: string;
+          gmv_amount?: number;
+          id?: string;
+          instructor_amount?: number;
+          issued_at?: string;
+          payout_id?: string | null;
+          period?: string;
+          platform_fee_amount?: number;
+          refund_amount?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "invoices_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: true
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
+            foreignKeyName: "invoices_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "invoices_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: true
-            referencedRelation: "bookings_directory"
-            referencedColumns: ["id"]
+            foreignKeyName: "invoices_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "bookings_directory";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "invoices_payout_id_fkey"
-            columns: ["payout_id"]
-            isOneToOne: false
-            referencedRelation: "payouts"
-            referencedColumns: ["id"]
+            foreignKeyName: "invoices_payout_id_fkey";
+            columns: ["payout_id"];
+            isOneToOne: false;
+            referencedRelation: "payouts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "invoices_payout_id_fkey"
-            columns: ["payout_id"]
-            isOneToOne: false
-            referencedRelation: "payouts_directory"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "invoices_payout_id_fkey";
+            columns: ["payout_id"];
+            isOneToOne: false;
+            referencedRelation: "payouts_directory";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       notices: {
         Row: {
-          category: string
-          content: string
-          created_at: string
-          id: string
-          pinned: boolean
-          title: string
-        }
+          category: string;
+          content: string;
+          created_at: string;
+          id: string;
+          pinned: boolean;
+          title: string;
+        };
         Insert: {
-          category?: string
-          content: string
-          created_at?: string
-          id?: string
-          pinned?: boolean
-          title: string
-        }
+          category?: string;
+          content: string;
+          created_at?: string;
+          id?: string;
+          pinned?: boolean;
+          title: string;
+        };
         Update: {
-          category?: string
-          content?: string
-          created_at?: string
-          id?: string
-          pinned?: boolean
-          title?: string
-        }
-        Relationships: []
-      }
+          category?: string;
+          content?: string;
+          created_at?: string;
+          id?: string;
+          pinned?: boolean;
+          title?: string;
+        };
+        Relationships: [];
+      };
       payouts: {
         Row: {
-          booking_id: string | null
-          business_type_at_payout: string | null
-          created_at: string
-          first_amount: number
-          id: string
-          instructor_id: string
-          net_payout_amount: number | null
-          paid_at: string | null
-          refunded_at: string | null
-          scheduled_at: string | null
-          second_amount: number
-          status: string
-          withholding_tax_amount: number
-          withholding_tax_rate: number
-        }
+          booking_id: string | null;
+          business_type_at_payout: string | null;
+          created_at: string;
+          first_amount: number;
+          id: string;
+          instructor_id: string;
+          net_payout_amount: number | null;
+          paid_at: string | null;
+          refunded_at: string | null;
+          scheduled_at: string | null;
+          second_amount: number;
+          status: string;
+          withholding_tax_amount: number;
+          withholding_tax_rate: number;
+        };
         Insert: {
-          booking_id?: string | null
-          business_type_at_payout?: string | null
-          created_at?: string
-          first_amount?: number
-          id?: string
-          instructor_id: string
-          net_payout_amount?: number | null
-          paid_at?: string | null
-          refunded_at?: string | null
-          scheduled_at?: string | null
-          second_amount?: number
-          status?: string
-          withholding_tax_amount?: number
-          withholding_tax_rate?: number
-        }
+          booking_id?: string | null;
+          business_type_at_payout?: string | null;
+          created_at?: string;
+          first_amount?: number;
+          id?: string;
+          instructor_id: string;
+          net_payout_amount?: number | null;
+          paid_at?: string | null;
+          refunded_at?: string | null;
+          scheduled_at?: string | null;
+          second_amount?: number;
+          status?: string;
+          withholding_tax_amount?: number;
+          withholding_tax_rate?: number;
+        };
         Update: {
-          booking_id?: string | null
-          business_type_at_payout?: string | null
-          created_at?: string
-          first_amount?: number
-          id?: string
-          instructor_id?: string
-          net_payout_amount?: number | null
-          paid_at?: string | null
-          refunded_at?: string | null
-          scheduled_at?: string | null
-          second_amount?: number
-          status?: string
-          withholding_tax_amount?: number
-          withholding_tax_rate?: number
-        }
+          booking_id?: string | null;
+          business_type_at_payout?: string | null;
+          created_at?: string;
+          first_amount?: number;
+          id?: string;
+          instructor_id?: string;
+          net_payout_amount?: number | null;
+          paid_at?: string | null;
+          refunded_at?: string | null;
+          scheduled_at?: string | null;
+          second_amount?: number;
+          status?: string;
+          withholding_tax_amount?: number;
+          withholding_tax_rate?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "payouts_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
+            foreignKeyName: "payouts_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "payouts_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings_directory"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "payouts_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings_directory";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       penalties_log: {
         Row: {
-          created_at: string
-          description: string | null
-          id: string
-          instructor_id: string
-          violation_type: string
-          voided: boolean
-        }
+          created_at: string;
+          description: string | null;
+          id: string;
+          instructor_id: string;
+          violation_type: string;
+          voided: boolean;
+        };
         Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          instructor_id: string
-          violation_type: string
-          voided?: boolean
-        }
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          instructor_id: string;
+          violation_type: string;
+          voided?: boolean;
+        };
         Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          instructor_id?: string
-          violation_type?: string
-          voided?: boolean
-        }
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          instructor_id?: string;
+          violation_type?: string;
+          voided?: boolean;
+        };
         Relationships: [
           {
-            foreignKeyName: "penalties_log_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
-            referencedRelation: "instructors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "penalties_log_instructor_id_fkey";
+            columns: ["instructor_id"];
+            isOneToOne: false;
+            referencedRelation: "instructors";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       policies: {
         Row: {
-          category: string
-          created_at: string
-          description: string | null
-          id: string
-          rate: string | null
-          sort_order: number
-          title: string
-        }
+          category: string;
+          created_at: string;
+          description: string | null;
+          id: string;
+          rate: string | null;
+          sort_order: number;
+          title: string;
+        };
         Insert: {
-          category: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          rate?: string | null
-          sort_order?: number
-          title: string
-        }
+          category: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          rate?: string | null;
+          sort_order?: number;
+          title: string;
+        };
         Update: {
-          category?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          rate?: string | null
-          sort_order?: number
-          title?: string
-        }
-        Relationships: []
-      }
+          category?: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          rate?: string | null;
+          sort_order?: number;
+          title?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
-          account_holder: string | null
-          account_number: string | null
-          avatar_url: string | null
-          bank_name: string | null
-          bankbook_file_name: string | null
-          bankbook_path: string | null
-          bio: string | null
-          birth_date: string | null
-          c_card_agency: string | null
-          c_card_number: string | null
-          c_card_photo_path: string | null
-          created_at: string
-          deleted_at: string | null
-          emergency_contact_name: string | null
-          emergency_contact_phone: string | null
-          gender: string | null
-          id: string
-          id_document_path: string | null
-          insurance_info: string | null
-          log_count: number | null
-          name: string
-          phone: string | null
-          pledge_settlement_agreed: boolean
-          pledge_settlement_agreed_at: string | null
-          role: string
-          smoking: boolean | null
-          snoring: boolean | null
-          status: string
-        }
+          account_holder: string | null;
+          account_number: string | null;
+          avatar_url: string | null;
+          bank_name: string | null;
+          bankbook_file_name: string | null;
+          bankbook_path: string | null;
+          bio: string | null;
+          birth_date: string | null;
+          c_card_agency: string | null;
+          c_card_number: string | null;
+          c_card_photo_path: string | null;
+          created_at: string;
+          deleted_at: string | null;
+          emergency_contact_name: string | null;
+          emergency_contact_phone: string | null;
+          gender: string | null;
+          id: string;
+          id_document_path: string | null;
+          insurance_info: string | null;
+          log_count: number | null;
+          name: string;
+          phone: string | null;
+          pledge_settlement_agreed: boolean;
+          pledge_settlement_agreed_at: string | null;
+          role: string;
+          smoking: boolean | null;
+          snoring: boolean | null;
+          status: string;
+        };
         Insert: {
-          account_holder?: string | null
-          account_number?: string | null
-          avatar_url?: string | null
-          bank_name?: string | null
-          bankbook_file_name?: string | null
-          bankbook_path?: string | null
-          bio?: string | null
-          birth_date?: string | null
-          c_card_agency?: string | null
-          c_card_number?: string | null
-          c_card_photo_path?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          emergency_contact_name?: string | null
-          emergency_contact_phone?: string | null
-          gender?: string | null
-          id: string
-          id_document_path?: string | null
-          insurance_info?: string | null
-          log_count?: number | null
-          name: string
-          phone?: string | null
-          pledge_settlement_agreed?: boolean
-          pledge_settlement_agreed_at?: string | null
-          role?: string
-          smoking?: boolean | null
-          snoring?: boolean | null
-          status?: string
-        }
+          account_holder?: string | null;
+          account_number?: string | null;
+          avatar_url?: string | null;
+          bank_name?: string | null;
+          bankbook_file_name?: string | null;
+          bankbook_path?: string | null;
+          bio?: string | null;
+          birth_date?: string | null;
+          c_card_agency?: string | null;
+          c_card_number?: string | null;
+          c_card_photo_path?: string | null;
+          created_at?: string;
+          deleted_at?: string | null;
+          emergency_contact_name?: string | null;
+          emergency_contact_phone?: string | null;
+          gender?: string | null;
+          id: string;
+          id_document_path?: string | null;
+          insurance_info?: string | null;
+          log_count?: number | null;
+          name: string;
+          phone?: string | null;
+          pledge_settlement_agreed?: boolean;
+          pledge_settlement_agreed_at?: string | null;
+          role?: string;
+          smoking?: boolean | null;
+          snoring?: boolean | null;
+          status?: string;
+        };
         Update: {
-          account_holder?: string | null
-          account_number?: string | null
-          avatar_url?: string | null
-          bank_name?: string | null
-          bankbook_file_name?: string | null
-          bankbook_path?: string | null
-          bio?: string | null
-          birth_date?: string | null
-          c_card_agency?: string | null
-          c_card_number?: string | null
-          c_card_photo_path?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          emergency_contact_name?: string | null
-          emergency_contact_phone?: string | null
-          gender?: string | null
-          id?: string
-          id_document_path?: string | null
-          insurance_info?: string | null
-          log_count?: number | null
-          name?: string
-          phone?: string | null
-          pledge_settlement_agreed?: boolean
-          pledge_settlement_agreed_at?: string | null
-          role?: string
-          smoking?: boolean | null
-          snoring?: boolean | null
-          status?: string
-        }
-        Relationships: []
-      }
+          account_holder?: string | null;
+          account_number?: string | null;
+          avatar_url?: string | null;
+          bank_name?: string | null;
+          bankbook_file_name?: string | null;
+          bankbook_path?: string | null;
+          bio?: string | null;
+          birth_date?: string | null;
+          c_card_agency?: string | null;
+          c_card_number?: string | null;
+          c_card_photo_path?: string | null;
+          created_at?: string;
+          deleted_at?: string | null;
+          emergency_contact_name?: string | null;
+          emergency_contact_phone?: string | null;
+          gender?: string | null;
+          id?: string;
+          id_document_path?: string | null;
+          insurance_info?: string | null;
+          log_count?: number | null;
+          name?: string;
+          phone?: string | null;
+          pledge_settlement_agreed?: boolean;
+          pledge_settlement_agreed_at?: string | null;
+          role?: string;
+          smoking?: boolean | null;
+          snoring?: boolean | null;
+          status?: string;
+        };
+        Relationships: [];
+      };
       push_subscriptions: {
         Row: {
-          auth: string
-          created_at: string
-          endpoint: string
-          id: string
-          p256dh: string
-          profile_id: string
-          user_agent: string | null
-        }
+          auth: string;
+          created_at: string;
+          endpoint: string;
+          id: string;
+          p256dh: string;
+          profile_id: string;
+          user_agent: string | null;
+        };
         Insert: {
-          auth: string
-          created_at?: string
-          endpoint: string
-          id?: string
-          p256dh: string
-          profile_id: string
-          user_agent?: string | null
-        }
+          auth: string;
+          created_at?: string;
+          endpoint: string;
+          id?: string;
+          p256dh: string;
+          profile_id: string;
+          user_agent?: string | null;
+        };
         Update: {
-          auth?: string
-          created_at?: string
-          endpoint?: string
-          id?: string
-          p256dh?: string
-          profile_id?: string
-          user_agent?: string | null
-        }
+          auth?: string;
+          created_at?: string;
+          endpoint?: string;
+          id?: string;
+          p256dh?: string;
+          profile_id?: string;
+          user_agent?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "push_subscriptions_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            foreignKeyName: "push_subscriptions_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "push_subscriptions_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_directory"
-            referencedColumns: ["id"]
+            foreignKeyName: "push_subscriptions_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles_directory";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "push_subscriptions_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "push_subscriptions_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       qa_checklist_results: {
         Row: {
-          checked_at: string | null
-          item_id: number
-          note: string | null
-          status: string
-          updated_at: string
-        }
+          checked_at: string | null;
+          item_id: number;
+          note: string | null;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          checked_at?: string | null
-          item_id: number
-          note?: string | null
-          status?: string
-          updated_at?: string
-        }
+          checked_at?: string | null;
+          item_id: number;
+          note?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          checked_at?: string | null
-          item_id?: number
-          note?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          checked_at?: string | null;
+          item_id?: number;
+          note?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      redeem_codes: {
+        Row: {
+          assigned_at: string | null;
+          booking_id: string | null;
+          code: string;
+          created_at: string;
+          id: string;
+          product: string;
+          status: string;
+        };
+        Insert: {
+          assigned_at?: string | null;
+          booking_id?: string | null;
+          code: string;
+          created_at?: string;
+          id?: string;
+          product: string;
+          status?: string;
+        };
+        Update: {
+          assigned_at?: string | null;
+          booking_id?: string | null;
+          code?: string;
+          created_at?: string;
+          id?: string;
+          product?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "redeem_codes_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "redeem_codes_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings_directory";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       refunds: {
         Row: {
-          amount: number
-          booking_id: string
-          created_at: string
-          id: string
-          reason: string | null
-          refunded_by: string | null
-        }
+          amount: number;
+          booking_id: string;
+          created_at: string;
+          id: string;
+          reason: string | null;
+          refunded_by: string | null;
+        };
         Insert: {
-          amount: number
-          booking_id: string
-          created_at?: string
-          id?: string
-          reason?: string | null
-          refunded_by?: string | null
-        }
+          amount: number;
+          booking_id: string;
+          created_at?: string;
+          id?: string;
+          reason?: string | null;
+          refunded_by?: string | null;
+        };
         Update: {
-          amount?: number
-          booking_id?: string
-          created_at?: string
-          id?: string
-          reason?: string | null
-          refunded_by?: string | null
-        }
+          amount?: number;
+          booking_id?: string;
+          created_at?: string;
+          id?: string;
+          reason?: string | null;
+          refunded_by?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "refunds_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
+            foreignKeyName: "refunds_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "refunds_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings_directory"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "refunds_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings_directory";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       reports: {
         Row: {
-          created_at: string
-          description: string | null
-          id: string
-          status: string
-          target_id: string
-          target_name: string
-          target_type: string
-          violation_type: string
-        }
+          created_at: string;
+          description: string | null;
+          id: string;
+          status: string;
+          target_id: string;
+          target_name: string;
+          target_type: string;
+          violation_type: string;
+        };
         Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          status?: string
-          target_id: string
-          target_name: string
-          target_type: string
-          violation_type: string
-        }
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          status?: string;
+          target_id: string;
+          target_name: string;
+          target_type: string;
+          violation_type: string;
+        };
         Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          status?: string
-          target_id?: string
-          target_name?: string
-          target_type?: string
-          violation_type?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          status?: string;
+          target_id?: string;
+          target_name?: string;
+          target_type?: string;
+          violation_type?: string;
+        };
+        Relationships: [];
+      };
       reviews: {
         Row: {
-          booking_id: string | null
-          category_ratings: Json | null
-          comment: string | null
-          created_at: string
-          deleted: boolean
-          diver_id: string
-          id: string
-          instructor_id: string | null
-          instructor_reply: string | null
-          instructor_reply_at: string | null
-          photos: string[]
-          rating: number
-          reported: boolean
-          title: string | null
-          tour_id: string
-          video_url: string | null
-        }
+          booking_id: string | null;
+          category_ratings: Json | null;
+          comment: string | null;
+          created_at: string;
+          deleted: boolean;
+          diver_id: string;
+          id: string;
+          instructor_id: string | null;
+          instructor_reply: string | null;
+          instructor_reply_at: string | null;
+          photos: string[];
+          rating: number;
+          reported: boolean;
+          title: string | null;
+          tour_id: string;
+          video_url: string | null;
+          visibility: string;
+        };
         Insert: {
-          booking_id?: string | null
-          category_ratings?: Json | null
-          comment?: string | null
-          created_at?: string
-          deleted?: boolean
-          diver_id: string
-          id?: string
-          instructor_id?: string | null
-          instructor_reply?: string | null
-          instructor_reply_at?: string | null
-          photos?: string[]
-          rating: number
-          reported?: boolean
-          title?: string | null
-          tour_id: string
-          video_url?: string | null
-        }
+          booking_id?: string | null;
+          category_ratings?: Json | null;
+          comment?: string | null;
+          created_at?: string;
+          deleted?: boolean;
+          diver_id: string;
+          id?: string;
+          instructor_id?: string | null;
+          instructor_reply?: string | null;
+          instructor_reply_at?: string | null;
+          photos?: string[];
+          rating: number;
+          reported?: boolean;
+          title?: string | null;
+          tour_id: string;
+          video_url?: string | null;
+          visibility?: string;
+        };
         Update: {
-          booking_id?: string | null
-          category_ratings?: Json | null
-          comment?: string | null
-          created_at?: string
-          deleted?: boolean
-          diver_id?: string
-          id?: string
-          instructor_id?: string | null
-          instructor_reply?: string | null
-          instructor_reply_at?: string | null
-          photos?: string[]
-          rating?: number
-          reported?: boolean
-          title?: string | null
-          tour_id?: string
-          video_url?: string | null
-        }
+          booking_id?: string | null;
+          category_ratings?: Json | null;
+          comment?: string | null;
+          created_at?: string;
+          deleted?: boolean;
+          diver_id?: string;
+          id?: string;
+          instructor_id?: string | null;
+          instructor_reply?: string | null;
+          instructor_reply_at?: string | null;
+          photos?: string[];
+          rating?: number;
+          reported?: boolean;
+          title?: string | null;
+          tour_id?: string;
+          video_url?: string | null;
+          visibility?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "reviews_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
+            foreignKeyName: "reviews_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "reviews_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings_directory"
-            referencedColumns: ["id"]
+            foreignKeyName: "reviews_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "bookings_directory";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "reviews_tour_id_fkey"
-            columns: ["tour_id"]
-            isOneToOne: false
-            referencedRelation: "tours"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "reviews_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       support_tickets: {
         Row: {
-          admin_reply: string | null
-          attachment_names: string[]
-          booking_id: string | null
-          category: string | null
-          content: string
-          created_at: string
-          id: string
-          status: string
-          title: string | null
-          type: string
-          updated_at: string
-          user_id: string
-        }
+          admin_reply: string | null;
+          attachment_names: string[];
+          booking_id: string | null;
+          category: string | null;
+          content: string;
+          created_at: string;
+          id: string;
+          status: string;
+          title: string | null;
+          type: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          admin_reply?: string | null
-          attachment_names?: string[]
-          booking_id?: string | null
-          category?: string | null
-          content: string
-          created_at?: string
-          id?: string
-          status?: string
-          title?: string | null
-          type: string
-          updated_at?: string
-          user_id: string
-        }
+          admin_reply?: string | null;
+          attachment_names?: string[];
+          booking_id?: string | null;
+          category?: string | null;
+          content: string;
+          created_at?: string;
+          id?: string;
+          status?: string;
+          title?: string | null;
+          type: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          admin_reply?: string | null
-          attachment_names?: string[]
-          booking_id?: string | null
-          category?: string | null
-          content?: string
-          created_at?: string
-          id?: string
-          status?: string
-          title?: string | null
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          admin_reply?: string | null;
+          attachment_names?: string[];
+          booking_id?: string | null;
+          category?: string | null;
+          content?: string;
+          created_at?: string;
+          id?: string;
+          status?: string;
+          title?: string | null;
+          type?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      tour_alert_subscriptions: {
+        Row: {
+          activity_types: string[];
+          country: string;
+          created_at: string;
+          enabled: boolean;
+          id: string;
+          months: number[];
+          profile_id: string;
+        };
+        Insert: {
+          activity_types?: string[];
+          country: string;
+          created_at?: string;
+          enabled?: boolean;
+          id?: string;
+          months?: number[];
+          profile_id: string;
+        };
+        Update: {
+          activity_types?: string[];
+          country?: string;
+          created_at?: string;
+          enabled?: boolean;
+          id?: string;
+          months?: number[];
+          profile_id?: string;
+        };
+        Relationships: [];
+      };
       tour_cancellation_claims: {
         Row: {
-          admin_note: string | null
-          affected_booking_ids: string[]
-          created_at: string
-          evidence_file_urls: string[]
-          id: string
-          instructor_id: string
-          reason: string
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-          tour_id: string
-        }
+          admin_note: string | null;
+          affected_booking_ids: string[];
+          created_at: string;
+          evidence_file_urls: string[];
+          id: string;
+          instructor_id: string;
+          reason: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          status: string;
+          tour_id: string;
+        };
         Insert: {
-          admin_note?: string | null
-          affected_booking_ids?: string[]
-          created_at?: string
-          evidence_file_urls?: string[]
-          id?: string
-          instructor_id: string
-          reason: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          tour_id: string
-        }
+          admin_note?: string | null;
+          affected_booking_ids?: string[];
+          created_at?: string;
+          evidence_file_urls?: string[];
+          id?: string;
+          instructor_id: string;
+          reason: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: string;
+          tour_id: string;
+        };
         Update: {
-          admin_note?: string | null
-          affected_booking_ids?: string[]
-          created_at?: string
-          evidence_file_urls?: string[]
-          id?: string
-          instructor_id?: string
-          reason?: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          tour_id?: string
-        }
+          admin_note?: string | null;
+          affected_booking_ids?: string[];
+          created_at?: string;
+          evidence_file_urls?: string[];
+          id?: string;
+          instructor_id?: string;
+          reason?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: string;
+          tour_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "tour_cancellation_claims_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
-            referencedRelation: "instructors"
-            referencedColumns: ["id"]
+            foreignKeyName: "tour_cancellation_claims_instructor_id_fkey";
+            columns: ["instructor_id"];
+            isOneToOne: false;
+            referencedRelation: "instructors";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "tour_cancellation_claims_tour_id_fkey"
-            columns: ["tour_id"]
-            isOneToOne: false
-            referencedRelation: "tours"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "tour_cancellation_claims_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      tour_change_log: {
+        Row: {
+          changed_at: string;
+          field: string;
+          id: string;
+          new_value: string | null;
+          old_value: string | null;
+          tour_id: string;
+        };
+        Insert: {
+          changed_at?: string;
+          field: string;
+          id?: string;
+          new_value?: string | null;
+          old_value?: string | null;
+          tour_id: string;
+        };
+        Update: {
+          changed_at?: string;
+          field?: string;
+          id?: string;
+          new_value?: string | null;
+          old_value?: string | null;
+          tour_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tour_change_log_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      tour_checklist_state: {
+        Row: {
+          checked_count: number;
+          checked_keys: string[];
+          custom_items: NonNullable<Json>;
+          diver_id: string;
+          hidden_keys: string[];
+          total_count: number;
+          tour_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          checked_count?: number;
+          checked_keys?: string[];
+          custom_items?: NonNullable<Json>;
+          diver_id: string;
+          hidden_keys?: string[];
+          total_count?: number;
+          tour_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          checked_count?: number;
+          checked_keys?: string[];
+          custom_items?: NonNullable<Json>;
+          diver_id?: string;
+          hidden_keys?: string[];
+          total_count?: number;
+          tour_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tour_checklist_state_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      tour_dive_plans: {
+        Row: {
+          created_at: string;
+          dive_no: number;
+          dive_type: string | null;
+          gas: string | null;
+          id: string;
+          notes: string;
+          planned_bottom_min: number | null;
+          planned_date: string | null;
+          planned_depth_m: number | null;
+          tour_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          dive_no: number;
+          dive_type?: string | null;
+          gas?: string | null;
+          id?: string;
+          notes?: string;
+          planned_bottom_min?: number | null;
+          planned_date?: string | null;
+          planned_depth_m?: number | null;
+          tour_id: string;
+        };
+        Update: {
+          created_at?: string;
+          dive_no?: number;
+          dive_type?: string | null;
+          gas?: string | null;
+          id?: string;
+          notes?: string;
+          planned_bottom_min?: number | null;
+          planned_date?: string | null;
+          planned_depth_m?: number | null;
+          tour_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tour_dive_plans_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      tour_diver_notifications: {
+        Row: {
+          body: string;
+          created_at: string;
+          dedupe_key: string | null;
+          diver_id: string;
+          id: string;
+          kind: string;
+          push_attempts: number;
+          push_claimed_at: string | null;
+          push_error: string | null;
+          push_sent_at: string | null;
+          title: string;
+          tour_id: string;
+          url: string | null;
+        };
+        Insert: {
+          body: string;
+          created_at?: string;
+          dedupe_key?: string | null;
+          diver_id: string;
+          id?: string;
+          kind: string;
+          push_attempts?: number;
+          push_claimed_at?: string | null;
+          push_error?: string | null;
+          push_sent_at?: string | null;
+          title: string;
+          tour_id: string;
+          url?: string | null;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          dedupe_key?: string | null;
+          diver_id?: string;
+          id?: string;
+          kind?: string;
+          push_attempts?: number;
+          push_claimed_at?: string | null;
+          push_error?: string | null;
+          push_sent_at?: string | null;
+          title?: string;
+          tour_id?: string;
+          url?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tour_diver_notifications_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      tour_notification_settings: {
+        Row: {
+          checklist_reminders_enabled: boolean;
+          diver_id: string;
+          favorite_alerts_enabled: boolean;
+          subscription_alerts_enabled: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          checklist_reminders_enabled?: boolean;
+          diver_id: string;
+          favorite_alerts_enabled?: boolean;
+          subscription_alerts_enabled?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          checklist_reminders_enabled?: boolean;
+          diver_id?: string;
+          favorite_alerts_enabled?: boolean;
+          subscription_alerts_enabled?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       tour_settlement_confirmations: {
         Row: {
-          confirmed_at: string
-          diver_id: string
-          tour_id: string
-        }
+          confirmed_at: string;
+          diver_id: string;
+          tour_id: string;
+        };
         Insert: {
-          confirmed_at?: string
-          diver_id: string
-          tour_id: string
-        }
+          confirmed_at?: string;
+          diver_id: string;
+          tour_id: string;
+        };
         Update: {
-          confirmed_at?: string
-          diver_id?: string
-          tour_id?: string
-        }
-        Relationships: []
-      }
-      tour_settlements: {
-        Row: {
-          entries: Json
-          instructor_settled_at: string | null
-          tour_id: string
-          updated_at: string
-        }
-        Insert: {
-          entries?: Json
-          instructor_settled_at?: string | null
-          tour_id: string
-          updated_at?: string
-        }
-        Update: {
-          entries?: Json
-          instructor_settled_at?: string | null
-          tour_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      tours: {
-        Row: {
-          activity_types: string[]
-          admin_status: string | null
-          auto_close_processed: boolean
-          base_price: number
-          cancelled_at: string | null
-          center_id: string | null
-          certification_level: string
-          country: string
-          created_at: string
-          custom_options: Json
-          description: string
-          end_date: string
-          exclusions: string[]
-          flight_info: Json | null
-          gallery_urls: string[]
-          id: string
-          inclusions: string[]
-          instructor_id: string
-          instructor_notice: string | null
-          is_confirmed: boolean
-          itinerary_days: Json | null
-          main_image_url: string
-          manual_participant_count: number
-          max_participants: number
-          meeting_point: string | null
-          meeting_time: string | null
-          min_log_count: number | null
-          min_participants: number
-          one_on_one_care: boolean
-          pledge_agreed_at: string | null
-          pledge_signature_data_url: string | null
-          pledge_signer_name: string | null
-          prep_notes: string
-          rating: number
-          recruitment_deadline: string
-          site: string
-          start_date: string
-          status: string
-          tags: string[] | null
-          title: string
-          under_min_decision_pending: boolean
-          under_min_policy: string
-          visibility_m: number
-          water_temp_c: number
-        }
-        Insert: {
-          activity_types?: string[]
-          admin_status?: string | null
-          auto_close_processed?: boolean
-          base_price: number
-          cancelled_at?: string | null
-          center_id?: string | null
-          certification_level: string
-          country: string
-          created_at?: string
-          custom_options?: Json
-          description?: string
-          end_date: string
-          exclusions?: string[]
-          flight_info?: Json | null
-          gallery_urls?: string[]
-          id?: string
-          inclusions?: string[]
-          instructor_id: string
-          instructor_notice?: string | null
-          is_confirmed?: boolean
-          itinerary_days?: Json | null
-          main_image_url: string
-          manual_participant_count?: number
-          max_participants?: number
-          meeting_point?: string | null
-          meeting_time?: string | null
-          min_log_count?: number | null
-          min_participants?: number
-          one_on_one_care?: boolean
-          pledge_agreed_at?: string | null
-          pledge_signature_data_url?: string | null
-          pledge_signer_name?: string | null
-          prep_notes?: string
-          rating?: number
-          recruitment_deadline: string
-          site: string
-          start_date: string
-          status?: string
-          tags?: string[] | null
-          title: string
-          under_min_decision_pending?: boolean
-          under_min_policy?: string
-          visibility_m?: number
-          water_temp_c?: number
-        }
-        Update: {
-          activity_types?: string[]
-          admin_status?: string | null
-          auto_close_processed?: boolean
-          base_price?: number
-          cancelled_at?: string | null
-          center_id?: string | null
-          certification_level?: string
-          country?: string
-          created_at?: string
-          custom_options?: Json
-          description?: string
-          end_date?: string
-          exclusions?: string[]
-          flight_info?: Json | null
-          gallery_urls?: string[]
-          id?: string
-          inclusions?: string[]
-          instructor_id?: string
-          instructor_notice?: string | null
-          is_confirmed?: boolean
-          itinerary_days?: Json | null
-          main_image_url?: string
-          manual_participant_count?: number
-          max_participants?: number
-          meeting_point?: string | null
-          meeting_time?: string | null
-          min_log_count?: number | null
-          min_participants?: number
-          one_on_one_care?: boolean
-          pledge_agreed_at?: string | null
-          pledge_signature_data_url?: string | null
-          pledge_signer_name?: string | null
-          prep_notes?: string
-          rating?: number
-          recruitment_deadline?: string
-          site?: string
-          start_date?: string
-          status?: string
-          tags?: string[] | null
-          title?: string
-          under_min_decision_pending?: boolean
-          under_min_policy?: string
-          visibility_m?: number
-          water_temp_c?: number
-        }
+          confirmed_at?: string;
+          diver_id?: string;
+          tour_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "tours_center_id_fkey"
-            columns: ["center_id"]
-            isOneToOne: false
-            referencedRelation: "centers"
-            referencedColumns: ["id"]
+            foreignKeyName: "tour_settlement_confirmations_diver_id_fkey";
+            columns: ["diver_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-    }
+          {
+            foreignKeyName: "tour_settlement_confirmations_diver_id_fkey";
+            columns: ["diver_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles_directory";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tour_settlement_confirmations_diver_id_fkey";
+            columns: ["diver_id"];
+            isOneToOne: false;
+            referencedRelation: "public_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tour_settlement_confirmations_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      tour_settlements: {
+        Row: {
+          entries: NonNullable<Json>;
+          instructor_settled_at: string | null;
+          tour_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          entries?: NonNullable<Json>;
+          instructor_settled_at?: string | null;
+          tour_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          entries?: NonNullable<Json>;
+          instructor_settled_at?: string | null;
+          tour_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tour_settlements_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: true;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      tours: {
+        Row: {
+          activity_types: string[];
+          admin_status: string | null;
+          auto_close_processed: boolean;
+          base_price: number;
+          cancelled_at: string | null;
+          center_id: string | null;
+          certification_level: string;
+          checklist_items: NonNullable<Json>;
+          country: string;
+          created_at: string;
+          custom_options: NonNullable<Json>;
+          description: string;
+          end_date: string;
+          exclusions: string[];
+          flight_info: Json | null;
+          gallery_urls: string[];
+          id: string;
+          inclusions: string[];
+          instructor_id: string;
+          instructor_notice: string | null;
+          is_confirmed: boolean;
+          itinerary_days: Json | null;
+          main_image_url: string;
+          manual_participant_count: number;
+          max_participants: number;
+          meeting_point: string | null;
+          meeting_time: string | null;
+          min_log_count: number | null;
+          min_participants: number;
+          one_on_one_care: boolean;
+          pledge_agreed_at: string | null;
+          pledge_signature_data_url: string | null;
+          pledge_signer_name: string | null;
+          prep_notes: string;
+          rating: number;
+          recruitment_deadline: string;
+          site: string;
+          start_date: string;
+          status: string;
+          tags: string[] | null;
+          title: string;
+          under_min_decision_pending: boolean;
+          under_min_policy: string;
+          visibility_m: number;
+          water_temp_c: number;
+        };
+        Insert: {
+          activity_types?: string[];
+          admin_status?: string | null;
+          auto_close_processed?: boolean;
+          base_price: number;
+          cancelled_at?: string | null;
+          center_id?: string | null;
+          certification_level: string;
+          checklist_items?: NonNullable<Json>;
+          country: string;
+          created_at?: string;
+          custom_options?: NonNullable<Json>;
+          description?: string;
+          end_date: string;
+          exclusions?: string[];
+          flight_info?: Json | null;
+          gallery_urls?: string[];
+          id?: string;
+          inclusions?: string[];
+          instructor_id: string;
+          instructor_notice?: string | null;
+          is_confirmed?: boolean;
+          itinerary_days?: Json | null;
+          main_image_url: string;
+          manual_participant_count?: number;
+          max_participants?: number;
+          meeting_point?: string | null;
+          meeting_time?: string | null;
+          min_log_count?: number | null;
+          min_participants?: number;
+          one_on_one_care?: boolean;
+          pledge_agreed_at?: string | null;
+          pledge_signature_data_url?: string | null;
+          pledge_signer_name?: string | null;
+          prep_notes?: string;
+          rating?: number;
+          recruitment_deadline: string;
+          site: string;
+          start_date: string;
+          status?: string;
+          tags?: string[] | null;
+          title: string;
+          under_min_decision_pending?: boolean;
+          under_min_policy?: string;
+          visibility_m?: number;
+          water_temp_c?: number;
+        };
+        Update: {
+          activity_types?: string[];
+          admin_status?: string | null;
+          auto_close_processed?: boolean;
+          base_price?: number;
+          cancelled_at?: string | null;
+          center_id?: string | null;
+          certification_level?: string;
+          checklist_items?: NonNullable<Json>;
+          country?: string;
+          created_at?: string;
+          custom_options?: NonNullable<Json>;
+          description?: string;
+          end_date?: string;
+          exclusions?: string[];
+          flight_info?: Json | null;
+          gallery_urls?: string[];
+          id?: string;
+          inclusions?: string[];
+          instructor_id?: string;
+          instructor_notice?: string | null;
+          is_confirmed?: boolean;
+          itinerary_days?: Json | null;
+          main_image_url?: string;
+          manual_participant_count?: number;
+          max_participants?: number;
+          meeting_point?: string | null;
+          meeting_time?: string | null;
+          min_log_count?: number | null;
+          min_participants?: number;
+          one_on_one_care?: boolean;
+          pledge_agreed_at?: string | null;
+          pledge_signature_data_url?: string | null;
+          pledge_signer_name?: string | null;
+          prep_notes?: string;
+          rating?: number;
+          recruitment_deadline?: string;
+          site?: string;
+          start_date?: string;
+          status?: string;
+          tags?: string[] | null;
+          title?: string;
+          under_min_decision_pending?: boolean;
+          under_min_policy?: string;
+          visibility_m?: number;
+          water_temp_c?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tours_center_id_fkey";
+            columns: ["center_id"];
+            isOneToOne: false;
+            referencedRelation: "centers";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+    };
     Views: {
       admin_monthly_accounting: {
         Row: {
-          booking_count: number | null
-          gmv: number | null
-          instructor_payout_total: number | null
-          net_revenue: number | null
-          period: string | null
-          platform_fee_revenue: number | null
-          refund_amount: number | null
-        }
-        Relationships: []
-      }
+          booking_count: number | null;
+          gmv: number | null;
+          instructor_payout_total: number | null;
+          net_revenue: number | null;
+          period: string | null;
+          platform_fee_revenue: number | null;
+          refund_amount: number | null;
+        };
+        Relationships: [];
+      };
       bookings_directory: {
         Row: {
-          base_price: number | null
-          cancel_reason: string | null
-          cancel_requested_at: string | null
-          companion_names: string | null
-          companions: Json | null
-          coupon_code: string | null
-          created_at: string | null
-          deposit_status: string | null
-          discount_amount: number | null
-          diver_id: string | null
-          diver_name: string | null
-          drinking: boolean | null
-          evidence_file_names: string[] | null
-          flight_info: string | null
-          gender: string | null
-          id: string | null
-          on_site_balance: number | null
-          options_cost: number | null
-          participant_count: number | null
-          passport_info: string | null
-          payment_method: string | null
-          platform_fee: number | null
-          refund_amount: number | null
-          refund_rate: number | null
-          room_no: string | null
-          room_note: string | null
-          selected_options: Json | null
-          smoking: boolean | null
-          snoring: boolean | null
-          status: string | null
-          total_paid: number | null
-          tour_id: string | null
-        }
+          base_price: number | null;
+          cancel_reason: string | null;
+          cancel_requested_at: string | null;
+          companion_names: string | null;
+          companions: Json | null;
+          coupon_code: string | null;
+          created_at: string | null;
+          deposit_status: string | null;
+          discount_amount: number | null;
+          diver_id: string | null;
+          diver_name: string | null;
+          drinking: boolean | null;
+          evidence_file_names: string[] | null;
+          flight_info: string | null;
+          gender: string | null;
+          id: string | null;
+          on_site_balance: number | null;
+          options_cost: number | null;
+          participant_count: number | null;
+          passport_info: string | null;
+          payment_method: string | null;
+          platform_fee: number | null;
+          refund_amount: number | null;
+          refund_rate: number | null;
+          room_no: string | null;
+          room_note: string | null;
+          selected_options: Json | null;
+          smoking: boolean | null;
+          snoring: boolean | null;
+          status: string | null;
+          total_paid: number | null;
+          tour_id: string | null;
+        };
         Insert: {
-          base_price?: never
-          cancel_reason?: never
-          cancel_requested_at?: never
-          companion_names?: never
-          companions?: never
-          coupon_code?: never
-          created_at?: string | null
-          deposit_status?: never
-          discount_amount?: never
-          diver_id?: string | null
-          diver_name?: never
-          drinking?: never
-          evidence_file_names?: never
-          flight_info?: never
-          gender?: never
-          id?: string | null
-          on_site_balance?: never
-          options_cost?: never
-          participant_count?: never
-          passport_info?: never
-          payment_method?: never
-          platform_fee?: never
-          refund_amount?: never
-          refund_rate?: never
-          room_no?: never
-          room_note?: never
-          selected_options?: never
-          smoking?: never
-          snoring?: never
-          status?: string | null
-          total_paid?: never
-          tour_id?: string | null
-        }
+          base_price?: never;
+          cancel_reason?: never;
+          cancel_requested_at?: never;
+          companion_names?: never;
+          companions?: never;
+          coupon_code?: never;
+          created_at?: string | null;
+          deposit_status?: never;
+          discount_amount?: never;
+          diver_id?: string | null;
+          diver_name?: never;
+          drinking?: never;
+          evidence_file_names?: never;
+          flight_info?: never;
+          gender?: never;
+          id?: string | null;
+          on_site_balance?: never;
+          options_cost?: never;
+          participant_count?: never;
+          passport_info?: never;
+          payment_method?: never;
+          platform_fee?: never;
+          refund_amount?: never;
+          refund_rate?: never;
+          room_no?: never;
+          room_note?: never;
+          selected_options?: never;
+          smoking?: never;
+          snoring?: never;
+          status?: string | null;
+          total_paid?: never;
+          tour_id?: string | null;
+        };
         Update: {
-          base_price?: never
-          cancel_reason?: never
-          cancel_requested_at?: never
-          companion_names?: never
-          companions?: never
-          coupon_code?: never
-          created_at?: string | null
-          deposit_status?: never
-          discount_amount?: never
-          diver_id?: string | null
-          diver_name?: never
-          drinking?: never
-          evidence_file_names?: never
-          flight_info?: never
-          gender?: never
-          id?: string | null
-          on_site_balance?: never
-          options_cost?: never
-          participant_count?: never
-          passport_info?: never
-          payment_method?: never
-          platform_fee?: never
-          refund_amount?: never
-          refund_rate?: never
-          room_no?: never
-          room_note?: never
-          selected_options?: never
-          smoking?: never
-          snoring?: never
-          status?: string | null
-          total_paid?: never
-          tour_id?: string | null
-        }
+          base_price?: never;
+          cancel_reason?: never;
+          cancel_requested_at?: never;
+          companion_names?: never;
+          companions?: never;
+          coupon_code?: never;
+          created_at?: string | null;
+          deposit_status?: never;
+          discount_amount?: never;
+          diver_id?: string | null;
+          diver_name?: never;
+          drinking?: never;
+          evidence_file_names?: never;
+          flight_info?: never;
+          gender?: never;
+          id?: string | null;
+          on_site_balance?: never;
+          options_cost?: never;
+          participant_count?: never;
+          passport_info?: never;
+          payment_method?: never;
+          platform_fee?: never;
+          refund_amount?: never;
+          refund_rate?: never;
+          room_no?: never;
+          room_note?: never;
+          selected_options?: never;
+          smoking?: never;
+          snoring?: never;
+          status?: string | null;
+          total_paid?: never;
+          tour_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "bookings_tour_id_fkey"
-            columns: ["tour_id"]
-            isOneToOne: false
-            referencedRelation: "tours"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "bookings_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       payouts_directory: {
         Row: {
-          booking_id: string | null
-          business_type_at_payout: string | null
-          created_at: string | null
-          first_amount: number | null
-          id: string | null
-          instructor_id: string | null
-          net_payout_amount: number | null
-          second_amount: number | null
-          status: string | null
-          withholding_tax_amount: number | null
-          withholding_tax_rate: number | null
-        }
+          booking_id: string | null;
+          business_type_at_payout: string | null;
+          created_at: string | null;
+          first_amount: number | null;
+          id: string | null;
+          instructor_id: string | null;
+          net_payout_amount: number | null;
+          second_amount: number | null;
+          status: string | null;
+          withholding_tax_amount: number | null;
+          withholding_tax_rate: number | null;
+        };
         Insert: {
-          booking_id?: string | null
-          business_type_at_payout?: never
-          created_at?: string | null
-          first_amount?: never
-          id?: string | null
-          instructor_id?: string | null
-          net_payout_amount?: never
-          second_amount?: never
-          status?: string | null
-          withholding_tax_amount?: never
-          withholding_tax_rate?: never
-        }
+          booking_id?: string | null;
+          business_type_at_payout?: never;
+          created_at?: string | null;
+          first_amount?: never;
+          id?: string | null;
+          instructor_id?: string | null;
+          net_payout_amount?: never;
+          second_amount?: never;
+          status?: string | null;
+          withholding_tax_amount?: never;
+          withholding_tax_rate?: never;
+        };
         Update: {
-          booking_id?: string | null
-          business_type_at_payout?: never
-          created_at?: string | null
-          first_amount?: never
-          id?: string | null
-          instructor_id?: string | null
-          net_payout_amount?: never
-          second_amount?: never
-          status?: string | null
-          withholding_tax_amount?: never
-          withholding_tax_rate?: never
-        }
+          booking_id?: string | null;
+          business_type_at_payout?: never;
+          created_at?: string | null;
+          first_amount?: never;
+          id?: string | null;
+          instructor_id?: string | null;
+          net_payout_amount?: never;
+          second_amount?: never;
+          status?: string | null;
+          withholding_tax_amount?: never;
+          withholding_tax_rate?: never;
+        };
         Relationships: [
           {
-            foreignKeyName: "payouts_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
+            foreignKeyName: "payouts_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "payouts_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings_directory"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+            foreignKeyName: "payouts_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings_directory";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       profiles_directory: {
         Row: {
-          account_holder: string | null
-          account_number: string | null
-          avatar_url: string | null
-          bank_name: string | null
-          bankbook_file_name: string | null
-          bankbook_path: string | null
-          bio: string | null
-          birth_date: string | null
-          c_card_agency: string | null
-          c_card_number: string | null
-          c_card_photo_path: string | null
-          created_at: string | null
-          emergency_contact_name: string | null
-          emergency_contact_phone: string | null
-          gender: string | null
-          id: string | null
-          id_document_path: string | null
-          insurance_info: string | null
-          log_count: number | null
-          name: string | null
-          phone: string | null
-          role: string | null
-          smoking: boolean | null
-          snoring: boolean | null
-          status: string | null
-        }
+          account_holder: string | null;
+          account_number: string | null;
+          avatar_url: string | null;
+          bank_name: string | null;
+          bankbook_file_name: string | null;
+          bankbook_path: string | null;
+          bio: string | null;
+          birth_date: string | null;
+          c_card_agency: string | null;
+          c_card_number: string | null;
+          c_card_photo_path: string | null;
+          created_at: string | null;
+          emergency_contact_name: string | null;
+          emergency_contact_phone: string | null;
+          gender: string | null;
+          id: string | null;
+          id_document_path: string | null;
+          insurance_info: string | null;
+          log_count: number | null;
+          name: string | null;
+          phone: string | null;
+          role: string | null;
+          smoking: boolean | null;
+          snoring: boolean | null;
+          status: string | null;
+        };
         Insert: {
-          account_holder?: never
-          account_number?: never
-          avatar_url?: string | null
-          bank_name?: never
-          bankbook_file_name?: never
-          bankbook_path?: never
-          bio?: string | null
-          birth_date?: never
-          c_card_agency?: never
-          c_card_number?: never
-          c_card_photo_path?: never
-          created_at?: string | null
-          emergency_contact_name?: never
-          emergency_contact_phone?: never
-          gender?: never
-          id?: string | null
-          id_document_path?: never
-          insurance_info?: never
-          log_count?: never
-          name?: string | null
-          phone?: never
-          role?: string | null
-          smoking?: never
-          snoring?: never
-          status?: string | null
-        }
+          account_holder?: never;
+          account_number?: never;
+          avatar_url?: string | null;
+          bank_name?: never;
+          bankbook_file_name?: never;
+          bankbook_path?: never;
+          bio?: string | null;
+          birth_date?: never;
+          c_card_agency?: never;
+          c_card_number?: never;
+          c_card_photo_path?: never;
+          created_at?: string | null;
+          emergency_contact_name?: never;
+          emergency_contact_phone?: never;
+          gender?: never;
+          id?: string | null;
+          id_document_path?: never;
+          insurance_info?: never;
+          log_count?: never;
+          name?: string | null;
+          phone?: never;
+          role?: string | null;
+          smoking?: never;
+          snoring?: never;
+          status?: string | null;
+        };
         Update: {
-          account_holder?: never
-          account_number?: never
-          avatar_url?: string | null
-          bank_name?: never
-          bankbook_file_name?: never
-          bankbook_path?: never
-          bio?: string | null
-          birth_date?: never
-          c_card_agency?: never
-          c_card_number?: never
-          c_card_photo_path?: never
-          created_at?: string | null
-          emergency_contact_name?: never
-          emergency_contact_phone?: never
-          gender?: never
-          id?: string | null
-          id_document_path?: never
-          insurance_info?: never
-          log_count?: never
-          name?: string | null
-          phone?: never
-          role?: string | null
-          smoking?: never
-          snoring?: never
-          status?: string | null
-        }
-        Relationships: []
-      }
+          account_holder?: never;
+          account_number?: never;
+          avatar_url?: string | null;
+          bank_name?: never;
+          bankbook_file_name?: never;
+          bankbook_path?: never;
+          bio?: string | null;
+          birth_date?: never;
+          c_card_agency?: never;
+          c_card_number?: never;
+          c_card_photo_path?: never;
+          created_at?: string | null;
+          emergency_contact_name?: never;
+          emergency_contact_phone?: never;
+          gender?: never;
+          id?: string | null;
+          id_document_path?: never;
+          insurance_info?: never;
+          log_count?: never;
+          name?: string | null;
+          phone?: never;
+          role?: string | null;
+          smoking?: never;
+          snoring?: never;
+          status?: string | null;
+        };
+        Relationships: [];
+      };
       public_profiles: {
         Row: {
-          created_at: string | null
-          id: string | null
-          name: string | null
-          role: string | null
-          status: string | null
-        }
+          created_at: string | null;
+          id: string | null;
+          name: string | null;
+          role: string | null;
+          status: string | null;
+        };
         Insert: {
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          role?: string | null
-          status?: string | null
-        }
+          created_at?: string | null;
+          id?: string | null;
+          name?: string | null;
+          role?: string | null;
+          status?: string | null;
+        };
         Update: {
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          role?: string | null
-          status?: string | null
-        }
-        Relationships: []
-      }
+          created_at?: string | null;
+          id?: string | null;
+          name?: string | null;
+          role?: string | null;
+          status?: string | null;
+        };
+        Relationships: [];
+      };
       public_tour_booking_counts: {
         Row: {
-          confirmed_count: number | null
-          tour_id: string | null
-        }
+          confirmed_count: number | null;
+          tour_id: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "bookings_tour_id_fkey"
-            columns: ["tour_id"]
-            isOneToOne: false
-            referencedRelation: "tours"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
+            foreignKeyName: "bookings_tour_id_fkey";
+            columns: ["tour_id"];
+            isOneToOne: false;
+            referencedRelation: "tours";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+    };
     Functions: {
       admin_restore_settlement_after_claim: {
-        Args: { p_booking_ids: string[] }
-        Returns: undefined
-      }
+        Args: { p_booking_ids: string[] };
+        Returns: undefined;
+      };
       admin_set_payout_status: {
-        Args: { p_payout_id: string; p_status: string }
-        Returns: undefined
-      }
+        Args: { p_payout_id: string; p_status: string };
+        Returns: undefined;
+      };
       admin_set_profile_status: {
-        Args: { p_profile_id: string; p_status: string }
-        Returns: undefined
-      }
-      apply_tour_auto_close: { Args: { p_tour_id: string }; Returns: undefined }
+        Args: { p_profile_id: string; p_status: string };
+        Returns: undefined;
+      };
+      apply_tour_auto_close: {
+        Args: { p_tour_id: string };
+        Returns: undefined;
+      };
+      assign_redeem_code: {
+        Args: { p_booking: string; p_product: string };
+        Returns: string;
+      };
       cancel_booking_settlement: {
-        Args: { p_booking_id: string; p_refund_amount: number }
-        Returns: undefined
-      }
+        Args: { p_booking_id: string; p_refund_amount: number };
+        Returns: undefined;
+      };
       cancel_booking_with_refund: {
         Args: {
-          p_booking_id: string
-          p_full_refund?: boolean
-          p_reason: string
-        }
-        Returns: undefined
-      }
+          p_booking_id: string;
+          p_full_refund?: boolean;
+          p_reason: string;
+        };
+        Returns: undefined;
+      };
       create_booking_settlement: {
-        Args: { p_booking_id: string }
-        Returns: undefined
-      }
+        Args: { p_booking_id: string };
+        Returns: undefined;
+      };
       get_admin_monthly_accounting: {
-        Args: { p_month: number; p_year: number }
+        Args: { p_month: number; p_year: number };
         Returns: {
-          booking_count: number
-          estimated_vat: number
-          gmv: number
-          instructor_payout_total: number
-          net_revenue: number
-          period: string
-          platform_fee_revenue: number
-          refund_amount: number
-        }[]
-      }
+          booking_count: number;
+          estimated_vat: number;
+          gmv: number;
+          instructor_payout_total: number;
+          net_revenue: number;
+          period: string;
+          platform_fee_revenue: number;
+          refund_amount: number;
+        }[];
+      };
       get_instructor_settlement_summary: {
-        Args: { p_month: number; p_year: number }
+        Args: { p_month: number; p_year: number };
         Returns: {
-          booking_count: number
-          gmv: number
-          instructor_amount_paid: number
-          instructor_amount_scheduled: number
-          next_payout_date: string
-          period: string
-          platform_fee_amount: number
-          refund_amount: number
-        }[]
-      }
+          booking_count: number;
+          gmv: number;
+          instructor_amount_paid: number;
+          instructor_amount_scheduled: number;
+          next_payout_date: string;
+          period: string;
+          platform_fee_amount: number;
+          refund_amount: number;
+        }[];
+      };
       get_tour_participants_masked: {
-        Args: { p_tour_id: string }
+        Args: { p_tour_id: string };
         Returns: {
-          diver_id: string
-          diver_name_masked: string
-          drinking: boolean
-          gender: string
-          id: string
-          participant_count: number
-          room_no: string
-          room_note: string
-          selected_options: Json
-          smoking: boolean
-          snoring: boolean
-          status: string
-        }[]
-      }
-      is_admin: { Args: never; Returns: boolean }
+          diver_id: string;
+          diver_name_masked: string;
+          drinking: boolean;
+          gender: string;
+          id: string;
+          participant_count: number;
+          room_no: string;
+          room_note: string;
+          selected_options: Json;
+          smoking: boolean;
+          snoring: boolean;
+          status: string;
+        }[];
+      };
+      is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_booking_companion: {
-        Args: { p_diver_id: string; p_tour_id: string }
-        Returns: boolean
-      }
+        Args: { p_diver_id: string; p_tour_id: string };
+        Returns: boolean;
+      };
       is_booking_staff: {
-        Args: { p_diver_id: string; p_tour_id: string }
-        Returns: boolean
-      }
-      is_profile_staff_for: { Args: { p_profile_id: string }; Returns: boolean }
+        Args: { p_diver_id: string; p_tour_id: string };
+        Returns: boolean;
+      };
+      is_profile_staff_for: {
+        Args: { p_profile_id: string };
+        Returns: boolean;
+      };
       is_recently_deleted_account: {
-        Args: { p_email: string }
-        Returns: boolean
-      }
-      is_tour_companion_of: { Args: { p_profile_id: string }; Returns: boolean }
-      owns_booking: { Args: { p_booking_id: string }; Returns: boolean }
-      owns_booking_tour: { Args: { p_booking_id: string }; Returns: boolean }
-      owns_instructor: { Args: { p_instructor_id: string }; Returns: boolean }
-      owns_tour: { Args: { p_tour_id: string }; Returns: boolean }
-      redeem_coupon: { Args: { p_coupon_id: string }; Returns: undefined }
-      report_review: { Args: { p_review_id: string }; Returns: undefined }
-    }
+        Args: { p_email: string };
+        Returns: boolean;
+      };
+      is_tour_companion_of: {
+        Args: { p_profile_id: string };
+        Returns: boolean;
+      };
+      owns_booking: { Args: { p_booking_id: string }; Returns: boolean };
+      owns_booking_tour: { Args: { p_booking_id: string }; Returns: boolean };
+      owns_instructor: { Args: { p_instructor_id: string }; Returns: boolean };
+      owns_tour: { Args: { p_tour_id: string }; Returns: boolean };
+      report_review: { Args: { p_review_id: string }; Returns: undefined };
+      tour_alerts_apply_seat_events: {
+        Args: {
+          p_after_left: number;
+          p_before_left: number;
+          p_title: string;
+          p_tour_id: string;
+        };
+        Returns: undefined;
+      };
+      tour_alerts_confirmed_count: {
+        Args: { p_tour_id: string };
+        Returns: number;
+      };
+      tour_alerts_favorite_recipients: {
+        Args: { p_tour_id: string };
+        Returns: {
+          recipient_id: string;
+        }[];
+      };
+      tour_generate_checklist_reminders: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      tour_generate_daily_alerts: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+    };
     Enums: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<
+  keyof Database,
+  "public"
+>];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
+      DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+      DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R;
+    }
+    ? R
     : never
+  : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Insert: infer I;
+    }
+    ? I
     : never
+  : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Update: infer U;
+    }
+    ? U
     : never
+  : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never = never
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never = never
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
-} as const
+} as const;

@@ -1,4 +1,4 @@
-import { run, untypedClient } from "@/lib/untypedSupabase";
+import { supabase } from "@/integrations/supabase/client";
 import {
   EMPTY_CHECKLIST_STATE,
   parseCustomItems,
@@ -7,11 +7,15 @@ import {
   type ChecklistState,
 } from "@/lib/packingChecklist";
 
+/** PostgREST 오류를 Error로 바꿔 던진다. */
+function check<T>(result: { data: T | null; error: { message: string } | null }): T | null {
+  if (result.error) throw new Error(result.error.message);
+  return result.data;
+}
+
 /** 강사가 등록한 준비물 목록(tours.checklist_items)을 검증해서 가져온다. */
 export async function fetchTourChecklistItems(tourId: string): Promise<ChecklistItem[]> {
-  const rows = await run<{ checklist_items: unknown }[] | null>(
-    untypedClient.from("tours").select("checklist_items").eq("id", tourId),
-  );
+  const rows = check(await supabase.from("tours").select("checklist_items").eq("id", tourId));
   return parseInstructorItems(rows?.[0]?.checklist_items);
 }
 
@@ -20,8 +24,8 @@ export async function fetchTourChecklistItems(tourId: string): Promise<Checklist
  * 그룹 값은 저장하지 않는다 (강사 항목은 항상 "강사님 요청").
  */
 export async function saveTourChecklistItems(tourId: string, items: ChecklistItem[]): Promise<void> {
-  await run(
-    untypedClient.from("tours").update({
+  check(
+    await supabase.from("tours").update({
       checklist_items: items.map(({ key, label, required }) => ({ key, label, required })),
     }).eq("id", tourId),
   );
@@ -29,10 +33,8 @@ export async function saveTourChecklistItems(tourId: string, items: ChecklistIte
 
 /** 본인의 준비물 상태 한 행. 행이 없으면 빈 상태 (아직 열어보지 않은 다이버). */
 export async function fetchChecklistState(diverId: string, tourId: string): Promise<ChecklistState> {
-  const rows = await run<
-    { checked_keys: string[]; hidden_keys: string[]; custom_items: unknown }[] | null
-  >(
-    untypedClient
+  const rows = check(
+    await supabase
       .from("tour_checklist_state")
       .select("checked_keys,hidden_keys,custom_items")
       .eq("diver_id", diverId)
@@ -57,8 +59,8 @@ export async function saveChecklistState(
   state: ChecklistState,
   counts: { totalCount: number; checkedCount: number },
 ): Promise<void> {
-  await run(
-    untypedClient.from("tour_checklist_state").upsert(
+  check(
+    await supabase.from("tour_checklist_state").upsert(
       {
         diver_id: diverId,
         tour_id: tourId,
