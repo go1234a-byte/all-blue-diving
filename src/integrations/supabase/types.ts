@@ -1298,53 +1298,6 @@ export type Database = {
           },
         ]
       }
-      tour_dive_plans: {
-        Row: {
-          created_at: string
-          dive_no: number
-          dive_type: string | null
-          gas: string | null
-          id: string
-          notes: string
-          planned_bottom_min: number | null
-          planned_date: string | null
-          planned_depth_m: number | null
-          tour_id: string
-        }
-        Insert: {
-          created_at?: string
-          dive_no: number
-          dive_type?: string | null
-          gas?: string | null
-          id?: string
-          notes?: string
-          planned_bottom_min?: number | null
-          planned_date?: string | null
-          planned_depth_m?: number | null
-          tour_id: string
-        }
-        Update: {
-          created_at?: string
-          dive_no?: number
-          dive_type?: string | null
-          gas?: string | null
-          id?: string
-          notes?: string
-          planned_bottom_min?: number | null
-          planned_date?: string | null
-          planned_depth_m?: number | null
-          tour_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tour_dive_plans_tour_id_fkey"
-            columns: ["tour_id"]
-            isOneToOne: false
-            referencedRelation: "tours"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       tour_settlement_confirmations: {
         Row: {
           confirmed_at: string

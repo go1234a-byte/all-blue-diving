@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, Loader2, MessageCircle, Watch } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { CalendarSyncButtons } from "@/components/checkout/CalendarSyncButtons";
@@ -197,22 +197,6 @@ const PaymentSuccess = () => {
             예약자 전용 그룹채팅방 입장하기
           </Button>
         )}
-
-        <a
-          href="https://apps.apple.com/kr/app/id6811542905"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-xl border border-primary/30 bg-secondary/40 p-3"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
-            <Watch className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">다이빙 가기 전, ALL BLUE 다이빙 컴퓨터</p>
-            <p className="text-xs text-muted-foreground">무감압한계·호흡량·날씨·파도를 미리 확인해보세요</p>
-          </div>
-          <span className="text-xs font-medium text-primary shrink-0">App Store →</span>
-        </a>
         <Button className="w-full" onClick={() => navigate("/my-bookings")}>
           내 예약 확인하기
         </Button>
