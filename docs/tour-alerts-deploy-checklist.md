@@ -33,7 +33,7 @@
 ## WIP 처리 (③ 전 필수)
 `feature/alerts-checklist`는 `wip/dive-plan-companion` 위에 있어서 `18915be`(다이빙 계획 화면: `TourDivePlanEditor`, Landing, PaymentSuccess, TourEditPage 연결부, types.ts)도 함께 배포된다.
 - (가) 다이빙 계획 화면을 함께 검증하고 배포: 로컬 검증 범위에 생성·수정·결제 완료 화면 연동을 추가한다.
-- (나) 이번 배포에서 제외: `git revert 18915be`를 feature 브랜치에 만든다. wip 브랜치 원본은 그대로 둔다.
+- (나) 이번 배포에서 제외: `git revert 18915be`를 feature 브랜치에 만들었다(커밋 `e433e8e`). wip 브랜치 원본은 그대로 둔다. 다이빙 계획 화면을 나중에 되살리려면 이 revert를 되돌린다(`git revert e433e8e`).
   - 확인 결과(임시 워크트리): 충돌은 `TourEditPage.tsx` 한 곳(다이빙 계획 마운트와 준비물 편집기 마운트가 인접). 준비물 편집기만 남기고 해결하면 `tsc` 31개(기존)·`vite build` 통과, `TourDivePlanEditor`·`tour_dive_plans` 참조 없음.
 
 ## 알려진 제한 (배포 후에도 남는 것)
@@ -43,6 +43,7 @@
 - **준비물 집계 지연**: 강사가 항목을 바꿔도 다이버의 저장된 집계(`total_count`)는 다이버가 화면을 다시 열 때 갱신된다. 그 전까지 리마인드는 마지막 저장값을 쓴다.
 
 ## 후속 작업 후보 (이번 배포 범위 밖)
+- **남은 타입 오류 11개 (tsc, 새 오류 0)**: `AppDataContext.tsx` 9개(객체 배열을 `Json` 컬럼에 넣는 곳, 기존부터 있던 종류), `AdminLayout.tsx` 1개, `push.ts` 1개. 이번 배포 범위 밖이며 각각 별도 수정한다.
 - **후속 버그(운영 확인됨): `apply_tour_auto_close`의 최소 인원 계산이 예약 건수(`count(*)`)를 쓴다.** `participant_count`와 `manual_participant_count`가 빠져 있어, 여러 명이 예약한 투어나 수동 인원이 있는 투어의 충족 판단이 틀린다. 앱 화면의 정원 기준(확정 인원 합 + 수동 인원)과 맞춰야 한다.
 - **후속(낮음): `is_recently_deleted_account(p_email)`이 anon에게 실행 가능하다.** 이메일 존재 여부를 탐색할 수 있다. 호출 경로와 필요성을 확인한 뒤 권한을 줄인다.
 - **baseline 마이그레이션 재생 불가**: `20260716000000_baseline_snapshot_pre_tracking.sql`은 FK가 PK·UNIQUE보다 먼저 나와서 빈 DB에서 재생되지 않는다(`tours`, `invoices`→`payouts`, `mimo_reservations`→`mimo_salons`·`mimo_users`). 운영에는 이미 적용돼 재실행되지 않으므로 운영 영향은 없다. 새 환경이나 Supabase 브랜칭에 대비해, 의미가 같은 순서 재배치본으로 정리하는 것을 검토한다.
