@@ -12,6 +12,7 @@ import PaymentFail from "./pages/PaymentFail";
 import MyBookings from "./pages/MyBookings";
 import Favorites from "./pages/Favorites";
 import Notifications from "./pages/Notifications";
+import TripChecklist from "./pages/TripChecklist";
 import ChatList from "./pages/ChatList";
 import ChatRoom from "./pages/ChatRoom";
 import MyPage from "./pages/MyPage";
@@ -77,6 +78,7 @@ export const routers = [
         children: [
           { path: "my-bookings", name: "my-bookings", element: <MyBookings /> },
           { path: "notifications", name: "notifications", element: <Notifications /> },
+          { path: "trip/:tourId/checklist", name: "trip-checklist", element: <TripChecklist /> },
           { path: "chat", name: "chat", element: <ChatList /> },
           { path: "chat/:tourId", name: "chat-tour", element: <ChatRoom /> },
           { path: "mypage", name: "mypage", element: <MyPage /> },

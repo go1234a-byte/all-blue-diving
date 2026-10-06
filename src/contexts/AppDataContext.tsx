@@ -647,6 +647,8 @@ interface UpdateTourInput {
   recruitmentDeadline?: string;
   basePrice?: number;
   maxParticipants?: number;
+  /** 예상 수온(°C). 0 = 모름 (화면에서 숨김) */
+  waterTempC?: number;
   minParticipants?: number;
   manualParticipantCount?: number;
   description?: string;
@@ -2137,6 +2139,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (patch.recruitmentDeadline !== undefined) dbPatch.recruitment_deadline = patch.recruitmentDeadline;
     if (patch.basePrice !== undefined) dbPatch.base_price = patch.basePrice;
     if (patch.maxParticipants !== undefined) dbPatch.max_participants = patch.maxParticipants;
+    if (patch.waterTempC !== undefined) dbPatch.water_temp_c = patch.waterTempC;
     if (patch.minParticipants !== undefined) dbPatch.min_participants = patch.minParticipants;
     if (patch.manualParticipantCount !== undefined) dbPatch.manual_participant_count = patch.manualParticipantCount;
     if (patch.description !== undefined) dbPatch.description = patch.description;

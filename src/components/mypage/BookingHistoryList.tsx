@@ -1,3 +1,4 @@
+import { TripChecklistSummary } from "@/components/trip/TripChecklistSummary";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MessageCircle, Receipt } from "lucide-react";
@@ -176,6 +177,8 @@ export function BookingHistoryList({ diverId }: BookingHistoryListProps) {
                 )}
 
                 {/* 상태별 하단 버튼: 예약완료/출발예정/진행중 → 그룹채팅, 종료 → 후기 작성, 취소 → 환불 내역 */}
+                {status === "upcoming" && <TripChecklistSummary tourId={tour.id} variant="compact" />}
+
                 {canChat && (
                   <Button
                     size="sm"

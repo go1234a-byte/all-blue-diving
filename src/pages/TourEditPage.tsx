@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { TourEditForm } from "@/components/instructor/TourEditForm";
 import { TourCancelByInstructorCard } from "@/components/instructor/TourCancelByInstructorCard";
 import { TourDivePlanEditor } from "@/components/instructor/TourDivePlanEditor";
+import { TourChecklistEditor } from "@/components/instructor/TourChecklistEditor";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 
@@ -37,6 +38,7 @@ const TourEditPage = () => {
         )}
         {tour && <TourEditForm tour={tour} />}
         {tour && <TourDivePlanEditor tourId={tour.id} />}
+        {tour && <TourChecklistEditor tourId={tour.id} />}
         {tour && <TourCancelByInstructorCard tour={tour} />}
       </main>
       <BottomNav />

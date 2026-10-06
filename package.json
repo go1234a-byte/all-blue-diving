@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "pInstall": "pnpm install",
-    "test": "node --test tests/notifications.test.mjs"
+    "test": "node --test tests/notifications.test.mjs tests/packingChecklist.test.ts"
   },
   "dependencies": {
     "@capacitor-community/safe-area": "^8.0.1",

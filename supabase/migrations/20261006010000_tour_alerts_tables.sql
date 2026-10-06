@@ -72,14 +72,19 @@ after insert on public.tour_alert_subscriptions
 for each row
 execute function public.tour_alert_subscriptions_cap();
 
--- 준비물 진행률: 다이버 본인만 읽고 쓴다. 강사 열람 정책은 만들지 않는다.
+-- 준비물 상태: 다이버·투어당 한 행. 리마인드 대상 판단(행 없음 / checked_count < total_count)에 쓰인다.
+-- total_count·checked_count는 클라이언트가 체크·숨김·추가 때 병합 결과 기준으로 함께 저장한다 (숨긴 항목은 total에서 제외).
+-- 다이버 본인만 읽고 쓴다. 강사 열람 정책은 만들지 않는다.
 create table public.tour_checklist_state (
   diver_id text not null,
   tour_id uuid not null references public.tours(id) on delete cascade,
-  item_key text not null,
-  checked boolean not null default false,
+  checked_keys text[] not null default '{}'::text[],
+  hidden_keys text[] not null default '{}'::text[],
+  custom_items jsonb not null default '[]'::jsonb,
+  total_count integer not null default 0 check (total_count >= 0),
+  checked_count integer not null default 0 check (checked_count >= 0),
   updated_at timestamptz not null default now(),
-  primary key (diver_id, tour_id, item_key)
+  primary key (diver_id, tour_id)
 );
 alter table public.tour_checklist_state enable row level security;
 create policy tour_checklist_state_own on public.tour_checklist_state

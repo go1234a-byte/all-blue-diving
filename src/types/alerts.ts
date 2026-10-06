@@ -8,7 +8,9 @@ export type DiverNotificationKind =
   | "deadline_d1"
   | "price_drop"
   | "seats_low"
-  | "seat_opened";
+  | "seat_opened"
+  | "checklist_d7"
+  | "checklist_d1";
 
 export interface DiverNotification {
   id: string;

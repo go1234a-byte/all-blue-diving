@@ -12,6 +12,8 @@ const KIND_LABEL: Record<DiverNotificationKind, string> = {
   price_drop: "가격 인하",
   seats_low: "마감 임박",
   seat_opened: "자리 남",
+  checklist_d7: "준비물 D-7",
+  checklist_d1: "준비물 D-1",
 };
 
 function describeSubscription(sub: TourAlertSubscription): string {

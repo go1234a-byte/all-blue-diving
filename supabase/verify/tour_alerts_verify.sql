@@ -461,6 +461,200 @@ begin
   raise notice 'S23 OK';
 end $$;
 
+-- 준비물 리마인드 공통: 투어를 모집 중·비취소, 출발일을 원하는 날로 맞추고 기존 준비물 알림을 지운다.
+
+-- S24) 준비물 리마인드 D-7: 상태 행이 없는 확정 예약자에게 1건, 같은 날 재실행해도 중복 없음
+do $$
+declare tid uuid; bdiver text; n1 int; n2 int; n3 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S24 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null, start_date = current_date + 7 where id = tid;
+  delete from public.tour_checklist_state where diver_id = bdiver and tour_id = tid;
+  delete from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid;
+  select count(*) into n1 from public.tour_diver_notifications where kind = 'checklist_d7' and diver_id = bdiver;
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'checklist_d7' and diver_id = bdiver;
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n3 from public.tour_diver_notifications where kind = 'checklist_d7' and diver_id = bdiver;
+  if n2 - n1 <> 1 then raise exception 'S24 실패: D-7 준비물 알림 %건 (기대 1)', n2 - n1; end if;
+  if n3 <> n2 then raise exception 'S24 실패: 같은 날 재실행에 중복 생성'; end if;
+  raise notice 'S24 OK';
+end $$;
+
+-- S25) 준비물 리마인드 D-1: D-7과 별도로 D-1에도 1건 (출발일을 내일로 바꾼 뒤 실행)
+do $$
+declare tid uuid; bdiver text; n1 int; n2 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S25 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  update public.tours set start_date = current_date + 1 where id = tid;
+  select count(*) into n1 from public.tour_diver_notifications where kind = 'checklist_d1' and diver_id = bdiver;
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'checklist_d1' and diver_id = bdiver;
+  if n2 - n1 <> 1 then raise exception 'S25 실패: D-1 준비물 알림 %건 (기대 1)', n2 - n1; end if;
+  raise notice 'S25 OK';
+end $$;
+
+-- S26) 강사 항목이 없어도(checklist_items = []) 미완료자에게는 발송 (기본 템플릿이 항상 있음)
+do $$
+declare tid uuid; bdiver text; n1 int; n2 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S26 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  update public.tours set start_date = current_date + 7, checklist_items = '[]'::jsonb where id = tid;
+  delete from public.tour_checklist_state where diver_id = bdiver and tour_id = tid;
+  delete from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid;
+  select count(*) into n1 from public.tour_diver_notifications where kind = 'checklist_d7' and diver_id = bdiver;
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'checklist_d7' and diver_id = bdiver;
+  if n2 - n1 <> 1 then raise exception 'S26 실패: 강사 항목 없는 미완료자에게 발송 안 됨 (%건)', n2 - n1; end if;
+  raise notice 'S26 OK';
+end $$;
+
+-- S27) 종류별 OFF: checklist_reminders_enabled = false 인 다이버는 제외
+do $$
+declare tid uuid; bdiver text; n2 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S27 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  update public.tours set start_date = current_date + 7 where id = tid;
+  delete from public.tour_checklist_state where diver_id = bdiver and tour_id = tid;
+  delete from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid;
+  insert into public.tour_notification_settings (diver_id, checklist_reminders_enabled) values (bdiver, false)
+    on conflict (diver_id) do update set checklist_reminders_enabled = false;
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid and diver_id = bdiver;
+  if n2 <> 0 then raise exception 'S27 실패: 준비물 리마인드 끈 다이버에게 발송 (%건)', n2; end if;
+  update public.tour_notification_settings set checklist_reminders_enabled = true where diver_id = bdiver;
+  raise notice 'S27 OK';
+end $$;
+
+-- S28) 취소된 예약은 제외
+do $$
+declare tid uuid; bdiver text; n2 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S28 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  update public.tours set start_date = current_date + 7, status = 'open', cancelled_at = null, admin_status = null where id = tid;
+  delete from public.tour_checklist_state where diver_id = bdiver and tour_id = tid;
+  delete from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid;
+  update public.bookings set status = 'cancelled' where tour_id = tid and diver_id = bdiver and status = 'confirmed';
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid and diver_id = bdiver;
+  if n2 <> 0 then raise exception 'S28 실패: 취소된 예약자에게 리마인드 발송'; end if;
+  update public.bookings set status = 'confirmed' where tour_id = tid and diver_id = bdiver and status = 'cancelled';
+  raise notice 'S28 OK';
+end $$;
+
+-- S29) 취소 투어는 제외
+do $$
+declare tid uuid; bdiver text; n2 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S29 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  delete from public.tour_checklist_state where diver_id = bdiver and tour_id = tid;
+  delete from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid;
+  update public.tours set start_date = current_date + 7, cancelled_at = now() where id = tid;
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid and diver_id = bdiver;
+  if n2 <> 0 then raise exception 'S29 실패: 취소 투어에 리마인드 발송'; end if;
+  update public.tours set cancelled_at = null where id = tid;
+  raise notice 'S29 OK';
+end $$;
+
+-- S30) 전부 체크한 다이버는 제외 (checked_count = total_count)
+do $$
+declare tid uuid; bdiver text; n2 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S30 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  update public.tours set start_date = current_date + 7, status = 'open', cancelled_at = null, admin_status = null where id = tid;
+  delete from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid;
+  insert into public.tour_checklist_state (diver_id, tour_id, total_count, checked_count)
+    values (bdiver, tid, 3, 3)
+    on conflict (diver_id, tour_id) do update set total_count = 3, checked_count = 3;
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid and diver_id = bdiver;
+  if n2 <> 0 then raise exception 'S30 실패: 전부 체크한 다이버에게 리마인드 발송'; end if;
+  raise notice 'S30 OK';
+end $$;
+
+-- S31) 본문 문구: 상태 행이 있으면 "아직 챙기지 않은 준비물 N개", 상태 행이 없으면 "출발 전 준비물을 확인해 보세요"
+do $$
+declare tid uuid; bdiver text; body_partial text; body_none text;
+begin
+  if not exists (select 1 from _t) then raise notice 'S31 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  update public.tours set start_date = current_date + 7, status = 'open', cancelled_at = null, admin_status = null where id = tid;
+  delete from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid;
+  insert into public.tour_checklist_state (diver_id, tour_id, total_count, checked_count)
+    values (bdiver, tid, 3, 1)
+    on conflict (diver_id, tour_id) do update set total_count = 3, checked_count = 1;
+  perform public.tour_generate_checklist_reminders();
+  select body into body_partial from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid and diver_id = bdiver;
+  if body_partial is distinct from '아직 챙기지 않은 준비물 2개' then raise exception 'S31 실패: 부분 체크 본문 "%"', body_partial; end if;
+  delete from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid;
+  delete from public.tour_checklist_state where diver_id = bdiver and tour_id = tid;
+  perform public.tour_generate_checklist_reminders();
+  select body into body_none from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid and diver_id = bdiver;
+  if body_none is distinct from '출발 전 준비물을 확인해 보세요' then raise exception 'S31 실패: 상태 행 없음 본문 "%"', body_none; end if;
+  raise notice 'S31 OK';
+end $$;
+
+-- S32) 강사가 나중에 항목을 추가하면 전부 체크했던 다이버도 리마인드 대상 (강사 항목 미완료 판정)
+do $$
+declare tid uuid; bdiver text; n1 int; n2 int; v_body text;
+begin
+  if not exists (select 1 from _t) then raise notice 'S32 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  update public.tours set start_date = current_date + 7, status = 'open', cancelled_at = null, admin_status = null,
+    checklist_items = '[]'::jsonb where id = tid;
+  insert into public.tour_checklist_state (diver_id, tour_id, checked_keys, total_count, checked_count)
+    values (bdiver, tid, array['passport','mask'], 2, 2)
+    on conflict (diver_id, tour_id) do update set checked_keys = array['passport','mask'], hidden_keys = '{}', total_count = 2, checked_count = 2;
+  delete from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid;
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n1 from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid and diver_id = bdiver;
+  if n1 <> 0 then raise exception 'S32 실패: 전부 체크한 상태에서 알림 발생 (%건)', n1; end if;
+  update public.tours set checklist_items = '[{"key":"new-item","label":"새 준비물","required":false}]'::jsonb where id = tid;
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid and diver_id = bdiver;
+  select n.body into v_body from public.tour_diver_notifications n where n.kind = 'checklist_d7' and n.tour_id = tid and n.diver_id = bdiver;
+  if n2 <> 1 then raise exception 'S32 실패: 강사 항목 추가 후 리마인드 %건 (기대 1)', n2; end if;
+  if v_body is distinct from '강사님이 준비물을 추가했어요. 확인해 보세요' then raise exception 'S32 실패: 본문 "%"', v_body; end if;
+  raise notice 'S32 OK';
+end $$;
+
+-- S33) 강사 항목을 다이버가 숨긴 경우는 미완료로 보지 않음
+do $$
+declare tid uuid; bdiver text; n2 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S33 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  update public.tours set start_date = current_date + 7, status = 'open', cancelled_at = null, admin_status = null,
+    checklist_items = '[{"key":"ins-hidden","label":"숨길 강사 항목","required":false}]'::jsonb where id = tid;
+  insert into public.tour_checklist_state (diver_id, tour_id, checked_keys, hidden_keys, total_count, checked_count)
+    values (bdiver, tid, array['passport'], array['ins-hidden'], 1, 1)
+    on conflict (diver_id, tour_id) do update set checked_keys = array['passport'], hidden_keys = array['ins-hidden'], total_count = 1, checked_count = 1;
+  delete from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid;
+  perform public.tour_generate_checklist_reminders();
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'checklist_d7' and tour_id = tid and diver_id = bdiver;
+  if n2 <> 0 then raise exception 'S33 실패: 숨긴 강사 항목 때문에 미완료로 판정 (%건)', n2; end if;
+  update public.tours set checklist_items = '[]'::jsonb where id = tid;
+  raise notice 'S33 OK';
+end $$;
+
 -- S13) 권한: anon·authenticated는 생성 함수를 실행할 수 없음
 do $$ begin
   if has_function_privilege('anon', 'public.tour_generate_daily_alerts()', 'execute')

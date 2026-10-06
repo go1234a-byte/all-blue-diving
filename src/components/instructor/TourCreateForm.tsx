@@ -36,6 +36,14 @@ import {
   STANDARD_TOUR_OPTION_DEFS,
 } from "@/lib/constants";
 import { formatDateKR, isPastDate, toISODate } from "@/lib/dates";
+import { saveTourChecklistItems } from "@/lib/checklistApi";
+import { ChecklistDraftEditor } from "@/components/instructor/ChecklistDraftEditor";
+import {
+  MAX_INSTRUCTOR_ITEMS,
+  MAX_ITEM_LABEL_LENGTH,
+  parseWaterTempInput,
+  type ChecklistItem,
+} from "@/lib/packingChecklist";
 import { cn } from "@/lib/utils";
 import type {
   ActivityType,
@@ -147,12 +155,14 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   const [basePrice, setBasePrice] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("6");
   const [minParticipants, setMinParticipants] = useState("2");
+  const [waterTemp, setWaterTemp] = useState("");
   // 최소 인원 미달 시 진행/취소 결정은 더 이상 투어 생성 시점에 정하지 않고,
   // 출발 30일 전 자동 마감 시점에 강사가 대시보드에서 직접 선택한다(기본값은 DB not null 제약을 위한 값).
   const underMinPolicy: UnderMinParticipantsPolicy = "cancel";
   const [pledgeSignerName, setPledgeSignerName] = useState("");
   const [pledgeAgreed, setPledgeAgreed] = useState(false);
   const [pledgeSignature, setPledgeSignature] = useState<string | undefined>(undefined);
+  const [checklistDraft, setChecklistDraft] = useState<ChecklistItem[]>([]);
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState<Date>();
   const hasReachedMonthlyLimit = startDate
@@ -374,6 +384,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
     const missingFields: string[] = [];
     if (!title) missingFields.push("투어명");
     if (!country) missingFields.push("국가");
+    if (parseWaterTempInput(waterTemp) === null) missingFields.push("예상 수온 (0~40°C)");
     if (!site) missingFields.push("다이브 사이트");
     if (activityTypes.length === 0) missingFields.push("액티비티 종류");
     if (!startDate) missingFields.push("투어 출발일");
@@ -457,7 +468,7 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       const mainUrl = await uploadImageFile(mainImage[0], "tours");
       const galleryUrls = galleryImages.length > 0 ? await uploadImageFiles(galleryImages, "tours") : [];
 
-      await addTour({
+      const created = await addTour({
         instructorId,
         centerId,
         title,
@@ -473,7 +484,8 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         endDate: toISODate(endDate),
         recruitmentDeadline: toISODate(deadline),
         basePrice: Number(basePrice),
-        waterTempC: 0,
+        waterTempC: parseWaterTempInput(waterTemp) ?? 0,
+
         visibilityM: 0,
         maxParticipants: Number(maxParticipants) || 1,
         minParticipants: Number(minParticipants) || 1,
@@ -503,6 +515,19 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         },
         itineraryDays: itineraryDays.map((d) => ({ ...d, title: `${d.dayNumber}일차 ${d.title.trim()}` })),
       });
+
+      // 준비물은 투어 생성 뒤에 저장한다 (투어 id가 필요). 빈 이름은 버리고, 실패해도 투어 등록은 유지한다.
+      const cleanedChecklist = checklistDraft
+        .map((item) => ({ ...item, label: item.label.trim().slice(0, MAX_ITEM_LABEL_LENGTH) }))
+        .filter((item) => item.label !== "")
+        .slice(0, MAX_INSTRUCTOR_ITEMS);
+      if (cleanedChecklist.length > 0) {
+        try {
+          await saveTourChecklistItems(created.id, cleanedChecklist);
+        } catch {
+          toast({ title: "투어는 등록됐지만 준비물을 저장하지 못했어요", description: "투어 수정 화면에서 다시 저장해주세요." });
+        }
+      }
 
       toast({ title: "투어가 등록되었습니다!" });
       onCreated();
@@ -790,6 +815,17 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
           <Input type="number" min={1} value={maxParticipants} onChange={(e) => setMaxParticipants(e.target.value)} placeholder="8" />
         </div>
         <div className="space-y-1.5">
+          <Label>예상 수온 (°C, 선택)</Label>
+          <Input
+            type="number"
+            min={0}
+            max={40}
+            value={waterTemp}
+            onChange={(e) => setWaterTemp(e.target.value)}
+            placeholder="비우면 표시하지 않아요"
+          />
+        </div>
+        <div className="space-y-1.5">
           <Label>최소 인원</Label>
           <Input type="number" min={1} value={minParticipants} onChange={(e) => setMinParticipants(e.target.value)} placeholder="2" />
         </div>
@@ -1021,6 +1057,15 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         onAgreedChange={setPledgeAgreed}
         signature={pledgeSignature}
         onSignatureChange={setPledgeSignature}
+      />
+
+      <ChecklistDraftEditor
+        items={checklistDraft}
+        onChange={setChecklistDraft}
+        onSave={() => {}}
+        saving={false}
+        dirty={false}
+        showSave={false}
       />
 
       <Button

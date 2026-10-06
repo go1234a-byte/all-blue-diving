@@ -39,6 +39,7 @@ import {
 } from "@/lib/constants";
 import { formatDateKR, isPastDate, toISODate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { parseWaterTempInput } from "@/lib/packingChecklist";
 import type {
   ActivityType,
   CertificationLevel,
@@ -203,6 +204,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
   const [basePrice, setBasePrice] = useState(String(tour.basePrice));
   const [maxParticipants, setMaxParticipants] = useState(String(tour.maxParticipants));
   const [minParticipants, setMinParticipants] = useState(String(tour.minParticipants));
+  const [waterTemp, setWaterTemp] = useState(tour.waterTempC > 0 ? String(tour.waterTempC) : "");
   const [description, setDescription] = useState(tour.description);
   const [startDate, setStartDate] = useState<Date | undefined>(new Date(tour.startDate));
   const [endDate, setEndDate] = useState<Date | undefined>(new Date(tour.endDate));
@@ -409,6 +411,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
     if (!endDate) missingFields.push("투어 종료일");
     if (!deadline) missingFields.push("투어모집 마감일");
     if (!basePrice) missingFields.push("기본가");
+    if (parseWaterTempInput(waterTemp) === null) missingFields.push("예상 수온 (0~40°C)");
     if (mainImage.length === 0 && !tour.mainImageUrl) missingFields.push("대표 이미지");
     if (!meetingPoint.trim()) missingFields.push("집합 장소");
     if (!meetingTime.trim()) missingFields.push("집합 시간");
@@ -494,6 +497,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
         minLogCount: minLogCount ? Number(minLogCount) : undefined,
         tags,
         certificationLevel,
+        waterTempC: parseWaterTempInput(waterTemp) ?? 0,
         mainImageUrl: mainUrl,
         galleryUrls,
         // 예약이 있으면 가격/날짜/인원은 폼에서 아예 잠가두었으므로, 화면에 보이는 값이 아니라
@@ -825,6 +829,17 @@ export function TourEditForm({ tour }: TourEditFormProps) {
               onChange={(e) => setMaxParticipants(e.target.value)}
               placeholder="8"
               disabled={hasActiveBooking}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>예상 수온 (°C, 선택)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={40}
+              value={waterTemp}
+              onChange={(e) => setWaterTemp(e.target.value)}
+              placeholder="비우면 표시하지 않아요"
             />
           </div>
           <div className="space-y-1.5">

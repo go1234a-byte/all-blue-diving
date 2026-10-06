@@ -1,3 +1,4 @@
+import { TripChecklistSummary } from "@/components/trip/TripChecklistSummary";
 import { useState } from "react";
 import { CalendarDays, Megaphone, Pencil, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +53,7 @@ export function TourDashboardTab({ tour, isInstructor }: TourDashboardTabProps) 
 
   return (
     <div className="space-y-3">
+      {!isInstructor && <TripChecklistSummary tourId={tour.id} variant="full" />}
       <div className="grid grid-cols-2 gap-3">
         <Card>
           <CardContent className="flex flex-col items-center gap-1 p-4 text-center">
