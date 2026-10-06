@@ -38,5 +38,6 @@
 - **준비물 집계 지연**: 강사가 항목을 바꿔도 다이버의 저장된 집계(`total_count`)는 다이버가 화면을 다시 열 때 갱신된다. 그 전까지 리마인드는 마지막 저장값을 쓴다.
 
 ## 후속 작업 후보 (이번 배포 범위 밖)
+- **baseline 마이그레이션 재생 불가**: `20260716000000_baseline_snapshot_pre_tracking.sql`은 FK가 PK·UNIQUE보다 먼저 나와서 빈 DB에서 재생되지 않는다(`tours`, `invoices`→`payouts`, `mimo_reservations`→`mimo_salons`·`mimo_users`). 운영에는 이미 적용돼 재실행되지 않으므로 운영 영향은 없다. 새 환경이나 Supabase 브랜칭에 대비해, 의미가 같은 순서 재배치본으로 정리하는 것을 검토한다.
 - **1순위: `send-push`·`send-email` 서버 전용화.** 현재 `send-push`는 호출자 인증을 확인하지 않는다. 클라이언트 호출 3곳(AppDataContext)을 서버 경로로 옮긴 뒤 막는다.
 - 투어 `admin_status`가 정지·보류로 바뀔 때 예약자 안내 알림. 앱에 이미 같은 안내가 있는지 확인한 뒤 별도 명세로 추가한다.
