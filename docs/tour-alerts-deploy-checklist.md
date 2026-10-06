@@ -1,19 +1,42 @@
-# 투어앱 알림 배포 체크리스트
+# 투어앱 알림·준비물 배포 체크리스트
 
-순서를 지켜야 합니다. 각 단계는 앞 단계가 끝난 뒤에만 진행합니다.
+## 원칙
+- ①(DB 적용)은 공유 DB 변경이므로 **컴퓨터앱 심사 통과 후**에만 한다.
+- ③(main 병합·배포)은 **반드시 ① 이후**다. 코드가 먼저 나가면 없는 테이블·함수를 호출한다.
+- `supabase db push`는 쓰지 않는다. 마이그레이션 파일을 하나씩 적용한다.
 
-## 사전 검증 (운영 적용 전)
-- [ ] 로컬 Supabase에서 `supabase db reset` 후 `supabase/verify/seed_local.sql`, `supabase/verify/tour_alerts_verify.sql` 실행
-- [ ] 검증 시나리오 S1–S23 모두 OK 확인 (실패하면 중단)
-- [ ] `supabase gen types --local`로 `src/integrations/supabase/types.ts` 재생성 후, 알림 어댑터(`src/lib/alertsApi.ts`) 정리
+## 지금 가능
+- [ ] **② 환경 변수 등록** (Vercel, 서버 전용). 코드 배포 전에는 영향이 없다.
+  - `NOTIFY_WEBHOOK_SECRET`, `CRON_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+  - 값은 저장소에 기록하지 않는다.
 
-## 배포 순서
-1. **DB 적용**: 마이그레이션 파일을 하나씩 적용한다 (`db push` 사용 금지). 순서는 `20261006010000` → `20261006010100` → `20261006020000`.
-2. **환경 변수 설정** (서버 전용, 값은 저장소에 기록하지 않는다): `NOTIFY_WEBHOOK_SECRET`, `CRON_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
-3. **main 병합 및 배포**: `feature/alerts-checklist`를 main에 병합하고 Vercel 배포 확인
-4. **Database Webhook 생성**: `tour_diver_notifications` INSERT → `/api/notifications/dispatch`, 헤더 `x-notify-secret`
-5. **end-to-end 테스트**: 테스트 찜 1건으로 알림 생성 → 푸시 수신 확인
+## 사전 검증 (운영 적용 전, 로컬)
+- [ ] 로컬 Supabase에서 `supabase db reset` 후 `supabase/verify/seed_local.sql`, `supabase/verify/tour_alerts_verify.sql`(S1–S33) 통과
+- [ ] `supabase gen types --local`로 `src/integrations/supabase/types.ts` 재생성, 알림·준비물 어댑터 정리, `tsc` 기준 유지
+
+## 컴퓨터앱 심사 통과 후
+- [ ] **① DB 적용 (파일 단위)**: 순서대로 적용한다.
+  1. `20261006010000_tour_alerts_tables.sql`
+  2. `20261006010100_tour_alerts_triggers.sql`
+  3. `20261006020000_tour_daily_alerts.sql`
+  - 공유 DB 객체(profiles, push_subscriptions, fcm_tokens, is_admin(), owns_tour() 등)는 건드리지 않는다.
+  - `d212d9c`, `40740ad`, `1394fd0`은 운영 DB와 이미 일치하므로 이번 적용 대상이 아니다.
+- [ ] **③ main 병합·배포**: ① 이후에만. 병합 전에 아래 "WIP 처리" 결정을 반영한다.
+- [ ] **④ Database Webhook 생성**: `tour_diver_notifications` INSERT → `/api/notifications/dispatch`, 헤더 `x-notify-secret`. (pg_net은 웹훅 생성 시 자동 활성화)
+- [ ] **⑤ 실제 알림 1건 E2E**: 테스트 찜 1건으로 알림 생성 → 벨·목록 확인 → (푸시 설정 후) OS 푸시 수신 확인
+
+## WIP 처리 (③ 전 필수)
+`feature/alerts-checklist`는 `wip/dive-plan-companion` 위에 있어서 `18915be`(다이빙 계획 화면: `TourDivePlanEditor`, Landing, PaymentSuccess, TourEditPage 연결부, types.ts)도 함께 배포된다.
+- (가) 다이빙 계획 화면을 함께 검증하고 배포: 로컬 검증 범위에 생성·수정·결제 완료 화면 연동을 추가한다.
+- (나) 이번 배포에서 제외: `git revert 18915be`를 feature 브랜치에 만든다. wip 브랜치 원본은 그대로 둔다.
+  - 확인 결과(임시 워크트리): 충돌은 `TourEditPage.tsx` 한 곳(다이빙 계획 마운트와 준비물 편집기 마운트가 인접). 준비물 편집기만 남기고 해결하면 `tsc` 31개(기존)·`vite build` 통과, `TourDivePlanEditor`·`tour_dive_plans` 참조 없음.
+
+## 알려진 제한 (배포 후에도 남는 것)
+- **푸시 미설정**: VAPID/FCM 설정 전에는 앱 내 알림·벨만 동작하고 OS 푸시는 오지 않는다. 실제 푸시는 별도 설정 작업이 필요하다.
+- **네이티브 앱 반영**: iOS/Android에는 새 빌드 제출이 필요하다(`npx cap sync`, 빌드 번호 증가). 이번 작업에서는 `ios/`, `android/`를 수정하지 않았다.
+- **투어 전체 취소 중복**: 확정 예약자에게 "투어가 취소되었습니다" 푸시와 `booking_changed` 알림이 둘 다 간다. 둘 다 유지하기로 했다. 중복을 없애려면 앱에서 예약 취소 RPC와 `tours.cancelled_at` 갱신의 순서를 맞춰야 한다. 이번 배포에서는 앱 처리 순서를 바꾸지 않는다.
+- **준비물 집계 지연**: 강사가 항목을 바꿔도 다이버의 저장된 집계(`total_count`)는 다이버가 화면을 다시 열 때 갱신된다. 그 전까지 리마인드는 마지막 저장값을 쓴다.
 
 ## 후속 작업 후보 (이번 배포 범위 밖)
-- 투어 전체 취소(강사·운영 사정, 최소 인원 미달) 시 확정 예약자에게 "투어가 취소되었습니다" 푸시와 `booking_changed` 알림이 둘 다 간다. 결정에 따라 둘 다 유지한다. 중복을 없애려면 앱에서 예약 취소 RPC와 `tours.cancelled_at` 갱신의 순서를 맞춰야 하는데, 이번 배포에서는 앱 처리 순서를 바꾸지 않는다.
-- 투어 `admin_status`가 정지·보류로 바뀔 때 예약자 안내 알림. 현재는 알림을 만들지 않는다. 앱에 이미 같은 안내가 있는지는 확인하지 않았고, 이번 범위(찜·구독·마감·준비물)에서 뺐다. 필요해지면 앱 안내 여부를 확인한 뒤 별도 명세로 추가한다.
+- **1순위: `send-push`·`send-email` 서버 전용화.** 현재 `send-push`는 호출자 인증을 확인하지 않는다. 클라이언트 호출 3곳(AppDataContext)을 서버 경로로 옮긴 뒤 막는다.
+- 투어 `admin_status`가 정지·보류로 바뀔 때 예약자 안내 알림. 앱에 이미 같은 안내가 있는지 확인한 뒤 별도 명세로 추가한다.
