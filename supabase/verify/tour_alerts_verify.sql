@@ -8,11 +8,33 @@ from public.tours t
 join public.bookings b on b.tour_id = t.id and b.status = 'confirmed'
 limit 1;
 
+-- 검증용 찜 대상 선택 조건 (이 트랜잭션 안에서만 존재하고 ROLLBACK으로 사라진다).
+-- 투어 강사 본인과 찜 알림을 끈 다이버는 '일반 찜 다이버'가 아니므로 고르지 않는다.
+create function pg_temp.verify_pick_ok(p_profile uuid) returns boolean
+language sql stable as $$
+  select not exists (
+      select 1 from public.instructors i
+      where i.profile_id = p_profile::text
+        and i.id = (select t.instructor_id from public.tours t where t.id = (select tour_id from _t))
+    )
+    and not exists (
+      select 1 from public.tour_notification_settings st
+      where st.diver_id = p_profile::text and st.favorite_alerts_enabled = false
+    );
+$$;
+
+-- 복제 투어마다 다른 강사를 쓴다: 생성 쿼터(강사당 같은 출발월 1개)에 걸리지 않게 하고, 강사 제외 규칙은 그대로 본다.
+insert into public.instructors (id, name) values
+  ('test-clone-instructor-s7', '검증 복제 강사 S7'),
+  ('test-clone-instructor-s8', '검증 복제 강사 S8'),
+  ('test-clone-instructor-s9', '검증 복제 강사 S9')
+on conflict (id) do nothing;
+
 -- 공통 준비: 찜 다이버 1명을 고른다 (예약자·강사 제외는 S20에서 따로 본다)
 create temp table _fav on commit drop as
 select p.id as profile_id
 from public.profiles p, _t
-where not exists (select 1 from public.bookings b where b.tour_id = _t.tour_id and b.diver_id = p.id::text)
+where not exists (select 1 from public.bookings b where b.tour_id = _t.tour_id and b.diver_id = p.id::text) and pg_temp.verify_pick_ok(p.id)
 limit 1;
 
 -- S1) 한 번의 가격 인하가 변경이력(tours_change_log)과 찜 가격 인하 알림을 함께 만든다
@@ -26,7 +48,8 @@ begin
   select base_price into p0 from public.tours where id = tid;
   select count(*) into n_notif_before from public.tour_diver_notifications where kind = 'price_drop';
   select count(*) into n_log_before from public.tour_change_log;
-  update public.tours set base_price = p0 - 100 where id = tid;
+  -- log_tour_change()는 base_price를 기록하지 않는다(기록 대상: 날짜·장소·상태·취소시각). 같은 UPDATE에서 기록 대상(meeting_point)도 바꿔 두 트리거가 함께 도는지 본다.
+  update public.tours set base_price = p0 - 100, meeting_point = coalesce(meeting_point, '') || ' ' where id = tid;
   select count(*) into n_notif_after from public.tour_diver_notifications where kind = 'price_drop';
   select count(*) into n_log_after from public.tour_change_log;
   if n_notif_after <= n_notif_before then raise exception 'S1 실패: 찜 가격 인하 알림 미생성'; end if;
@@ -68,7 +91,7 @@ begin
   if not exists (select 1 from _t) then raise notice 'S4 SKIP'; return; end if;
   tid := (select tour_id from _t);
   select p.id into fav from public.profiles p
-    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text)
+    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text) and pg_temp.verify_pick_ok(p.id)
     limit 1;
   if fav is null then raise notice 'S4 SKIP: 찜 대상 프로필 없음'; return; end if;
   update public.tours set status = 'open', cancelled_at = null, admin_status = null, manual_participant_count = 0,
@@ -83,6 +106,8 @@ begin
 end $$;
 
 -- S5) RLS: 다이버는 자기 알림만 보이고, 직접 insert는 막힘
+-- 임시 테이블 _t는 postgres 소유라 authenticated 역할에서 읽으려면 권한이 필요하다(검증용 부여).
+grant select on _t to authenticated;
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', (select diver_id from _t limit 1), 'role', 'authenticated')::text, true);
 do $$
@@ -103,7 +128,7 @@ reset role;
 
 -- S6) 준비물 진행률: 다른 다이버 행이 안 보임
 set local role authenticated;
-select set_config('request.jwt.claims', json_build_object('sub', 'nobody-test-id', 'role', 'authenticated')::text, true);
+select set_config('request.jwt.claims', json_build_object('sub', '00000000-0000-0000-0000-00000000dead', 'role', 'authenticated')::text, true);
 do $$
 declare n int; begin
   select count(*) into n from public.tour_checklist_state;
@@ -123,7 +148,7 @@ begin
   select count(*) into n_before from public.tour_diver_notifications where diver_id = 'test-sub-match';
   insert into public.tours
     select (jsonb_populate_record(null::public.tours,
-      (to_jsonb(t) - 'id') || jsonb_build_object('id', gen_random_uuid(), 'status', 'open', 'cancelled_at', null, 'admin_status', null))).*
+      (to_jsonb(t) - 'id') || jsonb_build_object('id', gen_random_uuid(), 'instructor_id', 'test-clone-instructor-s7', 'status', 'open', 'cancelled_at', null, 'admin_status', null))).*
   from public.tours t where t.id = (select tour_id from _t) returning id into new_id;
   select count(*) into n_after from public.tour_diver_notifications where diver_id = 'test-sub-match' and kind = 'new_tour';
   if n_after - n_before <> 1 then raise exception 'S7 실패: 구독 매칭 알림 %건 (기대 1건)', n_after - n_before; end if;
@@ -143,7 +168,7 @@ begin
   select count(*) into n_before from public.tour_diver_notifications where kind = 'new_tour';
   insert into public.tours
     select (jsonb_populate_record(null::public.tours,
-      (to_jsonb(t) - 'id') || jsonb_build_object('id', gen_random_uuid(), 'status', 'open', 'cancelled_at', null, 'admin_status', null))).*
+      (to_jsonb(t) - 'id') || jsonb_build_object('id', gen_random_uuid(), 'instructor_id', 'test-clone-instructor-s8', 'status', 'open', 'cancelled_at', null, 'admin_status', null))).*
   from public.tours t where t.id = (select tour_id from _t);
   select count(*) into n_after from public.tour_diver_notifications where kind = 'new_tour';
   if n_after - n_before <> 1 then raise exception 'S8 실패: 신규 알림 %건 (기대: 월 조건 안 맞는 구독자 제외 후 매칭 1건만)', n_after - n_before; end if;
@@ -175,12 +200,12 @@ declare fav_profile uuid; n1 int; n2 int; n3 int;
 begin
   if not exists (select 1 from _t) then raise notice 'S10 SKIP'; return; end if;
   select p.id into fav_profile from public.profiles p
-    where not exists (select 1 from public.bookings b where b.tour_id = (select tour_id from _t) and b.diver_id = p.id::text)
+    where not exists (select 1 from public.bookings b where b.tour_id = (select tour_id from _t) and b.diver_id = p.id::text) and pg_temp.verify_pick_ok(p.id)
     limit 1;
   if fav_profile is null then raise notice 'S10 SKIP: 찜 대상 프로필 없음'; return; end if;
   update public.tours set status = 'open', cancelled_at = null, admin_status = null,
     recruitment_deadline = current_date + 7 where id = (select tour_id from _t);
-  insert into public.favorites (profile_id, target_type, target_id) values (fav_profile, 'tour', (select tour_id from _t)::text);
+  insert into public.favorites (profile_id, target_type, target_id) values (fav_profile, 'tour', (select tour_id from _t)::text) on conflict do nothing;
   select count(*) into n1 from public.tour_diver_notifications where kind = 'deadline_d7';
   perform public.tour_generate_daily_alerts();
   select count(*) into n2 from public.tour_diver_notifications where kind = 'deadline_d7';
@@ -198,6 +223,8 @@ begin
   if not exists (select 1 from _t) then raise notice 'S11 SKIP'; return; end if;
   begin booked_fav := (select diver_id from _t limit 1)::uuid; exception when others then raise notice 'S11 SKIP: 예약자 id가 uuid 아님'; return; end;
   if not exists (select 1 from public.profiles where id = booked_fav) then raise notice 'S11 SKIP: 예약자 프로필 없음'; return; end if;
+  -- S4가 취소해 둔 예약을 되살려 '기예약자' 상태를 만든다
+  update public.bookings set status = 'confirmed' where tour_id = (select tour_id from _t) and diver_id = (select diver_id from _t limit 1) and status = 'cancelled';
   update public.tours set status = 'open', cancelled_at = null, admin_status = null,
     recruitment_deadline = current_date + 1 where id = (select tour_id from _t);
   insert into public.favorites (profile_id, target_type, target_id) values (booked_fav, 'tour', (select tour_id from _t)::text)
@@ -226,15 +253,15 @@ end $$;
 
 -- S14) 종류별 끄기 — 찜 마감: favorite_alerts_enabled=false 인 다이버는 D-7 알림이 안 생김 (다른 설정 행 없는 찜 다이버는 생김)
 do $$
-declare off_profile uuid; on_profile uuid; n_off int; n_on int;
+declare off_profile uuid; on_profile uuid; n_off int; n_on int; n_off_before int; n_on_before int;
 begin
   if not exists (select 1 from _t) then raise notice 'S14 SKIP'; return; end if;
   select p.id into off_profile from public.profiles p
-    where not exists (select 1 from public.bookings b where b.tour_id = (select tour_id from _t) and b.diver_id = p.id::text)
+    where not exists (select 1 from public.bookings b where b.tour_id = (select tour_id from _t) and b.diver_id = p.id::text) and pg_temp.verify_pick_ok(p.id)
     limit 1;
   select p.id into on_profile from public.profiles p
     where p.id <> off_profile
-      and not exists (select 1 from public.bookings b where b.tour_id = (select tour_id from _t) and b.diver_id = p.id::text)
+      and not exists (select 1 from public.bookings b where b.tour_id = (select tour_id from _t) and b.diver_id = p.id::text) and pg_temp.verify_pick_ok(p.id)
     limit 1;
   if off_profile is null or on_profile is null then raise notice 'S14 SKIP: 찜 대상 프로필 2명 필요'; return; end if;
   update public.tours set status = 'open', cancelled_at = null, admin_status = null,
@@ -244,11 +271,15 @@ begin
     on conflict do nothing;
   insert into public.favorites (profile_id, target_type, target_id) values (on_profile, 'tour', (select tour_id from _t)::text)
     on conflict do nothing;
+  -- 이전 시나리오(S10)가 같은 다이버에게 D-7을 이미 만들었을 수 있으므로, 전후 차이로 본다
+  select count(*) into n_off_before from public.tour_diver_notifications where kind = 'deadline_d7' and diver_id = off_profile::text;
+  select count(*) into n_on_before from public.tour_diver_notifications where kind = 'deadline_d7' and diver_id = on_profile::text;
+  delete from public.tour_diver_notifications where kind = 'deadline_d7' and tour_id = (select tour_id from _t);
   perform public.tour_generate_daily_alerts();
   select count(*) into n_off from public.tour_diver_notifications where kind = 'deadline_d7' and diver_id = off_profile::text;
   select count(*) into n_on from public.tour_diver_notifications where kind = 'deadline_d7' and diver_id = on_profile::text;
   if n_off <> 0 then raise exception 'S14 실패: 찜 알림 끈 다이버에게 마감 알림 %건', n_off; end if;
-  if n_on < 1 then raise exception 'S14 실패: 설정 행 없는 다이버(기본 ON)에게 알림 없음'; end if;
+  if n_on - n_on_before < 1 then raise exception 'S14 실패: 설정 행 없는 다이버(기본 ON)에게 알림 없음'; end if;
   raise notice 'S14 OK';
 end $$;
 
@@ -263,7 +294,7 @@ begin
   select count(*) into n_before from public.tour_diver_notifications where diver_id = 'test-sub-off';
   insert into public.tours
     select (jsonb_populate_record(null::public.tours,
-      (to_jsonb(t) - 'id') || jsonb_build_object('id', gen_random_uuid(), 'status', 'open', 'cancelled_at', null, 'admin_status', null))).*
+      (to_jsonb(t) - 'id') || jsonb_build_object('id', gen_random_uuid(), 'instructor_id', 'test-clone-instructor-s9', 'status', 'open', 'cancelled_at', null, 'admin_status', null))).*
   from public.tours t where t.id = (select tour_id from _t);
   select count(*) into n_after from public.tour_diver_notifications where diver_id = 'test-sub-off';
   if n_after <> n_before then raise exception 'S15 실패: 구독 알림 끈 다이버에게 새 투어 알림 발송'; end if;
@@ -294,7 +325,7 @@ begin
   if not exists (select 1 from _t) then raise notice 'S17 SKIP'; return; end if;
   tid := (select tour_id from _t);
   select p.id into fav from public.profiles p
-    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text)
+    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text) and pg_temp.verify_pick_ok(p.id)
     limit 1;
   if fav is null then raise notice 'S17 SKIP: 찜 대상 프로필 없음'; return; end if;
   update public.tours set status = 'open', cancelled_at = null, admin_status = null where id = tid;
@@ -321,7 +352,7 @@ begin
   if not exists (select 1 from _t) then raise notice 'S18 SKIP'; return; end if;
   tid := (select tour_id from _t);
   select p.id into fav from public.profiles p
-    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text)
+    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text) and pg_temp.verify_pick_ok(p.id)
     limit 1;
   if fav is null then raise notice 'S18 SKIP: 찜 대상 프로필 없음'; return; end if;
   update public.tours set status = 'open', cancelled_at = null, admin_status = null, manual_participant_count = 0 where id = tid;
@@ -346,7 +377,7 @@ begin
   tid := (select tour_id from _t);
   bdiver := (select diver_id from _t limit 1);
   select p.id into fav from public.profiles p
-    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text) limit 1;
+    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text) and pg_temp.verify_pick_ok(p.id) limit 1;
   if fav is null then raise notice 'S19 SKIP: 찜 대상 프로필 없음'; return; end if;
   update public.bookings set status = 'confirmed' where tour_id = tid and diver_id = bdiver and status = 'cancelled';
   update public.tours set status = 'open', cancelled_at = null, admin_status = null, manual_participant_count = 0,
@@ -397,14 +428,19 @@ end $$;
 
 -- S21) 종류별 끄기: favorite_alerts_enabled=false 인 찜 다이버는 가격 인하 알림 제외, 설정 없는 찜 다이버는 받음
 do $$
-declare off_p uuid; on_p uuid; tid uuid; p0 numeric; n_off int; n_on int;
+declare off_p uuid; on_p uuid; tid uuid; p0 numeric; n_off int; n_on int; n_off_before int; n_on_before int;
 begin
   if not exists (select 1 from _t) then raise notice 'S21 SKIP'; return; end if;
   tid := (select tour_id from _t);
-  select p.id into off_p from public.profiles p
-    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text) limit 1;
+  -- 찜 알림을 끈 다이버: S14가 끈 다이버를 그대로 쓴다 (없으면 새로 끈다)
+  select st.diver_id::uuid into off_p from public.tour_notification_settings st
+    where st.favorite_alerts_enabled = false and st.diver_id ~ '^[0-9a-f-]{36}$' limit 1;
+  if off_p is null then
+    select p.id into off_p from public.profiles p
+      where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text) and pg_temp.verify_pick_ok(p.id) limit 1;
+  end if;
   select p.id into on_p from public.profiles p
-    where p.id <> off_p and not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text)
+    where p.id <> off_p and not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text) and pg_temp.verify_pick_ok(p.id)
       and not exists (select 1 from public.tour_notification_settings s where s.diver_id = p.id::text and s.favorite_alerts_enabled = false)
     limit 1;
   if off_p is null or on_p is null then raise notice 'S21 SKIP: 찜 대상 프로필 2명 필요'; return; end if;
@@ -414,11 +450,14 @@ begin
   insert into public.favorites (profile_id, target_type, target_id) values (off_p, 'tour', tid::text) on conflict do nothing;
   insert into public.favorites (profile_id, target_type, target_id) values (on_p, 'tour', tid::text) on conflict do nothing;
   select base_price into p0 from public.tours where id = tid;
+  -- 이전 시나리오가 같은 다이버에게 가격 인하 알림을 만들었을 수 있으므로 전후 차이로 본다
+  select count(*) into n_off_before from public.tour_diver_notifications where kind = 'price_drop' and diver_id = off_p::text;
+  select count(*) into n_on_before from public.tour_diver_notifications where kind = 'price_drop' and diver_id = on_p::text;
   update public.tours set base_price = p0 - 100 where id = tid;
   select count(*) into n_off from public.tour_diver_notifications where kind = 'price_drop' and diver_id = off_p::text;
   select count(*) into n_on from public.tour_diver_notifications where kind = 'price_drop' and diver_id = on_p::text;
-  if n_off <> 0 then raise exception 'S21 실패: 찜 알림 끈 다이버에게 가격 인하 %건', n_off; end if;
-  if n_on < 1 then raise exception 'S21 실패: 설정 없는 찜 다이버에게 가격 인하 알림 없음'; end if;
+  if n_off - n_off_before <> 0 then raise exception 'S21 실패: 찜 알림 끈 다이버에게 가격 인하 %건', n_off - n_off_before; end if;
+  if n_on - n_on_before < 1 then raise exception 'S21 실패: 설정 없는 찜 다이버에게 가격 인하 알림 없음'; end if;
   raise notice 'S21 OK';
 end $$;
 
