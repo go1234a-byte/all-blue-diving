@@ -3,6 +3,7 @@ import { BellRing } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useRole } from "@/contexts/RoleContext";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {
   getPushSubscriptionStatus,
@@ -17,7 +18,7 @@ import {
  * VAPID 키가 아직 설정되지 않은 환경(TODO: 실푸시 연동 필요)에서는
  * 안내 문구만 보여주고 스위치는 비활성화된다.
  */
-export function PushNotificationToggle() {
+export function PushNotificationToggle({ variant = "card" }: { variant?: "card" | "row" }) {
   const { profile, isLoggedIn } = useRole();
   const { toast } = useToast();
   const [enabled, setEnabled] = useState(false);
@@ -54,19 +55,30 @@ export function PushNotificationToggle() {
   };
 
   return (
-    <div className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
+    <div
+      className={
+        variant === "card"
+          ? "flex items-center justify-between rounded-xl border border-border bg-card p-3"
+          : "flex min-h-[52px] items-center justify-between gap-3"
+      }
+    >
       <div className="flex items-start gap-2.5">
         <BellRing className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <div className="space-y-0.5">
-          <Label className="text-sm font-medium text-foreground">푸시 알림 받기</Label>
-          <p className="break-keep text-xs text-muted-foreground">
+          <Label className={variant === "row" ? "text-[16px] font-semibold text-foreground" : "text-sm font-medium text-foreground"}>기기 푸시 알림 받기</Label>
+          <p className={cn("break-keep text-muted-foreground", variant === "row" ? "text-[13px]" : "text-xs")}>
             {configured
               ? "예약, 정산, 투어 출발 알림을 이 기기의 OS 알림으로 받습니다."
               : "현재 서비스 준비 중인 기능입니다. 곧 지원될 예정입니다."}
           </p>
         </div>
       </div>
-      <Switch checked={enabled} onCheckedChange={handleToggle} disabled={!configured || loading} />
+      <Switch
+        className="relative before:absolute before:-inset-2.5 before:content-['']"
+        checked={enabled}
+        onCheckedChange={handleToggle}
+        disabled={!configured || loading}
+      />
     </div>
   );
 }

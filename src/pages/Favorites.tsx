@@ -10,6 +10,10 @@ import { TourCard } from "@/components/search/TourCard";
 import { VerifiedBadge } from "@/components/tour/VerifiedBadge";
 import { useAppData } from "@/contexts/AppDataContext";
 import { isTourBookable } from "@/lib/tourBooking";
+import { pickFavoriteBadge } from "@/lib/favoriteBadge";
+import { useDiverNotifications } from "@/hooks/useTourAlerts";
+import type { DiverNotification } from "@/types/alerts";
+import { FavoriteStatusBadge } from "@/components/alerts/FavoriteStatusBadge";
 
 /** 위시리스트의 "찜한 강사" 카드 — 검색 결과의 TourCard와 톤을 맞춘 간단한 요약 카드. */
 function BookmarkedInstructorCard({ instructorId }: { instructorId: string }) {
@@ -58,8 +62,30 @@ function BookmarkedInstructorCard({ instructorId }: { instructorId: string }) {
   );
 }
 
+/** 찜한 투어 카드 위의 상태 배지 (모집 마감 · 마감 임박). 배지가 없으면 아무것도 그리지 않는다. */
+/** 목록은 최신순이라 같은 종류의 첫 항목이 가장 최근 알림이다. */
+function latestNotificationAt(notifications: DiverNotification[], tourId: string, kind: DiverNotification["kind"]) {
+  return notifications.find((n) => n.tourId === tourId && n.kind === kind)?.createdAt;
+}
+
+function FavoriteTourBadge({ tourId, notifications }: { tourId: string; notifications: DiverNotification[] }) {
+  const { getTourById, getConfirmedParticipantCount } = useAppData();
+  const tour = getTourById(tourId);
+  if (!tour) return null;
+  const badge = pickFavoriteBadge({
+    status: tour.status,
+    maxParticipants: tour.maxParticipants,
+    confirmedCount: getConfirmedParticipantCount(tour.id),
+    seatOpenedAt: latestNotificationAt(notifications, tour.id, "seat_opened"),
+    priceDropAt: latestNotificationAt(notifications, tour.id, "price_drop"),
+  });
+  if (!badge) return null;
+  return <FavoriteStatusBadge badge={badge} />;
+}
+
 const Favorites = () => {
   const { tours, bookmarkedTourIds, bookmarkedInstructorIds } = useAppData();
+  const { data: notifications = [] } = useDiverNotifications();
   // 찜한 이후 마감/취소/정지되어 더 이상 예약할 수 없게 된 투어는 위시리스트에서 노출하지 않는다.
   const bookmarkedTours = tours.filter((t) => bookmarkedTourIds.includes(t.id) && isTourBookable(t));
 
@@ -79,7 +105,10 @@ const Favorites = () => {
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
                 {bookmarkedTours.map((tour) => (
-                  <TourCard key={tour.id} tour={tour} />
+                  <div key={tour.id} className="space-y-2">
+                    <FavoriteTourBadge tourId={tour.id} notifications={notifications} />
+                    <TourCard tour={tour} />
+                  </div>
                 ))}
               </div>
             )}

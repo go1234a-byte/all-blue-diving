@@ -1,8 +1,13 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, List, MapPin, X } from "lucide-react";
+import { ArrowLeft, Bell, List, MapPin, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { SubscribeSheet } from "@/components/alerts/SubscribeSheet";
+import { SearchAlertBanner } from "@/components/alerts/SearchAlertBanner";
+import { COUNTRIES_SITES } from "@/lib/constants";
+import { useRole } from "@/contexts/RoleContext";
 import {
   Select,
   SelectContent,
@@ -55,9 +60,18 @@ const Search = () => {
     };
   });
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [alertOpen, setAlertOpen] = useState(false);
+  const { role, isLoggedIn } = useRole();
+  const isDiver = role === "public" && isLoggedIn;
 
   const query = searchParams.get("q")?.trim() ?? "";
   const activitiesParam = searchParams.get("activities");
+  // 검색 조건을 알림 구독 폼에 미리 채운다. 지역 키워드가 국가명과 같으면 국가도 채운다.
+  const alertPrefill = {
+    initialCountry: Object.keys(COUNTRIES_SITES).includes(query) ? query : undefined,
+    initialMonthKeys: filters.months,
+    initialActivityTypes: activitiesParam ? (activitiesParam.split(",") as ActivityType[]) : [],
+  };
 
   const clearQuery = () => {
     const params = new URLSearchParams(searchParams);
@@ -166,9 +180,17 @@ const Search = () => {
             </Select>
           </div>
 
+          {isDiver && filteredTours.length > 0 && <SearchAlertBanner onAlert={() => setAlertOpen(true)} />}
+
           {filteredTours.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-              조건에 맞는 투어가 없습니다. 필터를 조정해보세요.
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+              <Bell className="h-8 w-8" />
+              <p>조건에 맞는 투어가 없습니다. 필터를 조정해보세요.</p>
+              {isDiver && (
+                <Button variant="outline" className="h-11 rounded-xl px-5" onClick={() => setAlertOpen(true)}>
+                  이 조건으로 알림 받기
+                </Button>
+              )}
             </div>
           ) : viewMode === "map" ? (
             <TourMapView tours={filteredTours} />
@@ -181,6 +203,7 @@ const Search = () => {
           )}
         </div>
       </main>
+      {isDiver && <SubscribeSheet open={alertOpen} onOpenChange={setAlertOpen} prefill={alertPrefill} />}
     </div>
   );
 };

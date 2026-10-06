@@ -15,6 +15,8 @@ import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
+import { BookmarkHint } from "@/components/alerts/BookmarkHint";
+import { markBookmarkHintDone, readBookmarkHintDone } from "@/hooks/useTourAlerts";
 import { CERTIFICATION_LABELS } from "@/lib/constants";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { calculateAge, formatDateKR, formatDateRangeKR } from "@/lib/dates";
@@ -42,6 +44,8 @@ const TourDetail = () => {
   const { isLoggedIn, currentDiverId, currentInstructorId, authLoading } = useRole();
   const { toast } = useToast();
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
+  const [bookmarkHintDone, setBookmarkHintDone] = useState(readBookmarkHintDone);
+
 
   const tour = tourId ? getTourById(tourId) : undefined;
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
@@ -182,6 +186,14 @@ const TourDetail = () => {
                 });
                 return;
               }
+              if (!bookmarked) {
+                toast({
+                  title: "찜했어요",
+                  description: "가격 인하·자리 소식을 알려드릴게요.",
+                });
+                markBookmarkHintDone();
+                setBookmarkHintDone(true);
+              }
               toggleBookmark(tour.id);
             }}
             className="text-foreground"
@@ -194,6 +206,7 @@ const TourDetail = () => {
 
       <main className="mx-auto w-full max-w-md px-4 py-5 md:grid md:max-w-6xl md:grid-cols-[minmax(0,1fr)_360px] md:items-start md:gap-8 md:px-6 md:py-8">
        <div className="space-y-6">
+        {isLoggedIn && !!currentDiverId && !bookmarked && !bookmarkHintDone && <BookmarkHint />}
         {isBookingBlocked && (
           <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />

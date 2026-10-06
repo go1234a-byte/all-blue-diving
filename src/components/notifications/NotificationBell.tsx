@@ -5,17 +5,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
+import { useAlertsSeenAt, useDiverNotifications } from "@/hooks/useTourAlerts";
 import { computeTourAlerts } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 /**
  * 인앱 알림센터 (실제 OS 푸시 인프라 부재로 대체 구현).
- * - 다이버(public 역할, 로그인 상태): 확정 예약 기준 투어 출발 D-3 / D-1 알림.
+ * - 다이버(public 역할, 로그인 상태): 확정 예약 기준 투어 출발 D-3 / D-1 알림 + 서버 알림(찜·구독·변경).
  * - 강사(instructor 역할): 신규 예약/유료 옵션 결제 완료 실시간 알림.
  */
 export function NotificationBell() {
-  const { role, isLoggedIn, currentDiverId, currentInstructorId } = useRole();
-  const { tours, bookings, instructorNotifications, markInstructorNotificationRead } = useAppData();
+  const { role, isLoggedIn, currentInstructorId } = useRole();
+  const { instructorNotifications, markInstructorNotificationRead } = useAppData();
   const navigate = useNavigate();
   const [instructorPopoverOpen, setInstructorPopoverOpen] = useState(false);
 
@@ -156,12 +157,33 @@ export function NotificationBell() {
     );
   }
 
-  if (role !== "public" || !isLoggedIn) return null;
+  if (role === "public" && isLoggedIn) return <DiverAlertBell />;
+
+  return null;
+}
+
+/** 다이버 알림: 확정 예약의 D-3/D-1·취소(로컬 계산) + 서버 알림(찜 마감·새 투어·변경) 합친 목록. */
+function DiverAlertBell() {
+  const navigate = useNavigate();
+  const { tours, bookings } = useAppData();
+  const { currentDiverId } = useRole();
+  const { data: serverNotifications = [] } = useDiverNotifications();
+  const { seenAt, markSeen } = useAlertsSeenAt();
+  const [open, setOpen] = useState(false);
 
   const alerts = computeTourAlerts(tours, bookings, currentDiverId);
+  const seenTime = seenAt ? new Date(seenAt).getTime() : 0;
+  const unseenCount = serverNotifications.filter((n) => new Date(n.createdAt).getTime() > seenTime).length;
+  const badgeCount = alerts.length + unseenCount;
+  const recentServer = serverNotifications.slice(0, 5);
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (next) markSeen();
+  };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -169,19 +191,45 @@ export function NotificationBell() {
           aria-label="알림"
         >
           <Bell className="h-5 w-5" />
-          {alerts.length > 0 && (
+          {badgeCount > 0 && (
             <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-              {alerts.length}
+              {badgeCount}
             </span>
           )}
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 space-y-2 p-3">
-        <p className="text-xs font-semibold text-foreground">알림</p>
-        {alerts.length === 0 ? (
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-foreground">알림</p>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              navigate("/notifications");
+            }}
+            className="min-h-8 text-[11px] font-semibold text-primary"
+          >
+            전체 보기
+          </button>
+        </div>
+        {alerts.length === 0 && recentServer.length === 0 ? (
           <p className="py-4 text-center text-xs text-muted-foreground">새로운 알림이 없습니다.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="max-h-96 space-y-2 overflow-y-auto">
+            {recentServer.map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  navigate(n.url);
+                }}
+                className="w-full space-y-1 rounded-lg border border-border p-2.5 text-left transition-colors hover:bg-secondary/60"
+              >
+                <p className="text-xs font-semibold text-foreground">{n.title}</p>
+                <p className="line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
+              </button>
+            ))}
             {alerts.map((alert) => (
               <div
                 key={alert.id}

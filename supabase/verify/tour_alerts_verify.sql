@@ -8,36 +8,48 @@ from public.tours t
 join public.bookings b on b.tour_id = t.id and b.status = 'confirmed'
 limit 1;
 
--- S1) 두 트리거 동시 실행: base_price 변경 한 번으로 알림과 변경이력이 모두 생겨야 함
+-- 공통 준비: 찜 다이버 1명을 고른다 (예약자·강사 제외는 S20에서 따로 본다)
+create temp table _fav on commit drop as
+select p.id as profile_id
+from public.profiles p, _t
+where not exists (select 1 from public.bookings b where b.tour_id = _t.tour_id and b.diver_id = p.id::text)
+limit 1;
+
+-- S1) 한 번의 가격 인하가 변경이력(tours_change_log)과 찜 가격 인하 알림을 함께 만든다
 do $$
-declare n_notif_before int; n_notif_after int; n_log_before int; n_log_after int;
+declare n_notif_before int; n_notif_after int; n_log_before int; n_log_after int; p0 numeric; tid uuid;
 begin
-  if not exists (select 1 from _t) then raise notice 'S1 SKIP: 확정 예약 투어 없음'; return; end if;
-  select count(*) into n_notif_before from public.tour_diver_notifications;
+  if not exists (select 1 from _t) or not exists (select 1 from _fav) then raise notice 'S1 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null where id = tid;
+  insert into public.favorites (profile_id, target_type, target_id) select profile_id, 'tour', tid::text from _fav on conflict do nothing;
+  select base_price into p0 from public.tours where id = tid;
+  select count(*) into n_notif_before from public.tour_diver_notifications where kind = 'price_drop';
   select count(*) into n_log_before from public.tour_change_log;
-  update public.tours set base_price = base_price + 1 where id = (select tour_id from _t);
-  select count(*) into n_notif_after from public.tour_diver_notifications;
+  update public.tours set base_price = p0 - 100 where id = tid;
+  select count(*) into n_notif_after from public.tour_diver_notifications where kind = 'price_drop';
   select count(*) into n_log_after from public.tour_change_log;
-  if n_notif_after <= n_notif_before then raise exception 'S1 실패: 알림 미생성'; end if;
-  if n_log_after <= n_log_before then raise exception 'S1 실패: tour_change_log 미생성(두 트리거 동시 실행 문제)'; end if;
-  raise notice 'S1 OK: 알림 +%, 변경이력 +%', n_notif_after - n_notif_before, n_log_after - n_log_before;
+  if n_notif_after <= n_notif_before then raise exception 'S1 실패: 찜 가격 인하 알림 미생성'; end if;
+  if n_log_after <= n_log_before then raise exception 'S1 실패: tour_change_log 미생성(트리거 동시 실행 문제)'; end if;
+  raise notice 'S1 OK: 가격 인하 알림 +%, 변경이력 +%', n_notif_after - n_notif_before, n_log_after - n_log_before;
 end $$;
 
--- S2) 알림 실패가 원래 쓰기를 막지 않음: 알림 테이블에 항상 실패하는 제약을 임시로 건다
+-- S2) 알림 실패가 원래 쓰기를 막지 않음: 알림 테이블에 항상 실패하는 제약을 임시로 걸고, 가격 인하(알림 발생 경로)를 수행
 alter table public.tour_diver_notifications add constraint tmp_s2_block check (false) not valid;
 do $$
-declare before_price numeric; after_price numeric;
+declare before_price numeric; after_price numeric; tid uuid;
 begin
   if not exists (select 1 from _t) then raise notice 'S2 SKIP'; return; end if;
-  select base_price into before_price from public.tours where id = (select tour_id from _t);
-  update public.tours set base_price = base_price + 1 where id = (select tour_id from _t);
-  select base_price into after_price from public.tours where id = (select tour_id from _t);
-  if after_price <> before_price + 1 then raise exception 'S2 실패: 알림 실패 때문에 투어 수정이 막힘'; end if;
+  tid := (select tour_id from _t);
+  select base_price into before_price from public.tours where id = tid;
+  update public.tours set base_price = before_price - 100 where id = tid;
+  select base_price into after_price from public.tours where id = tid;
+  if after_price <> before_price - 100 then raise exception 'S2 실패: 알림 실패 때문에 투어 수정이 막힘'; end if;
   raise notice 'S2 OK: 알림 실패에도 투어 수정 성공';
 end $$;
 alter table public.tour_diver_notifications drop constraint tmp_s2_block;
 
--- S3) WHEN 조건: 알림 필드와 무관한 컬럼 변경은 알림을 만들지 않음
+-- S3) WHEN 조건: 찜 알림과 무관한 컬럼 변경(제목)은 알림을 만들지 않음 (투어 정보 변경 알림은 범위 밖이라 어떤 변경으로도 생기지 않음)
 do $$
 declare n_before int; n_after int;
 begin
@@ -49,16 +61,24 @@ begin
   raise notice 'S3 OK: 무관한 변경은 알림 없음';
 end $$;
 
--- S4) 예약 상태 변경 → 해당 다이버에게 알림 1건 이상
+-- S4) 찜한 다이버에게 seat_opened: 만석 투어에서 확정 예약을 취소하면 잔여석 0→1 → 찜 다이버 1건
 do $$
-declare n_before int; n_after int;
+declare fav uuid; tid uuid; n_before int; n_after int;
 begin
   if not exists (select 1 from _t) then raise notice 'S4 SKIP'; return; end if;
-  select count(*) into n_before from public.tour_diver_notifications;
+  tid := (select tour_id from _t);
+  select p.id into fav from public.profiles p
+    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text)
+    limit 1;
+  if fav is null then raise notice 'S4 SKIP: 찜 대상 프로필 없음'; return; end if;
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null, manual_participant_count = 0,
+    max_participants = public.tour_alerts_confirmed_count(tid) where id = tid;
+  insert into public.favorites (profile_id, target_type, target_id) values (fav, 'tour', tid::text) on conflict do nothing;
+  select count(*) into n_before from public.tour_diver_notifications where kind = 'seat_opened' and diver_id = fav::text;
   update public.bookings set status = 'cancelled'
-    where tour_id = (select tour_id from _t) and diver_id = (select diver_id from _t limit 1);
-  select count(*) into n_after from public.tour_diver_notifications;
-  if n_after <= n_before then raise exception 'S4 실패: 예약 취소 알림 미생성'; end if;
+    where tour_id = tid and diver_id = (select diver_id from _t limit 1) and status = 'confirmed';
+  select count(*) into n_after from public.tour_diver_notifications where kind = 'seat_opened' and diver_id = fav::text;
+  if n_after - n_before <> 1 then raise exception 'S4 실패: 찜 다이버 seat_opened %건 (기대 1)', n_after - n_before; end if;
   raise notice 'S4 OK';
 end $$;
 
@@ -202,6 +222,243 @@ begin
   select count(*) into n_after from public.tour_diver_notifications where kind = 'deadline_d1';
   if n_after <> n_before then raise exception 'S12 실패: 취소 투어에 마감 알림 발송'; end if;
   raise notice 'S12 OK';
+end $$;
+
+-- S14) 종류별 끄기 — 찜 마감: favorite_alerts_enabled=false 인 다이버는 D-7 알림이 안 생김 (다른 설정 행 없는 찜 다이버는 생김)
+do $$
+declare off_profile uuid; on_profile uuid; n_off int; n_on int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S14 SKIP'; return; end if;
+  select p.id into off_profile from public.profiles p
+    where not exists (select 1 from public.bookings b where b.tour_id = (select tour_id from _t) and b.diver_id = p.id::text)
+    limit 1;
+  select p.id into on_profile from public.profiles p
+    where p.id <> off_profile
+      and not exists (select 1 from public.bookings b where b.tour_id = (select tour_id from _t) and b.diver_id = p.id::text)
+    limit 1;
+  if off_profile is null or on_profile is null then raise notice 'S14 SKIP: 찜 대상 프로필 2명 필요'; return; end if;
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null,
+    recruitment_deadline = current_date + 7 where id = (select tour_id from _t);
+  insert into public.tour_notification_settings (diver_id, favorite_alerts_enabled) values (off_profile::text, false);
+  insert into public.favorites (profile_id, target_type, target_id) values (off_profile, 'tour', (select tour_id from _t)::text)
+    on conflict do nothing;
+  insert into public.favorites (profile_id, target_type, target_id) values (on_profile, 'tour', (select tour_id from _t)::text)
+    on conflict do nothing;
+  perform public.tour_generate_daily_alerts();
+  select count(*) into n_off from public.tour_diver_notifications where kind = 'deadline_d7' and diver_id = off_profile::text;
+  select count(*) into n_on from public.tour_diver_notifications where kind = 'deadline_d7' and diver_id = on_profile::text;
+  if n_off <> 0 then raise exception 'S14 실패: 찜 알림 끈 다이버에게 마감 알림 %건', n_off; end if;
+  if n_on < 1 then raise exception 'S14 실패: 설정 행 없는 다이버(기본 ON)에게 알림 없음'; end if;
+  raise notice 'S14 OK';
+end $$;
+
+-- S15) 종류별 끄기 — 구독: subscription_alerts_enabled=false 인 다이버는 조건 맞아도 새 투어 알림이 안 생김
+do $$
+declare src_country text; n_before int; n_after int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S15 SKIP'; return; end if;
+  select t.country into src_country from public.tours t where t.id = (select tour_id from _t);
+  insert into public.tour_notification_settings (diver_id, subscription_alerts_enabled) values ('test-sub-off', false);
+  insert into public.tour_alert_subscriptions (profile_id, country) values ('test-sub-off', src_country);
+  select count(*) into n_before from public.tour_diver_notifications where diver_id = 'test-sub-off';
+  insert into public.tours
+    select (jsonb_populate_record(null::public.tours,
+      (to_jsonb(t) - 'id') || jsonb_build_object('id', gen_random_uuid(), 'status', 'open', 'cancelled_at', null, 'admin_status', null))).*
+  from public.tours t where t.id = (select tour_id from _t);
+  select count(*) into n_after from public.tour_diver_notifications where diver_id = 'test-sub-off';
+  if n_after <> n_before then raise exception 'S15 실패: 구독 알림 끈 다이버에게 새 투어 알림 발송'; end if;
+  raise notice 'S15 OK';
+end $$;
+
+-- S16) 스키마: push_enabled 컬럼은 없고, 종류별 3개 컬럼은 기본값 true
+do $$
+declare n_push int; n_default_true int;
+begin
+  select count(*) into n_push from information_schema.columns
+    where table_schema = 'public' and table_name = 'tour_notification_settings' and column_name = 'push_enabled';
+  if n_push <> 0 then raise exception 'S16 실패: push_enabled 컬럼이 남아 있음'; end if;
+  select count(*) into n_default_true from information_schema.columns
+    where table_schema = 'public' and table_name = 'tour_notification_settings'
+      and column_name in ('favorite_alerts_enabled', 'subscription_alerts_enabled', 'checklist_reminders_enabled')
+      and is_nullable = 'NO' and column_default = 'true';
+  if n_default_true <> 3 then raise exception 'S16 실패: 종류별 설정 컬럼 3개(NOT NULL, 기본값 true) 아님 (%개)', n_default_true; end if;
+  raise notice 'S16 OK';
+end $$;
+
+-- 공통 준비: 신규 시나리오마다 투어를 모집 중·비취소 상태로 되돌린다 (S11·S12가 취소 상태로 남기므로)
+
+-- S17) price_drop: 인상은 알림 없음, 인하는 찜 다이버 1건, 같은 가격으로 다시 내려도 중복 없음
+do $$
+declare fav uuid; tid uuid; p0 numeric; n1 int; n2 int; n3 int; n4 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S17 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  select p.id into fav from public.profiles p
+    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text)
+    limit 1;
+  if fav is null then raise notice 'S17 SKIP: 찜 대상 프로필 없음'; return; end if;
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null where id = tid;
+  insert into public.favorites (profile_id, target_type, target_id) values (fav, 'tour', tid::text) on conflict do nothing;
+  select base_price into p0 from public.tours where id = tid;
+  select count(*) into n1 from public.tour_diver_notifications where kind = 'price_drop' and diver_id = fav::text;
+  update public.tours set base_price = p0 + 100 where id = tid;
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'price_drop' and diver_id = fav::text;
+  if n2 <> n1 then raise exception 'S17 실패: 인상에 가격 인하 알림이 발송됨'; end if;
+  update public.tours set base_price = p0 - 100 where id = tid;
+  select count(*) into n3 from public.tour_diver_notifications where kind = 'price_drop' and diver_id = fav::text;
+  if n3 - n2 <> 1 then raise exception 'S17 실패: 인하 알림 %건 (기대 1)', n3 - n2; end if;
+  update public.tours set base_price = p0 + 50 where id = tid;
+  update public.tours set base_price = p0 - 100 where id = tid;
+  select count(*) into n4 from public.tour_diver_notifications where kind = 'price_drop' and diver_id = fav::text;
+  if n4 <> n3 then raise exception 'S17 실패: 같은 가격 재인하에 중복 발송'; end if;
+  raise notice 'S17 OK';
+end $$;
+
+-- S18) seats_low: 4석→3석 진입 때 찜 다이버 1건, 3석→2석은 추가 없음
+do $$
+declare fav uuid; tid uuid; conf int; n1 int; n2 int; n3 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S18 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  select p.id into fav from public.profiles p
+    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text)
+    limit 1;
+  if fav is null then raise notice 'S18 SKIP: 찜 대상 프로필 없음'; return; end if;
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null, manual_participant_count = 0 where id = tid;
+  insert into public.favorites (profile_id, target_type, target_id) values (fav, 'tour', tid::text) on conflict do nothing;
+  conf := public.tour_alerts_confirmed_count(tid);
+  update public.tours set max_participants = conf + 4 where id = tid;
+  select count(*) into n1 from public.tour_diver_notifications where kind = 'seats_low' and diver_id = fav::text;
+  update public.tours set max_participants = conf + 3 where id = tid;
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'seats_low' and diver_id = fav::text;
+  if n2 - n1 <> 1 then raise exception 'S18 실패: 4→3석 진입 알림 %건 (기대 1)', n2 - n1; end if;
+  update public.tours set max_participants = conf + 2 where id = tid;
+  select count(*) into n3 from public.tour_diver_notifications where kind = 'seats_low' and diver_id = fav::text;
+  if n3 <> n2 then raise exception 'S18 실패: 3→2석에 추가 알림'; end if;
+  raise notice 'S18 OK';
+end $$;
+
+-- S19) seat_opened 하루 1회: 만석→취소로 알림이 생긴 뒤, 같은 날 다시 만석→취소해도 같은 투어·다이버 알림은 늘지 않음
+do $$
+declare fav uuid; tid uuid; bdiver text; n1 int; n2 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S19 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  select p.id into fav from public.profiles p
+    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text) limit 1;
+  if fav is null then raise notice 'S19 SKIP: 찜 대상 프로필 없음'; return; end if;
+  update public.bookings set status = 'confirmed' where tour_id = tid and diver_id = bdiver and status = 'cancelled';
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null, manual_participant_count = 0,
+    max_participants = public.tour_alerts_confirmed_count(tid) where id = tid;
+  insert into public.favorites (profile_id, target_type, target_id) values (fav, 'tour', tid::text) on conflict do nothing;
+  update public.bookings set status = 'cancelled' where tour_id = tid and diver_id = bdiver and status = 'confirmed';
+  select count(*) into n1 from public.tour_diver_notifications where kind = 'seat_opened' and tour_id = tid and diver_id = fav::text;
+  if n1 < 1 then raise exception 'S19 실패: 만석→취소에 seat_opened 없음'; end if;
+  update public.bookings set status = 'confirmed' where tour_id = tid and diver_id = bdiver and status = 'cancelled';
+  update public.bookings set status = 'cancelled' where tour_id = tid and diver_id = bdiver and status = 'confirmed';
+  select count(*) into n2 from public.tour_diver_notifications where kind = 'seat_opened' and tour_id = tid and diver_id = fav::text;
+  if n2 <> n1 then raise exception 'S19 실패: 같은 날 재발생에 중복 알림 %건', n2 - n1; end if;
+  update public.bookings set status = 'confirmed' where tour_id = tid and diver_id = bdiver and status = 'cancelled';
+  raise notice 'S19 OK';
+end $$;
+
+-- S20) 제외: 그 투어 확정 예약자와 강사 본인에게는 price_drop이 가지 않음
+do $$
+declare tid uuid; p0 numeric; bdiver text; inst uuid; n_b1 int; n_b2 int; n_i1 int; n_i2 int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S20 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  begin
+    inst := (select i.profile_id::uuid from public.instructors i join public.tours t on t.instructor_id = i.id where t.id = tid);
+  exception when others then
+    raise notice 'S20 SKIP: 강사 profile_id가 uuid 아님'; return;
+  end;
+  if inst is null or not exists (select 1 from public.profiles where id = inst) then raise notice 'S20 SKIP: 강사 프로필 없음'; return; end if;
+  begin
+    perform bdiver::uuid;
+  exception when others then
+    raise notice 'S20 SKIP: 예약자 id가 uuid 아님'; return;
+  end;
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null where id = tid;
+  insert into public.favorites (profile_id, target_type, target_id) values (bdiver::uuid, 'tour', tid::text) on conflict do nothing;
+  insert into public.favorites (profile_id, target_type, target_id) values (inst, 'tour', tid::text) on conflict do nothing;
+  select base_price into p0 from public.tours where id = tid;
+  select count(*) into n_b1 from public.tour_diver_notifications where kind = 'price_drop' and diver_id = bdiver;
+  select count(*) into n_i1 from public.tour_diver_notifications where kind = 'price_drop' and diver_id = inst::text;
+  update public.tours set base_price = p0 - 100 where id = tid;
+  select count(*) into n_b2 from public.tour_diver_notifications where kind = 'price_drop' and diver_id = bdiver;
+  select count(*) into n_i2 from public.tour_diver_notifications where kind = 'price_drop' and diver_id = inst::text;
+  if n_b2 <> n_b1 then raise exception 'S20 실패: 확정 예약자에게 가격 인하 알림'; end if;
+  if n_i2 <> n_i1 then raise exception 'S20 실패: 강사 본인에게 가격 인하 알림'; end if;
+  raise notice 'S20 OK';
+end $$;
+
+-- S21) 종류별 끄기: favorite_alerts_enabled=false 인 찜 다이버는 가격 인하 알림 제외, 설정 없는 찜 다이버는 받음
+do $$
+declare off_p uuid; on_p uuid; tid uuid; p0 numeric; n_off int; n_on int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S21 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  select p.id into off_p from public.profiles p
+    where not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text) limit 1;
+  select p.id into on_p from public.profiles p
+    where p.id <> off_p and not exists (select 1 from public.bookings b where b.tour_id = tid and b.diver_id = p.id::text)
+      and not exists (select 1 from public.tour_notification_settings s where s.diver_id = p.id::text and s.favorite_alerts_enabled = false)
+    limit 1;
+  if off_p is null or on_p is null then raise notice 'S21 SKIP: 찜 대상 프로필 2명 필요'; return; end if;
+  update public.tours set status = 'open', cancelled_at = null, admin_status = null where id = tid;
+  insert into public.tour_notification_settings (diver_id, favorite_alerts_enabled) values (off_p::text, false)
+    on conflict (diver_id) do update set favorite_alerts_enabled = false;
+  insert into public.favorites (profile_id, target_type, target_id) values (off_p, 'tour', tid::text) on conflict do nothing;
+  insert into public.favorites (profile_id, target_type, target_id) values (on_p, 'tour', tid::text) on conflict do nothing;
+  select base_price into p0 from public.tours where id = tid;
+  update public.tours set base_price = p0 - 100 where id = tid;
+  select count(*) into n_off from public.tour_diver_notifications where kind = 'price_drop' and diver_id = off_p::text;
+  select count(*) into n_on from public.tour_diver_notifications where kind = 'price_drop' and diver_id = on_p::text;
+  if n_off <> 0 then raise exception 'S21 실패: 찜 알림 끈 다이버에게 가격 인하 %건', n_off; end if;
+  if n_on < 1 then raise exception 'S21 실패: 설정 없는 찜 다이버에게 가격 인하 알림 없음'; end if;
+  raise notice 'S21 OK';
+end $$;
+
+-- S22) booking_changed: 본인이 직접 취소하면 알림을 만들지 않음 (auth.uid() = 예약자)
+do $$
+declare bdiver text; tid uuid; n_before int; n_after int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S22 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  begin perform bdiver::uuid; exception when others then raise notice 'S22 SKIP: 예약자 id가 uuid 아님'; return; end;
+  update public.bookings set status = 'confirmed' where tour_id = tid and diver_id = bdiver and status = 'cancelled';
+  perform set_config('request.jwt.claims', json_build_object('sub', bdiver)::text, true);
+  select count(*) into n_before from public.tour_diver_notifications where kind = 'booking_changed' and diver_id = bdiver;
+  update public.bookings set status = 'cancelled' where tour_id = tid and diver_id = bdiver and status = 'confirmed';
+  select count(*) into n_after from public.tour_diver_notifications where kind = 'booking_changed' and diver_id = bdiver;
+  perform set_config('request.jwt.claims', '', true);
+  if n_after <> n_before then raise exception 'S22 실패: 본인 취소에 알림 생성 (%건)', n_after - n_before; end if;
+  raise notice 'S22 OK';
+end $$;
+
+-- S23) booking_changed: 관리자(다른 사용자)가 대신 취소하면 예약자에게 1건
+do $$
+declare bdiver text; tid uuid; admin_uid uuid; n_before int; n_after int;
+begin
+  if not exists (select 1 from _t) then raise notice 'S23 SKIP'; return; end if;
+  tid := (select tour_id from _t);
+  bdiver := (select diver_id from _t limit 1);
+  begin perform bdiver::uuid; exception when others then raise notice 'S23 SKIP: 예약자 id가 uuid 아님'; return; end;
+  select p.id into admin_uid from public.profiles p where p.id::text <> bdiver limit 1;
+  if admin_uid is null then raise notice 'S23 SKIP: 관리자 역할 대행 프로필 없음'; return; end if;
+  update public.bookings set status = 'confirmed' where tour_id = tid and diver_id = bdiver and status = 'cancelled';
+  perform set_config('request.jwt.claims', json_build_object('sub', admin_uid)::text, true);
+  select count(*) into n_before from public.tour_diver_notifications where kind = 'booking_changed' and diver_id = bdiver;
+  update public.bookings set status = 'cancelled' where tour_id = tid and diver_id = bdiver and status = 'confirmed';
+  select count(*) into n_after from public.tour_diver_notifications where kind = 'booking_changed' and diver_id = bdiver;
+  perform set_config('request.jwt.claims', '', true);
+  if n_after - n_before <> 1 then raise exception 'S23 실패: 대행 취소 알림 %건 (기대 1)', n_after - n_before; end if;
+  update public.bookings set status = 'confirmed' where tour_id = tid and diver_id = bdiver and status = 'cancelled';
+  raise notice 'S23 OK';
 end $$;
 
 -- S13) 권한: anon·authenticated는 생성 함수를 실행할 수 없음

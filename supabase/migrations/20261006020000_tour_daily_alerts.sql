@@ -8,7 +8,8 @@ security definer
 set search_path = public
 as $$
 begin
-  -- 4단계 자리: 준비물 리마인드 알림을 여기에 추가한다. 지금은 0건.
+  -- 4-2 자리: 준비물 리마인드 알림을 여기에 추가한다. 지금은 0건.
+  -- 발송 조건은 tour_notification_settings.checklist_reminders_enabled = false 인 다이버를 제외하는 것이다.
   return 0;
 end;
 $$;
@@ -43,7 +44,7 @@ begin
     )
     and not exists (
       select 1 from public.tour_notification_settings s
-      where s.diver_id = f.profile_id::text and s.push_enabled = false
+      where s.diver_id = f.profile_id::text and s.favorite_alerts_enabled = false
     )
   on conflict (dedupe_key) do nothing;
   get diagnostics n_deadline = row_count;

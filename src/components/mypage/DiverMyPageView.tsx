@@ -7,6 +7,7 @@ import { InquiryHistoryList } from "@/components/mypage/InquiryHistoryList";
 import { BlockedUsersCard } from "@/components/mypage/BlockedUsersCard";
 import { AccountActions } from "@/components/mypage/AccountActions";
 import { PushNotificationToggle } from "@/components/mypage/PushNotificationToggle";
+import { TourAlertSettingsCard } from "@/components/mypage/TourAlertSettingsCard";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -100,6 +101,7 @@ export function DiverMyPageView() {
         <PolicyDisclosure />
       </div>
 
+      <TourAlertSettingsCard />
       <PushNotificationToggle />
 
       <ThemeToggle />

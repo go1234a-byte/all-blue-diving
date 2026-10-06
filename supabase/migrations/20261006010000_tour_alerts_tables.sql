@@ -25,10 +25,12 @@ alter table public.tour_diver_notifications enable row level security;
 create policy tour_diver_notifications_select_own on public.tour_diver_notifications
   for select using (diver_id = auth.uid()::text);
 
--- 행이 없으면 알림 ON으로 간주한다 (기존 유저 행을 일괄 만들지 않음)
+-- 종류별 알림 설정. 행이 없으면 모두 ON으로 간주한다 (기존 유저 행을 일괄 만들지 않음)
 create table public.tour_notification_settings (
   diver_id text primary key,
-  push_enabled boolean not null,
+  favorite_alerts_enabled boolean not null default true,      -- 찜한 투어 모집 마감 알림
+  subscription_alerts_enabled boolean not null default true,  -- 새 투어 구독 알림
+  checklist_reminders_enabled boolean not null default true,  -- 준비물 리마인드 (4-2에서 발송, 지금은 저장만)
   updated_at timestamptz not null default now()
 );
 alter table public.tour_notification_settings enable row level security;

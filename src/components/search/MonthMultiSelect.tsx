@@ -42,7 +42,7 @@ export function MonthMultiSelect({ value, onChange }: MonthMultiSelectProps) {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="h-10 w-full justify-between font-normal"
+          className="h-11 w-full justify-between font-normal"
         >
           <span className="truncate text-left">{label}</span>
           <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
@@ -64,7 +64,7 @@ export function MonthMultiSelect({ value, onChange }: MonthMultiSelectProps) {
             >
               {MONTH_LABELS[monthOfKey(month)]}
               {Math.floor(month / 12) > Math.floor(start / 12) && (
-                <span className="ml-1 text-[10px] opacity-70">(내년)</span>
+                <span className="ml-1 text-[13px] opacity-70">(내년)</span>
               )}
             </button>
           ))}

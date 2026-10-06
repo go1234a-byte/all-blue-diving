@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Compass, ChevronDown, ArrowRight, Waves, Droplets } from "lucide-react";
+import { Bell, Compass, ChevronDown, ArrowRight, Waves, Droplets } from "lucide-react";
 import type { ActivityType } from "@/types";
 import { Badge } from "@/components/ui/badge";
+import { SubscribeSheet, type SubscribePrefill } from "@/components/alerts/SubscribeSheet";
+import { useRole } from "@/contexts/RoleContext";
+import { nextMonthKeyFromIndex } from "@/lib/alertMonths";
+import { COUNTRIES_SITES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import {
@@ -47,24 +51,28 @@ function CardNewsItem({
   total,
   month,
   activity,
+  isDiver,
+  onAlert,
 }: {
   spot: DiveSpot & { status: SeasonStatus };
   index: number;
   total: number;
   month: number;
   activity: ActivityFilter;
+  isDiver: boolean;
+  onAlert: (spot: DiveSpot) => void;
 }) {
   const params = new URLSearchParams({ q: spot.query, months: String(month) });
   if (activity !== "all") params.set("activities", activity);
 
   return (
-    <Link
-      to={`/search?${params.toString()}`}
+    <div
       className={cn(
         "group relative flex w-[86vw] max-w-[340px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-2xl p-5 text-white shadow-ocean sm:w-[340px]",
         cardTheme(spot),
       )}
     >
+      <Link to={`/search?${params.toString()}`} className="relative flex flex-1 flex-col justify-between">
       <div className="pointer-events-none absolute -right-8 -top-10 opacity-10">
         <Waves className="h-40 w-40" />
       </div>
@@ -108,15 +116,43 @@ function CardNewsItem({
           <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
-    </Link>
+      </Link>
+
+      {isDiver && (
+        <button
+          type="button"
+          onClick={() => onAlert(spot)}
+          className="relative mt-3 flex min-h-11 items-center gap-2 self-start rounded-full bg-white/15 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-white/25"
+        >
+          <Bell className="h-4 w-4" />
+          이 지역 새 투어 알림
+        </button>
+      )}
+    </div>
   );
 }
+
+
 
 export function WhereToGoGuide() {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => new Date().getMonth());
   const [activity, setActivity] = useState<ActivityFilter>("all");
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertPrefill, setAlertPrefill] = useState<SubscribePrefill>({});
+  const { role, isLoggedIn } = useRole();
+  const isDiver = role === "public" && isLoggedIn;
   const currentMonth = new Date().getMonth();
+
+  // 카드의 지역(query)이 국가 목록에 있으면 국가를 미리 채운다. 없으면 다이버가 고르게 둔다.
+  const openAlertFor = (spot: DiveSpot) => {
+    setAlertPrefill({
+      initialCountry: Object.keys(COUNTRIES_SITES).includes(spot.query) ? spot.query : undefined,
+      initialMonthKeys: [nextMonthKeyFromIndex(month)],
+      initialActivityTypes: activity === "all" ? [] : [activity],
+    });
+    setAlertOpen(true);
+  };
 
   const spots = useMemo(
     () => spotsForMonth(month, activity === "all" ? undefined : activity),
@@ -223,11 +259,15 @@ export function WhereToGoGuide() {
                 total={spots.length}
                 month={month}
                 activity={activity}
+                isDiver={isDiver}
+                onAlert={openAlertFor}
               />
             ))}
           </div>
         </div>
       )}
+
+      {isDiver && <SubscribeSheet open={alertOpen} onOpenChange={setAlertOpen} prefill={alertPrefill} />}
     </section>
   );
 }
