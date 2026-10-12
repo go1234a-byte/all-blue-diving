@@ -1,3 +1,4 @@
+import { usePageMeta, toDescription } from "@/hooks/usePageMeta";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -147,6 +148,21 @@ const InstructorPublicProfile = () => {
   const [warnReasonDraft, setWarnReasonDraft] = useState("");
 
   const instructor = id ? getInstructorById(id) : undefined;
+
+  usePageMeta(
+    instructor
+      ? {
+          title: `${instructor.name} 강사 프로필`,
+          description:
+            toDescription(instructor.bio) ??
+            `${[instructor.agency, instructor.level].filter(Boolean).join(" ")} ${instructor.name} 강사의 다이빙 투어와 후기를 ALL BLUE에서 확인해보세요.`.trim(),
+          path: `/instructor/${instructor.id}/profile`,
+          image: instructor.avatarUrl,
+          // 인증되지 않은 강사 프로필은 사이트맵에서도 빠져 있다 — 색인도 막는다.
+          noindex: !instructor.verified,
+        }
+      : null,
+  );
 
   const myTours = useMemo(
     () => (instructor ? tours.filter((t) => t.instructorId === instructor.id) : []),

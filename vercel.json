@@ -1,11 +1,22 @@
 {
   "rewrites": [
     { "source": "/tour/:id", "destination": "/api/og/tour/:id" },
+    { "source": "/instructor/:id/profile", "destination": "/api/og/instructor/:id" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "(?<sub>.*)\\.vercel\\.app" }],
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    }
+  ],
   "functions": {
     "api/og/tour/[id].js": {
+      "includeFiles": "dist/index.html"
+    },
+    "api/og/instructor/[id].js": {
       "includeFiles": "dist/index.html"
     }
   }

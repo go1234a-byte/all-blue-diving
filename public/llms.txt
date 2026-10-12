@@ -1,0 +1,19 @@
+# ALL BLUE (올블루)
+
+> 전 세계 스쿠버다이빙·프리다이빙·리브어보드 투어를 한 곳에서 비교하고 예약하는 한국어 다이빙 투어 플랫폼입니다. 인증된 다이빙 강사가 투어를 개설하고, 다이버는 일정·가격·포함사항·강사 정보를 비교해 예약합니다.
+
+## 주요 페이지
+
+- [홈](https://allbluedive.com/): 서비스 소개, 모집중인 투어, 다이빙 포인트 가이드, 리브어보드
+- [투어 검색](https://allbluedive.com/search): 나라·월·활동별 투어 목록과 지도
+- [사이트맵](https://allbluedive.com/sitemap.xml): 공개 중인 모든 투어 상세(/tour/{id})와 인증 강사 프로필(/instructor/{id}/profile)
+
+## 정책
+
+- [이용약관](https://allbluedive.com/terms)
+- [개인정보처리방침](https://allbluedive.com/privacy)
+- [환불 정책](https://allbluedive.com/refund-policy)
+
+## 문의
+
+- 이메일: help@allbluedive.com
