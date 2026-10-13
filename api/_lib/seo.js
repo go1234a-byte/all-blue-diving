@@ -31,11 +31,16 @@ export function toDescription(text, max = 155) {
   return flat.length <= max ? flat : `${flat.slice(0, max - 1).trimEnd()}…`;
 }
 
+/**
+ * Supabase REST 조회. 조회 자체가 실패하면(네트워크·권한·서버 오류) 예외를 던진다 —
+ * 호출하는 쪽이 "DB에 정말 없음(빈 배열 → 404)"과 "확인 못 함(기본 화면 200)"을
+ * 구분해야, 일시 장애 때 멀쩡한 페이지를 404로 내보내지 않는다.
+ */
 export async function supabaseRows(query) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, {
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
   });
-  if (!res.ok) return [];
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${query.split("?")[0]}`);
   return res.json();
 }
 
@@ -86,10 +91,24 @@ export function injectHead(html, meta) {
   return out;
 }
 
-export function sendHtml(res, html) {
+export function sendHtml(res, html, status = 200) {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=300, stale-while-revalidate=86400");
-  res.status(200).send(html);
+  // 404는 짧게만 캐시한다 — 방금 만든 투어가 캐시된 404에 가려지지 않게.
+  res.setHeader(
+    "Cache-Control",
+    status === 404 ? "public, max-age=0, s-maxage=60" : "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
+  );
+  res.status(status).send(html);
+}
+
+/** 삭제됐거나 없는 투어/강사 주소: 앱 화면은 그대로(“찾을 수 없음” 표시) 두고 상태코드만 404. */
+export function notFoundHtml(html) {
+  return injectHead(html, {
+    title: "페이지를 찾을 수 없습니다 | ALL BLUE",
+    description: "요청하신 페이지가 삭제되었거나 주소가 바뀌었습니다.",
+    url: `${SITE_URL}/`,
+    noindex: true,
+  }).replace(/\s*<link rel="canonical"[^>]*>/, "");
 }
 
 export const ORGANIZATION_REF = { "@id": ORG_ID };

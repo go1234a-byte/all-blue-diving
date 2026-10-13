@@ -10,6 +10,7 @@ import {
   SITE_URL,
   ORGANIZATION_REF,
   injectHead,
+  notFoundHtml,
   readIndexHtml,
   sendHtml,
   supabaseRows,
@@ -21,6 +22,8 @@ const PLATFORM_FEE_RATE = 0.1;
 const displayPrice = (base) => base + Math.round(base * PLATFORM_FEE_RATE);
 
 const ACTIVITY_LABEL = { scuba: "Scuba diving", freediving: "Freediving", liveaboard: "Liveaboard diving" };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function fetchTour(id) {
   const rows = await supabaseRows(
@@ -98,9 +101,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const tour = typeof id === "string" ? await fetchTour(id) : null;
-    if (tour) html = injectHead(html, buildMeta(tour));
+    // 형식부터 틀린 주소는 조회할 필요도 없이 없는 페이지다.
+    const tour = typeof id !== "string" || !UUID_RE.test(id) ? null : await fetchTour(id);
+    if (!tour) {
+      // DB에 없음 = 삭제됐거나 잘못된 주소 → 진짜 404 (검색엔진이 색인에서 빨리 뺀다).
+      sendHtml(res, notFoundHtml(html), 404);
+      return;
+    }
+    html = injectHead(html, buildMeta(tour));
   } catch (error) {
+    // 조회 실패(일시 장애 등)는 "없음"이 아니다 — 기본 메타태그로 200 응답. 단 index.html의
+    // canonical(홈)은 빼야 한다 — 남겨 두면 검색엔진이 이 페이지를 홈의 중복으로 오해한다.
+    html = html.replace(/\s*<link rel="canonical"[^>]*>/, "");
     console.error("[api/og/tour] tour 조회 실패, 기본 메타태그로 응답:", error);
   }
 
