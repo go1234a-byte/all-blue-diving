@@ -1,3 +1,4 @@
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
@@ -5,6 +6,7 @@ import { BUSINESS_INFO } from "@/lib/businessInfo";
 const EFFECTIVE_DATE = "2026-08-08";
 
 const TermsPage = () => {
+  usePageMeta({ title: "이용약관", path: "/terms" });
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">

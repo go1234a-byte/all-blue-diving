@@ -61,10 +61,12 @@ export default async function handler(req, res) {
   const entries = [
     ...STATIC_ROUTES.map((r) => urlEntry(`${BASE_URL}${r.path}`, { priority: r.priority })),
     ...tours.map((t) =>
-      urlEntry(`${BASE_URL}/tour/${t.id}`, { lastmod: t.created_at, priority: "0.9" }),
+      // 투어 테이블엔 수정 시각 컬럼이 없어 created_at을 lastmod로 쓰면 "내용이 바뀌어도
+      // 날짜는 그대로"가 된다 — 구글은 부정확한 lastmod를 신뢰하지 않게 되므로 아예 뺀다.
+      urlEntry(`${BASE_URL}/tour/${t.id}`, { priority: "0.9" }),
     ),
     ...instructors.map((i) =>
-      urlEntry(`${BASE_URL}/instructor/${i.id}/profile`, { lastmod: i.created_at, priority: "0.6" }),
+      urlEntry(`${BASE_URL}/instructor/${i.id}/profile`, { priority: "0.6" }),
     ),
   ];
 
