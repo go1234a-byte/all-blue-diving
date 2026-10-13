@@ -45,7 +45,7 @@ const abUnlockScroll = () => {
  * 담당자가 image/headline/href 만 바꿔 끼우면 되는 자리표시자.
  */
 const AD_BANNER = {
-  image: "/landing/boat.jpg",
+  image: "/landing/boat.webp",
   headline: "지금 예약하면 첫 투어 할인",
   sub: "신규 예약자 한정 프로모션 — 지금 확인해보세요.",
   href: "/search",
@@ -475,7 +475,7 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { isLoggedIn, role } = useRole();
+  const { isLoggedIn, role, authLoading } = useRole();
   const { tours, instructors, reviews, publicProfiles, getTourById, getConfirmedParticipantCount } =
     useAppData();
   const reduced = useReducedMotion();
@@ -621,10 +621,10 @@ export default function Landing() {
   };
 
   const FALLBACK_REVIEWS = [
-    { key: "a", img: "/landing/turtle.jpg", who: "김서연", place: "세부 · 모알보알", quote: "첫 해외 다이빙이었는데 픽업부터 로그까지 다 챙겨주셔서 바다만 즐기면 됐어요.", meta: "AOW · 42 dives" },
-    { key: "b", img: "/landing/whale.jpg", who: "이준호", place: "몰디브 · 남말레", quote: "만타 클리닝 스테이션에서 20분. 리브어보드 선택하길 정말 잘했습니다.", meta: "Rescue · 130 dives" },
-    { key: "c", img: "/landing/coral.jpg", who: "정민아", place: "팔라우", quote: "강사님 평점이 왜 높은지 알겠더라고요. 브리핑이 남달랐어요.", meta: "OW · 18 dives" },
-    { key: "d", img: "/landing/scuba1.jpg", who: "한지훈", place: "이집트 · 다합", quote: "블루홀 라인을 따라 내려가는 코스가 오래 기억에 남습니다.", meta: "AOW · 76 dives" },
+    { key: "a", img: "/landing/turtle.webp", who: "김서연", place: "세부 · 모알보알", quote: "첫 해외 다이빙이었는데 픽업부터 로그까지 다 챙겨주셔서 바다만 즐기면 됐어요.", meta: "AOW · 42 dives" },
+    { key: "b", img: "/landing/whale.webp", who: "이준호", place: "몰디브 · 남말레", quote: "만타 클리닝 스테이션에서 20분. 리브어보드 선택하길 정말 잘했습니다.", meta: "Rescue · 130 dives" },
+    { key: "c", img: "/landing/coral.webp", who: "정민아", place: "팔라우", quote: "강사님 평점이 왜 높은지 알겠더라고요. 브리핑이 남달랐어요.", meta: "OW · 18 dives" },
+    { key: "d", img: "/landing/scuba1.webp", who: "한지훈", place: "이집트 · 다합", quote: "블루홀 라인을 따라 내려가는 코스가 오래 기억에 남습니다.", meta: "AOW · 76 dives" },
   ];
 
   return (
@@ -636,7 +636,8 @@ export default function Landing() {
         {/* 데스크톱 전용 상단 메뉴 — 모바일은 BottomNav 가 담당(아래 미디어쿼리로 숨김).
             로그인 시 역할별 주요 메뉴(BottomNav·AppHeader 와 동일한 getNavItems), 비로그인은 홈+로그인만. */}
         <div className="ab-nav-links">
-          {isLoggedIn ? (
+          {/* 로그인 확인 중엔 비워 둔다 — 비로그인 메뉴가 잠깐 보였다 바뀌는 깜빡임 방지. */}
+          {authLoading ? null : isLoggedIn ? (
             getNavItems(role).map((item) => (
               <Link key={item.to} to={item.to} state={item.state}>
                 {item.label}
@@ -673,6 +674,10 @@ export default function Landing() {
               alt={i === heroIdx ? (s.kind === "point" ? s.data.region : AD_BANNER.headline) : ""}
               aria-hidden={i === heroIdx ? undefined : true}
               className={i === heroIdx ? "is-on" : undefined}
+              // 첫 슬라이드가 이 페이지의 LCP 이미지다 — 먼저 받게 하고, 아직 안 보이는
+              // 나머지 슬라이드는 뒤로 미뤄 첫 화면 대역폭을 뺏지 않게 한다.
+              fetchPriority={i === 0 ? "high" : "low"}
+              decoding="async"
               onError={handleImageFallback}
             />
           ))}
@@ -758,7 +763,7 @@ export default function Landing() {
       <section id="guide" className="ab-sec ab-guide">
         <div className="wrap">
           <button type="button" className="ab-banner" onClick={() => setExplorer("guide")}>
-            <img src="/landing/coral.jpg" alt="" onError={handleImageFallback} loading="lazy" />
+            <img src="/landing/coral.webp" alt="" onError={handleImageFallback} loading="lazy" />
             <div className="ab-banner-body">
               <p className="ab-banner-eyebrow">Dive Point Guide</p>
               <h3>언제 어디로 떠날까요?</h3>
@@ -809,7 +814,7 @@ export default function Landing() {
       <section id="liveaboard" className="ab-sec ab-lb">
         <div className="wrap">
           <button type="button" className="ab-banner" onClick={() => setExplorer("liveaboard")}>
-            <img src="/landing/boat.jpg" alt="" onError={handleImageFallback} loading="lazy" />
+            <img src="/landing/boat.webp" alt="" onError={handleImageFallback} loading="lazy" />
             <div className="ab-banner-body">
               <p className="ab-banner-eyebrow">Liveaboard</p>
               <h3>리브어보드로 떠나볼까요?</h3>
@@ -1011,7 +1016,7 @@ export default function Landing() {
                   <article className="ab-ic" key={ins.id}>
                     <div className="ab-ic-img">
                       <img
-                        src={ins.avatarUrl || "/landing/instructor.jpg"}
+                        src={ins.avatarUrl || "/landing/instructor.webp"}
                         alt={ins.name}
                         onError={handleImageFallback}
                         loading="lazy"
@@ -1030,7 +1035,7 @@ export default function Landing() {
               : [1, 2, 3, 4].map((k) => (
                   <article className="ab-ic" key={k}>
                     <div className="ab-ic-img">
-                      <img src="/landing/instructor.jpg" alt="ALL BLUE 인증 강사" loading="lazy" />
+                      <img src="/landing/instructor.webp" alt="ALL BLUE 인증 강사" loading="lazy" />
                     </div>
                     <div className="ab-ic-body">
                       <h3>ALL BLUE 인증 강사</h3>
@@ -1064,7 +1069,7 @@ export default function Landing() {
                   const place = tour ? `${tour.country} · ${tour.site}` : "";
                   return (
                     <article className="ab-rc" key={rv.id}>
-                      <img src={rv.photos?.[0] || "/landing/turtle.jpg"} alt="" onError={handleImageFallback} loading="lazy" />
+                      <img src={rv.photos?.[0] || "/landing/turtle.webp"} alt="" onError={handleImageFallback} loading="lazy" />
                       <div className="ab-rc-body">
                         <p className="ab-stars">{"★".repeat(Math.round(rv.rating))}</p>
                         <q>{rv.comment}</q>

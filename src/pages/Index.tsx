@@ -70,7 +70,7 @@ const Index = () => {
           흰 헤드라인 + 아래에 흰 카드로 검색 폼. 나머지 화면은 밝은 배경. */}
       <div className="relative overflow-hidden px-4 pb-6 pt-14 text-center md:pb-10 md:pt-20">
         <img
-          src="/landing/hero.jpg"
+          src="/landing/hero.webp"
           alt=""
           onError={handleImageFallback}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
