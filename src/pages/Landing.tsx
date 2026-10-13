@@ -876,6 +876,9 @@ export default function Landing() {
                 <span key={l}>{l}</span>
               ))}
             </div>
+            <Link to={`/dive/${detail.data.id}`} className="ab-sheet-more">
+              {detail.data.region} 가이드 전체 보기 →
+            </Link>
           </>
         )}
         {detail?.kind === "region" && (
@@ -1107,7 +1110,7 @@ export default function Landing() {
           <div className="ab-foot-top">
             <Link to="/" className="ab-brand">ALL BLUE <span>올블루</span></Link>
             <div className="ab-foot-links">
-              <a href="#guide">다이빙 가이드</a>
+              <Link to="/dive">다이빙 포인트 가이드</Link>
               <a href="#tours">투어</a>
               <a href="#instructors">강사</a>
               <Link to="/business-inquiry">기업·단체 문의</Link>
@@ -1424,6 +1427,7 @@ const CSS = `
 .ab-cta .ab-btn{margin-top:var(--s5);}
 
 /* 9. FOOTER — 다크 */
+.ab-sheet-more{display:inline-block;margin-top:var(--s4);font-weight:700;font-size:.9375rem;color:var(--turq);border-bottom:2px solid var(--turq);padding-bottom:2px;}
 .ab-foot{background:var(--navy-dark);color:rgba(255,255,255,.72);padding-block:var(--s7) var(--s5);}
 .ab-foot .ab-brand{color:#fff;}
 .ab-foot-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:var(--s4);align-items:flex-start;}

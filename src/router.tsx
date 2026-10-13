@@ -1,6 +1,10 @@
 import { load, page } from "./lib/lazyPage";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
+// 다이빙 포인트 가이드는 빌드 시 정적 HTML로도 미리 그려 둔다 — lazy로 두면 JS가 뜨는 순간
+// 그 정적 내용이 "불러오는 중..."으로 잠깐 바뀌므로 즉시 로드한다(데이터는 홈과 공유라 가볍다).
+import DiveGuideIndex from "./pages/DiveGuideIndex";
+import DivePointPage from "./pages/DivePointPage";
 import { RequireRole } from "./components/auth/RequireRole";
 import { RootLayout } from "./components/layout/RootLayout";
 
@@ -67,6 +71,8 @@ export const routers = [
       { path: "complete-profile", name: "complete-profile", element: page(CompleteProfile) },
       { path: "naver-callback", name: "naver-callback", element: page(NaverCallback) },
       { path: "search", name: "search", element: page(Search) },
+      { path: "dive", name: "dive-guide", element: <DiveGuideIndex /> },
+      { path: "dive/:id", name: "dive-point", element: <DivePointPage /> },
       { path: "tour/:tourId", name: "tour-detail", element: page(TourDetail) },
       { path: "checkout/:tourId", name: "checkout", element: page(Checkout) },
       { path: "payment/success", name: "payment-success", element: page(PaymentSuccess) },
