@@ -1,3 +1,4 @@
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { CANCELLATION_POLICY_LINES, CANCELLATION_POLICY_NOTE } from "@/lib/refund";
@@ -14,6 +15,7 @@ const EFFECTIVE_DATE = "2026-08-08";
  * 표시해 두 곳이 어긋나지 않게 한다.
  */
 const RefundPolicyPage = () => {
+  usePageMeta({ title: "환불 정책", path: "/refund-policy" });
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">

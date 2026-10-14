@@ -1,3 +1,4 @@
+import { usePageMeta, toDescription } from "@/hooks/usePageMeta";
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, Compass, MapPin, MessageCircle, Share2, ShieldCheck, Star, Users } from "lucide-react";
@@ -47,6 +48,19 @@ const TourDetail = () => {
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
   const diveCenter = tour ? getDiveCenterByInstructorId(tour.instructorId) : undefined;
   const center = tour?.centerId ? getCenterById(tour.centerId) : undefined;
+
+  usePageMeta(
+    tour
+      ? {
+          title: tour.title,
+          description:
+            toDescription(tour.description) ??
+            `${tour.country} · ${tour.site}에서 떠나는 다이빙 투어를 ALL BLUE에서 확인해보세요.`,
+          path: `/tour/${tour.id}`,
+          image: tour.mainImageUrl,
+        }
+      : null,
+  );
 
   if ((toursLoading || instructorsLoading) && (!tour || !instructor)) {
     return (

@@ -1,3 +1,4 @@
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -5,6 +6,8 @@ import { useLocation } from "react-router-dom";
 const NotFound = () => {
   const location = useLocation();
   const { t } = useTranslation();
+  // SPA라 없는 주소도 HTTP 200으로 응답된다(soft 404) — 최소한 색인은 막는다.
+  usePageMeta({ title: "페이지를 찾을 수 없습니다", path: location.pathname, noindex: true });
 
   useEffect(() => {
     console.error(

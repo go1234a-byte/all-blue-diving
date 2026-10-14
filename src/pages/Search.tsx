@@ -1,3 +1,4 @@
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, List, MapPin, X } from "lucide-react";
@@ -32,6 +33,11 @@ const SORT_LABELS: Record<SortOption, string> = {
 const SORT_OPTIONS: SortOption[] = ["newest", "cheapest", "expensive", "rating"];
 
 const Search = () => {
+  usePageMeta({
+    title: "다이빙 투어 검색",
+    description: "나라·월·활동(스쿠버/프리다이빙)별로 전 세계 다이빙 투어를 비교하고 바로 예약하세요.",
+    path: "/search",
+  });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { tours } = useAppData();
