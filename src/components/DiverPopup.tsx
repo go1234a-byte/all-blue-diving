@@ -48,7 +48,7 @@ export function DiverPopup() {
         className="flex max-h-full w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-black shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <img src="/splash-diver.jpg" alt="ALL BLUE — 길잃은 다이버들이여 여기로 오라" className="max-h-[50vh] w-full object-contain" />
+        <img src="/splash-diver.webp" alt="ALL BLUE — 길잃은 다이버들이여 여기로 오라" className="max-h-[50vh] w-full object-contain" />
         <div className="flex border-t border-white/10">
           <button
             type="button"
