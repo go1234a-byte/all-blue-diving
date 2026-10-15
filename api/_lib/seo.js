@@ -16,6 +16,16 @@ export const SITE_URL = "https://allbluedive.com";
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 const ORG_ID = `${SITE_URL}/#organization`;
 
+/**
+ * 상대경로("/landing/coral.jpg")를 절대 URL로 만든다. 구글 구조화 데이터와 og:image는
+ * 절대 URL이어야 인식하는데, DB의 샘플 투어 데이터처럼 상대경로가 들어오는 경우가 있다.
+ * 이미 절대 URL이면 그대로 둔다(중복 적용돼도 안전).
+ */
+export function absUrl(u) {
+  if (!u) return u;
+  return /^https?:\/\//i.test(u) ? u : `${SITE_URL}${u.startsWith("/") ? "" : "/"}${u}`;
+}
+
 export function escapeHtml(text) {
   return String(text)
     .replace(/&/g, "&amp;")
@@ -63,7 +73,7 @@ export function injectHead(html, meta) {
   const title = escapeHtml(meta.title);
   const description = escapeHtml(meta.description);
   const url = escapeHtml(meta.url);
-  const image = escapeHtml(meta.image || DEFAULT_OG_IMAGE);
+  const image = escapeHtml(absUrl(meta.image) || DEFAULT_OG_IMAGE);
 
   let out = html
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${title}</title>`)

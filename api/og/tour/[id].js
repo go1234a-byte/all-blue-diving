@@ -9,6 +9,7 @@
 import {
   SITE_URL,
   ORGANIZATION_REF,
+  absUrl,
   injectHead,
   notFoundHtml,
   readIndexHtml,
@@ -38,7 +39,7 @@ function buildMeta(tour) {
   const description =
     toDescription(tour.description) ||
     `${tour.country} · ${tour.site}에서 떠나는 다이빙 투어를 ALL BLUE에서 확인해보세요.`;
-  const images = [tour.main_image_url, ...(tour.gallery_urls ?? [])].filter(Boolean).slice(0, 5);
+  const images = [tour.main_image_url, ...(tour.gallery_urls ?? [])].filter(Boolean).map(absUrl).slice(0, 5);
   // 취소되거나 관리자가 정지/보류한 투어는 사이트맵에서 빠지는 것과 같은 기준으로 색인도 막는다.
   const hidden = Boolean(tour.cancelled_at || tour.admin_status);
   const isOpen = tour.status === "open" && !hidden;
@@ -86,7 +87,7 @@ function buildMeta(tour) {
     ],
   };
 
-  return { title, description, url, image: tour.main_image_url, jsonLd, noindex: hidden };
+  return { title, description, url, image: absUrl(tour.main_image_url), jsonLd, noindex: hidden };
 }
 
 export default async function handler(req, res) {

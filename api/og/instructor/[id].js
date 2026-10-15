@@ -6,6 +6,7 @@
 import {
   SITE_URL,
   ORGANIZATION_REF,
+  absUrl,
   injectHead,
   notFoundHtml,
   readIndexHtml,
@@ -41,7 +42,7 @@ function buildMeta(ins) {
       "@id": `${url}#person`,
       name: ins.name,
       description,
-      ...(ins.avatar_url ? { image: ins.avatar_url } : {}),
+      ...(ins.avatar_url ? { image: absUrl(ins.avatar_url) } : {}),
       ...(credential ? { jobTitle: `${credential} 다이빙 강사` } : { jobTitle: "다이빙 강사" }),
       ...(ins.languages?.length ? { knowsLanguage: ins.languages } : {}),
       ...(ins.specialty_tags?.length ? { knowsAbout: ins.specialty_tags } : {}),
@@ -54,7 +55,7 @@ function buildMeta(ins) {
     title,
     description,
     url,
-    image: ins.avatar_url || undefined,
+    image: ins.avatar_url ? absUrl(ins.avatar_url) : undefined,
     ogType: "profile",
     jsonLd,
     // 미인증 강사는 사이트맵에서 빠져 있다 — 같은 기준으로 색인도 막는다.
