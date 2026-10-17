@@ -1,5 +1,6 @@
 import { Award, CalendarCheck, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MIN_SAMPLE_FOR_RATE } from "@/lib/tourLabels";
 import type { InstructorProfile } from "@/types";
 
 interface InstructorMiniScoreboardProps {
@@ -32,9 +33,14 @@ export function InstructorMiniScoreboard({ instructor, tourCount, className }: I
       <div className="flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary px-1.5 py-2 text-center">
         <TrendingUp className="h-3.5 w-3.5 text-primary" />
         <span className="text-[10px] font-medium leading-tight text-muted-foreground">완료율</span>
-        <span className="text-[11px] font-bold leading-tight text-foreground">
-          투어 완료율 {instructor.completionRate}%
-        </span>
+        {/* 진행 투어가 적으면 완료율 0%가 "취소 많은 강사"로 오해된다 — 표본이 쌓이기 전엔 신규 표시. */}
+        {tourCount >= MIN_SAMPLE_FOR_RATE ? (
+          <span className="text-[11px] font-bold leading-tight text-foreground">
+            투어 완료율 {instructor.completionRate}%
+          </span>
+        ) : (
+          <span className="text-[11px] font-bold leading-tight text-primary">신규 강사</span>
+        )}
       </div>
 
       <div className="flex flex-col items-center justify-center gap-0.5 rounded-lg bg-secondary px-1.5 py-2 text-center">

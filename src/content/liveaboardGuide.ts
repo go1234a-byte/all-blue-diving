@@ -58,7 +58,7 @@ export const LIVEABOARD_REGIONS: LiveaboardRegion[] = [
     name: "몰디브 (센트럴 아톨 / 바·라 아톨)",
     image: "/landing/whale.webp",
     summary: "채널 드리프트 중심. 8~10월은 하니파루 베이 만타 성수기.",
-    gallery: ["/landing/descend.webp", "/landing/boat.webp"],
+    gallery: ["/landing/descend.webp", "/landing/hero.webp"],
     detail:
       "만타레이·고래상어·리프샤크를 채널 드리프트로 만난다. 북에서 남까지 종주하는 긴 코스와 센트럴 아톨만 도는 짧은 코스가 있다. 말레에서 출발·도착.",
     durations: ["7박 8일", "10박 11일"],
@@ -84,7 +84,7 @@ export const LIVEABOARD_REGIONS: LiveaboardRegion[] = [
     name: "멕시코 소코로 (레비야히헤도 제도)",
     image: "/landing/whale.webp",
     summary: "대형 오세아닉 만타레이와 귀상어 무리. 11월~6월 시즌.",
-    gallery: ["/landing/descend.webp", "/landing/group.webp"],
+    gallery: ["/landing/descend.webp", "/landing/scuba1.webp"],
     detail:
       "돌고래·귀상어 무리와 다이버에게 다가오는 대형 만타레이로 유명하다. 1~3월은 혹등고래도 함께 볼 수 있다. 산호세델카보에서 출발·도착.",
     durations: ["8박 9일", "9박 10일"],
