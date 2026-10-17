@@ -12,6 +12,7 @@ import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
 import { DIVE_POINTS, GUIDE_BY_MONTH, type DivePoint } from "@/content/divePointGuide";
 import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardGuide";
+import { hasFullItinerary, isDepartureConfirmed, tourLevelLabel } from "@/lib/tourLabels";
 import type { Tour } from "@/types";
 
 /**
@@ -45,9 +46,12 @@ const abUnlockScroll = () => {
  * 담당자가 image/headline/href 만 바꿔 끼우면 되는 자리표시자.
  */
 const AD_BANNER = {
-  image: "/landing/boat.webp",
-  headline: "지금 예약하면 첫 투어 할인",
-  sub: "신규 예약자 한정 프로모션 — 지금 확인해보세요.",
+  image: "/landing/descend.webp",
+  // 실제로 진행 중인 프로모션(쿠폰)이 없을 때 "할인" 문구를 쓰면 허위 광고가 된다.
+  // 쿠폰을 만들고 나서 headline/sub 를 프로모션 문구로 바꿔 끼우면 된다.
+  eyebrow: "ALL BLUE",
+  headline: "검증된 강사와 떠나는 다음 바다",
+  sub: "지금 모집중인 투어의 일정·포함 내역·환불 규정을 한눈에 비교해보세요.",
   href: "/search",
 };
 const isExternalHref = (href: string) => /^https?:\/\//.test(href);
@@ -105,11 +109,6 @@ function useReveal() {
   return ref;
 }
 
-/** 난이도 — 새 필드 없이 기존 minLogCount 로만 표현 */
-function tourDifficulty(t: Tour): string {
-  if (t.minLogCount && t.minLogCount > 0) return `로그 ${t.minLogCount}+`;
-  return "입문 가능";
-}
 
 /**
  * 다이빙 포인트 가이드 · 리브어보드 공용 상세 뷰.
@@ -589,17 +588,33 @@ export default function Landing() {
   const carouselReviews = useMemo(
     () =>
       reviews
-        .filter((r) => !r.deleted && !r.reported && r.comment.trim().length > 10 && r.rating >= 4)
+        .filter(
+          (r) =>
+            !r.deleted && !r.reported && r.visibility !== "instructor_only" && r.comment.trim().length > 10 && r.rating >= 4,
+        )
+        // 사진이 있는 후기를 먼저 — 수중 사진 한 장이 별점보다 설득력이 크다.
+        .sort((a, b) => Number((b.photos?.length ?? 0) > 0) - Number((a.photos?.length ?? 0) > 0))
         .slice(0, 12),
     [reviews],
   );
 
-  const stats = [
-    { n: `${Math.max(openTours.length, 1)}`, label: "지금 모집중인 투어" },
-    { n: "8,600+", label: "누적 참가 다이버" },
-    { n: `${Math.max(instructors.length, 1)}`, label: "인증 강사 파트너" },
-    { n: "4.9", label: "평균 투어 평점" },
-  ];
+  // 홈 통계는 전부 실데이터. 예전엔 "8,600+ 누적 참가 다이버 / 4.9 평균 평점"이 하드코딩돼 있어
+  // 신청 0명·후기 0개인 화면과 정면으로 어긋났다(표시광고 리스크). 값이 0이거나 표본이 부족한
+  // 지표는 아예 숨기고, 남는 지표가 2개 미만이면 통계 블록 자체를 그리지 않는다.
+  const stats = useMemo(() => {
+    const joined = tours.reduce((sum, t) => sum + getConfirmedParticipantCount(t.id), 0);
+    const verifiedCount = instructors.filter((i) => i.verified).length;
+    const visibleReviews = reviews.filter((r) => !r.deleted && !r.reported && r.visibility !== "instructor_only");
+    const avg = visibleReviews.length
+      ? visibleReviews.reduce((s, r) => s + r.rating, 0) / visibleReviews.length
+      : 0;
+    return [
+      { n: openTours.length, text: `${openTours.length}`, label: "지금 모집중인 투어" },
+      { n: joined, text: `${joined.toLocaleString()}`, label: "누적 신청 다이버" },
+      { n: verifiedCount, text: `${verifiedCount}`, label: "인증 강사 파트너" },
+      { n: visibleReviews.length >= 5 ? avg : 0, text: avg.toFixed(1), label: `평균 평점 (후기 ${visibleReviews.length})` },
+    ].filter((s) => s.n > 0);
+  }, [tours, instructors, reviews, openTours.length, getConfirmedParticipantCount]);
 
   const goSearch = () => {
     const p = new URLSearchParams();
@@ -620,12 +635,6 @@ export default function Landing() {
     return null;
   };
 
-  const FALLBACK_REVIEWS = [
-    { key: "a", img: "/landing/turtle.webp", who: "김서연", place: "세부 · 모알보알", quote: "첫 해외 다이빙이었는데 픽업부터 로그까지 다 챙겨주셔서 바다만 즐기면 됐어요.", meta: "AOW · 42 dives" },
-    { key: "b", img: "/landing/whale.webp", who: "이준호", place: "몰디브 · 남말레", quote: "만타 클리닝 스테이션에서 20분. 리브어보드 선택하길 정말 잘했습니다.", meta: "Rescue · 130 dives" },
-    { key: "c", img: "/landing/coral.webp", who: "정민아", place: "팔라우", quote: "강사님 평점이 왜 높은지 알겠더라고요. 브리핑이 남달랐어요.", meta: "OW · 18 dives" },
-    { key: "d", img: "/landing/scuba1.webp", who: "한지훈", place: "이집트 · 다합", quote: "블루홀 라인을 따라 내려가는 코스가 오래 기억에 남습니다.", meta: "AOW · 76 dives" },
-  ];
 
   return (
     <div className="ab-lp" ref={rootRef}>
@@ -688,7 +697,7 @@ export default function Landing() {
               순환 목록에 광고를 슬라이드 하나로 끼워 넣은 것뿐, 다이빙 포인트 슬라이드가
               보여주는 정보 구성(eyebrow/헤드라인/부제/CTA)은 그대로다. */}
           <p className="ab-eyebrow light">
-            {heroSlide.kind === "ad" ? "광고" : `${MONTH_LABELS_KR[guideMonth]}, 다이빙 떠나기 좋은 곳`}
+            {heroSlide.kind === "ad" ? AD_BANNER.eyebrow : `${MONTH_LABELS_KR[guideMonth]}, 다이빙 떠나기 좋은 곳`}
           </p>
           <h1 className="ab-hero-h">
             <span key={heroSlide.kind === "point" ? heroSlide.data.id : "ad"} className="ab-hero-line on">
@@ -714,13 +723,13 @@ export default function Landing() {
               }
             }}
           >
-            {heroSlide.kind === "point" ? `${heroSlide.data.region} 자세히 보기 →` : "자세히 보기 →"}
+            {heroSlide.kind === "point" ? `${heroSlide.data.region} 자세히 보기 →` : "투어 둘러보기 →"}
           </button>
 
           <div className="ab-search" role="search">
             <input
               className="ab-search-fld"
-              placeholder="어디로 갈까요? · 예: 세부, 다합, 몰디브"
+              placeholder="어디로 갈까요? 예: 세부, 몰디브"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && goSearch()}
@@ -792,7 +801,7 @@ export default function Landing() {
                     <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
                     <div className="ab-tcard-badges">
                       <span className="ab-chip hot">{d.label}</span>
-                      {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
+                      {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
                     </div>
                   </div>
                   <div className="ab-tcard-body">
@@ -814,7 +823,7 @@ export default function Landing() {
       <section id="liveaboard" className="ab-sec ab-lb">
         <div className="wrap">
           <button type="button" className="ab-banner" onClick={() => setExplorer("liveaboard")}>
-            <img src="/landing/boat.webp" alt="" onError={handleImageFallback} loading="lazy" />
+            <img src="/landing/hero.webp" alt="" onError={handleImageFallback} loading="lazy" />
             <div className="ab-banner-body">
               <p className="ab-banner-eyebrow">Liveaboard</p>
               <h3>리브어보드로 떠나볼까요?</h3>
@@ -908,14 +917,14 @@ export default function Landing() {
             </blockquote>
             <p className="ab-intro-by">— 다이버가 확인할 것은 오직 “어느 바다로 갈지”뿐입니다.</p>
           </div>
-          <div className="ab-stats r">
+          {stats.length >= 2 && <div className="ab-stats r">
             {stats.map((s) => (
               <div key={s.label} className="ab-stat">
-                <b>{s.n}</b>
+                <b>{s.text}</b>
                 <span>{s.label}</span>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       </section>
 
@@ -943,7 +952,7 @@ export default function Landing() {
                       {t.activityTypes.map((a) => (
                         <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
                       ))}
-                      {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
+                      {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
                     </div>
                   </div>
                   <div className="ab-tcard-body">
@@ -952,14 +961,14 @@ export default function Landing() {
                     <p className="ab-tcard-date">{formatDateRangeKR(t.startDate, t.endDate)} 출발</p>
                     {(() => {
                       const nights = Math.max(1, Math.round((+new Date(t.endDate) - +new Date(t.startDate)) / 86400000));
-                      const hasPlan = (t.itineraryDays?.length ?? 0) > 0;
+                      const hasPlan = hasFullItinerary(t);
                       return <p className="ab-tcard-nights">{nights}박 {nights + 1}일{hasPlan ? " · 일자별 일정 제공" : ""}</p>;
                     })()}
                     <div className="ab-tcard-meta">
                       {t.flightInfo?.outbound?.airport && <span>✈️ {t.flightInfo.outbound.airport.split(" → ")[0]} 출발</span>}
                       {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
                       {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
-                      <span>{tourDifficulty(t)}</span>
+                      <span>{tourLevelLabel(t)}</span>
                     </div>
                     {(() => {
                       const joined = getConfirmedParticipantCount(t.id);
@@ -997,8 +1006,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* 6. 강사 신뢰 — 슬라이드 캐러셀 */}
-      <section id="instructors" className="ab-sec ab-inst">
+      {/* 6. 강사 신뢰 — 슬라이드 캐러셀. 실제 강사가 없으면 섹션 자체를 숨긴다(가짜 강사 카드 금지). */}
+      {carouselInstructors.length > 0 && <section id="instructors" className="ab-sec ab-inst">
         <div className="wrap">
           <div className="ab-sec-head r">
             <div>
@@ -1016,7 +1025,7 @@ export default function Landing() {
                   <article className="ab-ic" key={ins.id}>
                     <div className="ab-ic-img">
                       <img
-                        src={ins.avatarUrl || "/landing/instructor.webp"}
+                        src={ins.avatarUrl || "/landing/scuba1.webp"}
                         alt={ins.name}
                         onError={handleImageFallback}
                         loading="lazy"
@@ -1024,35 +1033,22 @@ export default function Landing() {
                     </div>
                     <div className="ab-ic-body">
                       <h3>{ins.name} 강사</h3>
-                      <p className="ab-ic-agency">{ins.agency || "PADI"}</p>
+                      {ins.agency && <p className="ab-ic-agency">{ins.agency}</p>}
                       <div className="ab-ic-metrics">
-                        <div><b>{(ins.totalLogs ?? 0).toLocaleString()}+</b><span>누적 다이빙</span></div>
-                        <div><b>{ins.experienceYears ?? "—"}년</b><span>경력</span></div>
+                        {ins.totalLogs ? <div><b>{ins.totalLogs.toLocaleString()}+</b><span>누적 다이빙</span></div> : null}
+                        {ins.experienceYears ? <div><b>{ins.experienceYears}년</b><span>경력</span></div> : null}
                       </div>
                     </div>
                   </article>
                 ))
-              : [1, 2, 3, 4].map((k) => (
-                  <article className="ab-ic" key={k}>
-                    <div className="ab-ic-img">
-                      <img src="/landing/instructor.webp" alt="ALL BLUE 인증 강사" loading="lazy" />
-                    </div>
-                    <div className="ab-ic-body">
-                      <h3>ALL BLUE 인증 강사</h3>
-                      <p className="ab-ic-agency">PADI IDC Staff Instructor</p>
-                      <div className="ab-ic-metrics">
-                        <div><b>1,200+</b><span>누적 다이빙</span></div>
-                        <div><b>7년</b><span>경력</span></div>
-                      </div>
-                    </div>
-                  </article>
-                )))}
+              : [])}
           />
         </div>
-      </section>
+      </section>}
 
-      {/* 7. 다녀온 다이버의 기록 — 슬라이드 캐러셀 */}
-      <section className="ab-sec ab-rev">
+      {/* 7. 다녀온 다이버의 기록 — 실제 후기가 있을 때만. 예전 하드코딩 예시 후기(FALLBACK_REVIEWS)는
+          "실제 참가자가 남긴 후기"라는 문구 아래 노출돼 허위 후기가 될 수 있어 제거했다. */}
+      {carouselReviews.length > 0 && <section className="ab-sec ab-rev">
         <div className="wrap">
           <div className="ab-sec-head r">
             <div>
@@ -1062,35 +1058,27 @@ export default function Landing() {
           </div>
         </div>
         <div className="wrap r">
-          <Carousel label="참가자 후기" items={(carouselReviews.length >= 3
+          <Carousel label="참가자 후기" items={(carouselReviews.length > 0
               ? carouselReviews.map((rv) => {
                   const name = profileName(rv.diverId);
                   const tour = getTourById(rv.tourId);
                   const place = tour ? `${tour.country} · ${tour.site}` : "";
                   return (
                     <article className="ab-rc" key={rv.id}>
-                      <img src={rv.photos?.[0] || "/landing/turtle.webp"} alt="" onError={handleImageFallback} loading="lazy" />
+                      <img src={rv.photos?.[0] || tour?.mainImageUrl || "/landing/coral.webp"} alt="" onError={handleImageFallback} loading="lazy" />
                       <div className="ab-rc-body">
                         <p className="ab-stars">{"★".repeat(Math.round(rv.rating))}</p>
                         <q>{rv.comment}</q>
                         <p className="ab-rc-who">{name}{place ? ` · ${place}` : ""}</p>
+                        <p className="ab-rc-verified">✓ 예약·참가 확인된 후기</p>
                       </div>
                     </article>
                   );
                 })
-              : FALLBACK_REVIEWS.map((rv) => (
-                  <article className="ab-rc" key={rv.key}>
-                    <img src={rv.img} alt="" onError={handleImageFallback} loading="lazy" />
-                    <div className="ab-rc-body">
-                      <p className="ab-stars">★★★★★</p>
-                      <q>{rv.quote}</q>
-                      <p className="ab-rc-who">{rv.who} · {rv.place} · {rv.meta}</p>
-                    </div>
-                  </article>
-                )))}
+              : [])}
           />
         </div>
-      </section>
+      </section>}
 
       {/* 8. CTA */}
       <section className="ab-sec ab-cta">
@@ -1416,6 +1404,7 @@ const CSS = `
 .ab-stars{margin:0;color:var(--gold);letter-spacing:.16em;font-size:.8125rem;}
 .ab-rc q{display:block;margin-top:10px;font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:600;font-size:.9375rem;line-height:1.5;color:var(--text-1);}
 .ab-rc-who{margin-top:12px;font-size:.75rem;color:var(--text-2);}
+.ab-rc-verified{margin-top:4px;font-size:.6875rem;font-weight:600;color:var(--turq,#17A8BD);}
 
 /* 8. CTA */
 .ab-cta{background:var(--turq-light);text-align:center;}

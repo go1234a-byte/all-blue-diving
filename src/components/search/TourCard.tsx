@@ -27,6 +27,7 @@ import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { isTourBookable } from "@/lib/tourBooking";
 import { shareOrCopyLink } from "@/lib/share";
 import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
+import { hasFullItinerary, tourLevelLabel } from "@/lib/tourLabels";
 
 interface TourCardProps {
   tour: Tour;
@@ -136,11 +137,9 @@ export function TourCard({ tour }: TourCardProps) {
                   {ACTIVITY_LABEL[type]}
                 </Badge>
               ))}
-              {tour.minLogCount != null && tour.minLogCount > 0 && (
-                <Badge variant="outline" className="border-none bg-background/85 text-foreground backdrop-blur">
-                  로그수 {tour.minLogCount}회 이상
-                </Badge>
-              )}
+              <Badge variant="outline" className="border-none bg-background/85 text-foreground backdrop-blur">
+                {tourLevelLabel(tour)}
+              </Badge>
               {(tour.tags ?? []).slice(0, 2).map((tag) => (
                 <Badge key={tag} variant="outline" className="border-none bg-background/85 text-foreground backdrop-blur">
                   {tag}
@@ -148,10 +147,13 @@ export function TourCard({ tour }: TourCardProps) {
               ))}
             </div>
             <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
-              <div className="flex items-center gap-1 rounded-full bg-background/85 px-2 py-1 text-xs font-semibold text-foreground backdrop-blur">
-                <Star className="h-3 w-3 fill-warning text-warning" />
-                {tour.rating.toFixed(1)}
-              </div>
+              {/* 후기가 없는 투어에 ★0.0을 띄우면 "평가가 나쁜 투어"로 읽힌다 — 평점이 있을 때만 노출. */}
+              {tour.rating > 0 && (
+                <div className="flex items-center gap-1 rounded-full bg-background/85 px-2 py-1 text-xs font-semibold text-foreground backdrop-blur">
+                  <Star className="h-3 w-3 fill-warning text-warning" />
+                  {tour.rating.toFixed(1)}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={handleShare}
@@ -195,7 +197,7 @@ export function TourCard({ tour }: TourCardProps) {
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-medium text-muted-foreground">
                   {formatNightsDaysKR(tour.startDate, tour.endDate)}
-                  {(tour.itineraryDays?.length ?? 0) > 0 && " · 일정표"}
+                  {hasFullItinerary(tour) && " · 일자별 일정"}
                   {tour.flightInfo?.outbound?.airport &&
                     ` · ✈️ ${tour.flightInfo.outbound.airport.split(" → ")[0]}`}
                 </span>
