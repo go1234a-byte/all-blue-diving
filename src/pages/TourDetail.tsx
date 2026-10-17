@@ -1,7 +1,7 @@
 import { usePageMeta, toDescription } from "@/hooks/usePageMeta";
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, Compass, MapPin, MessageCircle, Share2, ShieldCheck, Star, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, Compass, ImageDown, MapPin, MessageCircle, Share2, ShieldCheck, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TourGallery } from "@/components/tour/TourGallery";
@@ -12,6 +12,7 @@ import { TourCenterCard } from "@/components/tour/TourCenterCard";
 import { InclusionsExclusionsCard } from "@/components/tour/InclusionsExclusionsCard";
 import { TourOptionsSelector } from "@/components/tour/TourOptionsSelector";
 import { ReviewList } from "@/components/tour/ReviewList";
+import { TripShareDialog } from "@/components/tour/TripShareDialog";
 import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -43,6 +44,7 @@ const TourDetail = () => {
   const { isLoggedIn, currentDiverId, currentInstructorId, authLoading } = useRole();
   const { toast } = useToast();
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
+  const [tripShareOpen, setTripShareOpen] = useState(false);
 
   const tour = tourId ? getTourById(tourId) : undefined;
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
@@ -396,7 +398,17 @@ const TourDetail = () => {
         {/* 2-1) 일자별 일정 (강사가 투어 생성 시 등록한 일정) */}
         {tour.itineraryDays && tour.itineraryDays.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">일자별 일정</h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-foreground">일자별 일정</h3>
+              <button
+                type="button"
+                onClick={() => setTripShareOpen(true)}
+                className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-secondary"
+              >
+                <ImageDown className="h-3.5 w-3.5" />
+                일정 이미지로 공유
+              </button>
+            </div>
             <div className="space-y-2">
               {tour.itineraryDays.map((day) => (
                 <div key={day.dayNumber} className="space-y-1.5 rounded-xl border border-border bg-card p-4">
@@ -430,6 +442,8 @@ const TourDetail = () => {
             </div>
           </div>
         )}
+
+        <TripShareDialog tour={tour} open={tripShareOpen} onOpenChange={setTripShareOpen} showCalendar={Boolean(myBooking)} />
 
         {/* 3) 예약된 센터 소개 */}
         {diveCenter && <DiveCenterCard diveCenter={diveCenter} />}
