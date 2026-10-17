@@ -15,6 +15,7 @@ import { TourCard } from "@/components/search/TourCard";
 import { TourMapView } from "@/components/search/TourMapView";
 import { FilterSidebar, DEFAULT_FILTERS, type FilterState } from "@/components/search/FilterSidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { isBeginnerFriendly } from "@/lib/tourLabels";
 import { useAppData } from "@/contexts/AppDataContext";
 import { applyPlatformFee } from "@/lib/pricing";
 import { monthKeyOf } from "@/lib/dates";
@@ -106,8 +107,7 @@ const Search = () => {
       .filter((t) => filters.countries.length === 0 || filters.countries.includes(t.country))
       .filter(
         (t) =>
-          !filters.beginnerOnly ||
-          (!(t.minLogCount && t.minLogCount > 0) && (t.certificationLevel === "ow" || t.certificationLevel === "basic")),
+          !filters.beginnerOnly || isBeginnerFriendly(t),
       )
       .filter((t) => !filters.flightIncluded || t.inclusions.some((i) => i.includes("항공")))
       .filter((t) => {

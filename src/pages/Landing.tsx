@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { BottomNav, getNavItems } from "@/components/layout/BottomNav";
+import { UpcomingTripCard } from "@/components/home/UpcomingTripCard";
 import { AdminHeadcountControl } from "@/components/tour/AdminHeadcountControl";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
@@ -803,6 +804,9 @@ export default function Landing() {
         </div>
       </header>
 
+      {/* 1-1. 다가오는 다이빙 D-day — 예약한 다이버에게만 */}
+      <UpcomingTripCard />
+
       {/* 2. 모집중인 투어 (실데이터) — 히어로 바로 아래. 예전엔 대형 배너 3개 아래(약 3,400px)에 있어
           모바일에서 첫 투어까지 한참 스크롤해야 했다. */}
       <section id="tours" className="ab-sec ab-tours">
@@ -1200,7 +1204,9 @@ const CSS = `
 .ab-nav{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:calc(var(--s3) + env(safe-area-inset-top)) var(--gut) var(--s3);transition:background .3s,box-shadow .3s;}
 .ab-nav.solid{background:rgba(255,255,255,.9);backdrop-filter:blur(10px);box-shadow:0 1px 0 var(--line);}
 .ab-brand{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.1875rem;letter-spacing:.02em;display:inline-flex;gap:8px;align-items:baseline;color:#fff;}
-.ab-nav.solid .ab-brand{color:var(--navy);}
+/* ".ab-lp a{color:inherit}"(0,1,1)가 ".ab-brand"(0,1,0)를 이겨서 히어로 위 로고가 남색으로 묻히던 문제 — 선택자 우선순위를 올린다. */
+.ab-nav .ab-brand{color:#fff;text-shadow:0 1px 8px rgba(10,27,46,.35);}
+.ab-nav.solid .ab-brand{color:var(--navy);text-shadow:none;}
 .ab-brand span{font-size:.625rem;letter-spacing:.24em;color:currentColor;opacity:.7;text-transform:uppercase;font-weight:600;}
 .ab-nav-links{display:flex;align-items:center;gap:var(--s4);}
 .ab-nav-links a{font-size:.875rem;color:#fff;font-weight:600;}

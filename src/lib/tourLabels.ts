@@ -22,9 +22,19 @@ export function tourTotalDays(t: Pick<Tour, "startDate" | "endDate">): number {
  */
 export function tourLevelLabel(t: Pick<Tour, "minLogCount" | "certificationLevel">): string {
   if (t.minLogCount && t.minLogCount > 0) return `로그 ${t.minLogCount}+`;
-  if (t.certificationLevel === "basic") return "입문 가능";
-  const label = CERTIFICATION_LABELS[t.certificationLevel];
-  return label ? `${label} 이상` : "입문 가능";
+  // DB에는 "ow" 같은 키 말고도 "AOW"(대문자)·"무관" 같은 값이 섞여 있어 정규화한다.
+  const raw = String(t.certificationLevel ?? "").trim();
+  const key = raw.toLowerCase() as keyof typeof CERTIFICATION_LABELS;
+  if (!raw || raw === "무관" || key === "basic") return "입문 가능";
+  const label = CERTIFICATION_LABELS[key] ?? raw;
+  return `${label} 이상`;
+}
+
+/** 자격증이 없거나 오픈워터만 있어도 참가 가능한 투어인지 (검색 "입문자 참가 가능" 필터). */
+export function isBeginnerFriendly(t: Pick<Tour, "minLogCount" | "certificationLevel">): boolean {
+  if (t.minLogCount && t.minLogCount > 0) return false;
+  const key = String(t.certificationLevel ?? "").trim().toLowerCase();
+  return !key || key === "무관" || key === "ow" || key === "basic";
 }
 
 /**
