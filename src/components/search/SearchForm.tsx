@@ -20,7 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MonthMultiSelect } from "@/components/search/MonthMultiSelect";
-import { DEFAULT_FILTERS } from "@/components/search/FilterSidebar";
+// 이 폼의 슬라이더는 고정 범위를 쓴다. 오른쪽 끝(350만원)은 "상한 없음"으로 취급해 maxPrice 를 넘기지 않는다.
+const FORM_PRICE_RANGE: [number, number] = [0, 3500000];
 import { COUNTRIES_SITES } from "@/lib/constants";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatKRW } from "@/lib/pricing";
@@ -80,7 +81,7 @@ export function SearchForm({
     initial?.activityTypes ?? [],
   );
   const [priceRange, setPriceRange] = useState<[number, number]>(
-    initial?.priceRange ?? DEFAULT_FILTERS.priceRange,
+    initial?.priceRange ?? FORM_PRICE_RANGE,
   );
   const [sort, setSort] = useState<SortOption>(initial?.sort ?? "newest");
   // "투어 검색하기"를 누르면 액티비티 종류/가격 범위/정렬을 고르는 팝업이 뜨고,
@@ -133,8 +134,8 @@ export function SearchForm({
     if (q.trim()) params.set("q", q.trim());
     if (effectiveMonths.length) params.set("months", effectiveMonths.join(","));
     if (activityTypes.length) params.set("activities", activityTypes.join(","));
-    if (priceRange[0] !== DEFAULT_FILTERS.priceRange[0]) params.set("minPrice", String(priceRange[0]));
-    if (priceRange[1] !== DEFAULT_FILTERS.priceRange[1]) params.set("maxPrice", String(priceRange[1]));
+    if (priceRange[0] !== FORM_PRICE_RANGE[0]) params.set("minPrice", String(priceRange[0]));
+    if (priceRange[1] !== FORM_PRICE_RANGE[1]) params.set("maxPrice", String(priceRange[1]));
     if (sort !== "newest") params.set("sort", sort);
     navigate(`/search?${params.toString()}`);
   };
