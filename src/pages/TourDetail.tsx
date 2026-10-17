@@ -16,10 +16,10 @@ import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
-import { CERTIFICATION_LABELS } from "@/lib/constants";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { calculateAge, formatDateKR, formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { stripLeadingLabel, tourLevelLabel } from "@/lib/tourLabels";
 import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
 import { shareOrCopyLink } from "@/lib/share";
 
@@ -241,7 +241,7 @@ const TourDetail = () => {
                 {ACTIVITY_LABEL[t]}
               </Badge>
             ))}
-            <Badge variant="secondary">{CERTIFICATION_LABELS[tour.certificationLevel]}</Badge>
+            <Badge variant="secondary">{tourLevelLabel({ certificationLevel: tour.certificationLevel, minLogCount: 0 })}</Badge>
             {tour.minLogCount != null && tour.minLogCount > 0 && (
               <Badge variant="outline">로그수 {tour.minLogCount}회 이상</Badge>
             )}
@@ -404,25 +404,25 @@ const TourDetail = () => {
                   {day.briefing && (
                     <p className="break-keep text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">브리핑 </span>
-                      {day.briefing}
+                      {stripLeadingLabel("브리핑", day.briefing)}
                     </p>
                   )}
                   {day.diving && (
                     <p className="break-keep text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">다이빙 </span>
-                      {day.diving}
+                      {stripLeadingLabel("다이빙", day.diving)}
                     </p>
                   )}
                   {day.meals && (
                     <p className="break-keep text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">식사 </span>
-                      {day.meals}
+                      {stripLeadingLabel("식사", day.meals)}
                     </p>
                   )}
                   {day.freeTime && (
                     <p className="break-keep text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">자유시간 </span>
-                      {day.freeTime}
+                      {stripLeadingLabel("자유시간", day.freeTime)}
                     </p>
                   )}
                 </div>
