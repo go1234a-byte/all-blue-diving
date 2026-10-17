@@ -14,6 +14,7 @@ import {
 import { TourCard } from "@/components/search/TourCard";
 import { TourMapView } from "@/components/search/TourMapView";
 import { FilterSidebar, DEFAULT_FILTERS, type FilterState } from "@/components/search/FilterSidebar";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { useAppData } from "@/contexts/AppDataContext";
 import { applyPlatformFee } from "@/lib/pricing";
 import { monthKeyOf } from "@/lib/dates";
@@ -52,18 +53,34 @@ const Search = () => {
     const minParam = searchParams.get("minPrice");
     const maxParam = searchParams.get("maxPrice");
     const monthsParam = searchParams.get("months");
+    const activitiesParam = searchParams.get("activities");
+    const countriesParam = searchParams.get("countries");
     return {
+      ...DEFAULT_FILTERS,
       priceRange: [
         minParam ? Number(minParam) : DEFAULT_FILTERS.priceRange[0],
         maxParam ? Number(maxParam) : DEFAULT_FILTERS.priceRange[1],
       ],
       months: monthsParam ? monthsParam.split(",").map(Number) : [],
+      // 홈 히어로의 스쿠버/프리다이빙 버튼에서 넘어온 값도 이제 필터 칩 상태로 보여주고 바꿀 수 있다.
+      activities: activitiesParam ? (activitiesParam.split(",") as ActivityType[]) : [],
+      countries: countriesParam ? countriesParam.split(",") : [],
     };
   });
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const query = searchParams.get("q")?.trim() ?? "";
-  const activitiesParam = searchParams.get("activities");
+
+  const openTours = useMemo(() => tours.filter((t) => !t.adminStatus && t.status === "open"), [tours]);
+  // 슬라이더 끝값 = 모집중 투어 최고가(수수료 포함)를 50만원 단위로 올림. 최소 350만원.
+  const priceMax = useMemo(() => {
+    const top = openTours.reduce((m, t) => Math.max(m, applyPlatformFee(t.basePrice)), 0);
+    return Math.max(3500000, Math.ceil(top / 500000) * 500000);
+  }, [openTours]);
+  const countryOptions = useMemo(
+    () => [...new Set(openTours.map((t) => t.country).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko")),
+    [openTours],
+  );
 
   const clearQuery = () => {
     const params = new URLSearchParams(searchParams);
@@ -73,11 +90,10 @@ const Search = () => {
 
   const filteredTours = useMemo(() => {
     const months = filters.months;
-    const activities = (activitiesParam ? activitiesParam.split(",") : []) as ActivityType[];
+    const activities = filters.activities;
     const q = query.toLowerCase();
-    return tours
-      .filter((t) => !t.adminStatus) // 관리자가 정지/보류 처리한 투어는 검색 결과에서 제외한다.
-      .filter((t) => t.status === "open") // 모집 마감(최소 인원 미달로 취소된 경우 포함)된 투어는 검색 결과에서 제외한다.
+    // openTours = 관리자 정지/보류 제외 + 모집 마감(최소 인원 미달 취소 포함) 제외
+    return openTours
       .filter(
         (t) =>
           !q ||
@@ -87,6 +103,13 @@ const Search = () => {
       )
       .filter((t) => months.length === 0 || months.includes(monthKeyOf(t.startDate)))
       .filter((t) => activities.length === 0 || t.activityTypes.some((a) => activities.includes(a)))
+      .filter((t) => filters.countries.length === 0 || filters.countries.includes(t.country))
+      .filter(
+        (t) =>
+          !filters.beginnerOnly ||
+          (!(t.minLogCount && t.minLogCount > 0) && (t.certificationLevel === "ow" || t.certificationLevel === "basic")),
+      )
+      .filter((t) => !filters.flightIncluded || t.inclusions.some((i) => i.includes("항공")))
       .filter((t) => {
         // 카드/상세에는 플랫폼 수수료(10%)가 포함된 가격이 보이는데, 필터는 수수료 전
         // basePrice와 비교하고 있어서 최대 가격을 걸어도 그보다 최대 10% 비싼 투어가
@@ -100,10 +123,10 @@ const Search = () => {
         if (sort === "expensive") return b.basePrice - a.basePrice;
         return b.rating - a.rating;
       });
-  }, [tours, query, activitiesParam, filters, sort]);
+  }, [openTours, query, filters, sort]);
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-10">
+    <div className="min-h-full bg-gradient-surface pb-24 md:pb-10">
       <header
         className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
@@ -117,7 +140,7 @@ const Search = () => {
       </header>
 
       <main className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[260px_1fr]">
-        <FilterSidebar filters={filters} onChange={setFilters} />
+        <FilterSidebar filters={filters} onChange={setFilters} priceMax={priceMax} countryOptions={countryOptions} />
 
         <div className="space-y-4">
           {query && (
@@ -187,6 +210,8 @@ const Search = () => {
           )}
         </div>
       </main>
+      {/* 검색 화면에서도 하단 탭바 유지 — 예전엔 검색으로 들어오면 탭바가 사라져 뒤로가기밖에 없었다. */}
+      <BottomNav />
     </div>
   );
 };

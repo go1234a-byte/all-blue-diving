@@ -13,6 +13,7 @@ import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
 import { DIVE_POINTS, GUIDE_BY_MONTH, type DivePoint } from "@/content/divePointGuide";
 import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardGuide";
 import { hasFullItinerary, isDepartureConfirmed, tourLevelLabel } from "@/lib/tourLabels";
+import { isTourBookable } from "@/lib/tourBooking";
 import type { Tour } from "@/types";
 
 /**
@@ -472,6 +473,40 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
   );
 }
 
+/**
+ * 홈 투어 카드의 위시리스트 하트. 카드 전체가 <Link>라서 클릭이 상세로 새지 않게 막는다.
+ * 검색 카드(TourCard)와 같은 규칙: 예약 불가 투어는 새로 찜할 수 없다.
+ */
+function WishButton({ tourId }: { tourId: string }) {
+  const { isBookmarked, toggleBookmark, getTourById } = useAppData();
+  const on = isBookmarked(tourId);
+  const tour = getTourById(tourId);
+  return (
+    <button
+      type="button"
+      className={`ab-wish ${on ? "on" : ""}`}
+      aria-label={on ? "위시리스트에서 빼기" : "위시리스트에 담기"}
+      aria-pressed={on}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!on && tour && !isTourBookable(tour)) return;
+        toggleBookmark(tourId);
+      }}
+    >
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path
+          d="M12 20.5s-7.5-4.6-9.6-9.3C1 7.9 3.1 4.5 6.6 4.5c2.1 0 3.6 1.2 5.4 3.2 1.8-2 3.3-3.2 5.4-3.2 3.5 0 5.6 3.4 4.2 6.7-2.1 4.7-9.6 9.3-9.6 9.3z"
+          fill={on ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
 export default function Landing() {
   const navigate = useNavigate();
   const { isLoggedIn, role, authLoading } = useRole();
@@ -764,24 +799,87 @@ export default function Landing() {
             <button className="ab-search-go" onClick={goSearch}>투어 찾기</button>
           </div>
 
-          <a href="#guide" className="ab-scrollcue"><i />다이빙 가이드 보기</a>
+          <a href="#tours" className="ab-scrollcue"><i />모집중인 투어 보기</a>
         </div>
       </header>
 
-      {/* 2. 언제 어디로 떠날까요 — 다이빙 포인트 가이드 배너 (클릭 시 Explorer) */}
-      <section id="guide" className="ab-sec ab-guide">
+      {/* 2. 모집중인 투어 (실데이터) — 히어로 바로 아래. 예전엔 대형 배너 3개 아래(약 3,400px)에 있어
+          모바일에서 첫 투어까지 한참 스크롤해야 했다. */}
+      <section id="tours" className="ab-sec ab-tours">
         <div className="wrap">
-          <button type="button" className="ab-banner" onClick={() => setExplorer("guide")}>
-            <img src="/landing/coral.webp" alt="" onError={handleImageFallback} loading="lazy" />
-            <div className="ab-banner-body">
-              <p className="ab-banner-eyebrow">Dive Point Guide</p>
-              <h3>언제 어디로 떠날까요?</h3>
-              <p className="ab-banner-teaser">
-                {MONTH_LABELS_KR[guideMonth]}엔 {[...new Set(monthPoints.map((pt) => pt.region.split(/[ ,(]/)[0]))].slice(0, 3).join(" · ")} 쪽 바다가 좋아요.
-              </p>
-              <span className="ab-banner-cta">다이빙 포인트 둘러보기 →</span>
+          <div className="ab-sec-head r">
+            <div>
+              <h2>지금 모집중인 투어</h2>
+              <p className="ab-sub">인증 강사가 진행하는, 예약 가능한 일정입니다.</p>
             </div>
-          </button>
+            <Link to="/search" className="ab-textlink">전체 투어 보기 →</Link>
+          </div>
+
+          {bentoTours.length === 0 ? (
+            <p className="ab-sub r">현재 모집중인 투어를 준비하고 있어요. 곧 새로운 일정이 열립니다.</p>
+          ) : (
+            <div className="ab-bento r">
+              {bentoTours.map((t, i) => (
+                <Link key={t.id} to={`/tour/${t.id}`} className={`ab-tcard ${i === 0 ? "feat" : ""}`}>
+                  <div className="ab-tcard-img">
+                    <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
+                    <WishButton tourId={t.id} />
+                    <div className="ab-tcard-badges">
+                      {(() => { const b = recoBadge(t); return b ? <span className="ab-chip reco">{b}</span> : null; })()}
+                      {t.activityTypes.map((a) => (
+                        <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
+                      ))}
+                      {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
+                    </div>
+                  </div>
+                  <div className="ab-tcard-body">
+                    <p className="ab-tcard-loc">{t.country} · {t.site}</p>
+                    <h3>{t.title}</h3>
+                    <p className="ab-tcard-date">{formatDateRangeKR(t.startDate, t.endDate)} 출발</p>
+                    {(() => {
+                      const nights = Math.max(1, Math.round((+new Date(t.endDate) - +new Date(t.startDate)) / 86400000));
+                      const hasPlan = hasFullItinerary(t);
+                      return <p className="ab-tcard-nights">{nights}박 {nights + 1}일{hasPlan ? " · 일자별 일정 제공" : ""}</p>;
+                    })()}
+                    <div className="ab-tcard-meta">
+                      {t.flightInfo?.outbound?.airport && <span>✈️ {t.flightInfo.outbound.airport.split(" → ")[0]} 출발</span>}
+                      {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
+                      {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
+                      <span>{tourLevelLabel(t)}</span>
+                    </div>
+                    {(() => {
+                      const joined = getConfirmedParticipantCount(t.id);
+                      const seats = Math.max(0, t.maxParticipants - joined);
+                      return (
+                        <p className="ab-tcard-recruit">
+                          <span>{t.maxParticipants}명 모집 · {joined}명 신청</span>
+                          <span className={seats === 0 ? "full" : seats <= 3 ? "few" : "ok"}>
+                            {seats === 0 ? "모집 마감" : `잔여 ${seats}석`}
+                          </span>
+                        </p>
+                      );
+                    })()}
+                    <AdminHeadcountControl tour={t} className="mt-2" />
+                    <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
+                    {(() => {
+                      const opts = t.customOptions.filter((o) => o.isActive);
+                      if (!t.inclusions.length && !opts.length) return null;
+                      return (
+                        <div className="ab-tcard-incl">
+                          {t.inclusions.length > 0 && (
+                            <p><b>필수</b><span>{t.inclusions.slice(0, 3).join(" · ")}{t.inclusions.length > 3 ? ` 외 ${t.inclusions.length - 3}` : ""}</span></p>
+                          )}
+                          {opts.length > 0 && (
+                            <p><b>선택</b><span>{opts.slice(0, 3).map((o) => o.name).join(" · ")}{opts.length > 3 ? ` 외 ${opts.length - 3}` : ""}</span></p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -799,6 +897,7 @@ export default function Landing() {
                 <Link key={t.id} to={`/tour/${t.id}`} className="ab-tcard">
                   <div className="ab-tcard-img">
                     <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
+                    <WishButton tourId={t.id} />
                     <div className="ab-tcard-badges">
                       <span className="ab-chip hot">{d.label}</span>
                       {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
@@ -819,7 +918,24 @@ export default function Landing() {
         </section>
       )}
 
-      {/* 3. 리브어보드 — 배너 하나. 클릭 시 전용 뷰(Explorer) */}
+      {/* 3. 언제 어디로 떠날까요 — 다이빙 포인트 가이드 배너 (클릭 시 Explorer) */}
+      <section id="guide" className="ab-sec ab-guide">
+        <div className="wrap">
+          <button type="button" className="ab-banner" onClick={() => setExplorer("guide")}>
+            <img src="/landing/coral.webp" alt="" onError={handleImageFallback} loading="lazy" />
+            <div className="ab-banner-body">
+              <p className="ab-banner-eyebrow">Dive Point Guide</p>
+              <h3>언제 어디로 떠날까요?</h3>
+              <p className="ab-banner-teaser">
+                {MONTH_LABELS_KR[guideMonth]}엔 {[...new Set(monthPoints.map((pt) => pt.region.split(/[ ,(]/)[0]))].slice(0, 3).join(" · ")} 쪽 바다가 좋아요.
+              </p>
+              <span className="ab-banner-cta">다이빙 포인트 둘러보기 →</span>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      {/* 4. 리브어보드 — 배너 하나. 클릭 시 전용 뷰(Explorer) */}
       <section id="liveaboard" className="ab-sec ab-lb">
         <div className="wrap">
           <button type="button" className="ab-banner" onClick={() => setExplorer("liveaboard")}>
@@ -906,7 +1022,7 @@ export default function Landing() {
         )}
       </DetailSheet>
 
-      {/* 4. 브랜드 인트로 */}
+      {/* 5. 브랜드 인트로 */}
       <section id="story" className="ab-sec ab-intro">
         <div className="wrap ab-intro-grid">
           <div className="r">
@@ -925,84 +1041,6 @@ export default function Landing() {
               </div>
             ))}
           </div>}
-        </div>
-      </section>
-
-      {/* 5. 모집중인 투어 (실데이터) */}
-      <section id="tours" className="ab-sec ab-tours">
-        <div className="wrap">
-          <div className="ab-sec-head r">
-            <div>
-              <h2>지금 모집중인 투어</h2>
-              <p className="ab-sub">인증 강사가 진행하는, 예약 가능한 일정입니다.</p>
-            </div>
-            <Link to="/search" className="ab-textlink">전체 투어 보기 →</Link>
-          </div>
-
-          {bentoTours.length === 0 ? (
-            <p className="ab-sub r">현재 모집중인 투어를 준비하고 있어요. 곧 새로운 일정이 열립니다.</p>
-          ) : (
-            <div className="ab-bento r">
-              {bentoTours.map((t, i) => (
-                <Link key={t.id} to={`/tour/${t.id}`} className={`ab-tcard ${i === 0 ? "feat" : ""}`}>
-                  <div className="ab-tcard-img">
-                    <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
-                    <div className="ab-tcard-badges">
-                      {(() => { const b = recoBadge(t); return b ? <span className="ab-chip reco">{b}</span> : null; })()}
-                      {t.activityTypes.map((a) => (
-                        <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
-                      ))}
-                      {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
-                    </div>
-                  </div>
-                  <div className="ab-tcard-body">
-                    <p className="ab-tcard-loc">{t.country} · {t.site}</p>
-                    <h3>{t.title}</h3>
-                    <p className="ab-tcard-date">{formatDateRangeKR(t.startDate, t.endDate)} 출발</p>
-                    {(() => {
-                      const nights = Math.max(1, Math.round((+new Date(t.endDate) - +new Date(t.startDate)) / 86400000));
-                      const hasPlan = hasFullItinerary(t);
-                      return <p className="ab-tcard-nights">{nights}박 {nights + 1}일{hasPlan ? " · 일자별 일정 제공" : ""}</p>;
-                    })()}
-                    <div className="ab-tcard-meta">
-                      {t.flightInfo?.outbound?.airport && <span>✈️ {t.flightInfo.outbound.airport.split(" → ")[0]} 출발</span>}
-                      {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
-                      {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
-                      <span>{tourLevelLabel(t)}</span>
-                    </div>
-                    {(() => {
-                      const joined = getConfirmedParticipantCount(t.id);
-                      const seats = Math.max(0, t.maxParticipants - joined);
-                      return (
-                        <p className="ab-tcard-recruit">
-                          <span>{t.maxParticipants}명 모집 · {joined}명 신청</span>
-                          <span className={seats === 0 ? "full" : seats <= 3 ? "few" : "ok"}>
-                            {seats === 0 ? "모집 마감" : `잔여 ${seats}석`}
-                          </span>
-                        </p>
-                      );
-                    })()}
-                    <AdminHeadcountControl tour={t} className="mt-2" />
-                    <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
-                    {(() => {
-                      const opts = t.customOptions.filter((o) => o.isActive);
-                      if (!t.inclusions.length && !opts.length) return null;
-                      return (
-                        <div className="ab-tcard-incl">
-                          {t.inclusions.length > 0 && (
-                            <p><b>필수</b><span>{t.inclusions.slice(0, 3).join(" · ")}{t.inclusions.length > 3 ? ` 외 ${t.inclusions.length - 3}` : ""}</span></p>
-                          )}
-                          {opts.length > 0 && (
-                            <p><b>선택</b><span>{opts.slice(0, 3).map((o) => o.name).join(" · ")}{opts.length > 3 ? ` 외 ${opts.length - 3}` : ""}</span></p>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
       </section>
 
@@ -1425,5 +1463,18 @@ const CSS = `
 @media(prefers-reduced-motion:reduce){
   .ab-lp *{animation-duration:.001ms!important;transition-duration:.001ms!important;}
   .r{opacity:1;transform:none;}
+}
+
+/* ── 2단계: 모바일 밀도 개선 ─────────────────────────── */
+.ab-wish{position:absolute;right:10px;top:10px;z-index:2;width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.88);color:var(--navy);backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(10,27,46,.15);transition:transform .15s,color .15s;}
+.ab-wish:active{transform:scale(.92);}
+.ab-wish.on{color:#E5484D;}
+.ab-tcard-badges{right:56px;}
+@media(max-width:640px){
+  .ab-banner{min-height:58svh;}
+  .ab-bento,.ab-tourrow{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;margin-left:calc(-1 * var(--gut));margin-right:calc(-1 * var(--gut));padding:0 var(--gut) 8px;scrollbar-width:none;}
+  .ab-bento::-webkit-scrollbar,.ab-tourrow::-webkit-scrollbar{display:none;}
+  .ab-bento>.ab-tcard,.ab-tourrow>.ab-tcard{flex:0 0 84%;scroll-snap-align:start;scroll-margin-left:var(--gut);}
+  .ab-tcard.feat .ab-tcard-img{aspect-ratio:16/10;}
 }
 `;
