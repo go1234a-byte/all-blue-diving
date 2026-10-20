@@ -116,7 +116,10 @@ export function InstructorApplicationQueue() {
         // "제출 서류 없음"으로 뜬다 — 그런 경우는 서류 확인 없이는 승인하지 말고
         // 별도로 본인 확인 후 처리해야 한다.
         const hasAnyDocument = Boolean(
-          instructor.licenseFilePaths?.length || profile?.idDocumentPath || profile?.bankbookPath,
+          instructor.licenseFilePaths?.length ||
+            profile?.idDocumentPath ||
+            profile?.bankbookPath ||
+            instructor.businessLicensePath,
         );
         // 이미 인증된 강사가 마이페이지에서 서류를 재제출해 다시 큐에 노출된 건인지 여부.
         // 최초 심사 대기 건과는 처리 방식이 다르므로(재승인이 아니라 "확인") 버튼/문구를 구분한다.
@@ -170,7 +173,18 @@ export function InstructorApplicationQueue() {
                     ),
                   )}
                   <DocumentViewButton path={profile?.bankbookPath} label="통장 사본" />
+                  <DocumentViewButton path={instructor.businessLicensePath} label="사업자등록증" />
                 </div>
+                <p className="text-[11px] text-muted-foreground">
+                  사업자 유형:{" "}
+                  {instructor.businessType === "corporation"
+                    ? "법인사업자"
+                    : instructor.businessType === "individual"
+                      ? "개인사업자"
+                      : instructor.businessType === "freelancer"
+                        ? "프리랜서 (이전 가입)"
+                        : "미신고"}
+                </p>
                 <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                   <span>은행: {profile?.bankName || "-"}</span>
                   <span>예금주: {profile?.accountHolder || "-"}</span>

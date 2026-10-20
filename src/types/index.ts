@@ -74,6 +74,8 @@ export interface InstructorProfile {
   pledgeVersion?: string;
   /** 가입(전자서약) 시 본인이 신고한 사업자 유형. 정산 시 원천징수(3.3%) 적용 여부를 결정한다. */
   businessType?: InstructorBusinessType;
+  businessLicenseFileName?: string; // 사업자등록증 원본 파일명 (표시용)
+  businessLicensePath?: string; // 사업자등록증 실제 저장 경로 (instructor-documents 비공개 버킷, 서명된 URL 발급용)
   totalLogs: number;
   experienceYears: number;
   completionRate: number; // 0-100

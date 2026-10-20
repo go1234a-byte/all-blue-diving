@@ -13,6 +13,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadInstructorDocument, uploadInstructorDocuments } from "@/lib/uploadImage";
+import { emailSignupIssue } from "@/lib/emailGuard";
 import { useToast } from "@/hooks/use-toast";
 import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import type { Gender, InstructorBusinessType } from "@/types";
@@ -75,6 +76,7 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
   // 5) 전자 서약
   const [pledgeSignerName, setPledgeSignerName] = useState("");
   const [businessType, setBusinessType] = useState<InstructorBusinessType | "">("");
+  const [businessLicenseFiles, setBusinessLicenseFiles] = useState<File[]>([]);
   const [pledgeAgreed, setPledgeAgreed] = useState(false);
   const [signature, setSignature] = useState<string | undefined>(undefined);
 
@@ -97,6 +99,13 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
         if (!email.trim()) {
           toast({ title: "이메일을 입력해주세요", variant: "destructive" });
           return false;
+        }
+        {
+          const emailIssue = emailSignupIssue(email);
+          if (emailIssue) {
+            toast({ title: emailIssue, variant: "destructive" });
+            return false;
+          }
         }
         if (!password) {
           toast({ title: "비밀번호를 입력해주세요", variant: "destructive" });
@@ -194,6 +203,10 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
     }
     if (!businessType) {
       toast({ title: "사업자 유형을 선택해주세요", variant: "destructive" });
+      return;
+    }
+    if (businessLicenseFiles.length === 0) {
+      toast({ title: "사업자등록증 사본을 첨부해주세요", variant: "destructive" });
       return;
     }
     if (!pledgeAgreed) {
@@ -295,15 +308,18 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
       let idDocumentPath: string | undefined;
       let bankbookPath: string | undefined;
       let licenseFilePaths: string[] = [];
+      let businessLicensePath: string | undefined;
       try {
-        const [idResult, bankbookResult, licenseResult] = await Promise.all([
+        const [idResult, bankbookResult, licenseResult, businessLicenseResult] = await Promise.all([
           uploadInstructorDocument(idFiles[0], userId, "id"),
           uploadInstructorDocument(bankbookFiles[0], userId, "bankbook"),
           uploadInstructorDocuments(licenseFiles, userId, "license"),
+          uploadInstructorDocument(businessLicenseFiles[0], userId, "business_license"),
         ]);
         idDocumentPath = idResult;
         bankbookPath = bankbookResult;
         licenseFilePaths = licenseResult;
+        businessLicensePath = businessLicenseResult;
       } catch (uploadErr) {
         toast({
           title: "서류 업로드에 실패했습니다",
@@ -361,6 +377,8 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           signatureDataUrl: signature,
           pledgeSigned: true,
           businessType: businessType || undefined,
+          businessLicenseFileName: businessLicenseFiles[0]?.name,
+          businessLicensePath,
           settlementPledgeAgreed: true,
           bankName,
           accountHolder,
@@ -594,6 +612,8 @@ export function InstructorSignupForm({ onSuccess }: InstructorSignupFormProps) {
           onSignerNameChange={setPledgeSignerName}
           businessType={businessType}
           onBusinessTypeChange={setBusinessType}
+          businessLicenseFiles={businessLicenseFiles}
+          onBusinessLicenseFilesChange={setBusinessLicenseFiles}
           agreed={pledgeAgreed}
           onAgreedChange={setPledgeAgreed}
           signature={signature}

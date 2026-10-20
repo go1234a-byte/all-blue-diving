@@ -118,6 +118,8 @@ function mapInstructorRow(row: {
   pledge_signed_at?: string | null;
   pledge_version?: string | null;
   business_type?: string | null;
+  business_license_file_name?: string | null;
+  business_license_path?: string | null;
   total_logs: number;
   experience_years: number;
   completion_rate: number;
@@ -156,6 +158,8 @@ function mapInstructorRow(row: {
     pledgeSignedAt: row.pledge_signed_at ?? undefined,
     pledgeVersion: row.pledge_version ?? undefined,
     businessType: (row.business_type as InstructorProfile["businessType"]) ?? undefined,
+    businessLicenseFileName: row.business_license_file_name ?? undefined,
+    businessLicensePath: row.business_license_path ?? undefined,
     totalLogs: row.total_logs,
     experienceYears: row.experience_years,
     completionRate: Number(row.completion_rate),
@@ -688,6 +692,8 @@ interface NewInstructorSignupInput {
   bio: string;
   pledgeSigned?: boolean;
   businessType?: InstructorBusinessType;
+  businessLicenseFileName?: string;
+  businessLicensePath?: string;
   settlementPledgeAgreed?: boolean;
   // 관리자 승인 심사에 필요한 서류 — 실제 파일은 InstructorSignupForm에서 이미
   // instructor-documents 버킷에 업로드를 마친 뒤, 그 저장 경로만 여기로 전달된다.
@@ -2536,6 +2542,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       pledgeSignedAt,
       pledgeVersion: input.pledgeSigned ? "v1" : undefined,
       businessType: input.businessType,
+      businessLicenseFileName: input.businessLicenseFileName,
+      businessLicensePath: input.businessLicensePath,
       totalLogs: 0,
       experienceYears: 0,
       completionRate: 0,
@@ -2561,6 +2569,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       pledge_signed_at: pledgeSignedAt,
       pledge_version: input.pledgeSigned ? "v1" : undefined,
       business_type: input.businessType ?? null,
+      business_license_file_name: input.businessLicenseFileName ?? null,
+      business_license_path: input.businessLicensePath ?? null,
       bio: input.bio,
     });
     if (instructorInsertError) {
