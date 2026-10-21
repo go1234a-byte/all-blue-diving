@@ -129,7 +129,7 @@ export function MarineForecastCard({ tour, className }: { tour: Pick<Tour, "coun
       <p className="break-keep text-[10px] leading-relaxed text-muted-foreground">
         {inWindow
           ? "외해 기준 모델 예보라 실제 포인트 상황과 다를 수 있어요. 운항 여부는 강사님 공지를 따라주세요."
-          : `출발 ${Math.max(dStart - 7, 1)}일 뒤(출발 7일 전)부터 투어 날짜의 실제 예보로 바뀌어요.`}{" "}
+          : `출발 7일 전(${Math.max(dStart - 7, 1)}일 뒤)부터 투어 날짜 예보로 바뀌어요.`}{" "}
         예보:{" "}
         <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" className="underline">
           Open-Meteo
