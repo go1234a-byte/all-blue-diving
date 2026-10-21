@@ -1,7 +1,7 @@
 import { usePageMeta, toDescription } from "@/hooks/usePageMeta";
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, Compass, MapPin, MessageCircle, Share2, ShieldCheck, Star, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, Compass, ImageDown, MapPin, MessageCircle, Share2, ShieldCheck, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TourGallery } from "@/components/tour/TourGallery";
@@ -12,14 +12,19 @@ import { TourCenterCard } from "@/components/tour/TourCenterCard";
 import { InclusionsExclusionsCard } from "@/components/tour/InclusionsExclusionsCard";
 import { TourOptionsSelector } from "@/components/tour/TourOptionsSelector";
 import { ReviewList } from "@/components/tour/ReviewList";
+import { TripShareDialog } from "@/components/tour/TripShareDialog";
+import { SeatAlertButton } from "@/components/tour/SeatAlertButton";
+import { MarineForecastCard } from "@/components/tour/MarineForecastCard";
+import { LocalCurrencyCard } from "@/components/tour/LocalCurrencyCard";
+import { BuddyInviteCard, BuddyInvitedBanner } from "@/components/tour/BuddyInvite";
 import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
-import { CERTIFICATION_LABELS } from "@/lib/constants";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { calculateAge, formatDateKR, formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { stripLeadingLabel, tourLevelLabel } from "@/lib/tourLabels";
 import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
 import { shareOrCopyLink } from "@/lib/share";
 
@@ -43,6 +48,7 @@ const TourDetail = () => {
   const { isLoggedIn, currentDiverId, currentInstructorId, authLoading } = useRole();
   const { toast } = useToast();
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
+  const [tripShareOpen, setTripShareOpen] = useState(false);
 
   const tour = tourId ? getTourById(tourId) : undefined;
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
@@ -122,6 +128,9 @@ const TourDetail = () => {
   // 더 이상 예약을 받을 수 없다. tour.status는 instructor 콘솔뿐 아니라 실제 예약 가능 여부에도 반영해야 한다.
   const isBookingBlocked = Boolean(tour.adminStatus) || tour.status === "closed" || isFull;
   const alreadyBooked = Boolean(myBooking);
+  // 정원만 찬(취소·정지·마감 아님) 투어는 "예약 불가" 대신 빈자리 알림을 받게 한다.
+  const canWaitForSeat =
+    isFull && !alreadyBooked && !tour.adminStatus && tour.status === "open" && !tour.cancelledAt;
 
   const handleBookNow = () => {
     if (isBookingBlocked) {
@@ -218,6 +227,8 @@ const TourDetail = () => {
                 ? "관리자 검토로 보류중인 투어입니다. 검토가 끝날 때까지 예약을 받을 수 없습니다."
                 : tour.cancelledAt
                 ? "취소된 투어입니다. 예약을 받을 수 없습니다."
+                : canWaitForSeat
+                ? "정원이 모두 찼어요. 취소자가 생기면 빈자리 알림으로 바로 알려드려요."
                 : "모집이 마감된 투어입니다. 더 이상 예약을 받을 수 없습니다."}
             </span>
           </div>
@@ -231,6 +242,7 @@ const TourDetail = () => {
             예약한 투어예요 · 대시보드 바로가기
           </Link>
         )}
+        <BuddyInvitedBanner tourId={tour.id} />
 
         <TourGallery mainImageUrl={tour.mainImageUrl} galleryUrls={tour.galleryUrls} title={tour.title} />
 
@@ -241,7 +253,7 @@ const TourDetail = () => {
                 {ACTIVITY_LABEL[t]}
               </Badge>
             ))}
-            <Badge variant="secondary">{CERTIFICATION_LABELS[tour.certificationLevel]}</Badge>
+            <Badge variant="secondary">{tourLevelLabel({ certificationLevel: tour.certificationLevel, minLogCount: 0 })}</Badge>
             {tour.minLogCount != null && tour.minLogCount > 0 && (
               <Badge variant="outline">로그수 {tour.minLogCount}회 이상</Badge>
             )}
@@ -379,6 +391,9 @@ const TourDetail = () => {
           </div>
         )}
 
+        {/* 0) 버디 초대 — 링크로 친구가 예약하면 같은 방 배정 희망이 자동으로 적힌다 */}
+        {!isBookingBlocked && <BuddyInviteCard tourId={tour.id} booked={Boolean(myBooking)} />}
+
         {/* 1) 담당 강사 프로필 */}
         <InstructorTrustCard instructor={instructor} />
 
@@ -396,7 +411,17 @@ const TourDetail = () => {
         {/* 2-1) 일자별 일정 (강사가 투어 생성 시 등록한 일정) */}
         {tour.itineraryDays && tour.itineraryDays.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">일자별 일정</h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-foreground">일자별 일정</h3>
+              <button
+                type="button"
+                onClick={() => setTripShareOpen(true)}
+                className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-secondary"
+              >
+                <ImageDown className="h-3.5 w-3.5" />
+                일정 이미지로 공유
+              </button>
+            </div>
             <div className="space-y-2">
               {tour.itineraryDays.map((day) => (
                 <div key={day.dayNumber} className="space-y-1.5 rounded-xl border border-border bg-card p-4">
@@ -404,25 +429,25 @@ const TourDetail = () => {
                   {day.briefing && (
                     <p className="break-keep text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">브리핑 </span>
-                      {day.briefing}
+                      {stripLeadingLabel("브리핑", day.briefing)}
                     </p>
                   )}
                   {day.diving && (
                     <p className="break-keep text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">다이빙 </span>
-                      {day.diving}
+                      {stripLeadingLabel("다이빙", day.diving)}
                     </p>
                   )}
                   {day.meals && (
                     <p className="break-keep text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">식사 </span>
-                      {day.meals}
+                      {stripLeadingLabel("식사", day.meals)}
                     </p>
                   )}
                   {day.freeTime && (
                     <p className="break-keep text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">자유시간 </span>
-                      {day.freeTime}
+                      {stripLeadingLabel("자유시간", day.freeTime)}
                     </p>
                   )}
                 </div>
@@ -430,6 +455,11 @@ const TourDetail = () => {
             </div>
           </div>
         )}
+
+        <TripShareDialog tour={tour} open={tripShareOpen} onOpenChange={setTripShareOpen} showCalendar={Boolean(myBooking)} />
+
+        {/* 2-2) 바다 예보 — 출발 7일 전부터는 투어 날짜 예보, 그 전엔 "지금 현지 바다" */}
+        <MarineForecastCard tour={tour} />
 
         {/* 3) 예약된 센터 소개 */}
         {diveCenter && <DiveCenterCard diveCenter={diveCenter} />}
@@ -451,6 +481,9 @@ const TourDetail = () => {
 
         {/* 5) 포함 및 불포함 사항 */}
         <InclusionsExclusionsCard inclusions={tour.inclusions} exclusions={tour.exclusions} />
+
+        {/* 5-1) 불포함 항목은 대부분 현지 통화로 낸다 — 원화 환산 */}
+        <LocalCurrencyCard country={tour.country} />
 
         <TourOptionsSelector
           options={tour.customOptions}
@@ -488,14 +521,18 @@ const TourDetail = () => {
                 모집 마감일: {formatDateKR(tour.recruitmentDeadline)}까지
               </div>
             </div>
-            <Button
-              size="lg"
-              className="w-full"
-              onClick={handleBookNow}
-              disabled={isBookingBlocked || alreadyBooked}
-            >
-              {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
-            </Button>
+            {canWaitForSeat ? (
+              <SeatAlertButton tourId={tour.id} className="h-11 w-full" />
+            ) : (
+              <Button
+                size="lg"
+                className="w-full"
+                onClick={handleBookNow}
+                disabled={isBookingBlocked || alreadyBooked}
+              >
+                {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
+              </Button>
+            )}
           </div>
         </aside>
       </main>
@@ -510,9 +547,13 @@ const TourDetail = () => {
           </p>
           <p className="text-lg font-bold text-primary">{formatKRW(displayTotal)}</p>
         </div>
-        <Button size="lg" onClick={handleBookNow} disabled={isBookingBlocked || alreadyBooked}>
-          {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
-        </Button>
+        {canWaitForSeat ? (
+          <SeatAlertButton tourId={tour.id} className="h-11" />
+        ) : (
+          <Button size="lg" onClick={handleBookNow} disabled={isBookingBlocked || alreadyBooked}>
+            {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
+          </Button>
+        )}
       </div>
     </div>
   );

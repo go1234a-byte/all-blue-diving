@@ -3,6 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { BottomNav, getNavItems } from "@/components/layout/BottomNav";
+import { UpcomingTripCard } from "@/components/home/UpcomingTripCard";
+import { DiveWishPanel } from "@/components/home/DiveWishPanel";
+import { useDiverWish } from "@/contexts/DiverWishContext";
+import { DiverAlertsStrip } from "@/components/home/DiverAlertsStrip";
 import { AdminHeadcountControl } from "@/components/tour/AdminHeadcountControl";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
@@ -12,6 +16,8 @@ import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
 import { DIVE_POINTS, GUIDE_BY_MONTH, type DivePoint } from "@/content/divePointGuide";
 import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardGuide";
+import { hasFullItinerary, isDepartureConfirmed, tourLevelLabel } from "@/lib/tourLabels";
+import { isTourBookable } from "@/lib/tourBooking";
 import type { Tour } from "@/types";
 
 /**
@@ -45,9 +51,12 @@ const abUnlockScroll = () => {
  * 담당자가 image/headline/href 만 바꿔 끼우면 되는 자리표시자.
  */
 const AD_BANNER = {
-  image: "/landing/boat.webp",
-  headline: "지금 예약하면 첫 투어 할인",
-  sub: "신규 예약자 한정 프로모션 — 지금 확인해보세요.",
+  image: "/landing/descend.webp",
+  // 실제로 진행 중인 프로모션(쿠폰)이 없을 때 "할인" 문구를 쓰면 허위 광고가 된다.
+  // 쿠폰을 만들고 나서 headline/sub 를 프로모션 문구로 바꿔 끼우면 된다.
+  eyebrow: "ALL BLUE",
+  headline: "검증된 강사와 떠나는 다음 바다",
+  sub: "지금 모집중인 투어의 일정·포함 내역·환불 규정을 한눈에 비교해보세요.",
   href: "/search",
 };
 const isExternalHref = (href: string) => /^https?:\/\//.test(href);
@@ -105,11 +114,6 @@ function useReveal() {
   return ref;
 }
 
-/** 난이도 — 새 필드 없이 기존 minLogCount 로만 표현 */
-function tourDifficulty(t: Tour): string {
-  if (t.minLogCount && t.minLogCount > 0) return `로그 ${t.minLogCount}+`;
-  return "입문 가능";
-}
 
 /**
  * 다이빙 포인트 가이드 · 리브어보드 공용 상세 뷰.
@@ -196,6 +200,21 @@ function DetailSheet({
         </div>
       </div>
     </div>
+  );
+}
+
+/** 포인트 카드의 관심 표시 — 내가 등록했는지 + 몇 명이 관심 있는지. 기능이 꺼져 있으면 아무것도 안 그린다. */
+function WishMark({ pointId }: { pointId: string }) {
+  const { available, getWish, demandByPoint } = useDiverWish();
+  if (!available) return null;
+  const mine = Boolean(getWish(pointId));
+  const n = demandByPoint.get(pointId) ?? 0;
+  if (!mine && n === 0) return null;
+  return (
+    <p className="ab-bigcard-wish">
+      {mine ? "♥ 관심 등록함" : "♡"}
+      {n > 0 ? ` · ${n.toLocaleString()}명이 가고 싶어해요` : ""}
+    </p>
   );
 }
 
@@ -288,6 +307,7 @@ function Explorer({
                     <h3>{pt.hook}</h3>
                     <p className="ab-bigcard-oneliner">{pt.oneLiner}</p>
                     <p className="ab-bigcard-meta">{pt.water}</p>
+                    <WishMark pointId={pt.id} />
                     <span className="ab-bigcard-more">자세히 보기 →</span>
                   </div>
                 </button>
@@ -473,6 +493,40 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
   );
 }
 
+/**
+ * 홈 투어 카드의 위시리스트 하트. 카드 전체가 <Link>라서 클릭이 상세로 새지 않게 막는다.
+ * 검색 카드(TourCard)와 같은 규칙: 예약 불가 투어는 새로 찜할 수 없다.
+ */
+function WishButton({ tourId }: { tourId: string }) {
+  const { isBookmarked, toggleBookmark, getTourById } = useAppData();
+  const on = isBookmarked(tourId);
+  const tour = getTourById(tourId);
+  return (
+    <button
+      type="button"
+      className={`ab-wish ${on ? "on" : ""}`}
+      aria-label={on ? "위시리스트에서 빼기" : "위시리스트에 담기"}
+      aria-pressed={on}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!on && tour && !isTourBookable(tour)) return;
+        toggleBookmark(tourId);
+      }}
+    >
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path
+          d="M12 20.5s-7.5-4.6-9.6-9.3C1 7.9 3.1 4.5 6.6 4.5c2.1 0 3.6 1.2 5.4 3.2 1.8-2 3.3-3.2 5.4-3.2 3.5 0 5.6 3.4 4.2 6.7-2.1 4.7-9.6 9.3-9.6 9.3z"
+          fill={on ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
 export default function Landing() {
   const navigate = useNavigate();
   const { isLoggedIn, role, authLoading } = useRole();
@@ -500,6 +554,17 @@ export default function Landing() {
     { kind: "point"; data: DivePoint } | { kind: "region"; data: LiveaboardRegion } | null
   >(null);
   const [scrollY, setScrollY] = useState(0);
+
+  // 검색 결과가 없을 때 "가고 싶은 바다 등록" 링크(/?explore=guide)로 들어오면 가이드를 바로 연다.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("explore") === "guide") {
+      setExplorer("guide");
+      p.delete("explore");
+      const qs = p.toString();
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+    }
+  }, []);
 
   // 히어로 = "이번 달 다이빙 떠나기 좋은 곳". guideMonth 는 기본값이 오늘 날짜의 달(위 초기화)이라
   // 첫 화면은 항상 현재 월 추천으로 뜨고, 아래 가이드 섹션에서 달을 바꾸면 히어로도 같이 바뀐다.
@@ -589,17 +654,33 @@ export default function Landing() {
   const carouselReviews = useMemo(
     () =>
       reviews
-        .filter((r) => !r.deleted && !r.reported && r.comment.trim().length > 10 && r.rating >= 4)
+        .filter(
+          (r) =>
+            !r.deleted && !r.reported && r.visibility !== "instructor_only" && r.comment.trim().length > 10 && r.rating >= 4,
+        )
+        // 사진이 있는 후기를 먼저 — 수중 사진 한 장이 별점보다 설득력이 크다.
+        .sort((a, b) => Number((b.photos?.length ?? 0) > 0) - Number((a.photos?.length ?? 0) > 0))
         .slice(0, 12),
     [reviews],
   );
 
-  const stats = [
-    { n: `${Math.max(openTours.length, 1)}`, label: "지금 모집중인 투어" },
-    { n: "8,600+", label: "누적 참가 다이버" },
-    { n: `${Math.max(instructors.length, 1)}`, label: "인증 강사 파트너" },
-    { n: "4.9", label: "평균 투어 평점" },
-  ];
+  // 홈 통계는 전부 실데이터. 예전엔 "8,600+ 누적 참가 다이버 / 4.9 평균 평점"이 하드코딩돼 있어
+  // 신청 0명·후기 0개인 화면과 정면으로 어긋났다(표시광고 리스크). 값이 0이거나 표본이 부족한
+  // 지표는 아예 숨기고, 남는 지표가 2개 미만이면 통계 블록 자체를 그리지 않는다.
+  const stats = useMemo(() => {
+    const joined = tours.reduce((sum, t) => sum + getConfirmedParticipantCount(t.id), 0);
+    const verifiedCount = instructors.filter((i) => i.verified).length;
+    const visibleReviews = reviews.filter((r) => !r.deleted && !r.reported && r.visibility !== "instructor_only");
+    const avg = visibleReviews.length
+      ? visibleReviews.reduce((s, r) => s + r.rating, 0) / visibleReviews.length
+      : 0;
+    return [
+      { n: openTours.length, text: `${openTours.length}`, label: "지금 모집중인 투어" },
+      { n: joined, text: `${joined.toLocaleString()}`, label: "누적 신청 다이버" },
+      { n: verifiedCount, text: `${verifiedCount}`, label: "인증 강사 파트너" },
+      { n: visibleReviews.length >= 5 ? avg : 0, text: avg.toFixed(1), label: `평균 평점 (후기 ${visibleReviews.length})` },
+    ].filter((s) => s.n > 0);
+  }, [tours, instructors, reviews, openTours.length, getConfirmedParticipantCount]);
 
   const goSearch = () => {
     const p = new URLSearchParams();
@@ -620,12 +701,6 @@ export default function Landing() {
     return null;
   };
 
-  const FALLBACK_REVIEWS = [
-    { key: "a", img: "/landing/turtle.webp", who: "김서연", place: "세부 · 모알보알", quote: "첫 해외 다이빙이었는데 픽업부터 로그까지 다 챙겨주셔서 바다만 즐기면 됐어요.", meta: "AOW · 42 dives" },
-    { key: "b", img: "/landing/whale.webp", who: "이준호", place: "몰디브 · 남말레", quote: "만타 클리닝 스테이션에서 20분. 리브어보드 선택하길 정말 잘했습니다.", meta: "Rescue · 130 dives" },
-    { key: "c", img: "/landing/coral.webp", who: "정민아", place: "팔라우", quote: "강사님 평점이 왜 높은지 알겠더라고요. 브리핑이 남달랐어요.", meta: "OW · 18 dives" },
-    { key: "d", img: "/landing/scuba1.webp", who: "한지훈", place: "이집트 · 다합", quote: "블루홀 라인을 따라 내려가는 코스가 오래 기억에 남습니다.", meta: "AOW · 76 dives" },
-  ];
 
   return (
     <div className="ab-lp" ref={rootRef}>
@@ -688,7 +763,7 @@ export default function Landing() {
               순환 목록에 광고를 슬라이드 하나로 끼워 넣은 것뿐, 다이빙 포인트 슬라이드가
               보여주는 정보 구성(eyebrow/헤드라인/부제/CTA)은 그대로다. */}
           <p className="ab-eyebrow light">
-            {heroSlide.kind === "ad" ? "광고" : `${MONTH_LABELS_KR[guideMonth]}, 다이빙 떠나기 좋은 곳`}
+            {heroSlide.kind === "ad" ? AD_BANNER.eyebrow : `${MONTH_LABELS_KR[guideMonth]}, 다이빙 떠나기 좋은 곳`}
           </p>
           <h1 className="ab-hero-h">
             <span key={heroSlide.kind === "point" ? heroSlide.data.id : "ad"} className="ab-hero-line on">
@@ -714,13 +789,13 @@ export default function Landing() {
               }
             }}
           >
-            {heroSlide.kind === "point" ? `${heroSlide.data.region} 자세히 보기 →` : "자세히 보기 →"}
+            {heroSlide.kind === "point" ? `${heroSlide.data.region} 자세히 보기 →` : "투어 둘러보기 →"}
           </button>
 
           <div className="ab-search" role="search">
             <input
               className="ab-search-fld"
-              placeholder="어디로 갈까요? · 예: 세부, 다합, 몰디브"
+              placeholder="어디로 갈까요? 예: 세부, 몰디브"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && goSearch()}
@@ -755,24 +830,91 @@ export default function Landing() {
             <button className="ab-search-go" onClick={goSearch}>투어 찾기</button>
           </div>
 
-          <a href="#guide" className="ab-scrollcue"><i />다이빙 가이드 보기</a>
+          <a href="#tours" className="ab-scrollcue"><i />모집중인 투어 보기</a>
         </div>
       </header>
 
-      {/* 2. 언제 어디로 떠날까요 — 다이빙 포인트 가이드 배너 (클릭 시 Explorer) */}
-      <section id="guide" className="ab-sec ab-guide">
+      {/* 1-1. 안 읽은 알림(관심 바다 새 투어 · 빈자리) + 다가오는 다이빙 D-day — 로그인 다이버에게만 */}
+      <DiverAlertsStrip />
+      <UpcomingTripCard />
+
+      {/* 2. 모집중인 투어 (실데이터) — 히어로 바로 아래. 예전엔 대형 배너 3개 아래(약 3,400px)에 있어
+          모바일에서 첫 투어까지 한참 스크롤해야 했다. */}
+      <section id="tours" className="ab-sec ab-tours">
         <div className="wrap">
-          <button type="button" className="ab-banner" onClick={() => setExplorer("guide")}>
-            <img src="/landing/coral.webp" alt="" onError={handleImageFallback} loading="lazy" />
-            <div className="ab-banner-body">
-              <p className="ab-banner-eyebrow">Dive Point Guide</p>
-              <h3>언제 어디로 떠날까요?</h3>
-              <p className="ab-banner-teaser">
-                {MONTH_LABELS_KR[guideMonth]}엔 {[...new Set(monthPoints.map((pt) => pt.region.split(/[ ,(]/)[0]))].slice(0, 3).join(" · ")} 쪽 바다가 좋아요.
-              </p>
-              <span className="ab-banner-cta">다이빙 포인트 둘러보기 →</span>
+          <div className="ab-sec-head r">
+            <div>
+              <h2>지금 모집중인 투어</h2>
+              <p className="ab-sub">인증 강사가 진행하는, 예약 가능한 일정입니다.</p>
             </div>
-          </button>
+            <Link to="/search" className="ab-textlink">전체 투어 보기 →</Link>
+          </div>
+
+          {bentoTours.length === 0 ? (
+            <p className="ab-sub r">현재 모집중인 투어를 준비하고 있어요. 곧 새로운 일정이 열립니다.</p>
+          ) : (
+            <div className="ab-bento r">
+              {bentoTours.map((t, i) => (
+                <Link key={t.id} to={`/tour/${t.id}`} className={`ab-tcard ${i === 0 ? "feat" : ""}`}>
+                  <div className="ab-tcard-img">
+                    <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
+                    <WishButton tourId={t.id} />
+                    <div className="ab-tcard-badges">
+                      {(() => { const b = recoBadge(t); return b ? <span className="ab-chip reco">{b}</span> : null; })()}
+                      {t.activityTypes.map((a) => (
+                        <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
+                      ))}
+                      {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
+                    </div>
+                  </div>
+                  <div className="ab-tcard-body">
+                    <p className="ab-tcard-loc">{t.country} · {t.site}</p>
+                    <h3>{t.title}</h3>
+                    <p className="ab-tcard-date">{formatDateRangeKR(t.startDate, t.endDate)} 출발</p>
+                    {(() => {
+                      const nights = Math.max(1, Math.round((+new Date(t.endDate) - +new Date(t.startDate)) / 86400000));
+                      const hasPlan = hasFullItinerary(t);
+                      return <p className="ab-tcard-nights">{nights}박 {nights + 1}일{hasPlan ? " · 일자별 일정 제공" : ""}</p>;
+                    })()}
+                    <div className="ab-tcard-meta">
+                      {t.flightInfo?.outbound?.airport && <span>✈️ {t.flightInfo.outbound.airport.split(" → ")[0]} 출발</span>}
+                      {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
+                      {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
+                      <span>{tourLevelLabel(t)}</span>
+                    </div>
+                    {(() => {
+                      const joined = getConfirmedParticipantCount(t.id);
+                      const seats = Math.max(0, t.maxParticipants - joined);
+                      return (
+                        <p className="ab-tcard-recruit">
+                          <span>{t.maxParticipants}명 모집 · {joined}명 신청</span>
+                          <span className={seats === 0 ? "full" : seats <= 3 ? "few" : "ok"}>
+                            {seats === 0 ? "모집 마감" : `잔여 ${seats}석`}
+                          </span>
+                        </p>
+                      );
+                    })()}
+                    <AdminHeadcountControl tour={t} className="mt-2" />
+                    <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
+                    {(() => {
+                      const opts = t.customOptions.filter((o) => o.isActive);
+                      if (!t.inclusions.length && !opts.length) return null;
+                      return (
+                        <div className="ab-tcard-incl">
+                          {t.inclusions.length > 0 && (
+                            <p><b>필수</b><span>{t.inclusions.slice(0, 3).join(" · ")}{t.inclusions.length > 3 ? ` 외 ${t.inclusions.length - 3}` : ""}</span></p>
+                          )}
+                          {opts.length > 0 && (
+                            <p><b>선택</b><span>{opts.slice(0, 3).map((o) => o.name).join(" · ")}{opts.length > 3 ? ` 외 ${opts.length - 3}` : ""}</span></p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -790,9 +932,10 @@ export default function Landing() {
                 <Link key={t.id} to={`/tour/${t.id}`} className="ab-tcard">
                   <div className="ab-tcard-img">
                     <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
+                    <WishButton tourId={t.id} />
                     <div className="ab-tcard-badges">
                       <span className="ab-chip hot">{d.label}</span>
-                      {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
+                      {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
                     </div>
                   </div>
                   <div className="ab-tcard-body">
@@ -810,11 +953,28 @@ export default function Landing() {
         </section>
       )}
 
-      {/* 3. 리브어보드 — 배너 하나. 클릭 시 전용 뷰(Explorer) */}
+      {/* 3. 언제 어디로 떠날까요 — 다이빙 포인트 가이드 배너 (클릭 시 Explorer) */}
+      <section id="guide" className="ab-sec ab-guide">
+        <div className="wrap">
+          <button type="button" className="ab-banner" onClick={() => setExplorer("guide")}>
+            <img src="/landing/coral.webp" alt="" onError={handleImageFallback} loading="lazy" />
+            <div className="ab-banner-body">
+              <p className="ab-banner-eyebrow">Dive Point Guide</p>
+              <h3>언제 어디로 떠날까요?</h3>
+              <p className="ab-banner-teaser">
+                {MONTH_LABELS_KR[guideMonth]}엔 {[...new Set(monthPoints.map((pt) => pt.region.split(/[ ,(]/)[0]))].slice(0, 3).join(" · ")} 쪽 바다가 좋아요.
+              </p>
+              <span className="ab-banner-cta">다이빙 포인트 둘러보기 →</span>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      {/* 4. 리브어보드 — 배너 하나. 클릭 시 전용 뷰(Explorer) */}
       <section id="liveaboard" className="ab-sec ab-lb">
         <div className="wrap">
           <button type="button" className="ab-banner" onClick={() => setExplorer("liveaboard")}>
-            <img src="/landing/boat.webp" alt="" onError={handleImageFallback} loading="lazy" />
+            <img src="/landing/hero.webp" alt="" onError={handleImageFallback} loading="lazy" />
             <div className="ab-banner-body">
               <p className="ab-banner-eyebrow">Liveaboard</p>
               <h3>리브어보드로 떠나볼까요?</h3>
@@ -849,6 +1009,7 @@ export default function Landing() {
       >
         {detail?.kind === "point" && (
           <>
+            <DiveWishPanel point={detail.data} defaultMonth={guideMonth + 1} />
             {detail.data.access && <p className="ab-sheet-access">✈️ 가는 길 · {detail.data.access}</p>}
             <p className="ab-sheet-p">{detail.data.detail}</p>
             {detail.data.special && (
@@ -897,7 +1058,7 @@ export default function Landing() {
         )}
       </DetailSheet>
 
-      {/* 4. 브랜드 인트로 */}
+      {/* 5. 브랜드 인트로 */}
       <section id="story" className="ab-sec ab-intro">
         <div className="wrap ab-intro-grid">
           <div className="r">
@@ -908,97 +1069,19 @@ export default function Landing() {
             </blockquote>
             <p className="ab-intro-by">— 다이버가 확인할 것은 오직 “어느 바다로 갈지”뿐입니다.</p>
           </div>
-          <div className="ab-stats r">
+          {stats.length >= 2 && <div className="ab-stats r">
             {stats.map((s) => (
               <div key={s.label} className="ab-stat">
-                <b>{s.n}</b>
+                <b>{s.text}</b>
                 <span>{s.label}</span>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       </section>
 
-      {/* 5. 모집중인 투어 (실데이터) */}
-      <section id="tours" className="ab-sec ab-tours">
-        <div className="wrap">
-          <div className="ab-sec-head r">
-            <div>
-              <h2>지금 모집중인 투어</h2>
-              <p className="ab-sub">인증 강사가 진행하는, 예약 가능한 일정입니다.</p>
-            </div>
-            <Link to="/search" className="ab-textlink">전체 투어 보기 →</Link>
-          </div>
-
-          {bentoTours.length === 0 ? (
-            <p className="ab-sub r">현재 모집중인 투어를 준비하고 있어요. 곧 새로운 일정이 열립니다.</p>
-          ) : (
-            <div className="ab-bento r">
-              {bentoTours.map((t, i) => (
-                <Link key={t.id} to={`/tour/${t.id}`} className={`ab-tcard ${i === 0 ? "feat" : ""}`}>
-                  <div className="ab-tcard-img">
-                    <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
-                    <div className="ab-tcard-badges">
-                      {(() => { const b = recoBadge(t); return b ? <span className="ab-chip reco">{b}</span> : null; })()}
-                      {t.activityTypes.map((a) => (
-                        <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
-                      ))}
-                      {t.isConfirmed && <span className="ab-chip gold">출발확정</span>}
-                    </div>
-                  </div>
-                  <div className="ab-tcard-body">
-                    <p className="ab-tcard-loc">{t.country} · {t.site}</p>
-                    <h3>{t.title}</h3>
-                    <p className="ab-tcard-date">{formatDateRangeKR(t.startDate, t.endDate)} 출발</p>
-                    {(() => {
-                      const nights = Math.max(1, Math.round((+new Date(t.endDate) - +new Date(t.startDate)) / 86400000));
-                      const hasPlan = (t.itineraryDays?.length ?? 0) > 0;
-                      return <p className="ab-tcard-nights">{nights}박 {nights + 1}일{hasPlan ? " · 일자별 일정 제공" : ""}</p>;
-                    })()}
-                    <div className="ab-tcard-meta">
-                      {t.flightInfo?.outbound?.airport && <span>✈️ {t.flightInfo.outbound.airport.split(" → ")[0]} 출발</span>}
-                      {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
-                      {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
-                      <span>{tourDifficulty(t)}</span>
-                    </div>
-                    {(() => {
-                      const joined = getConfirmedParticipantCount(t.id);
-                      const seats = Math.max(0, t.maxParticipants - joined);
-                      return (
-                        <p className="ab-tcard-recruit">
-                          <span>{t.maxParticipants}명 모집 · {joined}명 신청</span>
-                          <span className={seats === 0 ? "full" : seats <= 3 ? "few" : "ok"}>
-                            {seats === 0 ? "모집 마감" : `잔여 ${seats}석`}
-                          </span>
-                        </p>
-                      );
-                    })()}
-                    <AdminHeadcountControl tour={t} className="mt-2" />
-                    <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
-                    {(() => {
-                      const opts = t.customOptions.filter((o) => o.isActive);
-                      if (!t.inclusions.length && !opts.length) return null;
-                      return (
-                        <div className="ab-tcard-incl">
-                          {t.inclusions.length > 0 && (
-                            <p><b>필수</b><span>{t.inclusions.slice(0, 3).join(" · ")}{t.inclusions.length > 3 ? ` 외 ${t.inclusions.length - 3}` : ""}</span></p>
-                          )}
-                          {opts.length > 0 && (
-                            <p><b>선택</b><span>{opts.slice(0, 3).map((o) => o.name).join(" · ")}{opts.length > 3 ? ` 외 ${opts.length - 3}` : ""}</span></p>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 6. 강사 신뢰 — 슬라이드 캐러셀 */}
-      <section id="instructors" className="ab-sec ab-inst">
+      {/* 6. 강사 신뢰 — 슬라이드 캐러셀. 실제 강사가 없으면 섹션 자체를 숨긴다(가짜 강사 카드 금지). */}
+      {carouselInstructors.length > 0 && <section id="instructors" className="ab-sec ab-inst">
         <div className="wrap">
           <div className="ab-sec-head r">
             <div>
@@ -1016,7 +1099,7 @@ export default function Landing() {
                   <article className="ab-ic" key={ins.id}>
                     <div className="ab-ic-img">
                       <img
-                        src={ins.avatarUrl || "/landing/instructor.webp"}
+                        src={ins.avatarUrl || "/landing/scuba1.webp"}
                         alt={ins.name}
                         onError={handleImageFallback}
                         loading="lazy"
@@ -1024,35 +1107,22 @@ export default function Landing() {
                     </div>
                     <div className="ab-ic-body">
                       <h3>{ins.name} 강사</h3>
-                      <p className="ab-ic-agency">{ins.agency || "PADI"}</p>
+                      {ins.agency && <p className="ab-ic-agency">{ins.agency}</p>}
                       <div className="ab-ic-metrics">
-                        <div><b>{(ins.totalLogs ?? 0).toLocaleString()}+</b><span>누적 다이빙</span></div>
-                        <div><b>{ins.experienceYears ?? "—"}년</b><span>경력</span></div>
+                        {ins.totalLogs ? <div><b>{ins.totalLogs.toLocaleString()}+</b><span>누적 다이빙</span></div> : null}
+                        {ins.experienceYears ? <div><b>{ins.experienceYears}년</b><span>경력</span></div> : null}
                       </div>
                     </div>
                   </article>
                 ))
-              : [1, 2, 3, 4].map((k) => (
-                  <article className="ab-ic" key={k}>
-                    <div className="ab-ic-img">
-                      <img src="/landing/instructor.webp" alt="ALL BLUE 인증 강사" loading="lazy" />
-                    </div>
-                    <div className="ab-ic-body">
-                      <h3>ALL BLUE 인증 강사</h3>
-                      <p className="ab-ic-agency">PADI IDC Staff Instructor</p>
-                      <div className="ab-ic-metrics">
-                        <div><b>1,200+</b><span>누적 다이빙</span></div>
-                        <div><b>7년</b><span>경력</span></div>
-                      </div>
-                    </div>
-                  </article>
-                )))}
+              : [])}
           />
         </div>
-      </section>
+      </section>}
 
-      {/* 7. 다녀온 다이버의 기록 — 슬라이드 캐러셀 */}
-      <section className="ab-sec ab-rev">
+      {/* 7. 다녀온 다이버의 기록 — 실제 후기가 있을 때만. 예전 하드코딩 예시 후기(FALLBACK_REVIEWS)는
+          "실제 참가자가 남긴 후기"라는 문구 아래 노출돼 허위 후기가 될 수 있어 제거했다. */}
+      {carouselReviews.length > 0 && <section className="ab-sec ab-rev">
         <div className="wrap">
           <div className="ab-sec-head r">
             <div>
@@ -1062,35 +1132,27 @@ export default function Landing() {
           </div>
         </div>
         <div className="wrap r">
-          <Carousel label="참가자 후기" items={(carouselReviews.length >= 3
+          <Carousel label="참가자 후기" items={(carouselReviews.length > 0
               ? carouselReviews.map((rv) => {
                   const name = profileName(rv.diverId);
                   const tour = getTourById(rv.tourId);
                   const place = tour ? `${tour.country} · ${tour.site}` : "";
                   return (
                     <article className="ab-rc" key={rv.id}>
-                      <img src={rv.photos?.[0] || "/landing/turtle.webp"} alt="" onError={handleImageFallback} loading="lazy" />
+                      <img src={rv.photos?.[0] || tour?.mainImageUrl || "/landing/coral.webp"} alt="" onError={handleImageFallback} loading="lazy" />
                       <div className="ab-rc-body">
                         <p className="ab-stars">{"★".repeat(Math.round(rv.rating))}</p>
                         <q>{rv.comment}</q>
                         <p className="ab-rc-who">{name}{place ? ` · ${place}` : ""}</p>
+                        <p className="ab-rc-verified">✓ 예약·참가 확인된 후기</p>
                       </div>
                     </article>
                   );
                 })
-              : FALLBACK_REVIEWS.map((rv) => (
-                  <article className="ab-rc" key={rv.key}>
-                    <img src={rv.img} alt="" onError={handleImageFallback} loading="lazy" />
-                    <div className="ab-rc-body">
-                      <p className="ab-stars">★★★★★</p>
-                      <q>{rv.quote}</q>
-                      <p className="ab-rc-who">{rv.who} · {rv.place} · {rv.meta}</p>
-                    </div>
-                  </article>
-                )))}
+              : [])}
           />
         </div>
-      </section>
+      </section>}
 
       {/* 8. CTA */}
       <section className="ab-sec ab-cta">
@@ -1174,7 +1236,9 @@ const CSS = `
 .ab-nav{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:calc(var(--s3) + env(safe-area-inset-top)) var(--gut) var(--s3);transition:background .3s,box-shadow .3s;}
 .ab-nav.solid{background:rgba(255,255,255,.9);backdrop-filter:blur(10px);box-shadow:0 1px 0 var(--line);}
 .ab-brand{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.1875rem;letter-spacing:.02em;display:inline-flex;gap:8px;align-items:baseline;color:#fff;}
-.ab-nav.solid .ab-brand{color:var(--navy);}
+/* ".ab-lp a{color:inherit}"(0,1,1)가 ".ab-brand"(0,1,0)를 이겨서 히어로 위 로고가 남색으로 묻히던 문제 — 선택자 우선순위를 올린다. */
+.ab-nav .ab-brand{color:#fff;text-shadow:0 1px 8px rgba(10,27,46,.35);}
+.ab-nav.solid .ab-brand{color:var(--navy);text-shadow:none;}
 .ab-brand span{font-size:.625rem;letter-spacing:.24em;color:currentColor;opacity:.7;text-transform:uppercase;font-weight:600;}
 .ab-nav-links{display:flex;align-items:center;gap:var(--s4);}
 .ab-nav-links a{font-size:.875rem;color:#fff;font-weight:600;}
@@ -1416,6 +1480,7 @@ const CSS = `
 .ab-stars{margin:0;color:var(--gold);letter-spacing:.16em;font-size:.8125rem;}
 .ab-rc q{display:block;margin-top:10px;font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:600;font-size:.9375rem;line-height:1.5;color:var(--text-1);}
 .ab-rc-who{margin-top:12px;font-size:.75rem;color:var(--text-2);}
+.ab-rc-verified{margin-top:4px;font-size:.6875rem;font-weight:600;color:var(--turq,#17A8BD);}
 
 /* 8. CTA */
 .ab-cta{background:var(--turq-light);text-align:center;}
@@ -1437,4 +1502,18 @@ const CSS = `
   .ab-lp *{animation-duration:.001ms!important;transition-duration:.001ms!important;}
   .r{opacity:1;transform:none;}
 }
+
+/* ── 2단계: 모바일 밀도 개선 ─────────────────────────── */
+.ab-wish{position:absolute;right:10px;top:10px;z-index:2;width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.88);color:var(--navy);backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(10,27,46,.15);transition:transform .15s,color .15s;}
+.ab-wish:active{transform:scale(.92);}
+.ab-wish.on{color:#E5484D;}
+.ab-tcard-badges{right:56px;}
+@media(max-width:640px){
+  .ab-banner{min-height:58svh;}
+  .ab-bento,.ab-tourrow{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;margin-left:calc(-1 * var(--gut));margin-right:calc(-1 * var(--gut));padding:0 var(--gut) 8px;scrollbar-width:none;}
+  .ab-bento::-webkit-scrollbar,.ab-tourrow::-webkit-scrollbar{display:none;}
+  .ab-bento>.ab-tcard,.ab-tourrow>.ab-tcard{flex:0 0 84%;scroll-snap-align:start;scroll-margin-left:var(--gut);}
+  .ab-tcard.feat .ab-tcard-img{aspect-ratio:16/10;}
+}
+.ab-bigcard-wish{margin-top:6px;font-size:.75rem;font-weight:600;color:var(--turq);}
 `;

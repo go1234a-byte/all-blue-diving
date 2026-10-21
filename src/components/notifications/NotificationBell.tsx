@@ -7,6 +7,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { computeTourAlerts } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+import { useDiverWish } from "@/contexts/DiverWishContext";
 
 /**
  * 인앱 알림센터 (실제 OS 푸시 인프라 부재로 대체 구현).
@@ -158,7 +159,15 @@ export function NotificationBell() {
 
   if (role !== "public" || !isLoggedIn) return null;
 
-  const alerts = computeTourAlerts(tours, bookings, currentDiverId);
+  return <DiverBell alerts={computeTourAlerts(tours, bookings, currentDiverId)} />;
+}
+
+/** 다이버 알림: 출발 D-3/D-1(계산) + 관심 바다 새 투어·빈자리(diver_alerts). */
+function DiverBell({ alerts }: { alerts: ReturnType<typeof computeTourAlerts> }) {
+  const navigate = useNavigate();
+  const { available, alerts: wishAlerts, unreadCount, markAlertRead, markAllRead } = useDiverWish();
+  const stored = available ? wishAlerts.slice(0, 20) : [];
+  const badge = alerts.length + (available ? unreadCount : 0);
 
   return (
     <Popover>
@@ -169,16 +178,47 @@ export function NotificationBell() {
           aria-label="알림"
         >
           <Bell className="h-5 w-5" />
-          {alerts.length > 0 && (
+          {badge > 0 && (
             <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-              {alerts.length}
+              {badge > 9 ? "9+" : badge}
             </span>
           )}
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 space-y-2 p-3">
-        <p className="text-xs font-semibold text-foreground">알림</p>
-        {alerts.length === 0 ? (
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-foreground">알림</p>
+          {available && unreadCount > 0 && (
+            <button type="button" onClick={() => void markAllRead()} className="text-[11px] text-muted-foreground hover:text-foreground">
+              모두 읽음
+            </button>
+          )}
+        </div>
+        {stored.length > 0 && (
+          <div className="max-h-56 space-y-2 overflow-y-auto">
+            {stored.map((a) => (
+              <button
+                type="button"
+                key={a.id}
+                onClick={() => {
+                  void markAlertRead(a.id);
+                  navigate(a.tourId ? `/tour/${a.tourId}` : "/search");
+                }}
+                className={cn(
+                  "block w-full space-y-0.5 rounded-lg border p-2.5 text-left",
+                  a.read ? "border-border bg-card" : a.type === "seat_open" ? "border-destructive/40 bg-destructive/5" : "border-primary/30 bg-secondary/50",
+                )}
+              >
+                <p className="line-clamp-1 text-xs font-semibold text-foreground">
+                  {!a.read && <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-destructive align-middle" />}
+                  {a.title}
+                </p>
+                <p className="line-clamp-2 text-xs text-muted-foreground">{a.body}</p>
+              </button>
+            ))}
+          </div>
+        )}
+        {alerts.length === 0 && stored.length === 0 ? (
           <p className="py-4 text-center text-xs text-muted-foreground">새로운 알림이 없습니다.</p>
         ) : (
           <div className="space-y-2">

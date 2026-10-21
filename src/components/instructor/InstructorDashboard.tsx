@@ -19,14 +19,17 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { UnderMinDecisionPanel } from "./UnderMinDecisionPanel";
+import { DiveDemandCard } from "./DiveDemandCard";
 
 interface InstructorDashboardProps {
   instructorId: string;
   /** "누적 예약" 카드 클릭 시 예약(정산) 상세 화면으로 이동시키기 위한 콜백. */
   onViewBookings?: () => void;
+  /** 수요 카드의 "투어 만들기" → 투어생성 탭으로 이동 */
+  onCreateTour?: () => void;
 }
 
-export function InstructorDashboard({ instructorId, onViewBookings }: InstructorDashboardProps) {
+export function InstructorDashboard({ instructorId, onViewBookings, onCreateTour }: InstructorDashboardProps) {
   const { getInstructorById, tours, bookings, toursLoading, instructorsLoading, bookingsLoading, closeTourRecruiting } =
     useAppData();
   const { toast } = useToast();
@@ -59,6 +62,8 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
   return (
     <div className="space-y-4">
       <UnderMinDecisionPanel instructorId={instructorId} />
+
+      <DiveDemandCard onCreateTour={onCreateTour} />
 
       <div className="grid grid-cols-3 gap-3">
         <Card

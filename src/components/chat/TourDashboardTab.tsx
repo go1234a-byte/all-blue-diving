@@ -8,6 +8,8 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/contentModeration";
 import { formatDateRangeKR, dDayLabel } from "@/lib/dates";
+import { MarineForecastCard } from "@/components/tour/MarineForecastCard";
+import { BuddyInviteCard } from "@/components/tour/BuddyInvite";
 import type { Booking, Tour } from "@/types";
 
 interface TourDashboardTabProps {
@@ -80,6 +82,10 @@ export function TourDashboardTab({ tour, isInstructor }: TourDashboardTabProps) 
           </CardContent>
         </Card>
       </div>
+
+      <MarineForecastCard tour={tour} />
+
+      {!isInstructor && <BuddyInviteCard tourId={tour.id} booked />}
 
       <Card className="border-primary/40">
         <CardContent className="space-y-2 p-4">
