@@ -15,6 +15,7 @@ import { TourCard } from "@/components/search/TourCard";
 import { TourMapView } from "@/components/search/TourMapView";
 import { FilterSidebar, DEFAULT_FILTERS, type FilterState } from "@/components/search/FilterSidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { useDiverWish } from "@/contexts/DiverWishContext";
 import { isBeginnerFriendly } from "@/lib/tourLabels";
 import { useAppData } from "@/contexts/AppDataContext";
 import { applyPlatformFee } from "@/lib/pricing";
@@ -33,6 +34,23 @@ const SORT_LABELS: Record<SortOption, string> = {
 };
 
 const SORT_OPTIONS: SortOption[] = ["newest", "cheapest", "expensive", "rating"];
+
+/** 원하는 투어가 없을 때 다이버를 놓치지 않도록 — 관심 바다를 등록하면 투어가 열릴 때 알림. */
+function WishNudge() {
+  const { available } = useDiverWish();
+  if (!available) return null;
+  return (
+    <div className="space-y-1.5">
+      <p className="text-sm font-semibold text-foreground">원하는 바다·날짜의 투어가 없나요?</p>
+      <p className="break-keep text-xs text-muted-foreground">
+        가고 싶은 바다를 등록해두면 투어가 열릴 때 알려드리고, 강사님들도 그 수요를 보고 투어를 엽니다.
+      </p>
+      <Link to="/?explore=guide" className="inline-block pt-1 text-xs font-semibold text-primary">
+        가고 싶은 바다 등록하기 →
+      </Link>
+    </div>
+  );
+}
 
 const Search = () => {
   usePageMeta({
@@ -196,8 +214,9 @@ const Search = () => {
           </div>
 
           {filteredTours.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-              조건에 맞는 투어가 없습니다. 필터를 조정해보세요.
+            <div className="space-y-3 rounded-xl border border-dashed border-border px-4 py-12 text-center text-sm text-muted-foreground">
+              <p>조건에 맞는 투어가 없습니다. 필터를 조정해보세요.</p>
+              <WishNudge />
             </div>
           ) : viewMode === "map" ? (
             <TourMapView tours={filteredTours} />
@@ -206,6 +225,11 @@ const Search = () => {
               {filteredTours.map((tour) => (
                 <TourCard key={tour.id} tour={tour} />
               ))}
+            </div>
+          )}
+          {filteredTours.length > 0 && (
+            <div className="rounded-xl border border-border bg-card px-4 py-5 text-center">
+              <WishNudge />
             </div>
           )}
         </div>

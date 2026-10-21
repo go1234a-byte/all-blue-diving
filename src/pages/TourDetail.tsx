@@ -13,6 +13,10 @@ import { InclusionsExclusionsCard } from "@/components/tour/InclusionsExclusions
 import { TourOptionsSelector } from "@/components/tour/TourOptionsSelector";
 import { ReviewList } from "@/components/tour/ReviewList";
 import { TripShareDialog } from "@/components/tour/TripShareDialog";
+import { SeatAlertButton } from "@/components/tour/SeatAlertButton";
+import { MarineForecastCard } from "@/components/tour/MarineForecastCard";
+import { LocalCurrencyCard } from "@/components/tour/LocalCurrencyCard";
+import { BuddyInviteCard, BuddyInvitedBanner } from "@/components/tour/BuddyInvite";
 import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -124,6 +128,9 @@ const TourDetail = () => {
   // 더 이상 예약을 받을 수 없다. tour.status는 instructor 콘솔뿐 아니라 실제 예약 가능 여부에도 반영해야 한다.
   const isBookingBlocked = Boolean(tour.adminStatus) || tour.status === "closed" || isFull;
   const alreadyBooked = Boolean(myBooking);
+  // 정원만 찬(취소·정지·마감 아님) 투어는 "예약 불가" 대신 빈자리 알림을 받게 한다.
+  const canWaitForSeat =
+    isFull && !alreadyBooked && !tour.adminStatus && tour.status === "open" && !tour.cancelledAt;
 
   const handleBookNow = () => {
     if (isBookingBlocked) {
@@ -220,6 +227,8 @@ const TourDetail = () => {
                 ? "관리자 검토로 보류중인 투어입니다. 검토가 끝날 때까지 예약을 받을 수 없습니다."
                 : tour.cancelledAt
                 ? "취소된 투어입니다. 예약을 받을 수 없습니다."
+                : canWaitForSeat
+                ? "정원이 모두 찼어요. 취소자가 생기면 빈자리 알림으로 바로 알려드려요."
                 : "모집이 마감된 투어입니다. 더 이상 예약을 받을 수 없습니다."}
             </span>
           </div>
@@ -233,6 +242,7 @@ const TourDetail = () => {
             예약한 투어예요 · 대시보드 바로가기
           </Link>
         )}
+        <BuddyInvitedBanner tourId={tour.id} />
 
         <TourGallery mainImageUrl={tour.mainImageUrl} galleryUrls={tour.galleryUrls} title={tour.title} />
 
@@ -381,6 +391,9 @@ const TourDetail = () => {
           </div>
         )}
 
+        {/* 0) 버디 초대 — 링크로 친구가 예약하면 같은 방 배정 희망이 자동으로 적힌다 */}
+        {!isBookingBlocked && <BuddyInviteCard tourId={tour.id} booked={Boolean(myBooking)} />}
+
         {/* 1) 담당 강사 프로필 */}
         <InstructorTrustCard instructor={instructor} />
 
@@ -445,6 +458,9 @@ const TourDetail = () => {
 
         <TripShareDialog tour={tour} open={tripShareOpen} onOpenChange={setTripShareOpen} showCalendar={Boolean(myBooking)} />
 
+        {/* 2-2) 바다 예보 — 출발 7일 전부터는 투어 날짜 예보, 그 전엔 "지금 현지 바다" */}
+        <MarineForecastCard tour={tour} />
+
         {/* 3) 예약된 센터 소개 */}
         {diveCenter && <DiveCenterCard diveCenter={diveCenter} />}
         {center && <TourCenterCard center={center} />}
@@ -465,6 +481,9 @@ const TourDetail = () => {
 
         {/* 5) 포함 및 불포함 사항 */}
         <InclusionsExclusionsCard inclusions={tour.inclusions} exclusions={tour.exclusions} />
+
+        {/* 5-1) 불포함 항목은 대부분 현지 통화로 낸다 — 원화 환산 */}
+        <LocalCurrencyCard country={tour.country} />
 
         <TourOptionsSelector
           options={tour.customOptions}
@@ -502,14 +521,18 @@ const TourDetail = () => {
                 모집 마감일: {formatDateKR(tour.recruitmentDeadline)}까지
               </div>
             </div>
-            <Button
-              size="lg"
-              className="w-full"
-              onClick={handleBookNow}
-              disabled={isBookingBlocked || alreadyBooked}
-            >
-              {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
-            </Button>
+            {canWaitForSeat ? (
+              <SeatAlertButton tourId={tour.id} className="h-11 w-full" />
+            ) : (
+              <Button
+                size="lg"
+                className="w-full"
+                onClick={handleBookNow}
+                disabled={isBookingBlocked || alreadyBooked}
+              >
+                {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
+              </Button>
+            )}
           </div>
         </aside>
       </main>
@@ -524,9 +547,13 @@ const TourDetail = () => {
           </p>
           <p className="text-lg font-bold text-primary">{formatKRW(displayTotal)}</p>
         </div>
-        <Button size="lg" onClick={handleBookNow} disabled={isBookingBlocked || alreadyBooked}>
-          {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
-        </Button>
+        {canWaitForSeat ? (
+          <SeatAlertButton tourId={tour.id} className="h-11" />
+        ) : (
+          <Button size="lg" onClick={handleBookNow} disabled={isBookingBlocked || alreadyBooked}>
+            {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
+          </Button>
+        )}
       </div>
     </div>
   );

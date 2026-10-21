@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DiverProfileEditCard } from "@/components/mypage/DiverProfileEditCard";
 import { DiverSafetyProfileCard } from "@/components/mypage/DiverSafetyProfileCard";
 import { InquiryHistoryList } from "@/components/mypage/InquiryHistoryList";
+import { DiveWishCard } from "@/components/mypage/DiveWishCard";
 import { BlockedUsersCard } from "@/components/mypage/BlockedUsersCard";
 import { AccountActions } from "@/components/mypage/AccountActions";
 import { PushNotificationToggle } from "@/components/mypage/PushNotificationToggle";
@@ -87,6 +88,8 @@ export function DiverMyPageView() {
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Link>
       </div>
+
+      <DiveWishCard />
 
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-foreground">문의 내역</h3>

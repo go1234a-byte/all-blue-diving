@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { buddyRoomNote, getBuddyInvite } from "@/lib/buddyInvite";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getTourById, getCouponByCode, addBooking, toursLoading, getConfirmedParticipantCount } =
+  const { getTourById, getCouponByCode, addBooking, toursLoading, getConfirmedParticipantCount, publicProfiles } =
     useAppData();
   const { profile, currentDiverId, isLoggedIn, authLoading } = useRole();
 
@@ -89,6 +90,22 @@ const Checkout = () => {
   // 뒤 인원수/옵션을 바꿔도 할인액이 그대로라 실제 %와 어긋났다.
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
+
+  // 버디 초대 링크로 들어왔다면 본인 룸 배정 메모에 "버디 OO님과 같은 방 희망"을 미리 채운다.
+  // 사용자가 이미 뭔가 적었으면 덮어쓰지 않고, 언제든 지우거나 고칠 수 있다.
+  const buddyInviterId = tourId ? getBuddyInvite(tourId) : null;
+  const buddyName =
+    buddyInviterId && buddyInviterId !== profile?.id
+      ? publicProfiles.find((p) => p.id === buddyInviterId)?.name ?? null
+      : null;
+  useEffect(() => {
+    if (!buddyName) return;
+    setParticipants((prev) =>
+      prev[0] && !prev[0].roomNote.trim()
+        ? [{ ...prev[0], roomNote: buddyRoomNote(buddyName) }, ...prev.slice(1)]
+        : prev,
+    );
+  }, [buddyName]);
 
   if (toursLoading && !tour) {
     return (
@@ -414,6 +431,11 @@ const Checkout = () => {
               </div>
               <div className="space-y-1.5 pt-1">
                 <Label className="text-xs text-muted-foreground">직접 입력 (선택)</Label>
+                {idx === 0 && buddyName && (
+                  <p className="text-[11px] font-medium text-primary">
+                    🤿 {buddyName}님의 버디 초대로 예약 중이에요 — 같은 방 희망을 미리 적어뒀어요.
+                  </p>
+                )}
                 <Textarea
                   value={p.roomNote}
                   onChange={(e) => updateParticipant(idx, { roomNote: e.target.value })}

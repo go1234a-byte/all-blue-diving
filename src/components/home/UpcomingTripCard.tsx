@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarPlus, ChevronRight, ImageDown, MessageCircle } from "lucide-react";
+import { CalendarPlus, ChevronRight, ImageDown, MessageCircle, UserPlus } from "lucide-react";
+import { shareOrCopyLink } from "@/lib/share";
+import { buildBuddyInviteUrl } from "@/lib/buddyInvite";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
@@ -65,15 +67,15 @@ export function UpcomingTripCard() {
             <ChevronRight className="ml-auto mt-1 h-4 w-4 text-[#14324D]/40" />
           </div>
         </Link>
-        <div className="grid grid-cols-3 border-t border-[#14324D]/10 text-xs font-semibold text-[#14324D]">
-          <Link to={`/chat/${t.id}`} className="flex items-center justify-center gap-1.5 py-3 hover:bg-[#F4FAFB]">
+        <div className="grid grid-cols-4 divide-x divide-[#14324D]/10 border-t border-[#14324D]/10 text-[11px] font-semibold text-[#14324D]">
+          <Link to={`/chat/${t.id}`} className="flex flex-col items-center justify-center gap-1 py-2.5 hover:bg-[#F4FAFB]">
             <MessageCircle className="h-4 w-4 text-[#17A8BD]" />
             그룹 채팅
           </Link>
           <button
             type="button"
             onClick={() => setShareOpen(true)}
-            className="flex items-center justify-center gap-1.5 border-x border-[#14324D]/10 py-3 hover:bg-[#F4FAFB]"
+            className="flex flex-col items-center justify-center gap-1 py-2.5 hover:bg-[#F4FAFB]"
           >
             <ImageDown className="h-4 w-4 text-[#17A8BD]" />
             일정 공유
@@ -84,10 +86,25 @@ export function UpcomingTripCard() {
               const r = await shareOrDownloadFile(buildTripIcs(t), `ALLBLUE_${safeName}.ics`, t.title);
               if (r === "downloaded") toast({ title: "캘린더 파일을 받았어요", description: "파일을 열면 내 캘린더에 추가됩니다." });
             }}
-            className="flex items-center justify-center gap-1.5 py-3 hover:bg-[#F4FAFB]"
+            className="flex flex-col items-center justify-center gap-1 py-2.5 hover:bg-[#F4FAFB]"
           >
             <CalendarPlus className="h-4 w-4 text-[#17A8BD]" />
             캘린더
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const r = await shareOrCopyLink({
+                title: `${t.title} 같이 가요!`,
+                text: `${profile?.name ?? "버디"}님이 다이빙 투어에 초대했어요 🤿`,
+                url: buildBuddyInviteUrl(t.id, profile!.id),
+              });
+              if (r === "copied") toast({ title: "초대 링크를 복사했어요", description: "카톡에 붙여넣어 버디에게 보내세요." });
+            }}
+            className="flex flex-col items-center justify-center gap-1 py-2.5 hover:bg-[#F4FAFB]"
+          >
+            <UserPlus className="h-4 w-4 text-[#17A8BD]" />
+            버디 초대
           </button>
         </div>
       </div>

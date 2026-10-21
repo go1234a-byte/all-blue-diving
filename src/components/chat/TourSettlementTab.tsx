@@ -3,6 +3,7 @@ import { Calculator, Check, Lock, Plus, Save, Trash2, Unlock } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { KrwInLocal, SettlementCurrencyHelper } from "@/components/chat/SettlementCurrencyHelper";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -219,7 +220,10 @@ export function TourSettlementTab({ tour, bookings, isInstructor }: TourSettleme
           {result.perParticipant.map((p) => (
             <div key={p.id} className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5">
               <span className="text-sm text-foreground">{p.name}</span>
-              <span className="text-sm font-bold text-primary">{formatKRW(Math.round(p.amount))}</span>
+              <span className="flex flex-col items-end text-sm font-bold text-primary">
+                {formatKRW(Math.round(p.amount))}
+                <KrwInLocal krw={Math.round(p.amount)} country={tour.country} />
+              </span>
             </div>
           ))}
         </div>
@@ -242,7 +246,10 @@ export function TourSettlementTab({ tour, bookings, isInstructor }: TourSettleme
             <ResultPanel />
             <div className="flex items-center justify-between rounded-lg bg-secondary/60 px-3 py-2 text-sm">
               <span className="font-medium text-foreground">내 정산 금액</span>
-              <span className="font-bold text-primary">{formatKRW(Math.round(myAmount))}</span>
+              <span className="flex flex-col items-end font-bold text-primary">
+                {formatKRW(Math.round(myAmount))}
+                <KrwInLocal krw={Math.round(myAmount)} country={tour.country} />
+              </span>
             </div>
           </>
         )}
@@ -348,6 +355,7 @@ export function TourSettlementTab({ tour, bookings, isInstructor }: TourSettleme
             아직 예약한 참가자가 없어 정산 대상이 없습니다.
           </p>
         )}
+        <SettlementCurrencyHelper country={tour.country} />
         {draft.map((day, dayIdx) => (
           <Card key={day.dayNumber}>
             <CardContent className="space-y-2.5 p-3">

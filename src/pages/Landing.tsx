@@ -4,6 +4,9 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { BottomNav, getNavItems } from "@/components/layout/BottomNav";
 import { UpcomingTripCard } from "@/components/home/UpcomingTripCard";
+import { DiveWishPanel } from "@/components/home/DiveWishPanel";
+import { useDiverWish } from "@/contexts/DiverWishContext";
+import { DiverAlertsStrip } from "@/components/home/DiverAlertsStrip";
 import { AdminHeadcountControl } from "@/components/tour/AdminHeadcountControl";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
@@ -200,6 +203,21 @@ function DetailSheet({
   );
 }
 
+/** 포인트 카드의 관심 표시 — 내가 등록했는지 + 몇 명이 관심 있는지. 기능이 꺼져 있으면 아무것도 안 그린다. */
+function WishMark({ pointId }: { pointId: string }) {
+  const { available, getWish, demandByPoint } = useDiverWish();
+  if (!available) return null;
+  const mine = Boolean(getWish(pointId));
+  const n = demandByPoint.get(pointId) ?? 0;
+  if (!mine && n === 0) return null;
+  return (
+    <p className="ab-bigcard-wish">
+      {mine ? "♥ 관심 등록함" : "♡"}
+      {n > 0 ? ` · ${n.toLocaleString()}명이 가고 싶어해요` : ""}
+    </p>
+  );
+}
+
 /**
  * 배너 클릭 시 열리는 전용 전체화면 뷰. B(다이빙 포인트) / 리브어보드 공용.
  * 스크롤로 카드를 훑어보고, 카드 클릭 시 공용 DetailSheet 를 연다. 예약 요소 없음.
@@ -289,6 +307,7 @@ function Explorer({
                     <h3>{pt.hook}</h3>
                     <p className="ab-bigcard-oneliner">{pt.oneLiner}</p>
                     <p className="ab-bigcard-meta">{pt.water}</p>
+                    <WishMark pointId={pt.id} />
                     <span className="ab-bigcard-more">자세히 보기 →</span>
                   </div>
                 </button>
@@ -535,6 +554,17 @@ export default function Landing() {
     { kind: "point"; data: DivePoint } | { kind: "region"; data: LiveaboardRegion } | null
   >(null);
   const [scrollY, setScrollY] = useState(0);
+
+  // 검색 결과가 없을 때 "가고 싶은 바다 등록" 링크(/?explore=guide)로 들어오면 가이드를 바로 연다.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("explore") === "guide") {
+      setExplorer("guide");
+      p.delete("explore");
+      const qs = p.toString();
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+    }
+  }, []);
 
   // 히어로 = "이번 달 다이빙 떠나기 좋은 곳". guideMonth 는 기본값이 오늘 날짜의 달(위 초기화)이라
   // 첫 화면은 항상 현재 월 추천으로 뜨고, 아래 가이드 섹션에서 달을 바꾸면 히어로도 같이 바뀐다.
@@ -804,7 +834,8 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* 1-1. 다가오는 다이빙 D-day — 예약한 다이버에게만 */}
+      {/* 1-1. 안 읽은 알림(관심 바다 새 투어 · 빈자리) + 다가오는 다이빙 D-day — 로그인 다이버에게만 */}
+      <DiverAlertsStrip />
       <UpcomingTripCard />
 
       {/* 2. 모집중인 투어 (실데이터) — 히어로 바로 아래. 예전엔 대형 배너 3개 아래(약 3,400px)에 있어
@@ -978,6 +1009,7 @@ export default function Landing() {
       >
         {detail?.kind === "point" && (
           <>
+            <DiveWishPanel point={detail.data} defaultMonth={guideMonth + 1} />
             {detail.data.access && <p className="ab-sheet-access">✈️ 가는 길 · {detail.data.access}</p>}
             <p className="ab-sheet-p">{detail.data.detail}</p>
             {detail.data.special && (
@@ -1483,4 +1515,5 @@ const CSS = `
   .ab-bento>.ab-tcard,.ab-tourrow>.ab-tcard{flex:0 0 84%;scroll-snap-align:start;scroll-margin-left:var(--gut);}
   .ab-tcard.feat .ab-tcard-img{aspect-ratio:16/10;}
 }
+.ab-bigcard-wish{margin-top:6px;font-size:.75rem;font-weight:600;color:var(--turq);}
 `;

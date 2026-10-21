@@ -4,6 +4,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InstructorDashboard } from "@/components/instructor/InstructorDashboard";
 import { TourCreateForm } from "@/components/instructor/TourCreateForm";
+import { DiveDemandCard } from "@/components/instructor/DiveDemandCard";
 import { InstructorSettlementSummary } from "@/components/instructor/InstructorSettlementSummary";
 import { SettlementLedger } from "@/components/instructor/SettlementLedger";
 import { InstructorReviewsPanel } from "@/components/instructor/InstructorReviewsPanel";
@@ -40,6 +41,7 @@ const InstructorConsole = () => {
             <InstructorDashboard
               instructorId={currentInstructorId}
               onViewBookings={() => setTab("settlement")}
+              onCreateTour={() => setTab("create")}
             />
           </TabsContent>
           <TabsContent value="create" className="pt-4">
@@ -52,7 +54,10 @@ const InstructorConsole = () => {
                 </p>
               </div>
             ) : (
-              <TourCreateForm instructorId={currentInstructorId} onCreated={() => setTab("dashboard")} />
+              <div className="space-y-4">
+                <DiveDemandCard compact />
+                <TourCreateForm instructorId={currentInstructorId} onCreated={() => setTab("dashboard")} />
+              </div>
             )}
           </TabsContent>
           <TabsContent value="reviews" className="pt-4">
