@@ -16,6 +16,7 @@ import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardG
 import { hasFullItinerary, isDepartureConfirmed, tourLevelLabel } from "@/lib/tourLabels";
 import { isTourBookable } from "@/lib/tourBooking";
 import type { Tour } from "@/types";
+import { isSampleContent } from "@/lib/sampleContent";
 
 /**
  * 중첩 오버레이(Explorer 위에 DetailSheet)가 순서 뒤죽박죽으로 닫혀도 body 스크롤 잠금이
@@ -814,7 +815,11 @@ export default function Landing() {
           <div className="ab-sec-head r">
             <div>
               <h2>지금 모집중인 투어</h2>
-              <p className="ab-sub">인증 강사가 진행하는, 예약 가능한 일정입니다.</p>
+              <p className="ab-sub">
+                {bentoTours.length > 0 && bentoTours.every((t) => isSampleContent(t.title))
+                  ? "지금은 예시 투어로 화면을 보여드리고 있어요. 첫 실제 투어가 곧 열립니다."
+                  : "인증 강사가 진행하는, 예약 가능한 일정입니다."}
+              </p>
             </div>
             <Link to="/search" className="ab-textlink">전체 투어 보기 →</Link>
           </div>
@@ -829,6 +834,7 @@ export default function Landing() {
                     <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
                     <WishButton tourId={t.id} />
                     <div className="ab-tcard-badges">
+                      {isSampleContent(t.title) && <span className="ab-chip sample">예시 투어 · 예약 불가</span>}
                       {(() => { const b = recoBadge(t); return b ? <span className="ab-chip reco">{b}</span> : null; })()}
                       {t.activityTypes.map((a) => (
                         <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
@@ -903,6 +909,7 @@ export default function Landing() {
                     <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
                     <WishButton tourId={t.id} />
                     <div className="ab-tcard-badges">
+                      {isSampleContent(t.title) && <span className="ab-chip sample">예시 투어 · 예약 불가</span>}
                       <span className="ab-chip hot">{d.label}</span>
                       {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
                     </div>
@@ -1392,6 +1399,7 @@ const CSS = `
 .ab-chip.gold{background:var(--gold);color:#3a2c10;}
 .ab-chip.hot{background:#E8484A;color:#fff;}
 .ab-chip.muted{background:rgba(10,27,46,.55);color:#fff;}
+.ab-chip.sample{background:#FBBF24;color:#451A03;}
 .ab-tcard-body{padding:var(--s4);}
 .ab-tcard-loc{font-size:.6875rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);font-weight:600;}
 .ab-tcard-body h3{margin-top:6px;font-size:1.0625rem;}

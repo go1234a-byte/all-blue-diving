@@ -28,6 +28,7 @@ import { isTourBookable } from "@/lib/tourBooking";
 import { shareOrCopyLink } from "@/lib/share";
 import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
 import { hasFullItinerary, tourLevelLabel } from "@/lib/tourLabels";
+import { isSampleContent } from "@/lib/sampleContent";
 
 interface TourCardProps {
   tour: Tour;
@@ -128,6 +129,11 @@ export function TourCard({ tour }: TourCardProps) {
               )}
             />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
+            {isSampleContent(tour.title) && (
+              <span className="absolute left-2 top-2 rounded-md bg-amber-400 px-2 py-1 text-[11px] font-bold text-amber-950">
+                예시 투어 · 예약 불가
+              </span>
+            )}
             <div className="absolute left-2 top-2 flex flex-wrap gap-1">
               {isFull && (
                 <Badge className="border-0 bg-foreground/90 text-background backdrop-blur">모집마감</Badge>

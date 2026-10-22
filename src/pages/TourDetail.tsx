@@ -10,6 +10,8 @@ import { TourFlightInfoCard } from "@/components/tour/TourFlightInfoCard";
 import { DiveCenterCard } from "@/components/tour/DiveCenterCard";
 import { TourCenterCard } from "@/components/tour/TourCenterCard";
 import { InclusionsExclusionsCard } from "@/components/tour/InclusionsExclusionsCard";
+import { CostAtAGlanceCard } from "@/components/tour/CostAtAGlanceCard";
+import { EligibilityCheckCard } from "@/components/tour/EligibilityCheckCard";
 import { TourOptionsSelector } from "@/components/tour/TourOptionsSelector";
 import { ReviewList } from "@/components/tour/ReviewList";
 import { TripShareDialog } from "@/components/tour/TripShareDialog";
@@ -23,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { stripLeadingLabel, tourLevelLabel } from "@/lib/tourLabels";
 import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
 import { shareOrCopyLink } from "@/lib/share";
+import { isSampleContent } from "@/lib/sampleContent";
 
 const TourDetail = () => {
   const { tourId } = useParams();
@@ -122,13 +125,17 @@ const TourDetail = () => {
   const isFull = confirmedCount >= tour.maxParticipants;
   // 관리자가 정지/보류 처리했거나, 모집이 마감된 투어(최소 인원 미달로 취소된 경우 포함)는
   // 더 이상 예약을 받을 수 없다. tour.status는 instructor 콘솔뿐 아니라 실제 예약 가능 여부에도 반영해야 한다.
-  const isBookingBlocked = Boolean(tour.adminStatus) || tour.status === "closed" || isFull;
+  // 시연용 샘플 투어는 실제 예약·결제를 받지 않는다(DB 트리거도 같은 기준으로 막는다).
+  const isSample = isSampleContent(tour.title);
+  const isBookingBlocked = isSample || Boolean(tour.adminStatus) || tour.status === "closed" || isFull;
   const alreadyBooked = Boolean(myBooking);
 
   const handleBookNow = () => {
     if (isBookingBlocked) {
       toast({
-        title: tour.adminStatus === "suspended"
+        title: isSample
+          ? "예시 투어예요"
+          : tour.adminStatus === "suspended"
           ? "정지된 투어예요"
           : tour.adminStatus === "held"
           ? "보류중인 투어예요"
@@ -208,6 +215,13 @@ const TourDetail = () => {
         </div>
       </header>
 
+      {isSample && (
+        <div className="mx-auto w-full max-w-md px-4 pt-4 md:max-w-6xl md:px-6">
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <strong>예시 투어입니다.</strong> 서비스 화면을 보여드리기 위한 샘플이라 실제로 예약할 수 없어요.
+          </div>
+        </div>
+      )}
       <main className="mx-auto w-full max-w-md px-4 py-5 md:grid md:max-w-6xl md:grid-cols-[minmax(0,1fr)_360px] md:items-start md:gap-8 md:px-6 md:py-8">
        <div className="space-y-6">
         {isBookingBlocked && (
@@ -463,6 +477,9 @@ const TourDetail = () => {
           </div>
         )}
 
+        <EligibilityCheckCard tour={tour} />
+        <CostAtAGlanceCard tour={tour} />
+
         {/* 5) 포함 및 불포함 사항 */}
         <InclusionsExclusionsCard inclusions={tour.inclusions} exclusions={tour.exclusions} />
 
@@ -508,7 +525,7 @@ const TourDetail = () => {
               onClick={handleBookNow}
               disabled={isBookingBlocked || alreadyBooked}
             >
-              {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
+              {isSample ? "예시 투어" : isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
             </Button>
           </div>
         </aside>
@@ -525,7 +542,7 @@ const TourDetail = () => {
           <p className="text-lg font-bold text-primary">{formatKRW(displayTotal)}</p>
         </div>
         <Button size="lg" onClick={handleBookNow} disabled={isBookingBlocked || alreadyBooked}>
-          {isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
+          {isSample ? "예시 투어" : isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
         </Button>
       </div>
     </div>
