@@ -37,6 +37,7 @@ import {
 } from "@/lib/constants";
 import { formatDateKR, isPastDate, toISODate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { hasBusinessLicense } from "@/lib/businessLicense";
 import type {
   ActivityType,
   CertificationLevel,
@@ -125,6 +126,8 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
   // 검수 없이 바로 투어를 열어 예약을 받는 것을 막기 위한 최소한의 안전장치.
   const instructorRecord = getInstructorById(instructorId);
   const isVerifiedInstructor = instructorRecord?.verified === true;
+  // 사업자등록증을 내지 않은 강사도 신규 투어 등록 불가 (DB 트리거에서도 막는다).
+  const hasLicense = hasBusinessLicense(instructorRecord);
 
   // 강사 1인당 투어 생성 제한: 같은 "출발월"에 1개, 전체 누적 최대 3개.
   // 예전에는 (a) "이번 달에 이미 하나 만들었는가"를 실제 달력상 오늘 날짜(now) 기준으로만
@@ -355,6 +358,14 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
       });
       return;
     }
+    if (!hasLicense) {
+      toast({
+        title: "사업자등록증 제출 후 투어를 등록할 수 있어요",
+        description: "마이페이지에서 사업자 유형과 사업자등록증을 제출해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (hasReachedTotalLimit) {
       toast({
         title: "투어 생성 한도를 초과했습니다",
@@ -525,7 +536,13 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
           <strong> 승인 전에는 투어를 실제로 등록할 수 없습니다.</strong>
         </div>
       )}
-      {isVerifiedInstructor && hasReachedTourLimit && (
+      {isVerifiedInstructor && !hasLicense && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
+          사업자등록증이 제출되지 않았어요.
+          <strong> 마이페이지에서 사업자등록증을 제출해야 투어를 등록할 수 있습니다.</strong>
+        </div>
+      )}
+      {isVerifiedInstructor && hasLicense && hasReachedTourLimit && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
           {hasReachedTotalLimit
             ? "투어는 강사 1인당 최대 3개까지 생성할 수 있습니다."
@@ -1027,13 +1044,15 @@ export function TourCreateForm({ instructorId, onCreated }: TourCreateFormProps)
         type="submit"
         className="w-full"
         size="lg"
-        disabled={submitting || !isVerifiedInstructor || hasReachedTourLimit}
+        disabled={submitting || !isVerifiedInstructor || !hasLicense || hasReachedTourLimit}
       >
         {submitting
           ? "등록 중..."
           : !isVerifiedInstructor
             ? "관리자 승인 후 등록 가능"
-            : hasReachedTourLimit
+            : !hasLicense
+              ? "사업자등록증 제출 후 등록 가능"
+              : hasReachedTourLimit
               ? "투어 생성 한도 초과"
               : "투어 등록하기"}
       </Button>
