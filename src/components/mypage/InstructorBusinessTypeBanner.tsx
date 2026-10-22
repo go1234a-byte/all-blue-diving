@@ -6,6 +6,7 @@ import { FileDropzone } from "@/components/auth/FileDropzone";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { uploadInstructorDocument } from "@/lib/uploadImage";
+import { hasBusinessLicense } from "@/lib/businessLicense";
 import type { InstructorBusinessType, InstructorProfile } from "@/types";
 
 const BUSINESS_TYPE_OPTIONS: { value: InstructorBusinessType; label: string; description: string }[] = [
@@ -43,7 +44,7 @@ export function InstructorBusinessTypeBanner({ instructor }: InstructorBusinessT
 
   // 사업자·법인으로 신고하고 등록증까지 냈으면 표시하지 않는다. 미신고, 예전 프리랜서,
   // 등록증 미제출 강사에게는 계속 보인다.
-  if (instructor.businessType && instructor.businessType !== "freelancer" && instructor.businessLicensePath) return null;
+  if (hasBusinessLicense(instructor)) return null;
 
   const handleSubmit = async () => {
     if (!businessType) {

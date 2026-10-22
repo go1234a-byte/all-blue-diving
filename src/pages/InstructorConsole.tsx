@@ -9,6 +9,7 @@ import { SettlementLedger } from "@/components/instructor/SettlementLedger";
 import { InstructorReviewsPanel } from "@/components/instructor/InstructorReviewsPanel";
 import { useRole } from "@/contexts/RoleContext";
 import { useAppData } from "@/contexts/AppDataContext";
+import { hasBusinessLicense } from "@/lib/businessLicense";
 
 // 강사 콘솔도 다른 화면과 동일하게 하단 네비게이션을 유지하고, 그 위에 상단 탭으로 세부 메뉴를 이동한다.
 const InstructorConsole = () => {
@@ -16,6 +17,7 @@ const InstructorConsole = () => {
   const { currentInstructorId } = useRole();
   const { getInstructorById } = useAppData();
   const isVerifiedInstructor = getInstructorById(currentInstructorId)?.verified === true;
+  const hasLicense = hasBusinessLicense(getInstructorById(currentInstructorId));
   const instructorPenaltyCount = getInstructorById(currentInstructorId)?.penaltyCount ?? 0;
   const isTourCreationRestricted = instructorPenaltyCount >= 5;
 
@@ -27,6 +29,12 @@ const InstructorConsole = () => {
           <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
             관리자 승인(인증배지) 대기 중이에요. 승인 전에는 투어를 실제로 등록할 수 없어요 —
             내용은 미리 준비해두시고, 승인되면 바로 등록해주세요.
+          </div>
+        )}
+        {isVerifiedInstructor && !hasLicense && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
+            사업자등록증이 제출되지 않아 신규 투어 등록이 막혀 있어요. 마이페이지에서 사업자등록증을
+            제출해주세요. 이미 열린 투어의 예약·정산·채팅은 그대로 이용할 수 있어요.
           </div>
         )}
         <Tabs value={tab} onValueChange={setTab}>
