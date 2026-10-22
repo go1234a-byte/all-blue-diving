@@ -872,6 +872,8 @@ interface AppDataContextValue {
       snsBlog?: string;
       snsHomepage?: string;
       businessType?: InstructorBusinessType;
+      businessLicenseFileName?: string;
+      businessLicensePath?: string;
     },
   ) => Promise<void>;
   submitInstructorDocumentCorrection: (
@@ -2772,6 +2774,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       snsHomepage?: string;
       /** 마이페이지에서 본인이 사업자 유형을 신고/정정할 때 사용 (정산 원천징수 계산에 반영됨). */
       businessType?: InstructorBusinessType;
+      businessLicenseFileName?: string;
+      businessLicensePath?: string;
     },
   ): Promise<void> => {
     const instructor = instructors.find((i) => i.id === instructorId);
@@ -2802,6 +2806,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ...(updates.snsBlog !== undefined ? { sns_blog: updates.snsBlog } : {}),
         ...(updates.snsHomepage !== undefined ? { sns_homepage: updates.snsHomepage } : {}),
         ...(updates.businessType !== undefined ? { business_type: updates.businessType } : {}),
+        ...(updates.businessLicenseFileName !== undefined
+          ? { business_license_file_name: updates.businessLicenseFileName }
+          : {}),
+        ...(updates.businessLicensePath !== undefined ? { business_license_path: updates.businessLicensePath } : {}),
+        // 인증된 강사가 등록증을 새로 내면 관리자 승인 큐에 "수정요청"으로 다시 띄운다.
+        ...(updates.businessLicensePath !== undefined && instructor?.verified ? { documents_pending_review: true } : {}),
       })
       .eq("id", instructorId);
     if (instructorUpdateError) {
@@ -2836,6 +2846,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               ...(updates.snsBlog !== undefined ? { snsBlog: updates.snsBlog } : {}),
               ...(updates.snsHomepage !== undefined ? { snsHomepage: updates.snsHomepage } : {}),
               ...(updates.businessType !== undefined ? { businessType: updates.businessType } : {}),
+              ...(updates.businessLicenseFileName !== undefined
+                ? { businessLicenseFileName: updates.businessLicenseFileName }
+                : {}),
+              ...(updates.businessLicensePath !== undefined ? { businessLicensePath: updates.businessLicensePath } : {}),
+              ...(updates.businessLicensePath !== undefined && i.verified ? { documentsPendingReview: true } : {}),
             }
           : i,
       ),
