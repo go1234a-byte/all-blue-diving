@@ -194,6 +194,15 @@ async function sendWebPushNotifications(
   return { attempted: true, sent: results.filter(Boolean).length, total: results.length };
 }
 
+/** 호출자 JWT로 can_notify_profile을 불러, 이 대상에게 보낼 자격이 있는지 확인한다(관리자·본인·예약 상대). */
+async function callerCanNotify(req: Request, target: string): Promise<boolean> {
+  const supabaseAsCaller = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+    global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+  });
+  const { data, error } = await supabaseAsCaller.rpc("can_notify_profile", { p_target: target });
+  return !error && data === true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -204,6 +213,13 @@ Deno.serve(async (req) => {
     if (!profileId || !title || !body) {
       return new Response(JSON.stringify({ error: "profileId, title, body는 필수입니다." }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!(await callerCanNotify(req, profileId))) {
+      return new Response(JSON.stringify({ error: "이 사용자에게 알림을 보낼 권한이 없습니다." }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
