@@ -16,7 +16,7 @@ import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardG
 import { hasFullItinerary, isDepartureConfirmed, tourLevelLabel } from "@/lib/tourLabels";
 import { isTourBookable } from "@/lib/tourBooking";
 import type { Tour } from "@/types";
-import { isSampleContent } from "@/lib/sampleContent";
+import { useSampleLock } from "@/hooks/useSampleLock";
 
 /**
  * 중첩 오버레이(Explorer 위에 DetailSheet)가 순서 뒤죽박죽으로 닫혀도 body 스크롤 잠금이
@@ -512,6 +512,7 @@ function WishButton({ tourId }: { tourId: string }) {
 export default function Landing() {
   const navigate = useNavigate();
   const { isLoggedIn, role, authLoading } = useRole();
+  const isLockedSample = useSampleLock();
   const { tours, instructors, reviews, publicProfiles, getTourById, getConfirmedParticipantCount } =
     useAppData();
   const reduced = useReducedMotion();
@@ -816,7 +817,7 @@ export default function Landing() {
             <div>
               <h2>지금 모집중인 투어</h2>
               <p className="ab-sub">
-                {bentoTours.length > 0 && bentoTours.every((t) => isSampleContent(t.title))
+                {bentoTours.length > 0 && bentoTours.every((t) => isLockedSample(t.title))
                   ? "지금은 예시 투어로 화면을 보여드리고 있어요. 첫 실제 투어가 곧 열립니다."
                   : "인증 강사가 진행하는, 예약 가능한 일정입니다."}
               </p>
@@ -834,7 +835,7 @@ export default function Landing() {
                     <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
                     <WishButton tourId={t.id} />
                     <div className="ab-tcard-badges">
-                      {isSampleContent(t.title) && <span className="ab-chip sample">예시 투어 · 예약 불가</span>}
+                      {isLockedSample(t.title) && <span className="ab-chip sample">예시 투어 · 예약 불가</span>}
                       {(() => { const b = recoBadge(t); return b ? <span className="ab-chip reco">{b}</span> : null; })()}
                       {t.activityTypes.map((a) => (
                         <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
@@ -909,7 +910,7 @@ export default function Landing() {
                     <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
                     <WishButton tourId={t.id} />
                     <div className="ab-tcard-badges">
-                      {isSampleContent(t.title) && <span className="ab-chip sample">예시 투어 · 예약 불가</span>}
+                      {isLockedSample(t.title) && <span className="ab-chip sample">예시 투어 · 예약 불가</span>}
                       <span className="ab-chip hot">{d.label}</span>
                       {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
                     </div>

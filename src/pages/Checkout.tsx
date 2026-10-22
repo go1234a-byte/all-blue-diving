@@ -23,7 +23,7 @@ import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/cont
 import { cn } from "@/lib/utils";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import type { CompanionInfo, Coupon, Gender } from "@/types";
-import { isSampleContent } from "@/lib/sampleContent";
+import { useSampleLock } from "@/hooks/useSampleLock";
 
 interface ParticipantForm {
   /** 본인(index 0)은 항상 빈 문자열 — 동반자만 이름을 입력받는다. */
@@ -52,6 +52,7 @@ const Checkout = () => {
   const { getTourById, getCouponByCode, addBooking, toursLoading, getConfirmedParticipantCount } =
     useAppData();
   const { profile, currentDiverId, isLoggedIn, authLoading } = useRole();
+  const isLockedSample = useSampleLock();
 
   const tour = tourId ? getTourById(tourId) : undefined;
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>(
@@ -108,7 +109,7 @@ const Checkout = () => {
   }
 
   // 주소로 직접 들어와도 샘플 투어는 결제 화면을 열지 않는다.
-  if (isSampleContent(tour.title)) {
+  if (isLockedSample(tour.title)) {
     return (
       <div className="flex min-h-full items-center justify-center p-6 text-sm text-muted-foreground">
         예시 투어는 예약할 수 없습니다.

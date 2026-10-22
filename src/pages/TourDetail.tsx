@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { stripLeadingLabel, tourLevelLabel } from "@/lib/tourLabels";
 import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
 import { shareOrCopyLink } from "@/lib/share";
-import { isSampleContent } from "@/lib/sampleContent";
+import { useSampleLock } from "@/hooks/useSampleLock";
 
 const TourDetail = () => {
   const { tourId } = useParams();
@@ -45,6 +45,7 @@ const TourDetail = () => {
     getReviewsByTourId,
   } = useAppData();
   const { isLoggedIn, currentDiverId, currentInstructorId, authLoading } = useRole();
+  const isLockedSample = useSampleLock();
   const { toast } = useToast();
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
   const [tripShareOpen, setTripShareOpen] = useState(false);
@@ -126,7 +127,7 @@ const TourDetail = () => {
   // 관리자가 정지/보류 처리했거나, 모집이 마감된 투어(최소 인원 미달로 취소된 경우 포함)는
   // 더 이상 예약을 받을 수 없다. tour.status는 instructor 콘솔뿐 아니라 실제 예약 가능 여부에도 반영해야 한다.
   // 시연용 샘플 투어는 실제 예약·결제를 받지 않는다(DB 트리거도 같은 기준으로 막는다).
-  const isSample = isSampleContent(tour.title);
+  const isSample = isLockedSample(tour.title);
   const isBookingBlocked = isSample || Boolean(tour.adminStatus) || tour.status === "closed" || isFull;
   const alreadyBooked = Boolean(myBooking);
 
