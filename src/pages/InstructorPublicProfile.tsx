@@ -544,6 +544,7 @@ const InstructorPublicProfile = () => {
                   ),
                 )}
                 <DocumentViewButton path={documentProfile?.bankbookPath} label="통장 사본" />
+                <DocumentViewButton path={instructor.businessLicensePath} label="사업자등록증" />
               </div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                 <span>은행: {documentProfile?.bankName || "-"}</span>

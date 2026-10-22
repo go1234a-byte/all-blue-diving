@@ -2813,6 +2813,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           ? { business_license_file_name: updates.businessLicenseFileName }
           : {}),
         ...(updates.businessLicensePath !== undefined ? { business_license_path: updates.businessLicensePath } : {}),
+        // 인증된 강사가 등록증을 새로 내면 관리자 승인 큐에 "수정요청"으로 다시 띄운다.
+        ...(updates.businessLicensePath !== undefined && instructor?.verified ? { documents_pending_review: true } : {}),
       })
       .eq("id", instructorId);
     if (instructorUpdateError) {
@@ -2851,6 +2853,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
                 ? { businessLicenseFileName: updates.businessLicenseFileName }
                 : {}),
               ...(updates.businessLicensePath !== undefined ? { businessLicensePath: updates.businessLicensePath } : {}),
+              ...(updates.businessLicensePath !== undefined && i.verified ? { documentsPendingReview: true } : {}),
             }
           : i,
       ),

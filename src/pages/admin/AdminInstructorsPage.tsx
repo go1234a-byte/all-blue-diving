@@ -284,11 +284,12 @@ const AdminInstructorsPage = () => {
                         수정요청
                       </Badge>
                     )}
-                    {instructor.verified && !instructor.businessType && (
-                      <Badge variant="destructive" className="shrink-0 text-[10px]">
-                        사업자유형 미신고
-                      </Badge>
-                    )}
+                    {instructor.verified &&
+                      (!instructor.businessLicensePath || instructor.businessType === "freelancer") && (
+                        <Badge variant="destructive" className="shrink-0 text-[10px]">
+                          사업자등록증 미제출
+                        </Badge>
+                      )}
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </div>

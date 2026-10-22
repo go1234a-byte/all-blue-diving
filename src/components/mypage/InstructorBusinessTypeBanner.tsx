@@ -34,12 +34,16 @@ interface InstructorBusinessTypeBannerProps {
 export function InstructorBusinessTypeBanner({ instructor }: InstructorBusinessTypeBannerProps) {
   const { updateInstructorProfile } = useAppData();
   const { toast } = useToast();
-  const [businessType, setBusinessType] = useState<InstructorBusinessType | "">("");
+  // 예전 가입의 프리랜서는 더 이상 고를 수 없으니 빈 값부터 시작한다.
+  const [businessType, setBusinessType] = useState<InstructorBusinessType | "">(
+    instructor.businessType && instructor.businessType !== "freelancer" ? instructor.businessType : "",
+  );
   const [businessLicenseFiles, setBusinessLicenseFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // 이미 신고했으면 아무것도 표시하지 않는다.
-  if (instructor.businessType) return null;
+  // 사업자·법인으로 신고하고 등록증까지 냈으면 표시하지 않는다. 미신고, 예전 프리랜서,
+  // 등록증 미제출 강사에게는 계속 보인다.
+  if (instructor.businessType && instructor.businessType !== "freelancer" && instructor.businessLicensePath) return null;
 
   const handleSubmit = async () => {
     if (!businessType) {
@@ -66,7 +70,7 @@ export function InstructorBusinessTypeBanner({ instructor }: InstructorBusinessT
         businessLicenseFileName: businessLicenseFiles[0].name,
         businessLicensePath,
       });
-      toast({ title: "사업자 유형이 등록되었습니다", description: "다음 정산부터 정확히 반영됩니다." });
+      toast({ title: "사업자등록증이 제출되었습니다", description: "관리자 확인 후 반영됩니다." });
     } catch (err) {
       toast({
         title: "등록에 실패했습니다",
@@ -82,7 +86,7 @@ export function InstructorBusinessTypeBanner({ instructor }: InstructorBusinessT
     <div className="space-y-3 rounded-xl border-2 border-destructive/50 bg-destructive/5 p-4">
       <div className="flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 text-destructive" />
-        <h3 className="text-sm font-semibold text-foreground">사업자 유형 신고가 필요합니다</h3>
+        <h3 className="text-sm font-semibold text-foreground">사업자등록증 제출이 필요합니다</h3>
       </div>
       <p className="text-xs leading-relaxed text-foreground">
         정산을 위해 사업자 유형 신고와 사업자등록증 제출이 필요해요. 인증 강사는 사업자등록증을 보유한
@@ -127,7 +131,7 @@ export function InstructorBusinessTypeBanner({ instructor }: InstructorBusinessT
         onClick={handleSubmit}
         disabled={submitting || !businessType || businessLicenseFiles.length === 0}
       >
-        {submitting ? "등록 중..." : "사업자 유형 등록"}
+        {submitting ? "제출 중..." : "사업자등록증 제출"}
       </Button>
     </div>
   );
