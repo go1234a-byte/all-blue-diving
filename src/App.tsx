@@ -79,7 +79,7 @@ const App = () => {
               <Toaster />
               <Sonner />
               {!splashDone && <SplashScreen onFinish={handleSplashFinish} />}
-              {splashDone && <DiverPopup />}
+              {splashDone && <DiverPopup onCta={() => router.navigate("/search")} />}
               <RouterProvider router={router} />
             </AppDataProvider>
           </RoleProvider>

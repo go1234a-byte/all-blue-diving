@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Ban, Flag, Lock, MessageSquareReply, Star } from "lucide-react";
+import { BadgeCheck, Ban, Camera, Flag, Lock, MessageSquareReply, Star } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,8 @@ export function ReviewList({ tourId }: ReviewListProps) {
   const [reportedIds, setReportedIds] = useState<string[]>([]);
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [blockTargetDiverId, setBlockTargetDiverId] = useState<string | null>(null);
+  const [photoOnly, setPhotoOnly] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   const tour = getTourById(tourId);
   const isPrivilegedViewer =
@@ -74,7 +77,16 @@ export function ReviewList({ tourId }: ReviewListProps) {
   }
 
   const averageRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-  const allPhotos = reviews.flatMap((r) => r.photos);
+  const allPhotos = reviews.flatMap((r) => r.photos).filter(Boolean);
+  const photoReviewCount = reviews.filter((r) => r.photos.length > 0).length;
+  // 사진 후기를 먼저, 그 안에서는 최신순.
+  const shownReviews = reviews
+    .filter((r) => !photoOnly || r.photos.length > 0)
+    .sort(
+      (a, b) =>
+        Number(b.photos.length > 0) - Number(a.photos.length > 0) ||
+        +new Date(b.createdAt) - +new Date(a.createdAt),
+    );
 
   const handleReport = async (reviewId: string) => {
     setReportingId(reviewId);
@@ -110,15 +122,36 @@ export function ReviewList({ tourId }: ReviewListProps) {
       {allPhotos.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
           {allPhotos.slice(0, 10).map((url, i) => (
-            <div key={url + i} className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border">
+            <button
+              type="button"
+              key={url + i}
+              onClick={() => setLightbox(url)}
+              className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border"
+              aria-label={`후기 사진 ${i + 1} 크게 보기`}
+            >
               <img src={url || IMAGE_PLACEHOLDER} alt={`후기 사진 ${i + 1}`} onError={handleImageFallback} className="h-full w-full object-cover" />
-            </div>
+            </button>
           ))}
         </div>
       )}
 
+      {photoReviewCount > 0 && photoReviewCount < reviews.length && (
+        <button
+          type="button"
+          onClick={() => setPhotoOnly((v) => !v)}
+          aria-pressed={photoOnly}
+          className={cn(
+            "flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+            photoOnly ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground",
+          )}
+        >
+          <Camera className="h-3 w-3" />
+          사진 후기만 ({photoReviewCount})
+        </button>
+      )}
+
       <div className="space-y-2">
-        {reviews.map((review) => (
+        {shownReviews.map((review) => (
           <Card key={review.id}>
             <CardContent className="space-y-1.5 p-3">
               <div className="flex items-center justify-between gap-2">
@@ -141,8 +174,30 @@ export function ReviewList({ tourId }: ReviewListProps) {
                 </div>
                 <span className="text-[10px] text-muted-foreground">{formatDateKR(review.createdAt)}</span>
               </div>
+              {/* 후기는 결제·참가한 예약(bookingId)에만 쓸 수 있으므로 모두 "참가 확인" 후기다. */}
+              {review.bookingId && (
+                <p className="flex items-center gap-1 text-[10px] font-semibold text-primary">
+                  <BadgeCheck className="h-3 w-3" />
+                  예약·참가 확인된 후기
+                </p>
+              )}
               {review.title && <p className="text-sm font-semibold text-foreground">{review.title}</p>}
               {review.comment && <p className="text-xs text-muted-foreground">{review.comment}</p>}
+              {review.photos.length > 0 && (
+                <div className="flex gap-1.5 overflow-x-auto pt-1">
+                  {review.photos.map((url, i) => (
+                    <button
+                      type="button"
+                      key={url + i}
+                      onClick={() => setLightbox(url)}
+                      className="h-16 w-16 shrink-0 overflow-hidden rounded-md border border-border"
+                      aria-label={`이 후기의 사진 ${i + 1} 크게 보기`}
+                    >
+                      <img src={url || IMAGE_PLACEHOLDER} alt="" onError={handleImageFallback} className="h-full w-full object-cover" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
               {review.instructorReply && (
                 <div className="ml-2 space-y-0.5 rounded-lg border-l-2 border-primary/50 bg-secondary/40 p-2">
                   <p className="flex items-center gap-1 text-[11px] font-semibold text-primary">
@@ -183,6 +238,13 @@ export function ReviewList({ tourId }: ReviewListProps) {
           </Card>
         ))}
       </div>
+
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        <DialogContent className="max-w-3xl border-0 bg-black p-0">
+          <DialogTitle className="sr-only">후기 사진</DialogTitle>
+          {lightbox && <img src={lightbox} alt="후기 사진" className="max-h-[85vh] w-full object-contain" onError={handleImageFallback} />}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!blockTargetDiverId} onOpenChange={(open) => !open && setBlockTargetDiverId(null)}>
         <AlertDialogContent>
