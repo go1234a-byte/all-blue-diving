@@ -752,6 +752,8 @@ export type Database = {
           agency: string | null;
           avatar_url: string | null;
           bio: string | null;
+          business_license_file_name: string | null;
+          business_license_path: string | null;
           business_type: string | null;
           completion_rate: number;
           created_at: string;
@@ -792,6 +794,8 @@ export type Database = {
           agency?: string | null;
           avatar_url?: string | null;
           bio?: string | null;
+          business_license_file_name?: string | null;
+          business_license_path?: string | null;
           business_type?: string | null;
           completion_rate?: number;
           created_at?: string;
@@ -832,6 +836,8 @@ export type Database = {
           agency?: string | null;
           avatar_url?: string | null;
           bio?: string | null;
+          business_license_file_name?: string | null;
+          business_license_path?: string | null;
           business_type?: string | null;
           completion_rate?: number;
           created_at?: string;

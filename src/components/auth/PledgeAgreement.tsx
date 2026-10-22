@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SignaturePad } from "@/components/auth/SignaturePad";
+import { FileDropzone } from "@/components/auth/FileDropzone";
 import type { InstructorBusinessType } from "@/types";
 
 const PLEDGE_CLAUSES = [
@@ -18,14 +19,9 @@ const SETTLEMENT_PLEDGE_TEXT =
   "선지급 정산 정책: 투어 등록 및 예약 확정 시 총 금액의 80%가 강사에게 선지급되며, 투어 완료 후 48시간 동안 사용자의 공식 이의 제기나 문제가 없을 경우 나머지 20%가 최종 정산되어 지급됩니다.";
 
 const TAX_PLEDGE_TEXT =
-  "플랫폼은 예약금 중 강사 정산분(90%)을 대리로 전달하고, 플랫폼 수수료(10%)만을 자체 매출로 처리합니다. 사업자등록이 없는 프리랜서 강사는 관련 세법(소득세법 시행령 제184조)에 따라 정산 시 사업소득세 3.3%가 원천징수된 후 실지급액이 지급됩니다. 사업자등록이 있는 개인·법인사업자 강사는 원천징수 없이 전액 정산되며, 이 경우 플랫폼에 세금계산서 또는 현금영수증을 발급해야 할 의무가 있습니다.";
+  "플랫폼은 예약금 중 강사 정산분(90%)을 대리로 전달하고, 플랫폼 수수료(10%)만을 자체 매출로 처리합니다. 인증 강사는 사업자등록증을 보유한 개인·법인사업자만 신청할 수 있으며, 원천징수 없이 전액 정산됩니다. 이 경우 플랫폼에 세금계산서 또는 현금영수증을 발급해야 할 의무가 있습니다.";
 
 const BUSINESS_TYPE_OPTIONS: { value: InstructorBusinessType; label: string; description: string }[] = [
-  {
-    value: "freelancer",
-    label: "프리랜서 (사업자등록 없음)",
-    description: "정산 시 사업소득세 3.3%가 원천징수됩니다.",
-  },
   {
     value: "individual",
     label: "개인사업자",
@@ -45,6 +41,8 @@ interface PledgeAgreementProps {
   onSignerNameChange: (name: string) => void;
   businessType: InstructorBusinessType | "";
   onBusinessTypeChange: (type: InstructorBusinessType) => void;
+  businessLicenseFiles: File[];
+  onBusinessLicenseFilesChange: (files: File[]) => void;
   agreed: boolean;
   onAgreedChange: (agreed: boolean) => void;
   signature: string | undefined;
@@ -57,6 +55,8 @@ export function PledgeAgreement({
   onSignerNameChange,
   businessType,
   onBusinessTypeChange,
+  businessLicenseFiles,
+  onBusinessLicenseFilesChange,
   agreed,
   onAgreedChange,
   signature,
@@ -109,6 +109,21 @@ export function PledgeAgreement({
             </label>
           ))}
         </RadioGroup>
+
+        {businessType && (
+          <div className="space-y-1.5 pt-1">
+            <Label>사업자등록증 사본 (필수)</Label>
+            <FileDropzone
+              label="사업자등록증 사본"
+              accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.heic,.heif"
+              onFilesChange={onBusinessLicenseFilesChange}
+              value={businessLicenseFiles}
+            />
+            <p className="text-muted-foreground">
+              선택하신 사업자 유형과 일치하는 사업자등록증을 올려주세요. 관리자 승인 심사에 사용됩니다.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">

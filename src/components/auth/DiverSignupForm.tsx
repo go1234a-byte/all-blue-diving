@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileDropzone } from "@/components/auth/FileDropzone";
 import { supabase } from "@/integrations/supabase/client";
+import { emailSignupIssue } from "@/lib/emailGuard";
 import { useToast } from "@/hooks/use-toast";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -50,6 +51,11 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
     // 다시 훑어봐야 했다. 필드별로 나눠 정확한 안내를 준다.
     if (!email.trim()) {
       toast({ title: "이메일을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    const emailIssue = emailSignupIssue(email);
+    if (emailIssue) {
+      toast({ title: emailIssue, variant: "destructive" });
       return;
     }
     if (!password) {
