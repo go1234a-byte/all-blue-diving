@@ -234,6 +234,12 @@ body,
   height: 100%;
 }
 
+/* 페이지 맨 위·아래에서 더 밀면 화면이 끝을 넘어 끌려가는 효과(트랙패드·iOS 사파리 바운스)를 끈다. */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 /* MIMO — premium beauty reservation theme (scoped, isolated from ALL BLUE tokens) */
 .mimo-theme {
   --background: 0 0% 100%;
