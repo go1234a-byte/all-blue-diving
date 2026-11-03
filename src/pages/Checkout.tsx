@@ -58,11 +58,13 @@ const Checkout = () => {
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>(
     (location.state as { selectedOptionIds?: string[] } | null)?.selectedOptionIds ?? [],
   );
-  const [participantCount, setParticipantCountState] = useState(1);
+  // 상세에서 고른 인원(없으면 1명). 잔여 정원을 넘는 값은 결제 시점 검사(handlePay)가 다시 막는다.
+  const initialParty = Math.max(1, Math.floor((location.state as { participantCount?: number } | null)?.participantCount ?? 1) || 1);
+  const [participantCount, setParticipantCountState] = useState(initialParty);
   // participants[0] = 예약자 본인, participants[1..] = 동반자. 인원 수(participantCount)와
   // 항상 길이가 같도록 setParticipantCount()를 통해서만 늘리고 줄인다 — 이미 입력한 값은
   // 유지한 채로 필요한 만큼만 추가/제거한다.
-  const [participants, setParticipants] = useState<ParticipantForm[]>([createBlankParticipant()]);
+  const [participants, setParticipants] = useState<ParticipantForm[]>(() => Array.from({ length: initialParty }, createBlankParticipant));
   const setParticipantCount = (updater: number | ((current: number) => number)) => {
     setParticipantCountState((current) => {
       const next = typeof updater === "function" ? updater(current) : updater;

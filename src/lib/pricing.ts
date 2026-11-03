@@ -32,6 +32,18 @@ export function computeInvoice(
   };
 }
 
+/**
+ * 상세 화면 하단 "예상 총액" — 결제 화면(Checkout)과 같은 계산(computeInvoice)을 쓴다:
+ * 기본 금액·옵션 금액 모두 인원수를 곱한 뒤 수수료 10%를 더한다. 쿠폰은 결제 화면에서만 적용된다.
+ */
+export function estimateTotal(basePrice: number, optionPricesPerPerson: number[], participants: number): number {
+  const n = Math.max(1, Math.floor(participants));
+  return computeInvoice(
+    basePrice * n,
+    optionPricesPerPerson.map((price) => ({ name: "option", price: price * n })),
+  ).totalDue;
+}
+
 export interface CouponValidationResult {
   valid: boolean;
   discountAmount: number;

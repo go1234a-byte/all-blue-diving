@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { computeInvoice, estimateTotal } from "../src/lib/pricing.ts";
 import { refundRateForDays, refundSummary } from "../src/lib/refund.ts";
 import { dDayLabel, earliestStartLabel, minPriceByCountry, ratingText, refundLine, seatState, seatsLeft, shortPrice } from "../src/lib/tourDisplay.ts";
 
@@ -50,4 +51,12 @@ test("짧은 가격·나라별 최저가·환불 한 줄·가장 이른 출발�
   assert.equal(refundLine(3), "환불 불가 (출발 7일 미만)");
   assert.equal(earliestStartLabel([{ startDate: "2026-12-06" }, { startDate: "2026-11-29T00:00:00Z" }]), "11/29");
   assert.equal(earliestStartLabel([]), null);
+});
+
+test("예상 총액은 결제 화면 계산(computeInvoice)과 같고 인원수를 곱한다", () => {
+  assert.equal(estimateTotal(1_000_000, [], 1), 1_100_000);
+  assert.equal(estimateTotal(1_000_000, [80_000], 2), computeInvoice(2_000_000, [{ name: "o", price: 160_000 }]).totalDue);
+  assert.equal(estimateTotal(1_000_000, [80_000], 2), 2_376_000);
+  assert.equal(estimateTotal(333_333, [], 3), computeInvoice(999_999).totalDue); // 반올림 차이까지 같다
+  assert.equal(estimateTotal(1_000_000, [], 0), 1_100_000); // 0 이하는 1명으로
 });

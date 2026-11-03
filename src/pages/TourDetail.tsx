@@ -3,6 +3,7 @@ import { useState } from "react";
 import { TourSummaryStrip } from "@/components/tour/TourSummaryStrip";
 import { ReviewPhotoStrip } from "@/components/tour/ReviewPhotoStrip";
 import { ItineraryTimeline } from "@/components/tour/ItineraryTimeline";
+import { PartySizeStepper } from "@/components/tour/PartySizeStepper";
 import { TourDetailTabs, type DetailTab } from "@/components/tour/TourDetailTabs";
 import { seatState, seatsLeft } from "@/lib/tourDisplay";
 import { CANCELLATION_POLICY_LINES, CANCELLATION_POLICY_NOTE } from "@/lib/refund";
@@ -25,7 +26,7 @@ import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
-import { applyPlatformFee, formatKRW } from "@/lib/pricing";
+import { applyPlatformFee, formatKRW, estimateTotal } from "@/lib/pricing";
 import { calculateAge, formatDateKR, formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { stripLeadingLabel, tourLevelLabel, isDepartureConfirmed } from "@/lib/tourLabels";
@@ -55,6 +56,7 @@ const TourDetail = () => {
   const { toast } = useToast();
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
   const [tripShareOpen, setTripShareOpen] = useState(false);
+  const [partySize, setPartySize] = useState(1);
 
   const tour = tourId ? getTourById(tourId) : undefined;
   const instructor = tour ? getInstructorById(tour.instructorId) : undefined;
@@ -126,6 +128,13 @@ const TourDetail = () => {
   // 결제 화면(computeInvoice)과 동일하게 [투어 금액 소계]에 플랫폼 이용 수수료 10%를 더해서 보여준다.
   // 이렇게 해야 투어 카드/상세에서 본 가격과 실제 체크아웃 결제 금액이 정확히 일치한다.
   const displayTotal = applyPlatformFee(tour.basePrice + selectedOptionsTotal);
+  // 상세 하단의 예상 총액 — 인원수까지 곱한 결제 화면과 같은 계산. 인원은 잔여 정원을 넘지 않는다(최소 1).
+  const activeOptionPrices = tour.customOptions
+    .filter((o) => o.isActive && selectedOptionIds.includes(o.id))
+    .map((o) => o.price);
+  const maxParty = Math.max(1, tour.maxParticipants - confirmedCount);
+  const party = Math.min(partySize, maxParty);
+  const estimatedTotal = estimateTotal(tour.basePrice, activeOptionPrices, party);
   // 정원이 다 찼는데도 status가 아직 "open"으로 남아있는 경우(자동 마감 처리 이전)를 대비해,
   // 확정 인원이 최대 인원에 도달하면 그 자체로도 예약을 막는다 — 그렇지 않으면 화면상 "N/M명 모집"이
   // 꽉 찬 걸 보면서도 예약하기 버튼은 계속 눌려서 초과 예약(오버부킹)이 가능했다.
@@ -176,13 +185,13 @@ const TourDetail = () => {
       navigate("/auth", {
         state: {
           returnTo: `/checkout/${tour.id}`,
-          returnState: { selectedOptionIds },
+          returnState: { selectedOptionIds, participantCount: party },
           reason: "booking",
         },
       });
       return;
     }
-    navigate(`/checkout/${tour.id}`, { state: { selectedOptionIds } });
+    navigate(`/checkout/${tour.id}`, { state: { selectedOptionIds, participantCount: party } });
   };
 
   const handleShare = async () => {
@@ -199,7 +208,7 @@ const TourDetail = () => {
   };
 
   return (
-    <div className="min-h-full bg-gradient-surface pb-28 md:pb-12">
+    <div className="min-h-full bg-gradient-surface pb-44 md:pb-12">
       <header
         className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
@@ -511,10 +520,12 @@ const TourDetail = () => {
           <div className="space-y-4 rounded-2xl border border-primary/20 bg-card p-5 shadow-sm">
             <div>
               <p className="text-xs text-muted-foreground">
-                1인 기준 · 수수료 포함{selectedOptionsTotal > 0 ? " · 옵션 포함" : ""}
+                {party}명 · 수수료 포함{selectedOptionsTotal > 0 ? " · 옵션 포함" : ""}
               </p>
-              <p className="text-2xl font-bold text-primary">{formatKRW(displayTotal)}</p>
+              <p className="text-2xl font-bold text-primary">{formatKRW(estimatedTotal)}</p>
+              {party > 1 && <p className="text-xs text-muted-foreground">1인 {formatKRW(displayTotal)}</p>}
             </div>
+            {!isBookingBlocked && !alreadyBooked && <PartySizeStepper value={party} max={maxParty} onChange={setPartySize} />}
             <div className="space-y-2 border-t border-border pt-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 shrink-0" />
@@ -541,16 +552,19 @@ const TourDetail = () => {
       </main>
 
       <div
-        className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-md items-center justify-between gap-4 border-t border-border bg-card/95 px-4 pt-3 backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md space-y-2 border-t border-border bg-card/95 px-4 pt-3 backdrop-blur md:hidden"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
-        <div>
-          <p className="text-xs text-muted-foreground">
-            1인 기준 · 수수료 포함{selectedOptionsTotal > 0 ? " · 옵션 포함" : ""}
-          </p>
-          <p className="text-lg font-bold text-primary">{formatKRW(displayTotal)}</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground">
+              {party}명 · 수수료 포함{selectedOptionsTotal > 0 ? " · 옵션 포함" : ""}
+            </p>
+            <p className="whitespace-nowrap text-lg font-bold text-primary">{formatKRW(estimatedTotal)}</p>
+          </div>
+          {!isBookingBlocked && !alreadyBooked && <PartySizeStepper value={party} max={maxParty} onChange={setPartySize} />}
         </div>
-        <Button size="lg" onClick={handleBookNow} disabled={isBookingBlocked || alreadyBooked}>
+        <Button size="lg" className="w-full" onClick={handleBookNow} disabled={isBookingBlocked || alreadyBooked}>
           {isSample ? "예시 투어" : isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
         </Button>
       </div>
