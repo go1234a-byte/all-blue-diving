@@ -1,5 +1,5 @@
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, List, MapPin, Search as SearchIcon, X } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -25,7 +25,7 @@ import { applyPlatformFee } from "@/lib/pricing";
 import { monthKeyOf } from "@/lib/dates";
 import { isOpenTour } from "@/lib/tours";
 import { cn } from "@/lib/utils";
-import type { ActivityType } from "@/types";
+import type { ActivityType, Tour } from "@/types";
 
 type SortOption = "soonest" | "newest" | "cheapest" | "expensive" | "rating";
 type ViewMode = "list" | "map";
@@ -48,7 +48,7 @@ const Search = () => {
   });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { tours, getConfirmedParticipantCount } = useAppData();
+  const { tours, getConfirmedParticipantCount, getReviewsByTourId } = useAppData();
   const isMobile = useIsMobile();
   // 홈 화면 검색 폼에서 넘어온 정렬/가격 범위 값이 있으면 그대로 초기값으로 사용한다.
   const [sort, setSort] = useState<SortOption>(() => {
@@ -109,6 +109,15 @@ const Search = () => {
     navigate(`/search?${params.toString()}`);
   };
 
+  // 평점은 카드·상세와 같은 기준(공개 후기 평균)으로 맞춘다. 후기가 없으면 투어에 저장된 rating 으로.
+  const ratingOf = useCallback(
+    (t: Tour) => {
+      const rs = getReviewsByTourId(t.id).filter((r) => r.visibility !== "instructor_only");
+      return rs.length ? rs.reduce((a, r) => a + r.rating, 0) / rs.length : t.rating;
+    },
+    [getReviewsByTourId],
+  );
+
   const filteredTours = useMemo(() => {
     const months = filters.months;
     const activities = filters.activities;
@@ -144,9 +153,9 @@ const Search = () => {
         if (sort === "newest") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         if (sort === "cheapest") return a.basePrice - b.basePrice;
         if (sort === "expensive") return b.basePrice - a.basePrice;
-        return b.rating - a.rating;
+        return ratingOf(b) - ratingOf(a);
       });
-  }, [openTours, query, filters, sort, getConfirmedParticipantCount]);
+  }, [openTours, query, filters, sort, getConfirmedParticipantCount, ratingOf]);
 
   const sortTabs: Array<{ key: SortOption; label: string; value: string }> = [
     { key: "soonest", label: "출발 빠른순", value: earliestStartLabel(filteredTours) ?? "-" },
@@ -158,7 +167,7 @@ const Search = () => {
     {
       key: "rating",
       label: "평점 높은순",
-      value: filteredTours.some((t) => t.rating > 0) ? `★ ${Math.max(...filteredTours.map((t) => t.rating)).toFixed(1)}` : "-",
+      value: filteredTours.some((t) => ratingOf(t) > 0) ? `★ ${Math.max(...filteredTours.map(ratingOf)).toFixed(1)}` : "-",
     },
   ];
 

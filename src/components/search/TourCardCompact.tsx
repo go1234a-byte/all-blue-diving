@@ -18,7 +18,7 @@ export function TourCardCompact({ tour }: { tour: Tour }) {
   const isLockedSample = useSampleLock();
   const joined = getConfirmedParticipantCount(tour.id);
   const instructor = getInstructorById(tour.instructorId);
-  const rating = ratingText(getReviewsByTourId(tour.id).map((r) => r.rating));
+  const rating = ratingText(getReviewsByTourId(tour.id).filter((r) => r.visibility !== "instructor_only").map((r) => r.rating));
   const state = seatState(tour, joined);
   const confirmed = isDepartureConfirmed(tour, joined);
   const days = computeDaysRemaining(tour.startDate);

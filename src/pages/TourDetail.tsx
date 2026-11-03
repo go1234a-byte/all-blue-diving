@@ -148,12 +148,13 @@ const TourDetail = () => {
   const departureConfirmed = isDepartureConfirmed(tour, confirmedCount);
   const seats = seatState(tour, confirmedCount);
   // 상세 고정 탭 — 실제로 화면에 그려지는 섹션만 넣는다.
+  // 탭 순서는 화면에 그려지는 순서와 같게 둔다(집결지·일정 카드 → 강사 → 소개 → 일정 → 포함 → 후기 → 환불).
   const detailTabs: DetailTab[] = [
+    ...(tour.meetingPoint || tour.meetingTime ? [{ id: "tab-meet", label: "집결지" }] : []),
+    ...(instructor ? [{ id: "tab-instructor", label: "강사" }] : []),
     ...(tour.description ? [{ id: "tab-intro", label: "소개" }] : []),
     ...(tour.itineraryDays && tour.itineraryDays.length > 0 ? [{ id: "tab-itinerary", label: "일정" }] : []),
     ...(tour.inclusions.length > 0 || tour.exclusions.length > 0 ? [{ id: "tab-incl", label: "포함·불포함" }] : []),
-    ...(tour.meetingPoint || tour.meetingTime ? [{ id: "tab-meet", label: "집결지" }] : []),
-    ...(instructor ? [{ id: "tab-instructor", label: "강사" }] : []),
     ...(tourReviews.length > 0 ? [{ id: "tab-reviews", label: "후기" }] : []),
     { id: "tab-refund", label: "환불·정책" },
   ];

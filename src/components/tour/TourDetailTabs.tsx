@@ -12,32 +12,35 @@ export function TourDetailTabs({ tabs }: { tabs: DetailTab[] }) {
   const barRef = useRef<HTMLDivElement>(null);
   const clicking = useRef(false);
 
-  // 스크롤 위치에 따라 활성 탭을 바꾼다(헤더+탭 높이만큼 위쪽 여백을 둔 관찰 영역).
+  // 스크롤 위치에 따라 활성 탭을 바꾼다: 위쪽 고정 영역(헤더+탭, 약 120px) 아래로 막 지나간 마지막 섹션이 현재 위치.
+  // 어느 섹션에도 닿지 않은 맨 위에서는 첫 탭, 페이지 끝에 닿으면(마지막 섹션이 짧아 올라오지 못할 때) 마지막 탭.
   useEffect(() => {
-    const els = tabs.map((t) => document.getElementById(t.id)).filter((e): e is HTMLElement => !!e);
-    if (els.length === 0) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (clicking.current) return;
-        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-112px 0px -60% 0px", threshold: 0 },
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, [tabs]);
-
-  // 맨 아래 섹션(환불·정책)은 짧아서 화면 위까지 올라오지 못한다 — 페이지 끝에 닿으면 마지막 탭을 활성으로 본다.
-  useEffect(() => {
-    const last = tabs[tabs.length - 1]?.id;
-    if (!last) return;
-    const onScroll = () => {
-      if (clicking.current) return;
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) setActive(last);
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      if (clicking.current || tabs.length === 0) return;
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+        setActive(tabs[tabs.length - 1].id);
+        return;
+      }
+      let current = tabs[0].id;
+      for (const t of tabs) {
+        const el = document.getElementById(t.id);
+        if (el && el.getBoundingClientRect().top <= 130) current = t.id;
+      }
+      setActive(current);
     };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, [tabs]);
 
   // 활성 탭이 가로 스크롤 안에서 보이게 맞춘다.
