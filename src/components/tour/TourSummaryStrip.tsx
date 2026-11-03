@@ -1,39 +1,37 @@
-import { CalendarDays, CircleCheck, CircleDashed, RotateCcw, Users } from "lucide-react";
 import type { Tour } from "@/types";
-import { tourTotalDays } from "@/lib/tourLabels";
 import { computeDaysRemaining, refundSummary } from "@/lib/refund";
 import { seatsLeft } from "@/lib/tourDisplay";
 import { formatNightsDaysKR } from "@/lib/dates";
+import { tourLevelLabel, tourTotalDays } from "@/lib/tourLabels";
 
 interface Props {
-  tour: Pick<Tour, "startDate" | "endDate" | "maxParticipants">;
+  tour: Pick<Tour, "startDate" | "endDate" | "maxParticipants" | "certificationLevel" | "minLogCount">;
   joined: number;
-  departureConfirmed: boolean;
 }
 
-/** 상세 첫 화면 핵심 요약 4칸 — 기간 · 정원/남은 자리 · 출발 확정 여부 · 지금 취소 시 환불. 값은 모두 실제 데이터/규정에서 계산한다. */
-export function TourSummaryStrip({ tour, joined, departureConfirmed }: Props) {
+/** 상세 첫 화면 사실표 2×2 — 기간·출발일 / 정원·남은 자리 / 환불 / 참가 조건. 값은 모두 실제 데이터·규정에서 계산한다.
+ * (출발확정 여부는 제목 위 라벨로 보여준다.) */
+export function TourSummaryStrip({ tour, joined }: Props) {
   const left = seatsLeft(tour, joined);
   const refund = refundSummary(computeDaysRemaining(tour.startDate));
+  const start = new Date(tour.startDate);
   const items = [
-    { icon: CalendarDays, label: "기간", value: tourTotalDays(tour) <= 1 ? "당일" : formatNightsDaysKR(tour.startDate, tour.endDate), sub: "" },
-    { icon: Users, label: "정원", value: `${tour.maxParticipants}명`, sub: left === 0 ? "모집 마감" : `${left}석 남음`, warn: left > 0 && left <= 3 },
     {
-      icon: departureConfirmed ? CircleCheck : CircleDashed,
-      label: "출발",
-      value: departureConfirmed ? "확정" : "미확정",
-      sub: departureConfirmed ? "" : "최소 인원 모집 중",
+      label: "기간",
+      value: tourTotalDays(tour) <= 1 ? "당일" : formatNightsDaysKR(tour.startDate, tour.endDate),
+      sub: `${start.getMonth() + 1}/${start.getDate()} 출발`,
     },
-    { icon: RotateCcw, label: "환불", value: refund.title, sub: refund.sub },
+    { label: "정원", value: `${tour.maxParticipants}명`, sub: left === 0 ? "모집 마감" : `${left}석 남음`, warn: left > 0 && left <= 3 },
+    { label: "환불", value: refund.title, sub: refund.sub },
+    { label: "참가 조건", value: tourLevelLabel(tour), sub: "" },
   ];
   return (
-    <div className="grid grid-cols-4 gap-1 rounded-xl border border-border bg-card px-2 py-3 text-center" aria-label="핵심 요약">
-      {items.map(({ icon: Icon, label, value, sub, warn }) => (
-        <div key={label} className="min-w-0 space-y-0.5">
-          <Icon className="mx-auto h-5 w-5 text-primary" aria-hidden="true" />
+    <div className="grid grid-cols-2 gap-2" aria-label="핵심 요약">
+      {items.map(({ label, value, sub, warn }) => (
+        <div key={label} className="min-w-0 rounded-xl border border-border bg-card px-3 py-2.5">
           <p className="text-[11px] text-muted-foreground">{label}</p>
-          <p className="break-keep text-[13px] font-bold leading-tight text-foreground">{value}</p>
-          {sub && <p className={warn ? "text-[10.5px] font-semibold text-destructive" : "text-[10.5px] text-muted-foreground"}>{sub}</p>}
+          <p className="break-keep text-[14px] font-bold leading-tight text-foreground">{value}</p>
+          {sub && <p className={warn ? "mt-0.5 text-[11.5px] font-semibold text-destructive" : "mt-0.5 text-[11.5px] text-muted-foreground"}>{sub}</p>}
         </div>
       ))}
     </div>

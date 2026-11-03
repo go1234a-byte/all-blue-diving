@@ -31,6 +31,8 @@ interface FilterSidebarProps {
   priceMax: number;
   /** 지금 모집중인 투어에 실제로 있는 나라만 칩으로 보여준다. */
   countryOptions: string[];
+  /** 나라 이름 → "₩328만~" 같은 최저가 표시. */
+  countryHints?: Record<string, string>;
 }
 
 const ACTIVITY_OPTIONS: ActivityType[] = ["scuba", "freediving", "liveaboard"];
@@ -68,7 +70,7 @@ export function countActiveFilters(f: FilterState): number {
   );
 }
 
-export function FilterSidebar({ filters, onChange, priceMax, countryOptions }: FilterSidebarProps) {
+export function FilterSidebar({ filters, onChange, priceMax, countryOptions, countryHints = {} }: FilterSidebarProps) {
   // 모바일에선 필터가 결과 위를 다 가려서 기본은 접어 둔다(데스크톱은 항상 펼침).
   const [mobileOpen, setMobileOpen] = useState(false);
   const active = countActiveFilters(filters);
@@ -121,6 +123,7 @@ export function FilterSidebar({ filters, onChange, priceMax, countryOptions }: F
                   onClick={() => onChange({ ...filters, countries: toggle(filters.countries, c) })}
                 >
                   {c}
+                  {countryHints[c] ? ` ${countryHints[c]}` : ""}
                 </Chip>
               ))}
             </div>

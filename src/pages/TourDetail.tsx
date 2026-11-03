@@ -1,6 +1,8 @@
 import { usePageMeta, toDescription } from "@/hooks/usePageMeta";
 import { useState } from "react";
 import { TourSummaryStrip } from "@/components/tour/TourSummaryStrip";
+import { ReviewPhotoStrip } from "@/components/tour/ReviewPhotoStrip";
+import { ItineraryTimeline } from "@/components/tour/ItineraryTimeline";
 import { TourDetailTabs, type DetailTab } from "@/components/tour/TourDetailTabs";
 import { seatState, seatsLeft } from "@/lib/tourDisplay";
 import { CANCELLATION_POLICY_LINES, CANCELLATION_POLICY_NOTE } from "@/lib/refund";
@@ -296,7 +298,9 @@ const TourDetail = () => {
           </div>
         </div>
 
-        <TourSummaryStrip tour={tour} joined={confirmedCount} departureConfirmed={departureConfirmed} />
+        <TourSummaryStrip tour={tour} joined={confirmedCount} />
+
+        <ReviewPhotoStrip tourId={tour.id} instructorId={tour.instructorId} />
 
         <TourDetailTabs tabs={detailTabs} />
 
@@ -446,36 +450,8 @@ const TourDetail = () => {
                 일정 이미지로 공유
               </button>
             </div>
-            <div className="space-y-2">
-              {tour.itineraryDays.map((day) => (
-                <div key={day.dayNumber} className="space-y-1.5 rounded-xl border border-border bg-card p-4">
-                  <p className="text-sm font-semibold text-foreground">{day.title}</p>
-                  {day.briefing && (
-                    <p className="break-keep text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">브리핑 </span>
-                      {stripLeadingLabel("브리핑", day.briefing)}
-                    </p>
-                  )}
-                  {day.diving && (
-                    <p className="break-keep text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">다이빙 </span>
-                      {stripLeadingLabel("다이빙", day.diving)}
-                    </p>
-                  )}
-                  {day.meals && (
-                    <p className="break-keep text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">식사 </span>
-                      {stripLeadingLabel("식사", day.meals)}
-                    </p>
-                  )}
-                  {day.freeTime && (
-                    <p className="break-keep text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">자유시간 </span>
-                      {stripLeadingLabel("자유시간", day.freeTime)}
-                    </p>
-                  )}
-                </div>
-              ))}
+            <div className="rounded-xl border border-border bg-card p-4">
+              <ItineraryTimeline days={tour.itineraryDays} />
             </div>
           </div>
         )}

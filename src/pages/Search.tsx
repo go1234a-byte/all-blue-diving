@@ -1,9 +1,8 @@
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, List, MapPin, X } from "lucide-react";
+import { ArrowLeft, List, MapPin, Search as SearchIcon, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -20,6 +19,7 @@ import { FilterSidebar, DEFAULT_FILTERS, type FilterState } from "@/components/s
 import { BottomNav } from "@/components/layout/BottomNav";
 import { isBeginnerFriendly, isDepartureConfirmed } from "@/lib/tourLabels";
 import { isRefundableNow } from "@/lib/refund";
+import { earliestStartLabel, minPriceByCountry, shortPrice } from "@/lib/tourDisplay";
 import { useAppData } from "@/contexts/AppDataContext";
 import { applyPlatformFee } from "@/lib/pricing";
 import { monthKeyOf } from "@/lib/dates";
@@ -90,6 +90,19 @@ const Search = () => {
     [openTours],
   );
 
+  const countryHints = useMemo(() => {
+    const m = minPriceByCountry(openTours, applyPlatformFee);
+    return Object.fromEntries(Object.entries(m).map(([c, p]) => [c, `${shortPrice(p)}~`]));
+  }, [openTours]);
+
+  const [queryDraft, setQueryDraft] = useState(query);
+  const submitQuery = () => {
+    const params = new URLSearchParams(searchParams);
+    if (queryDraft.trim()) params.set("q", queryDraft.trim());
+    else params.delete("q");
+    navigate(`/search?${params.toString()}`, { replace: true });
+  };
+
   const clearQuery = () => {
     const params = new URLSearchParams(searchParams);
     params.delete("q");
@@ -135,6 +148,20 @@ const Search = () => {
       });
   }, [openTours, query, filters, sort, getConfirmedParticipantCount]);
 
+  const sortTabs: Array<{ key: SortOption; label: string; value: string }> = [
+    { key: "soonest", label: "출발 빠른순", value: earliestStartLabel(filteredTours) ?? "-" },
+    {
+      key: "cheapest",
+      label: "최저가",
+      value: filteredTours.length ? shortPrice(Math.min(...filteredTours.map((t) => applyPlatformFee(t.basePrice)))) : "-",
+    },
+    {
+      key: "rating",
+      label: "평점 높은순",
+      value: filteredTours.some((t) => t.rating > 0) ? `★ ${Math.max(...filteredTours.map((t) => t.rating)).toFixed(1)}` : "-",
+    },
+  ];
+
   return (
     <div className="min-h-full bg-gradient-surface pb-24 md:pb-10">
       <header
@@ -150,23 +177,48 @@ const Search = () => {
       </header>
 
       <main className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[260px_1fr]">
-        <SearchChipBar filters={filters} onChange={setFilters} priceMax={priceMax} countryOptions={countryOptions} />
-        <FilterSidebar filters={filters} onChange={setFilters} priceMax={priceMax} countryOptions={countryOptions} />
+        <SearchChipBar filters={filters} onChange={setFilters} priceMax={priceMax} countryOptions={countryOptions} countryHints={countryHints} />
+        <FilterSidebar filters={filters} onChange={setFilters} priceMax={priceMax} countryOptions={countryOptions} countryHints={countryHints} />
 
         <div className="space-y-4">
-          {query && (
-            <Badge variant="secondary" className="gap-1.5 pl-3 pr-1.5 py-1 text-xs font-medium">
-              &quot;{query}&quot;
-              <button
-                type="button"
-                onClick={clearQuery}
-                className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-background/60"
-                aria-label="검색어 지우기"
-              >
-                <X className="h-3 w-3" />
+          <form
+            role="search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitQuery();
+            }}
+            className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2"
+          >
+            <SearchIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <input
+              value={queryDraft}
+              onChange={(e) => setQueryDraft(e.target.value)}
+              placeholder="나라·지역·투어 이름"
+              aria-label="검색어"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+            {query && (
+              <button type="button" onClick={() => { setQueryDraft(""); clearQuery(); }} className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-secondary" aria-label="검색어 지우기">
+                <X className="h-3.5 w-3.5" />
               </button>
-            </Badge>
-          )}
+            )}
+            <button type="submit" className="shrink-0 text-xs font-semibold text-primary">검색</button>
+          </form>
+          <div className="grid grid-cols-3 overflow-hidden rounded-xl border border-border bg-card" role="tablist" aria-label="정렬">
+            {sortTabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={sort === t.key}
+                onClick={() => setSort(t.key)}
+                className={cn("border-b-[3px] px-2 py-2.5 text-center text-xs", sort === t.key ? "border-accent text-foreground" : "border-transparent text-muted-foreground")}
+              >
+                {t.label}
+                <b className={cn("mt-0.5 block text-sm", sort === t.key ? "text-primary" : "text-foreground")}>{t.value}</b>
+              </button>
+            ))}
+          </div>
           <div className="flex items-center justify-between gap-2">
             <div className="flex overflow-hidden rounded-lg border border-border">
               <button

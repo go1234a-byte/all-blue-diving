@@ -9,7 +9,7 @@ import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import { isDepartureConfirmed } from "@/lib/tourLabels";
 import { computeDaysRemaining } from "@/lib/refund";
-import { dDayLabel, ratingText, seatState, seatsLeft } from "@/lib/tourDisplay";
+import { dDayLabel, ratingText, refundLine, seatState, seatsLeft } from "@/lib/tourDisplay";
 import { AdminHeadcountControl } from "@/components/tour/AdminHeadcountControl";
 
 /** 모바일 검색 목록용 압축 카드: 상태 라벨 1~2개 · 제목 · 기간/강사 · 별점+후기 수 · 가격. (데스크톱은 기존 TourCard) */
@@ -21,7 +21,8 @@ export function TourCardCompact({ tour }: { tour: Tour }) {
   const rating = ratingText(getReviewsByTourId(tour.id).map((r) => r.rating));
   const state = seatState(tour, joined);
   const confirmed = isDepartureConfirmed(tour, joined);
-  const dday = dDayLabel(computeDaysRemaining(tour.startDate));
+  const days = computeDaysRemaining(tour.startDate);
+  const dday = dDayLabel(days);
 
   return (
     <Link to={`/tour/${tour.id}`} className="flex gap-3 rounded-2xl border border-border/60 bg-card p-2.5 shadow-sm">
@@ -42,6 +43,7 @@ export function TourCardCompact({ tour }: { tour: Tour }) {
           {formatDateRangeKR(tour.startDate, tour.endDate)} · {formatNightsDaysKR(tour.startDate, tour.endDate)}
           {instructor?.verified ? " · 인증강사" : ""}
         </p>
+        <p className="text-xs text-muted-foreground">↩ {refundLine(days)}</p>
         <p className="flex items-center gap-1 text-xs">
           {rating ? (
             <>

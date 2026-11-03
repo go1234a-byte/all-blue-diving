@@ -13,6 +13,8 @@ interface Props {
   onChange: (f: FilterState) => void;
   priceMax: number;
   countryOptions: string[];
+  /** 나라 이름 → "₩328만~" 같은 최저가 표시. */
+  countryHints?: Record<string, string>;
 }
 
 const ACTIVITIES: ActivityType[] = ["scuba", "freediving", "liveaboard"];
@@ -63,7 +65,7 @@ function Option({ on, onClick, children }: { on: boolean; onClick: () => void; c
 }
 
 /** 모바일 검색 상단: 가로로 넘기는 필터 칩 한 줄(누르면 그 조건만 고르는 작은 창) + 출발확정/환불 가능 토글. 데스크톱은 사이드바를 그대로 쓴다. */
-export function SearchChipBar({ filters, onChange, priceMax, countryOptions }: Props) {
+export function SearchChipBar({ filters, onChange, priceMax, countryOptions, countryHints = {} }: Props) {
   const hi = Math.min(filters.priceRange[1], priceMax);
   const priceOn = filters.priceRange[0] > 0 || Number.isFinite(filters.priceRange[1]);
   const anyActive = countActiveFilters(filters) > 0;
@@ -75,7 +77,7 @@ export function SearchChipBar({ filters, onChange, priceMax, countryOptions }: P
           <Dropdown label="지역" on={filters.countries.length > 0}>
             <div className="flex flex-wrap gap-1.5">
               {countryOptions.map((c) => (
-                <Option key={c} on={filters.countries.includes(c)} onClick={() => onChange({ ...filters, countries: toggle(filters.countries, c) })}>{c}</Option>
+                <Option key={c} on={filters.countries.includes(c)} onClick={() => onChange({ ...filters, countries: toggle(filters.countries, c) })}>{c}{countryHints[c] ? ` ${countryHints[c]}` : ""}</Option>
               ))}
             </div>
           </Dropdown>
