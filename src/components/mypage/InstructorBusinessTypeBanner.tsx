@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -41,10 +42,14 @@ export function InstructorBusinessTypeBanner({ instructor }: InstructorBusinessT
   );
   const [businessLicenseFiles, setBusinessLicenseFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  // 처음엔 한 줄로 접어 두어 "내 정보"가 화면 위쪽에 보이게 한다. 콘솔의 "제출하러 가기"(?biz=1)로 오면 바로 펼친다.
+  const [searchParams] = useSearchParams();
+  const [open, setOpen] = useState(searchParams.get("biz") === "1");
 
   // 사업자·법인으로 신고하고 등록증까지 냈으면 표시하지 않는다. 미신고, 예전 프리랜서,
   // 등록증 미제출 강사에게는 계속 보인다.
   if (hasBusinessLicense(instructor)) return null;
+
 
   const handleSubmit = async () => {
     if (!businessType) {
@@ -82,6 +87,22 @@ export function InstructorBusinessTypeBanner({ instructor }: InstructorBusinessT
       setSubmitting(false);
     }
   };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-left"
+      >
+        <span className="flex items-center gap-2 text-sm font-bold text-amber-900">
+          <AlertTriangle className="h-4 w-4" />
+          사업자등록증 제출이 필요해요
+        </span>
+        <span className="text-xs font-semibold text-primary">펼치기 ▾</span>
+      </button>
+    );
+  }
 
   return (
     <div className="space-y-3 rounded-xl border-2 border-destructive/50 bg-destructive/5 p-4">

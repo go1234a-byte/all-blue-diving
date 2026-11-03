@@ -3,6 +3,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InstructorDashboard } from "@/components/instructor/InstructorDashboard";
+import { InstructorTodoCard } from "@/components/instructor/InstructorTodoCard";
 import { TourCreateForm } from "@/components/instructor/TourCreateForm";
 import { InstructorSettlementSummary } from "@/components/instructor/InstructorSettlementSummary";
 import { SettlementLedger } from "@/components/instructor/SettlementLedger";
@@ -25,18 +26,7 @@ const InstructorConsole = () => {
     <div className="min-h-full bg-gradient-surface pb-24">
       <AppHeader title="강사 콘솔" />
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
-        {!isVerifiedInstructor && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
-            관리자 승인(인증배지) 대기 중이에요. 승인 전에는 투어를 실제로 등록할 수 없어요 —
-            내용은 미리 준비해두시고, 승인되면 바로 등록해주세요.
-          </div>
-        )}
-        {isVerifiedInstructor && !hasLicense && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
-            사업자등록증이 제출되지 않아 신규 투어 등록이 막혀 있어요. 마이페이지에서 사업자등록증을
-            제출해주세요. 이미 열린 투어의 예약·정산·채팅은 그대로 이용할 수 있어요.
-          </div>
-        )}
+        <InstructorTodoCard instructorId={currentInstructorId} verified={isVerifiedInstructor} hasLicense={hasLicense} />
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid h-auto w-full grid-cols-4 gap-1 p-1">
             <TabsTrigger value="dashboard" className="px-1 py-1.5 text-xs">대시보드</TabsTrigger>

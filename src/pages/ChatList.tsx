@@ -217,6 +217,22 @@ const ChatList = () => {
             </Link>
           );
         })}
+        {rows.length > 0 && rows.every((r) => !r.lastMessage) && role !== "admin" && (
+          <div className="mt-2 rounded-xl border border-dashed border-border bg-card px-4 py-5 text-center">
+            <p className="text-sm font-semibold text-foreground">
+              {role === "instructor" ? "참가자가 신청하면 이 방에서 대화할 수 있어요" : "투어 채팅방은 예약한 투어마다 하나씩 열려요"}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              투어마다 그룹 채팅방이 하나씩 있어요. 아직 오간 대화가 없어요.
+            </p>
+            <Link
+              to={role === "instructor" ? "/instructor" : "/search"}
+              className="mt-3 inline-block rounded-lg bg-cta px-4 py-2 text-sm font-bold text-cta-foreground"
+            >
+              {role === "instructor" ? "내 투어 보기" : "투어 둘러보기"}
+            </Link>
+          </div>
+        )}
         </>
         )}
       </main>

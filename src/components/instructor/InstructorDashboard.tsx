@@ -18,7 +18,6 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateKR } from "@/lib/dates";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
-import { UnderMinDecisionPanel } from "./UnderMinDecisionPanel";
 
 interface InstructorDashboardProps {
   instructorId: string;
@@ -58,8 +57,6 @@ export function InstructorDashboard({ instructorId, onViewBookings }: Instructor
 
   return (
     <div className="space-y-4">
-      <UnderMinDecisionPanel instructorId={instructorId} />
-
       <div className="grid grid-cols-3 gap-3">
         <Card
           role="button"

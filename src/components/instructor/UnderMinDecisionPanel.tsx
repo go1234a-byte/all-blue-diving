@@ -14,10 +14,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatDateKR } from "@/lib/dates";
+import { computeDaysRemaining } from "@/lib/refund";
 import { toast } from "sonner";
 
 interface UnderMinDecisionPanelProps {
   instructorId: string;
+  /** true 면 자체 카드·제목 없이 "해야 할 일" 카드 안의 항목으로만 그린다(결정 로직·확인 창은 동일). */
+  embedded?: boolean;
 }
 
 /**
@@ -25,7 +28,7 @@ interface UnderMinDecisionPanelProps {
  * 강사가 "그대로 진행" 또는 "취소(전액환불)"을 직접 선택하도록 하는 패널.
  * 강사 대시보드 상단에 노출되어 결정이 필요한 투어를 놓치지 않도록 한다.
  */
-export function UnderMinDecisionPanel({ instructorId }: UnderMinDecisionPanelProps) {
+export function UnderMinDecisionPanel({ instructorId, embedded = false }: UnderMinDecisionPanelProps) {
   const { tours, getConfirmedParticipantCount, resolveUnderMinDecision } = useAppData();
   const [processingTourId, setProcessingTourId] = useState<string | null>(null);
   const [cancelTargetTourId, setCancelTargetTourId] = useState<string | null>(null);
@@ -54,6 +57,63 @@ export function UnderMinDecisionPanel({ instructorId }: UnderMinDecisionPanelPro
       setCancelTargetTourId(null);
     }
   };
+
+  const cancelDialog = (
+    <AlertDialog open={cancelTargetTourId !== null} onOpenChange={(open) => !open && setCancelTargetTourId(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>투어를 취소하시겠습니까?</AlertDialogTitle>
+          <AlertDialogDescription>
+            취소를 확정하면 해당 투어의 확정 예약이 모두 취소되고 전액(100%) 환불 처리됩니다. 이 작업은 되돌릴 수 없습니다.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>돌아가기</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => {
+              const tour = pendingTours.find((t) => t.id === cancelTargetTourId);
+              if (tour) void handleCancelConfirm(tour.id, tour.title);
+            }}
+          >
+            취소 확정
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  if (embedded) {
+    return (
+      <>
+        {pendingTours.map((tour) => {
+          const confirmedCount = getConfirmedParticipantCount(tour.id);
+          const isProcessing = processingTourId === tour.id;
+          const days = computeDaysRemaining(tour.startDate);
+          return (
+            <div key={tour.id} className="space-y-2 border-t border-border px-4 py-3">
+              <span className="inline-block rounded bg-destructive/10 px-1.5 py-0.5 text-[11px] font-extrabold text-destructive">
+                결정 필요{days >= 0 ? ` · D-${days}` : ""}
+              </span>
+              <p className="break-keep text-[13px] leading-relaxed text-foreground">
+                <b>{tour.title}</b> — 확정 {confirmedCount}명 / 최소 {tour.minParticipants}명 · 출발 {formatDateKR(tour.startDate)}.
+                출발 30일 전 기준 최소 인원에 미달해 모집이 마감됐어요. 예정대로 진행할지, 취소하고 확정 예약을 전액 환불할지 정해주세요.
+              </p>
+              <div className="flex items-center gap-2">
+                <Button size="sm" className="h-9 flex-1 text-xs" disabled={isProcessing} onClick={() => void handleProceed(tour.id, tour.title)}>
+                  그대로 진행
+                </Button>
+                <Button size="sm" variant="outline" className="h-9 flex-1 border-destructive text-xs text-destructive hover:bg-destructive/5" disabled={isProcessing} onClick={() => setCancelTargetTourId(tour.id)}>
+                  투어 취소(전액환불)
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+        {cancelDialog}
+      </>
+    );
+  }
 
   return (
     <Card className="border-2 border-destructive bg-destructive/5">
