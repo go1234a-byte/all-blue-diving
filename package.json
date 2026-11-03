@@ -10,7 +10,7 @@
     "build:dev": "NODE_ENV=development vite build --mode development",
     "check": "pnpm lint && pnpm exec tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --test tests/eligibility.test.ts tests/tours.test.ts",
+    "test": "node --test tests/eligibility.test.ts tests/tours.test.ts tests/tourDisplay.test.ts",
     "preview": "vite preview",
     "pInstall": "pnpm install"
   },

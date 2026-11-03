@@ -1,5 +1,9 @@
 import { usePageMeta, toDescription } from "@/hooks/usePageMeta";
 import { useState } from "react";
+import { TourSummaryStrip } from "@/components/tour/TourSummaryStrip";
+import { TourDetailTabs, type DetailTab } from "@/components/tour/TourDetailTabs";
+import { seatState, seatsLeft } from "@/lib/tourDisplay";
+import { CANCELLATION_POLICY_LINES, CANCELLATION_POLICY_NOTE } from "@/lib/refund";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, Compass, ImageDown, MapPin, MessageCircle, Share2, ShieldCheck, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { calculateAge, formatDateKR, formatDateRangeKR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { stripLeadingLabel, tourLevelLabel } from "@/lib/tourLabels";
+import { stripLeadingLabel, tourLevelLabel, isDepartureConfirmed } from "@/lib/tourLabels";
 import { ACTIVITY_LABEL, ACTIVITY_BADGE_CLASS } from "@/lib/activityBadge";
 import { shareOrCopyLink } from "@/lib/share";
 import { useSampleLock } from "@/hooks/useSampleLock";
@@ -130,6 +134,18 @@ const TourDetail = () => {
   const isSample = isLockedSample(tour.title);
   const isBookingBlocked = isSample || Boolean(tour.adminStatus) || tour.status === "closed" || isFull;
   const alreadyBooked = Boolean(myBooking);
+  const departureConfirmed = isDepartureConfirmed(tour, confirmedCount);
+  const seats = seatState(tour, confirmedCount);
+  // 상세 고정 탭 — 실제로 화면에 그려지는 섹션만 넣는다.
+  const detailTabs: DetailTab[] = [
+    ...(tour.description ? [{ id: "tab-intro", label: "소개" }] : []),
+    ...(tour.itineraryDays && tour.itineraryDays.length > 0 ? [{ id: "tab-itinerary", label: "일정" }] : []),
+    ...(tour.inclusions.length > 0 || tour.exclusions.length > 0 ? [{ id: "tab-incl", label: "포함·불포함" }] : []),
+    ...(tour.meetingPoint || tour.meetingTime ? [{ id: "tab-meet", label: "집결지" }] : []),
+    ...(instructor ? [{ id: "tab-instructor", label: "강사" }] : []),
+    ...(tourReviews.length > 0 ? [{ id: "tab-reviews", label: "후기" }] : []),
+    { id: "tab-refund", label: "환불·정책" },
+  ];
 
   const handleBookNow = () => {
     if (isBookingBlocked) {
@@ -258,6 +274,10 @@ const TourDetail = () => {
                 {ACTIVITY_LABEL[t]}
               </Badge>
             ))}
+            {departureConfirmed && <Badge className="border-0 bg-emerald-100 text-emerald-800">출발확정</Badge>}
+            {!isBookingBlocked && seats === "few" && (
+              <Badge className="border-0 bg-destructive/10 text-destructive">{seatsLeft(tour, confirmedCount)}자리 남음</Badge>
+            )}
             <Badge variant="secondary">{tourLevelLabel({ certificationLevel: tour.certificationLevel, minLogCount: 0 })}</Badge>
             {tour.minLogCount != null && tour.minLogCount > 0 && (
               <Badge variant="outline">로그수 {tour.minLogCount}회 이상</Badge>
@@ -276,14 +296,14 @@ const TourDetail = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 rounded-xl border border-primary/20 bg-card p-4 text-sm">
+        <TourSummaryStrip tour={tour} joined={confirmedCount} departureConfirmed={departureConfirmed} />
+
+        <TourDetailTabs tabs={detailTabs} />
+
+        <div id="tab-meet" className="grid scroll-mt-28 grid-cols-1 gap-3 rounded-xl border border-primary/20 bg-card p-4 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <CalendarDays className="h-4 w-4" />
             {formatDateRangeKR(tour.startDate, tour.endDate)}
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Users className="h-4 w-4" />
-            {confirmedCount}/{tour.maxParticipants}명 모집
           </div>
           {(tour.meetingPoint || tour.meetingTime) && (
             <div className="col-span-2 flex items-start gap-2 border-t border-primary/20 pt-2 text-muted-foreground">
@@ -397,13 +417,15 @@ const TourDetail = () => {
         )}
 
         {/* 1) 담당 강사 프로필 */}
-        <InstructorTrustCard instructor={instructor} />
+        <div id="tab-instructor" className="scroll-mt-28">
+          <InstructorTrustCard instructor={instructor} />
+        </div>
 
         {/* 1-1) 항공편 정보 (강사가 입력한 경우에만 노출) */}
         <TourFlightInfoCard flightInfo={tour.flightInfo} />
 
         {/* 2) 투어 소개 */}
-        <div className="space-y-2 rounded-xl border border-border bg-card p-4">
+        <div id="tab-intro" className="scroll-mt-28 space-y-2 rounded-xl border border-border bg-card p-4">
           <h3 className="text-sm font-semibold text-foreground">투어 소개</h3>
           <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
             {tour.description}
@@ -412,7 +434,7 @@ const TourDetail = () => {
 
         {/* 2-1) 일자별 일정 (강사가 투어 생성 시 등록한 일정) */}
         {tour.itineraryDays && tour.itineraryDays.length > 0 && (
-          <div className="space-y-2">
+          <div id="tab-itinerary" className="scroll-mt-28 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-foreground">일자별 일정</h3>
               <button
@@ -482,7 +504,9 @@ const TourDetail = () => {
         <CostAtAGlanceCard tour={tour} />
 
         {/* 5) 포함 및 불포함 사항 */}
-        <InclusionsExclusionsCard inclusions={tour.inclusions} exclusions={tour.exclusions} />
+        <div id="tab-incl" className="scroll-mt-28">
+          <InclusionsExclusionsCard inclusions={tour.inclusions} exclusions={tour.exclusions} />
+        </div>
 
         <TourOptionsSelector
           options={tour.customOptions}
@@ -490,10 +514,18 @@ const TourDetail = () => {
           onChange={setSelectedOptionIds}
         />
 
-        <ReviewList tourId={tour.id} />
+        <div id="tab-reviews" className="scroll-mt-28">
+          <ReviewList tourId={tour.id} />
+        </div>
 
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-foreground">주요 정책 및 안전 규정</h3>
+        <div id="tab-refund" className="scroll-mt-28 space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">취소·환불 및 안전 규정</h3>
+          <div className="space-y-1.5 rounded-xl border border-border bg-card p-4 text-[13px] leading-relaxed text-muted-foreground">
+            {CANCELLATION_POLICY_LINES.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+            <p className="pt-1 text-xs">{CANCELLATION_POLICY_NOTE}</p>
+          </div>
           <PolicyDisclosure />
         </div>
        </div>

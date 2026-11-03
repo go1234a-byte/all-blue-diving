@@ -45,12 +45,28 @@ export function computeDaysRemaining(startDateIso: string): number {
  * tour.isConfirmed 값과 무관하게 항상 출발일까지 남은 일수만으로 판단한다.
  */
 export function computeRefundRate(tour: Pick<Tour, "isConfirmed" | "startDate">): number {
-  const daysRemaining = computeDaysRemaining(tour.startDate);
+  return refundRateForDays(computeDaysRemaining(tour.startDate));
+}
 
+/** 남은 일수 → 환불율. 위 정책 표의 유일한 구현이며, 표시용 요약도 이 함수를 쓴다. */
+export function refundRateForDays(daysRemaining: number): number {
   if (daysRemaining >= 30) return 1.0;
   if (daysRemaining >= 15) return 0.5;
   if (daysRemaining >= 7) return 0.3;
   return 0.0;
+}
+
+/** 상세 요약 칸용 한 줄: 지금 취소하면 얼마나 환불되는지(전액이면 언제까지인지). */
+export function refundSummary(daysRemaining: number): { title: string; sub: string } {
+  const rate = refundRateForDays(daysRemaining);
+  if (rate === 1) return { title: "전액 환불", sub: `출발 30일 전까지${daysRemaining > 30 ? ` (D-${daysRemaining - 30})` : ""}` };
+  if (rate === 0) return { title: "환불 불가", sub: "출발 7일 미만" };
+  return { title: `${Math.round(rate * 100)}% 환불`, sub: "지금 취소 기준" };
+}
+
+/** "환불 가능만" 필터: 지금 취소해도 일부라도 환불되는 투어(출발 7일 이상 남음). */
+export function isRefundableNow(startDateIso: string): boolean {
+  return refundRateForDays(computeDaysRemaining(startDateIso)) > 0;
 }
 
 export function computeRefundAmount(totalPaid: number, refundRate: number): number {

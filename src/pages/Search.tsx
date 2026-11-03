@@ -12,10 +12,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TourCard } from "@/components/search/TourCard";
+import { TourCardCompact } from "@/components/search/TourCardCompact";
+import { SearchChipBar } from "@/components/search/SearchChipBar";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { TourMapView } from "@/components/search/TourMapView";
 import { FilterSidebar, DEFAULT_FILTERS, type FilterState } from "@/components/search/FilterSidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { isBeginnerFriendly } from "@/lib/tourLabels";
+import { isBeginnerFriendly, isDepartureConfirmed } from "@/lib/tourLabels";
+import { isRefundableNow } from "@/lib/refund";
 import { useAppData } from "@/contexts/AppDataContext";
 import { applyPlatformFee } from "@/lib/pricing";
 import { monthKeyOf } from "@/lib/dates";
@@ -23,17 +27,18 @@ import { isOpenTour } from "@/lib/tours";
 import { cn } from "@/lib/utils";
 import type { ActivityType } from "@/types";
 
-type SortOption = "newest" | "cheapest" | "expensive" | "rating";
+type SortOption = "soonest" | "newest" | "cheapest" | "expensive" | "rating";
 type ViewMode = "list" | "map";
 
 const SORT_LABELS: Record<SortOption, string> = {
+  soonest: "출발일 빠른순",
   newest: "최신순",
   cheapest: "가격 낮은순",
   expensive: "가격 높은순",
   rating: "평점순",
 };
 
-const SORT_OPTIONS: SortOption[] = ["newest", "cheapest", "expensive", "rating"];
+const SORT_OPTIONS: SortOption[] = ["soonest", "newest", "cheapest", "expensive", "rating"];
 
 const Search = () => {
   usePageMeta({
@@ -43,13 +48,14 @@ const Search = () => {
   });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { tours } = useAppData();
+  const { tours, getConfirmedParticipantCount } = useAppData();
+  const isMobile = useIsMobile();
   // 홈 화면 검색 폼에서 넘어온 정렬/가격 범위 값이 있으면 그대로 초기값으로 사용한다.
   const [sort, setSort] = useState<SortOption>(() => {
     const fromParam = searchParams.get("sort");
     return fromParam && (SORT_OPTIONS as string[]).includes(fromParam)
       ? (fromParam as SortOption)
-      : "cheapest";
+      : "soonest";
   });
   const [filters, setFilters] = useState<FilterState>(() => {
     const minParam = searchParams.get("minPrice");
@@ -111,6 +117,8 @@ const Search = () => {
           !filters.beginnerOnly || isBeginnerFriendly(t),
       )
       .filter((t) => !filters.flightIncluded || t.inclusions.some((i) => i.includes("항공")))
+      .filter((t) => !filters.confirmedOnly || isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)))
+      .filter((t) => !filters.refundableOnly || isRefundableNow(t.startDate))
       .filter((t) => {
         // 카드/상세에는 플랫폼 수수료(10%)가 포함된 가격이 보이는데, 필터는 수수료 전
         // basePrice와 비교하고 있어서 최대 가격을 걸어도 그보다 최대 10% 비싼 투어가
@@ -119,12 +127,13 @@ const Search = () => {
         return displayPrice >= filters.priceRange[0] && displayPrice <= filters.priceRange[1];
       })
       .sort((a, b) => {
+        if (sort === "soonest") return a.startDate.localeCompare(b.startDate);
         if (sort === "newest") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         if (sort === "cheapest") return a.basePrice - b.basePrice;
         if (sort === "expensive") return b.basePrice - a.basePrice;
         return b.rating - a.rating;
       });
-  }, [openTours, query, filters, sort]);
+  }, [openTours, query, filters, sort, getConfirmedParticipantCount]);
 
   return (
     <div className="min-h-full bg-gradient-surface pb-24 md:pb-10">
@@ -141,6 +150,7 @@ const Search = () => {
       </header>
 
       <main className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[260px_1fr]">
+        <SearchChipBar filters={filters} onChange={setFilters} priceMax={priceMax} countryOptions={countryOptions} />
         <FilterSidebar filters={filters} onChange={setFilters} priceMax={priceMax} countryOptions={countryOptions} />
 
         <div className="space-y-4">
@@ -203,10 +213,10 @@ const Search = () => {
           ) : viewMode === "map" ? (
             <TourMapView tours={filteredTours} />
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredTours.map((tour) => (
-                <TourCard key={tour.id} tour={tour} />
-              ))}
+            <div className={isMobile ? "space-y-3" : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"}>
+              {filteredTours.map((tour) =>
+                isMobile ? <TourCardCompact key={tour.id} tour={tour} /> : <TourCard key={tour.id} tour={tour} />,
+              )}
             </div>
           )}
         </div>

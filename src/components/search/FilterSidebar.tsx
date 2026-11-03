@@ -18,6 +18,10 @@ export interface FilterState {
   beginnerOnly: boolean;
   /** 포함 사항에 항공권이 들어간 투어만 */
   flightIncluded: boolean;
+  /** 출발확정(강사 확정 + 최소 인원 충족)된 투어만 */
+  confirmedOnly: boolean;
+  /** 지금 취소해도 일부라도 환불되는(출발 7일 이상 남은) 투어만 */
+  refundableOnly: boolean;
 }
 
 interface FilterSidebarProps {
@@ -58,6 +62,8 @@ export function countActiveFilters(f: FilterState): number {
     (f.countries.length ? 1 : 0) +
     (f.beginnerOnly ? 1 : 0) +
     (f.flightIncluded ? 1 : 0) +
+    (f.confirmedOnly ? 1 : 0) +
+    (f.refundableOnly ? 1 : 0) +
     (f.priceRange[0] > 0 || Number.isFinite(f.priceRange[1]) ? 1 : 0)
   );
 }
@@ -69,7 +75,7 @@ export function FilterSidebar({ filters, onChange, priceMax, countryOptions }: F
   const hi = Math.min(filters.priceRange[1], priceMax);
 
   return (
-    <aside className="rounded-2xl border border-border bg-card p-4 md:self-start">
+    <aside className="hidden rounded-2xl border border-border bg-card p-4 md:block md:self-start">
       <button
         type="button"
         className="flex w-full items-center justify-between md:pointer-events-none"
@@ -135,6 +141,12 @@ export function FilterSidebar({ filters, onChange, priceMax, countryOptions }: F
             <Chip on={filters.flightIncluded} onClick={() => onChange({ ...filters, flightIncluded: !filters.flightIncluded })}>
               ✈️ 항공 포함
             </Chip>
+            <Chip on={filters.confirmedOnly} onClick={() => onChange({ ...filters, confirmedOnly: !filters.confirmedOnly })}>
+              출발확정만
+            </Chip>
+            <Chip on={filters.refundableOnly} onClick={() => onChange({ ...filters, refundableOnly: !filters.refundableOnly })}>
+              환불 가능만
+            </Chip>
           </div>
         </div>
 
@@ -182,4 +194,6 @@ export const DEFAULT_FILTERS: FilterState = {
   countries: [],
   beginnerOnly: false,
   flightIncluded: false,
+  confirmedOnly: false,
+  refundableOnly: false,
 };
