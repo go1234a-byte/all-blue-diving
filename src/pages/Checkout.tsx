@@ -277,7 +277,7 @@ const Checkout = () => {
 
   const payButton = (
     <Button
-      variant="coral"
+      variant="cta"
       size="lg"
       className="w-full"
       onClick={handlePay}

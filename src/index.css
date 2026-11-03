@@ -31,6 +31,10 @@
     --accent: 186 77% 38%;
     --accent-foreground: 0 0% 100%;
 
+    /* 예약·결제 버튼 전용 청록 — 흰 글자 대비 4.5:1 이상으로 accent보다 조금 진하게. 색 역할: 예약/결제=cta(청록), 정보·링크·선택=primary(파랑), 임박·경고=destructive(빨강), 확정·안전=success(초록) */
+    --cta: 186 80% 31%;
+    --cta-foreground: 0 0% 100%;
+
     --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 100%;
 
@@ -108,6 +112,9 @@
 
     --accent: 186 72% 48%;
     --accent-foreground: 0 0% 100%;
+
+    --cta: 186 72% 34%;
+    --cta-foreground: 0 0% 100%;
 
     --destructive: 0 78% 58%;
     --destructive-foreground: 0 0% 100%;

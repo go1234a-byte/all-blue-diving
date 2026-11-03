@@ -285,7 +285,7 @@ const TourDetail = () => {
                 {ACTIVITY_LABEL[t]}
               </Badge>
             ))}
-            {departureConfirmed && <Badge className="border-0 bg-emerald-100 text-emerald-800">출발확정</Badge>}
+            {departureConfirmed && <Badge className="border-0 bg-success/15 text-success">출발확정</Badge>}
             {!isBookingBlocked && seats === "few" && (
               <Badge className="border-0 bg-destructive/10 text-destructive">{seatsLeft(tour, confirmedCount)}자리 남음</Badge>
             )}
@@ -540,6 +540,7 @@ const TourDetail = () => {
               </div>
             </div>
             <Button
+              variant="cta"
               size="lg"
               className="w-full"
               onClick={handleBookNow}
@@ -564,7 +565,7 @@ const TourDetail = () => {
           </div>
           {!isBookingBlocked && !alreadyBooked && <PartySizeStepper value={party} max={maxParty} onChange={setPartySize} />}
         </div>
-        <Button size="lg" className="w-full" onClick={handleBookNow} disabled={isBookingBlocked || alreadyBooked}>
+        <Button variant="cta" size="lg" className="w-full" onClick={handleBookNow} disabled={isBookingBlocked || alreadyBooked}>
           {isSample ? "예시 투어" : isBookingBlocked ? "예약 불가" : alreadyBooked ? "이미 예약함" : "예약하기"}
         </Button>
       </div>

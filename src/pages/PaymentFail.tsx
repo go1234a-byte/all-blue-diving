@@ -40,7 +40,7 @@ const PaymentFail = () => {
 
       <div className="flex gap-2 pt-2">
         {retryTourId && (
-          <Button asChild>
+          <Button variant="cta" asChild>
             <Link to={`/checkout/${retryTourId}`}>다시 결제하기</Link>
           </Button>
         )}

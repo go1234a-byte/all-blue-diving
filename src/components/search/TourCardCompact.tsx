@@ -35,7 +35,7 @@ export function TourCardCompact({ tour }: { tour: Tour }) {
           {isLockedSample(tour.title) && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-900">예시 투어</span>}
           {state === "full" && <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-bold">모집마감</span>}
           {state === "few" && <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[11px] font-bold text-destructive">{seatsLeft(tour, joined)}자리 남음</span>}
-          {confirmed && state !== "few" && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold text-emerald-800">출발확정</span>}
+          {confirmed && state !== "few" && <span className="rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-bold text-success">출발확정</span>}
           <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-bold text-primary">{ACTIVITY_LABEL[tour.activityTypes[0]] ?? ""}</span>
         </div>
         <h3 className="line-clamp-2 text-[14.5px] font-semibold leading-snug text-foreground">{tour.title}</h3>
