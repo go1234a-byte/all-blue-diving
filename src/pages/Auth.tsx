@@ -264,6 +264,8 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+type AuthMode = "login" | "diver" | "instructor";
+
 interface AuthLocationState {
   returnTo?: string;
   returnState?: unknown;
@@ -274,6 +276,8 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { returnTo, returnState, reason } = (location.state as AuthLocationState | null) ?? {};
+  // 첫 화면은 로그인만. 가입은 "가입하기"/"강사로 가입하기"로 들어가며, 가입 화면 안에서 다이버·강사를 고른다.
+  const [mode, setMode] = useState<AuthMode>("login");
 
   // "예약하기"를 눌러서 넘어온 경우 가입/로그인 완료 후 원래 보던 결제 화면으로 돌아간다.
   // 그 외에는 기존대로 홈(디스커버리 피드)으로 이동한다.
@@ -296,34 +300,66 @@ const Auth = () => {
         </Link>
 
         <div className="space-y-1 text-center">
-          <h1 className="text-xl font-bold text-foreground">로그인 / 회원가입</h1>
+          <h1 className="text-xl font-bold text-foreground">{mode === "login" ? "로그인" : "회원가입"}</h1>
           <p className="text-sm text-muted-foreground">
             {reason === "booking"
               ? "예약을 완료하려면 로그인 또는 회원가입이 필요해요. 가입 후 바로 예약을 이어갈 수 있어요."
-              : "전 세계 다이빙 투어를 지금 바로 예약해보세요."}
+              : mode === "login"
+                ? "전 세계 다이빙 투어를 지금 바로 예약해보세요."
+                : "다이버와 강사 중 맞는 유형으로 가입해주세요."}
           </p>
         </div>
 
         <div className="mt-6 space-y-5 rounded-2xl border border-border bg-card p-5 shadow-ocean">
-          <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="login">로그인</TabsTrigger>
-              <TabsTrigger value="diver">다이버 가입</TabsTrigger>
-              <TabsTrigger value="instructor">강사 가입</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login" className="pt-3">
+          {mode === "login" ? (
+            <>
+              <SocialAuthButtons heading="간편 로그인" />
+              <div className="flex items-center gap-2">
+                <div className="h-px flex-1 bg-border" />
+                <p className="text-xs font-medium text-muted-foreground">또는 이메일로</p>
+                <div className="h-px flex-1 bg-border" />
+              </div>
               <LoginForm onSuccess={handleSuccess} />
-            </TabsContent>
-            <TabsContent value="diver" className="pt-3">
-              <DiverSignupForm onSuccess={handleSuccess} />
-            </TabsContent>
-            <TabsContent value="instructor" className="pt-3">
-              <InstructorSignupForm onSuccess={handleSuccess} />
-            </TabsContent>
-          </Tabs>
-
-          <SocialAuthButtons />
+              <p className="text-center text-sm text-muted-foreground">
+                계정이 없으신가요?{" "}
+                <button type="button" onClick={() => setMode("diver")} className="font-semibold text-primary underline-offset-2 hover:underline">
+                  가입하기
+                </button>
+              </p>
+            </>
+          ) : (
+            <>
+              <Tabs value={mode} onValueChange={(v) => setMode(v as AuthMode)}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="diver">다이버 가입</TabsTrigger>
+                  <TabsTrigger value="instructor">강사 가입</TabsTrigger>
+                </TabsList>
+                <TabsContent value="diver" className="pt-3">
+                  <DiverSignupForm onSuccess={handleSuccess} />
+                </TabsContent>
+                <TabsContent value="instructor" className="pt-3">
+                  <InstructorSignupForm onSuccess={handleSuccess} />
+                </TabsContent>
+              </Tabs>
+              <SocialAuthButtons />
+              <p className="text-center text-sm text-muted-foreground">
+                이미 계정이 있으신가요?{" "}
+                <button type="button" onClick={() => setMode("login")} className="font-semibold text-primary underline-offset-2 hover:underline">
+                  로그인
+                </button>
+              </p>
+            </>
+          )}
         </div>
+
+        {mode === "login" && (
+          <div className="mt-4 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+            <b className="text-foreground">강사이신가요?</b> 사업자등록증을 인증한 강사만 투어를 올릴 수 있어요.{" "}
+            <button type="button" onClick={() => setMode("instructor")} className="font-semibold text-primary underline-offset-2 hover:underline">
+              강사로 가입하기 ›
+            </button>
+          </div>
+        )}
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
           가입을 진행하면 ALL BLUE{" "}

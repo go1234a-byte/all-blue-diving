@@ -21,7 +21,7 @@ const NAVER_STATE_STORAGE_KEY = "allblue-naver-oauth-state";
  * 커스텀 OAuth 브릿지를 쓴다. VITE_NAVER_CLIENT_ID가 없으면 버튼이 비활성화된 안내만 보여준다.
  * 최초 로그인 시 profiles row가 없으면 RootLayout이 /complete-profile로 보내 추가 정보를 받는다.
  */
-export function SocialAuthButtons() {
+export function SocialAuthButtons({ heading = "간편 회원가입 / 로그인", showHeading = true }: { heading?: string; showHeading?: boolean } = {}) {
   const { toast } = useToast();
 
   // 네이티브 앱(iOS/Android)에서는 인앱 브라우저(SFSafariViewController / Custom Tabs)로 OAuth를
@@ -87,11 +87,13 @@ export function SocialAuthButtons() {
 
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center gap-2">
-        <div className="h-px flex-1 bg-border" />
-        <p className="text-xs font-medium text-muted-foreground">간편 회원가입 / 로그인</p>
-        <div className="h-px flex-1 bg-border" />
-      </div>
+      {showHeading && (
+        <div className="flex items-center gap-2">
+          <div className="h-px flex-1 bg-border" />
+          <p className="text-xs font-medium text-muted-foreground">{heading}</p>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+      )}
 
       <button
         type="button"
