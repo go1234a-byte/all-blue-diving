@@ -19,6 +19,7 @@ import { isBeginnerFriendly } from "@/lib/tourLabels";
 import { useAppData } from "@/contexts/AppDataContext";
 import { applyPlatformFee } from "@/lib/pricing";
 import { monthKeyOf } from "@/lib/dates";
+import { isOpenTour } from "@/lib/tours";
 import { cn } from "@/lib/utils";
 import type { ActivityType } from "@/types";
 
@@ -72,7 +73,7 @@ const Search = () => {
 
   const query = searchParams.get("q")?.trim() ?? "";
 
-  const openTours = useMemo(() => tours.filter((t) => !t.adminStatus && t.status === "open"), [tours]);
+  const openTours = useMemo(() => tours.filter(isOpenTour), [tours]);
   // 슬라이더 끝값 = 모집중 투어 최고가(수수료 포함)를 50만원 단위로 올림. 최소 350만원.
   const priceMax = useMemo(() => {
     const top = openTours.reduce((m, t) => Math.max(m, applyPlatformFee(t.basePrice)), 0);

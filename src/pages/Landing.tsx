@@ -8,13 +8,14 @@ import { AdminHeadcountControl } from "@/components/tour/AdminHeadcountControl";
 import { BUSINESS_INFO } from "@/lib/businessInfo";
 import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
-import { formatDateRangeKR, currentMonthKey, monthOfKey } from "@/lib/dates";
+import { formatDateRangeKR, currentMonthKey, monthOfKey, monthKeyOf } from "@/lib/dates";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
+import { isOpenTour, matchesActivity, countOpenToursByMonth } from "@/lib/tours";
+import { HomeTourFinder } from "@/components/home/HomeTourFinder";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
 import { DIVE_POINTS, GUIDE_BY_MONTH, type DivePoint } from "@/content/divePointGuide";
 import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardGuide";
 import { hasFullItinerary, isDepartureConfirmed, tourLevelLabel } from "@/lib/tourLabels";
-import { isTourBookable } from "@/lib/tourBooking";
 import type { Tour } from "@/types";
 import { useSampleLock } from "@/hooks/useSampleLock";
 
@@ -475,40 +476,6 @@ function Carousel({ label, items }: { label: string; items: ReactNode[] }) {
   );
 }
 
-/**
- * 홈 투어 카드의 위시리스트 하트. 카드 전체가 <Link>라서 클릭이 상세로 새지 않게 막는다.
- * 검색 카드(TourCard)와 같은 규칙: 예약 불가 투어는 새로 찜할 수 없다.
- */
-function WishButton({ tourId }: { tourId: string }) {
-  const { isBookmarked, toggleBookmark, getTourById } = useAppData();
-  const on = isBookmarked(tourId);
-  const tour = getTourById(tourId);
-  return (
-    <button
-      type="button"
-      className={`ab-wish ${on ? "on" : ""}`}
-      aria-label={on ? "위시리스트에서 빼기" : "위시리스트에 담기"}
-      aria-pressed={on}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!on && tour && !isTourBookable(tour)) return;
-        toggleBookmark(tourId);
-      }}
-    >
-      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-        <path
-          d="M12 20.5s-7.5-4.6-9.6-9.3C1 7.9 3.1 4.5 6.6 4.5c2.1 0 3.6 1.2 5.4 3.2 1.8-2 3.3-3.2 5.4-3.2 3.5 0 5.6 3.4 4.2 6.7-2.1 4.7-9.6 9.3-9.6 9.3z"
-          fill={on ? "currentColor" : "none"}
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </button>
-  );
-}
-
 export default function Landing() {
   const navigate = useNavigate();
   const { isLoggedIn, role, authLoading } = useRole();
@@ -519,8 +486,6 @@ export default function Landing() {
   const profileName = (id: string) => publicProfiles.find((p) => p.id === id)?.name ?? "다녀온 다이버";
   const rootRef = useReveal();
 
-  const [heroIdx, setHeroIdx] = useState(0);
-  const heroPaused = useRef(false);
   const [q, setQ] = useState("");
   // 검색창 "출발 월" 값도 연도까지 포함한 monthKey로 다룬다 — 단순 0~11 월 번호면
   // 올해 10월과 내년 10월을 구분할 수 없어 /search 결과 필터와 어긋나게 된다.
@@ -547,43 +512,6 @@ export default function Landing() {
         .filter((p): p is DivePoint => Boolean(p)),
     [guideMonth],
   );
-  // 히어로가 순환하는 슬라이드 = 이번 달 추천 포인트들 + 광고 슬라이드 하나. 광고 전용
-  // 칩을 따로 얹는 대신, 히어로 자체가 (이미지·헤드라인·부제·CTA 전부) 광고로 바뀌는
-  // 슬라이드를 하나 더 끼워 넣는다 — 다이빙 포인트 슬라이드가 보여주는 정보 구성은 그대로 두고,
-  // 순환 목록에 항목 하나만 추가하는 형태.
-  const heroSlides = useMemo<({ kind: "point"; data: DivePoint } | { kind: "ad" })[]>(
-    () => [...monthPoints.map((p) => ({ kind: "point" as const, data: p })), { kind: "ad" as const }],
-    [monthPoints],
-  );
-  const heroSlide = heroSlides[heroIdx] ?? heroSlides[0];
-  const heroGhost = useMemo(
-    () =>
-      [...monthPoints.map((p) => p.hook), AD_BANNER.headline].reduce(
-        (longest, s) => (s.length > longest.length ? s : longest),
-        "",
-      ),
-    [monthPoints],
-  );
-
-  // 달이 바뀌면(가이드 섹션에서 월 탭 클릭) 인덱스를 처음으로.
-  useEffect(() => {
-    setHeroIdx(0);
-  }, [guideMonth]);
-
-  // Android WebView에서는 시스템 "애니메이션 제거" 설정이 켜져 있으면
-  // prefers-reduced-motion이 true로 잡혀 히어로가 첫 장에서 아예 멈춰 있었다.
-  // 이 순환은 화면을 흔드는 모션이 아니라 "다음 정보/광고를 보여주는" 콘텐츠
-  // 전환이라 reduced-motion과 무관하게 항상 돌아가야 한다(패럴랙스 스크롤 효과만
-  // 아래에서 reduced를 계속 존중한다).
-  useEffect(() => {
-    if (heroSlides.length <= 1) return;
-    const t = setInterval(() => {
-      if (heroPaused.current || explorer) return; // 전체화면 뷰가 열려 있으면 히어로는 안 보이니 리렌더 낭비 금지
-      setHeroIdx((cur) => (cur + 1) % heroSlides.length);
-    }, 5000);
-    return () => clearInterval(t);
-  }, [explorer, heroSlides.length]);
-
   useEffect(() => {
     const on = () => setScrollY(window.scrollY);
     on();
@@ -591,11 +519,23 @@ export default function Landing() {
     return () => window.removeEventListener("scroll", on);
   }, []);
 
-  const openTours = useMemo(
-    () => tours.filter((t) => !t.adminStatus && t.status === "open"),
-    [tours],
+  const openTours = useMemo(() => tours.filter(isOpenTour), [tours]);
+  // 검색 카드: 종류(스쿠버/프리다이빙)로 먼저 거른 투어에서 월별 개수를 센다. 개수가 있는 월만 칩으로 보인다.
+  const actTours = useMemo(() => openTours.filter((t) => matchesActivity(t, heroAct)), [openTours, heroAct]);
+  const monthChips = useMemo(
+    () => [...countOpenToursByMonth(actTours, monthKeyOf).entries()].filter(([k]) => k >= currentMonthKey()).sort((a, b) => a[0] - b[0]).slice(0, 8),
+    [actTours],
   );
-  const bentoTours = openTours.slice(0, 6);
+  // 고른 월이 종류를 바꾼 뒤 칩에서 사라지면 전체로 되돌린다.
+  useEffect(() => {
+    if (month !== "" && !monthChips.some(([k]) => k === month)) setMonth("");
+  }, [monthChips, month]);
+  const resultCount = useMemo(
+    () => (month === "" ? actTours.length : actTours.filter((t) => monthKeyOf(t.startDate) === month).length),
+    [actTours, month],
+  );
+  const goLabel = month === "" ? `투어 ${resultCount}개 보기` : `${MONTH_LABELS_KR[monthOfKey(month)]} 출발 투어 ${resultCount}개 보기`;
+  const verifiedInstructorIds = useMemo(() => new Set(instructors.filter((i) => i.verified).map((i) => i.id)), [instructors]);
 
 
 
@@ -699,236 +639,62 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* 1. HERO — 페이지에서 유일한 다크 영역(오버레이) */}
-      {/* 마우스 호버로만 일시정지한다(데스크톱 전용). 예전엔 터치도 pause/resume
-          쌍으로 처리했는데, 모바일에서 터치가 스크롤로 이어지면 브라우저가 touchend
-          대신 touchcancel을 보내는 경우가 많아 heroPaused가 true에 박힌 채 다시는
-          안 풀려서 히어로가 첫 장에서 영구히 멈췄다(안드로이드에서 재현된 버그).
-          터치 일시정지 자체를 없애 그 경우의 수를 통째로 제거한다. */}
-      <header
-        className="ab-hero"
-        onMouseEnter={() => { heroPaused.current = true; }}
-        onMouseLeave={() => { heroPaused.current = false; }}
-      >
-        <div
-          className="ab-hero-media"
-          style={reduced ? undefined : { transform: `translateY(${scrollY * 0.16}px) scale(1.06)` }}
-        >
-          {heroSlides.map((s, i) => (
-            <img
-              key={s.kind === "point" ? s.data.id : "ad"}
-              src={s.kind === "point" ? s.data.image : AD_BANNER.image}
-              alt={i === heroIdx ? (s.kind === "point" ? s.data.region : AD_BANNER.headline) : ""}
-              aria-hidden={i === heroIdx ? undefined : true}
-              className={i === heroIdx ? "is-on" : undefined}
-              // 첫 슬라이드가 이 페이지의 LCP 이미지다 — 먼저 받게 하고, 아직 안 보이는
-              // 나머지 슬라이드는 뒤로 미뤄 첫 화면 대역폭을 뺏지 않게 한다.
-              fetchPriority={i === 0 ? "high" : "low"}
-              decoding="async"
-              onError={handleImageFallback}
-            />
-          ))}
-          <div className="ab-hero-scrim" />
-        </div>
-        <div className="wrap ab-hero-inner">
-          {/* 광고 슬라이드일 땐 히어로 자체(이미지·문구·CTA)가 통째로 광고로 바뀐다 —
-              순환 목록에 광고를 슬라이드 하나로 끼워 넣은 것뿐, 다이빙 포인트 슬라이드가
-              보여주는 정보 구성(eyebrow/헤드라인/부제/CTA)은 그대로다. */}
-          <p className="ab-eyebrow light">
-            {heroSlide.kind === "ad" ? AD_BANNER.eyebrow : `${MONTH_LABELS_KR[guideMonth]}, 다이빙 떠나기 좋은 곳`}
-          </p>
-          <h1 className="ab-hero-h">
-            <span key={heroSlide.kind === "point" ? heroSlide.data.id : "ad"} className="ab-hero-line on">
-              {heroSlide.kind === "point" ? heroSlide.data.hook : AD_BANNER.headline}
-            </span>
-            <span className="ab-hero-line ghost">{heroGhost}</span>
-          </h1>
-          <p className="ab-hero-lede">
-            {heroSlide.kind === "point" ? `${heroSlide.data.region} · ${heroSlide.data.oneLiner}` : AD_BANNER.sub}
-          </p>
-          <button
-            type="button"
-            className="ab-hero-more"
-            onClick={() => {
-              if (heroSlide.kind === "point") {
-                setDetail({ kind: "point", data: heroSlide.data });
-                return;
-              }
-              if (isExternalHref(AD_BANNER.href)) {
-                window.open(AD_BANNER.href, "_blank", "noopener,noreferrer");
-              } else {
-                navigate(AD_BANNER.href);
-              }
-            }}
-          >
-            {heroSlide.kind === "point" ? `${heroSlide.data.region} 자세히 보기 →` : "투어 둘러보기 →"}
-          </button>
-
-          <div className="ab-search" role="search">
-            <input
-              className="ab-search-fld"
-              placeholder="어디로 갈까요? 예: 세부, 몰디브"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && goSearch()}
-              aria-label="여행지"
-            />
-            <select
-              className="ab-search-fld ab-search-sel"
-              value={month}
-              onChange={(e) => setMonth(e.target.value === "" ? "" : Number(e.target.value))}
-              aria-label="출발 월"
-            >
-              <option value="">날짜 (출발 월)</option>
-              {heroMonthOptions.map((key) => (
-                <option key={key} value={key}>
-                  {MONTH_LABELS_KR[monthOfKey(key)]}
-                  {Math.floor(key / 12) > Math.floor(heroMonthStart / 12) ? " (내년)" : ""}
-                </option>
+      {/* 1. HERO — 검색 카드 중심. 출발월 칩에 월별 모집 중 투어 개수가 보이고, 고른 월·종류는 아래 목록도 같이 거른다. */}
+      <header className="ab-hero2">
+        <div className="wrap ab-hero2-inner">
+          <h1>어디로, 언제<br />떠나볼까요?</h1>
+          <p className="ab-hero2-lede">자격·경력을 검증한 강사의 스쿠버·프리다이빙 투어만 모았어요.</p>
+          <div className="ab-search2" role="search">
+            <label className="ab-s2-row">
+              <small>어디로</small>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && goSearch()}
+                placeholder="세부, 다합, 몰디브…"
+                aria-label="여행지"
+              />
+            </label>
+            <div className="ab-s2-seg" role="group" aria-label="다이빙 종류">
+              {([["", "전체"], ["scuba", "스쿠버"], ["freediving", "프리다이빙"]] as const).map(([v, label]) => (
+                <button key={v} type="button" className={heroAct === v ? "on" : ""} onClick={() => setHeroAct(v)}>{label}</button>
               ))}
-            </select>
-            <div className="ab-search-act" role="group" aria-label="다이빙 종류">
-              <button
-                type="button"
-                className={heroAct === "scuba" ? "on" : ""}
-                onClick={() => setHeroAct((v) => (v === "scuba" ? "" : "scuba"))}
-              >스쿠버</button>
-              <button
-                type="button"
-                className={heroAct === "freediving" ? "on" : ""}
-                onClick={() => setHeroAct((v) => (v === "freediving" ? "" : "freediving"))}
-              >프리다이빙</button>
             </div>
-            <button className="ab-search-go" onClick={goSearch}>투어 찾기</button>
+            <p className="ab-s2-lab">출발월</p>
+            <div className="ab-s2-months" role="group" aria-label="출발월">
+              <button type="button" className={month === "" ? "on" : ""} onClick={() => setMonth("")}>
+                <b>전체</b><small>{actTours.length}개</small>
+              </button>
+              {monthChips.map(([key, n]) => (
+                <button key={key} type="button" className={month === key ? "on" : ""} onClick={() => setMonth(month === key ? "" : key)}>
+                  <b>{MONTH_LABELS_KR[monthOfKey(key)]}</b><small>{n}개</small>
+                </button>
+              ))}
+            </div>
+            <button type="button" className="ab-s2-go" onClick={goSearch}>{goLabel}</button>
           </div>
-
-          <a href="#tours" className="ab-scrollcue"><i />모집중인 투어 보기</a>
         </div>
       </header>
 
       {/* 1-1. 다가오는 다이빙 D-day — 예약한 다이버에게만 */}
       <UpcomingTripCard />
 
-      {/* 2. 모집중인 투어 (실데이터) — 히어로 바로 아래. 예전엔 대형 배너 3개 아래(약 3,400px)에 있어
-          모바일에서 첫 투어까지 한참 스크롤해야 했다. */}
-      <section id="tours" className="ab-sec ab-tours">
-        <div className="wrap">
-          <div className="ab-sec-head r">
-            <div>
-              <h2>지금 모집중인 투어</h2>
-              <p className="ab-sub">
-                {bentoTours.length > 0 && bentoTours.every((t) => isLockedSample(t.title))
-                  ? "지금은 예시 투어로 화면을 보여드리고 있어요. 첫 실제 투어가 곧 열립니다."
-                  : "인증 강사가 진행하는, 예약 가능한 일정입니다."}
-              </p>
-            </div>
-            <Link to="/search" className="ab-textlink">전체 투어 보기 →</Link>
-          </div>
-
-          {bentoTours.length === 0 ? (
-            <p className="ab-sub r">현재 모집중인 투어를 준비하고 있어요. 곧 새로운 일정이 열립니다.</p>
-          ) : (
-            <div className="ab-bento r">
-              {bentoTours.map((t, i) => (
-                <Link key={t.id} to={`/tour/${t.id}`} className={`ab-tcard ${i === 0 ? "feat" : ""}`}>
-                  <div className="ab-tcard-img">
-                    <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
-                    <WishButton tourId={t.id} />
-                    <div className="ab-tcard-badges">
-                      {isLockedSample(t.title) && <span className="ab-chip sample">예시 투어 · 예약 불가</span>}
-                      {(() => { const b = recoBadge(t); return b ? <span className="ab-chip reco">{b}</span> : null; })()}
-                      {t.activityTypes.map((a) => (
-                        <span key={a} className="ab-chip solid">{ACTIVITY_LABEL[a]}</span>
-                      ))}
-                      {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
-                    </div>
-                  </div>
-                  <div className="ab-tcard-body">
-                    <p className="ab-tcard-loc">{t.country} · {t.site}</p>
-                    <h3>{t.title}</h3>
-                    <p className="ab-tcard-date">{formatDateRangeKR(t.startDate, t.endDate)} 출발</p>
-                    {(() => {
-                      const nights = Math.max(1, Math.round((+new Date(t.endDate) - +new Date(t.startDate)) / 86400000));
-                      const hasPlan = hasFullItinerary(t);
-                      return <p className="ab-tcard-nights">{nights}박 {nights + 1}일{hasPlan ? " · 일자별 일정 제공" : ""}</p>;
-                    })()}
-                    <div className="ab-tcard-meta">
-                      {t.flightInfo?.outbound?.airport && <span>✈️ {t.flightInfo.outbound.airport.split(" → ")[0]} 출발</span>}
-                      {t.waterTempC > 0 && <span>수온 {t.waterTempC}°C</span>}
-                      {t.visibilityM > 0 && <span>시야 ~{t.visibilityM}m</span>}
-                      <span>{tourLevelLabel(t)}</span>
-                    </div>
-                    {(() => {
-                      const joined = getConfirmedParticipantCount(t.id);
-                      const seats = Math.max(0, t.maxParticipants - joined);
-                      return (
-                        <p className="ab-tcard-recruit">
-                          <span>{t.maxParticipants}명 모집 · {joined}명 신청</span>
-                          <span className={seats === 0 ? "full" : seats <= 3 ? "few" : "ok"}>
-                            {seats === 0 ? "모집 마감" : `잔여 ${seats}석`}
-                          </span>
-                        </p>
-                      );
-                    })()}
-                    <AdminHeadcountControl tour={t} className="mt-2" />
-                    <p className="ab-tcard-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
-                    {(() => {
-                      const opts = t.customOptions.filter((o) => o.isActive);
-                      if (!t.inclusions.length && !opts.length) return null;
-                      return (
-                        <div className="ab-tcard-incl">
-                          {t.inclusions.length > 0 && (
-                            <p><b>필수</b><span>{t.inclusions.slice(0, 3).join(" · ")}{t.inclusions.length > 3 ? ` 외 ${t.inclusions.length - 3}` : ""}</span></p>
-                          )}
-                          {opts.length > 0 && (
-                            <p><b>선택</b><span>{opts.slice(0, 3).map((o) => o.name).join(" · ")}{opts.length > 3 ? ` 외 ${opts.length - 3}` : ""}</span></p>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 막판 자리 · 마감 임박 — 실데이터로 자격되는 투어가 있을 때만 노출 */}
-      {urgentTours.length > 0 && (
-        <section className="ab-sec ab-urgent">
-          <div className="wrap">
-            <div className="ab-subhead r">
-              <h3>지금이 아니면 놓치는 투어</h3>
-              <Link to="/search" className="ab-textlink">전체 투어 →</Link>
-            </div>
-            <p className="ab-sub r" style={{ marginTop: 0 }}>막판 자리 · 마감 임박 · 곧 출발하는 일정이에요.</p>
-            <div className="ab-tourrow r">
-              {urgentTours.map(({ t, d }) => (
-                <Link key={t.id} to={`/tour/${t.id}`} className="ab-tcard">
-                  <div className="ab-tcard-img">
-                    <img src={t.mainImageUrl || IMAGE_PLACEHOLDER} alt={t.title} onError={handleImageFallback} loading="lazy" />
-                    <WishButton tourId={t.id} />
-                    <div className="ab-tcard-badges">
-                      {isLockedSample(t.title) && <span className="ab-chip sample">예시 투어 · 예약 불가</span>}
-                      <span className="ab-chip hot">{d.label}</span>
-                      {isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)) && <span className="ab-chip gold">출발확정</span>}
-                    </div>
-                  </div>
-                  <div className="ab-tcard-body">
-                    <p className="ab-tcard-loc">{t.country} · {t.site}</p>
-                    <h3>{t.title}</h3>
-                    <div className="ab-tcard-meta">
-                      <span>{formatDateRangeKR(t.startDate, t.endDate)} 출발</span>
-                      <span>{formatKRW(applyPlatformFee(t.basePrice))}~</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* 2. 모집 중 투어 — 지역 칩 · 마감 임박 · 출발일별 목록 (검색 카드의 월·종류가 목록도 거른다) */}
+      <HomeTourFinder
+        tours={openTours}
+        month={month}
+        act={heroAct}
+        getJoined={getConfirmedParticipantCount}
+        verifiedInstructorIds={verifiedInstructorIds}
+        isSample={isLockedSample}
+        urgent={urgentTours.map(({ t, d }) => ({ t, label: d.label.replace("🔥 ", "") }))}
+        ad={{
+          image: AD_BANNER.image,
+          headline: AD_BANNER.headline,
+          sub: AD_BANNER.sub,
+          onClick: () => (isExternalHref(AD_BANNER.href) ? window.open(AD_BANNER.href, "_blank", "noopener,noreferrer") : navigate(AD_BANNER.href)),
+        }}
+      />
 
       {/* 3. 언제 어디로 떠날까요 — 다이빙 포인트 가이드 배너 (클릭 시 Explorer) */}
       <section id="guide" className="ab-sec ab-guide">
@@ -1240,6 +1006,30 @@ const CSS = `
 @media(max-width:480px){.ab-hero-media img{object-position:center 35%;}}
 @media(min-width:1400px){.ab-hero-media img{object-position:center 55%;}}
 
+
+/* HERO 2 — 검색 카드 중심(출발월 칩에 월별 투어 개수) */
+.ab-hero2{position:relative;background:linear-gradient(rgba(10,27,46,.72),rgba(10,27,46,.72)),url(/landing/hero.webp) center/cover;color:#fff;padding:calc(88px + env(safe-area-inset-top)) 0 var(--s5);}
+.ab-hero2-inner > *{max-width:720px;}
+.ab-lp .ab-hero2 h1{font-size:clamp(1.875rem,6vw,3rem);color:#fff;}
+.ab-hero2-lede{margin:var(--s3) 0 var(--s4);color:rgba(255,255,255,.88);max-width:44ch;}
+.ab-search2{background:#fff;color:var(--navy);border-radius:18px;padding:var(--s2);display:flex;flex-direction:column;gap:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
+.ab-s2-row{display:flex;flex-direction:column;padding:10px 14px;border-radius:12px;cursor:text;}
+.ab-s2-row small{color:var(--text-2);font-size:.75rem;}
+.ab-s2-row input{border:0;outline:0;background:transparent;color:var(--navy);font:inherit;font-size:1.0625rem;font-weight:600;padding:2px 0;}
+.ab-s2-row input::placeholder{color:var(--text-2);font-weight:500;}
+.ab-s2-seg{display:flex;background:var(--bg-soft);border-radius:10px;padding:3px;margin:0 6px;}
+.ab-s2-seg button{flex:1;border:0;background:transparent;color:var(--text-2);font:inherit;font-size:.9375rem;padding:10px 0;border-radius:8px;cursor:pointer;}
+.ab-s2-seg button.on{background:#fff;color:var(--navy);font-weight:700;box-shadow:0 1px 3px rgba(10,27,46,.18);}
+.ab-s2-lab{margin:var(--s2) 14px 0;font-size:.75rem;color:var(--text-2);}
+.ab-s2-months{display:flex;gap:6px;overflow-x:auto;padding:0 6px 4px;scrollbar-width:none;}
+.ab-s2-months::-webkit-scrollbar{display:none;}
+.ab-s2-months button{flex:0 0 66px;border:0;background:var(--bg-soft);color:var(--navy);border-radius:10px;padding:8px 0;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;}
+.ab-s2-months button b{font-size:1.0625rem;}
+.ab-s2-months button small{font-size:.6875rem;color:var(--text-2);}
+.ab-s2-months button.on{background:#0D47A1;color:#fff;}
+.ab-s2-months button.on small{color:#CFE0FF;}
+.ab-s2-go{border:0;cursor:pointer;background:var(--turq);color:#fff;font:inherit;font-weight:800;font-size:1rem;padding:15px;border-radius:12px;margin:0;}
+.ab-s2-go:hover{background:#128ea1;}
 .ab-search{margin-top:var(--s5);display:flex;flex-wrap:wrap;gap:var(--s2);max-width:640px;background:rgba(255,255,255,.96);border-radius:12px;padding:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
 .ab-search-fld{flex:1 1 200px;min-width:0;border:0;outline:0;background:transparent;color:var(--navy);padding:12px 14px;font-size:.9375rem;font-family:inherit;}
 .ab-search-fld::placeholder{color:var(--text-2);}

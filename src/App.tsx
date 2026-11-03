@@ -11,7 +11,6 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { AppDataProvider } from "@/contexts/AppDataContext";
 import { SplashScreen } from "@/components/SplashScreen";
-import { DiverPopup } from "@/components/DiverPopup";
 import { handleOAuthDeepLink } from "@/lib/nativeOAuth";
 import { toast } from "@/hooks/use-toast";
 
@@ -79,7 +78,6 @@ const App = () => {
               <Toaster />
               <Sonner />
               {!splashDone && <SplashScreen onFinish={handleSplashFinish} />}
-              {splashDone && <DiverPopup onCta={() => router.navigate("/search")} />}
               <RouterProvider router={router} />
             </AppDataProvider>
           </RoleProvider>
