@@ -107,6 +107,9 @@ function mapInstructorRow(row: {
   level?: string | null;
   license_file_names: string[] | null;
   license_file_paths?: string[] | null;
+  insurance_file_paths?: string[] | null;
+  bank_verified_at?: string | null;
+  bank_verified_by?: string | null;
   documents_pending_review?: boolean | null;
   signature_data_url: string | null;
   verified_status: boolean;
@@ -147,6 +150,9 @@ function mapInstructorRow(row: {
     level: row.level ?? undefined,
     licenseFileNames: row.license_file_names ?? [],
     licenseFilePaths: row.license_file_paths ?? [],
+    insuranceFilePaths: row.insurance_file_paths ?? [],
+    bankVerifiedAt: row.bank_verified_at ?? undefined,
+    bankVerifiedBy: row.bank_verified_by ?? undefined,
     documentsPendingReview: row.documents_pending_review ?? false,
     signatureDataUrl: row.signature_data_url ?? undefined,
     verified: row.verified_status,
@@ -703,6 +709,8 @@ interface NewInstructorSignupInput {
   bankbookFileName?: string;
   bankbookPath?: string;
   idDocumentPath?: string;
+  insuranceFileNames?: string[];
+  insuranceFilePaths?: string[];
 }
 
 interface NewDiverSignupInput {
@@ -890,6 +898,7 @@ interface AppDataContextValue {
     },
   ) => Promise<void>;
   clearInstructorDocumentReview: (instructorId: string) => Promise<void>;
+  setInstructorBankVerified: (instructorId: string, verified: boolean, verifiedBy?: string) => Promise<void>;
   toggleBookmark: (tourId: string) => void;
   isBookmarked: (tourId: string) => boolean;
   toggleInstructorBookmark: (instructorId: string) => void;
@@ -2539,6 +2548,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       name: input.name,
       licenseFileNames: input.licenseFileNames,
       licenseFilePaths: input.licenseFilePaths,
+      insuranceFilePaths: input.insuranceFilePaths,
       signatureDataUrl: input.signatureDataUrl,
       verified: false,
       pledgeSigned: input.pledgeSigned ?? false,
@@ -2559,6 +2569,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       name: input.name,
       license_file_names: input.licenseFileNames,
       license_file_paths: input.licenseFilePaths,
+      insurance_file_names: input.insuranceFileNames ?? [],
+      insurance_file_paths: input.insuranceFilePaths ?? [],
       signature_data_url: input.signatureDataUrl,
       pledge_signed: input.pledgeSigned ?? false,
       pledge_signed_at: pledgeSignedAt,
@@ -2571,7 +2583,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const { error: applicationError } = existing
       ? await supabase
           .from("instructors")
-          .update({ ...applicationRow, rejected_at: null, rejection_reason: null })
+          .update({ ...applicationRow, rejected_at: null, rejection_reason: null, bank_verified_at: null, bank_verified_by: null })
           .eq("id", instructorId)
       : await supabase.from("instructors").insert({ ...applicationRow, id: instructorId, profile_id: profileId });
     if (applicationError) throw new Error(`강사 전환 신청에 실패했습니다: ${applicationError.message}`);
@@ -2579,11 +2591,31 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setInstructors((prev) =>
       prev.some((i) => i.id === instructorId)
         ? prev.map((i) =>
-            i.id === instructorId ? { ...i, ...instructorProfile, rejectedAt: undefined, rejectionReason: undefined } : i,
+            i.id === instructorId
+              ? { ...i, ...instructorProfile, rejectedAt: undefined, rejectionReason: undefined, bankVerifiedAt: undefined, bankVerifiedBy: undefined }
+              : i,
           )
         : [...prev, instructorProfile],
     );
     return instructorProfile;
+  };
+
+  /** 관리자 — 통장 사본의 예금주·계좌와 신분증 이름을 대조했음을 기록한다. 승인의 필수 조건이다. */
+  const setInstructorBankVerified = async (instructorId: string, verified: boolean, verifiedBy?: string): Promise<void> => {
+    const bankVerifiedAt = verified ? new Date().toISOString() : null;
+    const bankVerifiedBy = verified ? (verifiedBy ?? null) : null;
+    const { error } = await supabase
+      .from("instructors")
+      .update({ bank_verified_at: bankVerifiedAt, bank_verified_by: bankVerifiedBy })
+      .eq("id", instructorId);
+    if (error) throw new Error(`계좌 확인 저장에 실패했습니다: ${error.message}`);
+    setInstructors((prev) =>
+      prev.map((i) =>
+        i.id === instructorId
+          ? { ...i, bankVerifiedAt: bankVerifiedAt ?? undefined, bankVerifiedBy: bankVerifiedBy ?? undefined }
+          : i,
+      ),
+    );
   };
 
   const setInstructorVerified = async (instructorId: string, verified: boolean, verifiedBy?: string): Promise<void> => {
@@ -4244,6 +4276,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateInstructorProfile,
       submitInstructorDocumentCorrection,
       clearInstructorDocumentReview,
+      setInstructorBankVerified,
       toggleBookmark,
       isBookmarked,
       toggleInstructorBookmark,

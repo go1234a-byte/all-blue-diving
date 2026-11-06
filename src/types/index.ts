@@ -59,6 +59,10 @@ export interface InstructorProfile {
   level?: string; // 자격 레벨 (예: Divemaster, OWSI, MSDT, Course Director 등)
   licenseFileNames: string[];
   licenseFilePaths?: string[]; // 자격증 서류 실제 저장 경로들 (instructor-documents 비공개 버킷, 서명된 URL 발급용)
+  insuranceFilePaths?: string[]; // 배상책임보험 증서(선택) 저장 경로들
+  // 관리자가 통장 사본의 예금주·계좌와 신분증 이름을 대조한 기록. 승인의 필수 조건이다.
+  bankVerifiedAt?: string;
+  bankVerifiedBy?: string;
   // 이미 인증된 강사가 마이페이지에서 신분증/자격증/통장사본 등을 재제출했지만 관리자가
   // 아직 재확인하지 않은 상태. true면 관리자 강사 승인 큐에 다시 노출되고, 승인 큐의
   // 버튼 라벨이 "인증승인" 대신 "수정요청"으로 바뀐다.

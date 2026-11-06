@@ -47,6 +47,7 @@ const AdminInstructorsPage = () => {
     voidPenalty,
     setProfileStatus,
     setInstructorVerified,
+    setInstructorBankVerified,
     setTourAdminStatus,
   } = useAppData();
   const { toast } = useToast();
@@ -119,6 +120,10 @@ const AdminInstructorsPage = () => {
   // 해소됐을 때(예: 강사가 서류를 다시 보내온 경우) 관리자가 직접 승인할 수 있게 한다.
   const handleApproveRejected = async (instructorId: string, instructorName: string) => {
     try {
+      if (!instructors.find((i) => i.id === instructorId)?.bankVerifiedAt) {
+        if (!window.confirm("통장 사본의 예금주·계좌번호와 신분증 이름을 대조했나요?")) return;
+        await setInstructorBankVerified(instructorId, true);
+      }
       await setInstructorVerified(instructorId, true);
       toast({ title: `${instructorName} 강사의 인증을 승인했습니다.` });
     } catch (err) {

@@ -545,6 +545,10 @@ export type Database = {
           level: string | null
           license_file_names: string[] | null
           license_file_paths: string[] | null
+          bank_verified_at: string | null
+          bank_verified_by: string | null
+          insurance_file_names: string[] | null
+          insurance_file_paths: string[] | null
           name: string
           penalty_count: number
           penalty_reason: string | null
@@ -587,6 +591,10 @@ export type Database = {
           level?: string | null
           license_file_names?: string[] | null
           license_file_paths?: string[] | null
+          bank_verified_at?: string | null
+          bank_verified_by?: string | null
+          insurance_file_names?: string[] | null
+          insurance_file_paths?: string[] | null
           name: string
           penalty_count?: number
           penalty_reason?: string | null
@@ -629,6 +637,10 @@ export type Database = {
           level?: string | null
           license_file_names?: string[] | null
           license_file_paths?: string[] | null
+          bank_verified_at?: string | null
+          bank_verified_by?: string | null
+          insurance_file_names?: string[] | null
+          insurance_file_paths?: string[] | null
           name?: string
           penalty_count?: number
           penalty_reason?: string | null

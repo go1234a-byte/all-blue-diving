@@ -165,11 +165,12 @@ export function InstructorApplicationForm({ onSuccess }: InstructorApplicationFo
     setSubmitting(true);
     try {
       // 서류 원본은 관리자 심사에 필요하므로 비공개 버킷에 실제로 업로드한다.
-      const [idDocumentPath, bankbookPath, licenseFilePaths, businessLicensePath] = await Promise.all([
+      const [idDocumentPath, bankbookPath, licenseFilePaths, businessLicensePath, insuranceFilePaths] = await Promise.all([
         uploadInstructorDocument(idFiles[0], user.id, "id"),
         uploadInstructorDocument(bankbookFiles[0], user.id, "bankbook"),
         uploadInstructorDocuments(licenseFiles, user.id, "license"),
         uploadInstructorDocument(businessLicenseFiles[0], user.id, "business_license"),
+        insuranceFiles.length > 0 ? uploadInstructorDocuments(insuranceFiles, user.id, "insurance") : Promise.resolve([]),
       ]);
 
       await submitInstructorApplication({
@@ -191,6 +192,8 @@ export function InstructorApplicationForm({ onSuccess }: InstructorApplicationFo
         bankbookFileName: bankbookFiles[0]?.name,
         bankbookPath,
         idDocumentPath,
+        insuranceFileNames: insuranceFiles.map((f) => f.name),
+        insuranceFilePaths,
       });
       toast({ title: "강사 전환 신청이 접수되었습니다!", description: "관리자 승인 후 강사 기능을 이용할 수 있어요." });
       onSuccess();

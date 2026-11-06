@@ -1,3 +1,4 @@
+import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, ShieldCheck } from "lucide-react";
@@ -11,12 +12,20 @@ export function InstructorVerificationPanel() {
   const { instructors, setInstructorVerified, adminProfile } = useAppData();
   const navigate = useNavigate();
   const pending = instructors.filter((i) => !i.verified && !i.rejectedAt).slice(0, 5);
+  const { toast } = useToast();
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const handleApprove = async (id: string) => {
     setApprovingId(id);
     try {
       await setInstructorVerified(id, true, adminProfile.id);
+    } catch (err) {
+      // 서류·계좌 대조는 강사관리의 승인 큐에서 한다. 부족한 항목은 DB가 알려준다.
+      toast({
+        title: "강사관리에서 서류를 확인해주세요",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
     } finally {
       setApprovingId(null);
     }

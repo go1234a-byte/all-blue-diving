@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ export function InstructorApplicationQueue() {
     setInstructorVerified,
     rejectInstructorApplication,
     clearInstructorDocumentReview,
+    setInstructorBankVerified,
     adminProfile,
   } = useAppData();
   const { toast } = useToast();
@@ -48,8 +50,26 @@ export function InstructorApplicationQueue() {
     try {
       await setInstructorVerified(id, true, adminProfile.id);
       toast({ title: "강사 인증을 승인했습니다." });
+    } catch (err) {
+      toast({
+        title: "승인하지 못했습니다",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  const handleBankVerified = async (id: string, verified: boolean) => {
+    try {
+      await setInstructorBankVerified(id, verified, adminProfile.id);
+    } catch (err) {
+      toast({
+        title: "계좌 확인을 저장하지 못했습니다",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
     }
   };
 
@@ -174,6 +194,9 @@ export function InstructorApplicationQueue() {
                   )}
                   <DocumentViewButton path={profile?.bankbookPath} label="통장 사본" />
                   <DocumentViewButton path={instructor.businessLicensePath} label="사업자등록증" />
+                  {instructor.insuranceFilePaths?.map((path, idx) => (
+                    <DocumentViewButton key={path} path={path} label={`보험 증서 ${idx + 1}`} />
+                  ))}
                 </div>
                 <p className="text-[11px] text-muted-foreground">
                   사업자 유형:{" "}
@@ -190,6 +213,16 @@ export function InstructorApplicationQueue() {
                   <span>예금주: {profile?.accountHolder || "-"}</span>
                   <span className="col-span-2">계좌번호: {profile?.accountNumber || "-"}</span>
                 </div>
+                {!isCorrectionRequest && (
+                  <label className="flex items-start gap-2 rounded-lg border border-border bg-background p-2 text-[11px] text-foreground">
+                    <Checkbox
+                      checked={!!instructor.bankVerifiedAt}
+                      onCheckedChange={(v) => handleBankVerified(instructor.id, v === true)}
+                      className="mt-0.5"
+                    />
+                    <span>통장 사본의 예금주·계좌번호가 입력값과 같고, 신분증 이름과 일치함을 확인했습니다. (승인 필수)</span>
+                  </label>
+                )}
                 {instructor.signatureDataUrl && (
                   <div className="space-y-1">
                     <p className="text-[11px] text-muted-foreground">전자서명</p>
@@ -220,7 +253,7 @@ export function InstructorApplicationQueue() {
                     size="sm"
                     className="flex-1 gap-1"
                     onClick={() => handleApprove(instructor.id)}
-                    disabled={approvingId === instructor.id}
+                    disabled={approvingId === instructor.id || !instructor.bankVerifiedAt}
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     인증 승인
