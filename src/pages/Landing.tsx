@@ -558,10 +558,8 @@ export default function Landing() {
       .slice(0, 6);
   }, [openTours, getConfirmedParticipantCount]);
 
-  const carouselInstructors = useMemo(() => {
-    const verified = instructors.filter((i) => i.verified);
-    return (verified.length >= 3 ? verified : instructors).slice(0, 12);
-  }, [instructors]);
+  // 승인 대기·반려된 신청자는 instructors에 있어도 강사로 노출하지 않는다.
+  const carouselInstructors = useMemo(() => instructors.filter((i) => i.verified).slice(0, 12), [instructors]);
 
   const carouselReviews = useMemo(
     () =>

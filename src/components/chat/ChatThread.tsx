@@ -30,7 +30,7 @@ interface ChatThreadProps {
 export function ChatThread({ tourId, tour }: ChatThreadProps) {
   const { chatMessages, addChatMessage, bookings, getTourSettlement, getSettlementConfirmations, addSupportTicket } =
     useAppData();
-  const { role, profile } = useRole();
+  const { role, profile, currentInstructorId } = useRole();
   const { toast } = useToast();
   const { blockedIds, block } = useBlockedUsers();
   const [text, setText] = useState(""); const inputRef = useRef<HTMLInputElement>(null);
@@ -83,7 +83,9 @@ export function ChatThread({ tourId, tour }: ChatThreadProps) {
     return () => vv.removeEventListener("resize", scrollInputIntoView);
   }, []);
 
-  const currentSenderRole = role === "instructor" ? "instructor" : role === "admin" ? "admin" : "diver";
+  // 강사 계정이어도 다른 강사의 투어에 예약해 들어온 방에서는 참가자다.
+  const isTourInstructor = role === "instructor" && !!currentInstructorId && tour?.instructorId === currentInstructorId;
+  const currentSenderRole = isTourInstructor ? "instructor" : role === "admin" ? "admin" : "diver";
   const currentSenderName = profile?.name ?? (role === "admin" ? "관리자" : "게스트 다이버");
 
   const handleBlock = async () => {

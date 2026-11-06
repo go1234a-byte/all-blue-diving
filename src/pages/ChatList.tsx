@@ -48,7 +48,11 @@ const ChatList = () => {
 
   let targetTours: Tour[];
   if (role === "instructor") {
-    targetTours = tours.filter((t) => t.instructorId === currentInstructorId);
+    // 운영하는 투어 + 다이버로 예약한 다른 강사의 투어
+    const bookedTourIds = new Set(
+      bookings.filter((b) => b.diverId === currentDiverId && b.status !== "cancelled").map((b) => b.tourId),
+    );
+    targetTours = tours.filter((t) => t.instructorId === currentInstructorId || bookedTourIds.has(t.id));
   } else if (role === "admin") {
     targetTours = tours;
   } else {

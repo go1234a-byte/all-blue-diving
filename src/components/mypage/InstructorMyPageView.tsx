@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, FileCheck2, FileText, Pencil } from "lucide-react";
+import { CalendarCheck, ChevronRight, FileCheck2, FileText, Pencil } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -118,6 +118,17 @@ export function InstructorMyPageView() {
         <span className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-muted-foreground" />
           관리자 안내
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </Link>
+
+      <Link
+        to="/my-bookings"
+        className="flex items-center justify-between rounded-xl border border-border bg-card p-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary/40"
+      >
+        <span className="flex items-center gap-2">
+          <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+          내 예약 내역 보기
         </span>
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
       </Link>

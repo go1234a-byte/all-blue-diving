@@ -19,6 +19,7 @@ import TourEditPage from "./pages/TourEditPage";
 import InstructorPublicProfile from "./pages/InstructorPublicProfile";
 import SupportChat from "./pages/SupportChat";
 import BusinessInquiryPage from "./pages/BusinessInquiryPage";
+import InstructorApplication from "./pages/InstructorApplication";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import DiveComputerPrivacyPage from "./pages/DiveComputerPrivacyPage";
@@ -81,6 +82,10 @@ export const routers = [
           { path: "support", name: "support-chat", element: <SupportChat /> },
           { path: "business-inquiry", name: "business-inquiry", element: <BusinessInquiryPage /> },
         ],
+      },
+      {
+        element: <RequireRole allow={["public"]} />,
+        children: [{ path: "instructor-application", name: "instructor-application", element: <InstructorApplication /> }],
       },
       {
         path: "instructor/:id/profile",

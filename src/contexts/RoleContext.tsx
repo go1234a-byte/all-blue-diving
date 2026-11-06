@@ -30,7 +30,7 @@ interface RoleContextValue {
   profile: ProfileRow | null;
   /**
    * profiles row를 다시 조회해 profile 상태를 갱신한다. 회원가입 폼(DiverSignupForm/
-   * InstructorSignupForm)처럼 이 컨텍스트를 거치지 않고 직접 profiles에 insert하는 곳에서,
+   * CompleteProfile)처럼 이 컨텍스트를 거치지 않고 직접 profiles에 insert하는 곳에서,
    * 그 직후 SPA 네비게이션(전체 새로고침 없음)으로 넘어가기 전에 반드시 호출해야 한다 —
    * 안 그러면 이 컨텍스트의 profile은 계속 null인 채로 남아(로그인 시점의 최초 조회 한 번뿐,
    * 재조회 트리거가 없음) RootLayout이 방금 가입 완료한 계정도 다시 /complete-profile로
@@ -169,9 +169,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const intervalId = window.setInterval(async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("status")
+        .select("status, role")
         .eq("id", session.user.id)
         .maybeSingle();
+      // 강사 전환이 승인되면 다시 로그인하지 않아도 강사 화면으로 바뀌도록 역할 변경도 함께 반영한다.
+      const latestRole = (data as { role?: ProfileRow["role"] } | null)?.role;
+      if (latestRole) setProfile((prev) => (prev && prev.role !== latestRole ? { ...prev, role: latestRole } : prev));
       if ((data as { status?: string } | null)?.status === "suspended") {
         await supabase.auth.signOut();
         setSession(null);
@@ -311,7 +314,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           : activeDevRoleOverride === "instructor"
             ? seedInstructorId
             : "",
-      currentDiverId: profile && profile.role !== "instructor" ? profile.id : "",
+      // 강사도 다른 강사의 투어를 예약하는 다이버일 수 있고, 전환 전 예약도 계속 봐야 한다. 자기 투어 예약은 따로 막는다.
+      currentDiverId: profile?.id ?? "",
     }),
     [
       resolvedRole,

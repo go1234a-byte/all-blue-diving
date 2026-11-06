@@ -274,7 +274,7 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
       // 갱신해주지 않으면 RoleContext.profile이 계속 null인 채로 남아 RootLayout이 가입을
       // 방금 마친 계정도 다시 /complete-profile로 돌려보내는 문제가 있었다.
       await refreshProfile();
-      toast({ title: "일반 다이버 회원가입이 완료되었습니다!", description: "환영합니다! 홈 화면으로 이동합니다." });
+      toast({ title: "회원가입이 완료되었습니다!", description: "환영합니다! 홈 화면으로 이동합니다." });
       onSuccess();
     } finally {
       setSubmitting(false);
@@ -451,7 +451,7 @@ export function DiverSignupForm({ onSuccess }: DiverSignupFormProps) {
       </label>
 
       <Button type="submit" className="w-full" disabled={submitting || !agreedTerms || !agreedPolicyCompliance}>
-        {submitting ? "가입 처리 중..." : "일반 다이버로 가입하기"}
+        {submitting ? "가입 처리 중..." : "가입하기"}
       </Button>
     </form>
   );

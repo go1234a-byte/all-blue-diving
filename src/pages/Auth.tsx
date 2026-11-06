@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +12,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { DiverSignupForm } from "@/components/auth/DiverSignupForm";
-import { InstructorSignupForm } from "@/components/auth/InstructorSignupForm";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { Logo } from "@/components/brand/Logo";
@@ -264,7 +262,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-type AuthMode = "login" | "diver" | "instructor";
+type AuthMode = "login" | "signup";
 
 interface AuthLocationState {
   returnTo?: string;
@@ -276,7 +274,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { returnTo, returnState, reason } = (location.state as AuthLocationState | null) ?? {};
-  // 첫 화면은 로그인만. 가입은 "가입하기"/"강사로 가입하기"로 들어가며, 가입 화면 안에서 다이버·강사를 고른다.
+  // 첫 화면은 로그인만. 가입은 하나로 통일했고, 강사는 가입 후 마이페이지에서 전환을 신청한다.
   const [mode, setMode] = useState<AuthMode>("login");
 
   // "예약하기"를 눌러서 넘어온 경우 가입/로그인 완료 후 원래 보던 결제 화면으로 돌아간다.
@@ -306,7 +304,7 @@ const Auth = () => {
               ? "예약을 완료하려면 로그인 또는 회원가입이 필요해요. 가입 후 바로 예약을 이어갈 수 있어요."
               : mode === "login"
                 ? "전 세계 다이빙 투어를 지금 바로 예약해보세요."
-                : "다이버와 강사 중 맞는 유형으로 가입해주세요."}
+                : "강사도 먼저 가입한 뒤 마이페이지에서 전환을 신청할 수 있어요."}
           </p>
         </div>
 
@@ -322,25 +320,14 @@ const Auth = () => {
               <LoginForm onSuccess={handleSuccess} />
               <p className="text-center text-sm text-muted-foreground">
                 계정이 없으신가요?{" "}
-                <button type="button" onClick={() => setMode("diver")} className="font-semibold text-primary underline-offset-2 hover:underline">
+                <button type="button" onClick={() => setMode("signup")} className="font-semibold text-primary underline-offset-2 hover:underline">
                   가입하기
                 </button>
               </p>
             </>
           ) : (
             <>
-              <Tabs value={mode} onValueChange={(v) => setMode(v as AuthMode)}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="diver">다이버 가입</TabsTrigger>
-                  <TabsTrigger value="instructor">강사 가입</TabsTrigger>
-                </TabsList>
-                <TabsContent value="diver" className="pt-3">
-                  <DiverSignupForm onSuccess={handleSuccess} />
-                </TabsContent>
-                <TabsContent value="instructor" className="pt-3">
-                  <InstructorSignupForm onSuccess={handleSuccess} />
-                </TabsContent>
-              </Tabs>
+              <DiverSignupForm onSuccess={handleSuccess} />
               <SocialAuthButtons />
               <p className="text-center text-sm text-muted-foreground">
                 이미 계정이 있으신가요?{" "}
@@ -354,10 +341,7 @@ const Auth = () => {
 
         {mode === "login" && (
           <div className="mt-4 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
-            <b className="text-foreground">강사이신가요?</b> 사업자등록증을 인증한 강사만 투어를 올릴 수 있어요.{" "}
-            <button type="button" onClick={() => setMode("instructor")} className="font-semibold text-primary underline-offset-2 hover:underline">
-              강사로 가입하기 ›
-            </button>
+            <b className="text-foreground">강사이신가요?</b> 먼저 가입한 뒤 마이페이지에서 강사 전환을 신청해주세요. 서류 심사와 관리자 승인 후 투어를 올릴 수 있어요.
           </div>
         )}
 

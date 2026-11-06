@@ -695,7 +695,7 @@ interface NewInstructorSignupInput {
   businessLicenseFileName?: string;
   businessLicensePath?: string;
   settlementPledgeAgreed?: boolean;
-  // 관리자 승인 심사에 필요한 서류 — 실제 파일은 InstructorSignupForm에서 이미
+  // 관리자 승인 심사에 필요한 서류 — 실제 파일은 InstructorApplicationForm에서 이미
   // instructor-documents 버킷에 업로드를 마친 뒤, 그 저장 경로만 여기로 전달된다.
   bankName?: string;
   accountHolder?: string;
@@ -831,7 +831,7 @@ interface AppDataContextValue {
     },
   ) => Promise<void>;
   addBooking: (input: NewBookingInput) => Promise<Booking>;
-  addInstructorSignup: (input: NewInstructorSignupInput) => Promise<InstructorProfile>;
+  submitInstructorApplication: (input: NewInstructorSignupInput) => Promise<InstructorProfile>;
   addDiverSignup: (input: NewDiverSignupInput) => Profile;
   registerDiverProfile: (profile: Profile) => void;
   setProfileStatus: (profileId: string, status: Profile["status"]) => Promise<void>;
@@ -1305,10 +1305,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const row = payload.new as Parameters<typeof mapProfileRow>[0];
       if (!row?.id) return;
       const profile = mapProfileRow(row);
+      // 강사 전환이 승인되면 같은 행의 역할이 바뀌므로, 이전 목록에서는 빼야 양쪽에 중복되지 않는다.
       if (profile.role === "diver") {
         upsert(setDiverProfiles, profile);
+        setInstructorProfiles((prev) => prev.filter((p) => p.id !== profile.id));
       } else if (profile.role === "instructor") {
         upsert(setInstructorProfiles, profile);
+        setDiverProfiles((prev) => prev.filter((p) => p.id !== profile.id));
       }
     };
 
@@ -2490,51 +2493,49 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addInstructorSignup = async (input: NewInstructorSignupInput): Promise<InstructorProfile> => {
-    // 실 Auth 세션이 있다면 profiles row가 이미 signUp 흐름에서 생성되므로, 여기서는 프로필ID를 조회한다.
+  /**
+   * 로그인한 회원의 강사 전환 신청. 승인 전까지 역할은 다이버로 유지되고, 승격은 관리자가 승인할 때
+   * DB 트리거(promote_profile_on_instructor_approval)가 처리한다. 반려된 신청자가 다시 내면 기존 행을 갱신한다.
+   */
+  const submitInstructorApplication = async (input: NewInstructorSignupInput): Promise<InstructorProfile> => {
     const { data: sessionData } = await supabase.auth.getSession();
-    const authUserId = sessionData.session?.user.id;
-    const profileId = authUserId ?? nextId("ins");
+    const profileId = sessionData.session?.user.id;
+    if (!profileId) throw new Error("로그인 후 신청할 수 있어요.");
 
-    if (authUserId) {
-      await supabase
-        .from("profiles")
-        .update({
-          name: input.name,
-          phone: input.phone,
-          gender: input.gender,
-          pledge_settlement_agreed: input.settlementPledgeAgreed ?? false,
-          pledge_settlement_agreed_at: input.settlementPledgeAgreed ? new Date().toISOString() : null,
-        })
-        .eq("id", authUserId);
-    }
+    const { data: existingRows, error: existingError } = await supabase
+      .from("instructors")
+      .select("id, verified_status")
+      .eq("profile_id", profileId)
+      .limit(1);
+    if (existingError) throw new Error(`신청 내역을 확인하지 못했습니다: ${existingError.message}`);
+    const existing = existingRows?.[0];
+    if (existing?.verified_status) throw new Error("이미 승인된 강사 계정입니다.");
 
-    const profile: Profile = {
-      id: profileId,
-      role: "instructor",
-      name: input.name,
-      phone: input.phone,
-      gender: input.gender,
-      status: "active",
-      createdAt: new Date().toISOString(),
-      // profiles insert 자체는 InstructorSignupForm에서 먼저 끝났지만, 여기서 만드는
-      // 로컬 낙관적 객체에도 같이 넣어둬야 새로고침 없이 바로 관리자 승인 큐에서
-      // 계좌/신분증 정보를 볼 수 있다.
-      bankName: input.bankName,
-      accountHolder: input.accountHolder,
-      accountNumber: input.accountNumber,
-      bankbookFileName: input.bankbookFileName,
-      bankbookPath: input.bankbookPath,
-      idDocumentPath: input.idDocumentPath,
-    };
-    setInstructorProfiles((prev) => [...prev, profile]);
+    const now = new Date().toISOString();
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({
+        name: input.name,
+        phone: input.phone,
+        gender: input.gender,
+        pledge_settlement_agreed: input.settlementPledgeAgreed ?? false,
+        pledge_settlement_agreed_at: input.settlementPledgeAgreed ? now : null,
+        bank_name: input.bankName,
+        account_holder: input.accountHolder,
+        account_number: input.accountNumber,
+        bankbook_file_name: input.bankbookFileName ?? null,
+        bankbook_path: input.bankbookPath,
+        id_document_path: input.idDocumentPath,
+      })
+      .eq("id", profileId);
+    if (profileError) throw new Error(`정산 정보 저장에 실패했습니다: ${profileError.message}`);
 
-    const instructorId = nextId("inst");
-    const pledgeSignedAt = input.pledgeSigned ? new Date().toISOString() : undefined;
+    const instructorId = existing?.id ?? nextId("inst");
+    const pledgeSignedAt = input.pledgeSigned ? now : undefined;
     const instructorProfile: InstructorProfile = {
       id: instructorId,
       profileId,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
       name: input.name,
       licenseFileNames: input.licenseFileNames,
       licenseFilePaths: input.licenseFilePaths,
@@ -2554,19 +2555,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       bio: input.bio,
     };
 
-    // Enter Cloud(Supabase)에 신규 강사 신청 기록 (관리자 인증 대기 상태)
-    // 주의: 예전에는 이 insert의 결과를 확인하지 않아서, id 충돌 등으로 실패해도 아무
-    // 에러 없이 넘어갔다 — profiles에는 role="instructor"로 로그인은 되지만 정작
-    // instructors 행이 없는 "유령 계정"이 만들어져, 본인은 마이페이지가 빈 화면으로
-    // 나와 로그아웃도 못 하고, 관리자 승인 큐에도 뜨지 않는 문제로 이어졌다.
-    const { error: instructorInsertError } = await supabase.from("instructors").insert({
-      id: instructorId,
-      profile_id: profileId,
+    const applicationRow = {
       name: input.name,
       license_file_names: input.licenseFileNames,
       license_file_paths: input.licenseFilePaths,
       signature_data_url: input.signatureDataUrl,
-      verified_status: false,
       pledge_signed: input.pledgeSigned ?? false,
       pledge_signed_at: pledgeSignedAt,
       pledge_version: input.pledgeSigned ? "v1" : undefined,
@@ -2574,14 +2567,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       business_license_file_name: input.businessLicenseFileName ?? null,
       business_license_path: input.businessLicensePath ?? null,
       bio: input.bio,
-    });
-    if (instructorInsertError) {
-      throw new Error(
-        `강사 프로필 생성에 실패했습니다: ${instructorInsertError.message}`,
-      );
-    }
+    };
+    const { error: applicationError } = existing
+      ? await supabase
+          .from("instructors")
+          .update({ ...applicationRow, rejected_at: null, rejection_reason: null })
+          .eq("id", instructorId)
+      : await supabase.from("instructors").insert({ ...applicationRow, id: instructorId, profile_id: profileId });
+    if (applicationError) throw new Error(`강사 전환 신청에 실패했습니다: ${applicationError.message}`);
 
-    setInstructors((prev) => [...prev, instructorProfile]);
+    setInstructors((prev) =>
+      prev.some((i) => i.id === instructorId)
+        ? prev.map((i) =>
+            i.id === instructorId ? { ...i, ...instructorProfile, rejectedAt: undefined, rejectionReason: undefined } : i,
+          )
+        : [...prev, instructorProfile],
+    );
     return instructorProfile;
   };
 
@@ -2666,6 +2667,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         message: reason,
         createdAt: rejectedAt,
         type: "application_rejected",
+      });
+      // 신청자는 아직 다이버라 강사 알림 센터를 볼 수 없으므로 푸시로도 알린다.
+      void sendPushToProfile(instructor.profileId, {
+        title: "강사 전환 신청이 반려되었습니다",
+        body: reason,
+        url: "/mypage",
       });
     }
   };
@@ -4146,7 +4153,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const getInstructorById = (id: string) => instructors.find((i) => i.id === id);
-  const getInstructorProfileById = (id: string) => instructorProfiles.find((p) => p.id === id);
+  // 승인 전 신청자의 프로필은 아직 다이버 목록에 있다 — 승인 큐가 계좌·서류를 볼 수 있도록 함께 찾는다.
+  const getInstructorProfileById = (id: string) =>
+    instructorProfiles.find((p) => p.id === id) ?? diverProfiles.find((p) => p.id === id);
   const getTourById = (id: string) => tours.find((t) => t.id === id);
   const getDiveCenterByInstructorId = (id: string) =>
     MOCK_DIVE_CENTERS.find((c) => c.instructorId === id);
@@ -4213,7 +4222,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateBookingTravelInfo,
       updateDiverProfile,
       addBooking,
-      addInstructorSignup,
+      submitInstructorApplication,
       addDiverSignup,
       registerDiverProfile,
       setProfileStatus,

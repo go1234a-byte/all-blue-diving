@@ -51,7 +51,7 @@ const Checkout = () => {
   const { toast } = useToast();
   const { getTourById, getCouponByCode, addBooking, toursLoading, getConfirmedParticipantCount } =
     useAppData();
-  const { profile, currentDiverId, isLoggedIn, authLoading } = useRole();
+  const { profile, currentDiverId, currentInstructorId, isLoggedIn, authLoading } = useRole();
   const isLockedSample = useSampleLock();
 
   const tour = tourId ? getTourById(tourId) : undefined;
@@ -163,6 +163,10 @@ const Checkout = () => {
   // (/payment/success)에서 서버 검증(verify-payment)을 거친 뒤 생성된다. 그래서 여기서는
   // 예약에 필요한 정보를 orderId 기준으로 로컬에 임시 저장만 하고 결제창을 띄운다.
   const handlePay = async () => {
+    if (currentInstructorId && tour.instructorId === currentInstructorId) {
+      toast({ title: "내가 운영하는 투어예요", description: "본인 투어는 예약할 수 없습니다.", variant: "destructive" });
+      return;
+    }
     if (tour.adminStatus) {
       toast({
         title: tour.adminStatus === "suspended" ? "정지된 투어예요" : "보류중인 투어예요",

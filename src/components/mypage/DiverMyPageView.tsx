@@ -3,6 +3,7 @@ import { CalendarCheck, ChevronRight, Lock, MessageCircleQuestion, User } from "
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DiverProfileEditCard } from "@/components/mypage/DiverProfileEditCard";
 import { DiverSafetyProfileCard } from "@/components/mypage/DiverSafetyProfileCard";
+import { InstructorApplicationCard } from "@/components/mypage/InstructorApplicationCard";
 import { InquiryHistoryList } from "@/components/mypage/InquiryHistoryList";
 import { BlockedUsersCard } from "@/components/mypage/BlockedUsersCard";
 import { AccountActions } from "@/components/mypage/AccountActions";
@@ -59,6 +60,7 @@ export function DiverMyPageView() {
         <>
           <DiverProfileEditCard profile={profile} diverId={currentDiverId} />
           <DiverSafetyProfileCard profile={profile} diverId={currentDiverId} />
+          <InstructorApplicationCard />
         </>
       ) : (
         <>
