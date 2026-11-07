@@ -13,7 +13,7 @@ import { TourOptionsSelector } from "@/components/tour/TourOptionsSelector";
 import { PaymentReceiptBreakdown } from "@/components/checkout/PaymentReceiptBreakdown";
 import { CancellationRefundPolicyCard } from "@/components/checkout/CancellationRefundPolicyCard";
 import { TossPaymentWidget, type TossPaymentWidgetHandle } from "@/components/checkout/TossPaymentWidget";
-import { generateOrderId, savePendingBooking, type PendingBookingPayload } from "@/lib/payment";
+import { generateOrderId, PAYMENTS_BLOCKED, savePendingBooking, type PendingBookingPayload } from "@/lib/payment";
 import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -23,7 +23,7 @@ import { containsObjectionable, OBJECTIONABLE_BLOCKED_MESSAGE } from "@/lib/cont
 import { cn } from "@/lib/utils";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import type { CompanionInfo, Coupon, Gender } from "@/types";
-import { useSampleLock } from "@/hooks/useSampleLock";
+import { APP_REVIEW_EMAIL, useSampleLock } from "@/hooks/useSampleLock";
 
 interface ParticipantForm {
   /** 본인(index 0)은 항상 빈 문자열 — 동반자만 이름을 입력받는다. */
@@ -51,7 +51,9 @@ const Checkout = () => {
   const { toast } = useToast();
   const { getTourById, getCouponByCode, addBooking, toursLoading, getConfirmedParticipantCount } =
     useAppData();
-  const { profile, currentDiverId, currentInstructorId, isLoggedIn, authLoading } = useRole();
+  const { profile, user, currentDiverId, currentInstructorId, isLoggedIn, authLoading } = useRole();
+  // 심사용 데모 계정만 테스트 결제로 예약 흐름을 끝까지 볼 수 있다. DB 트리거도 같은 기준이다.
+  const paymentsBlocked = PAYMENTS_BLOCKED && user?.email?.toLowerCase() !== APP_REVIEW_EMAIL;
   const isLockedSample = useSampleLock();
 
   const tour = tourId ? getTourById(tourId) : undefined;
@@ -163,6 +165,7 @@ const Checkout = () => {
   // (/payment/success)에서 서버 검증(verify-payment)을 거친 뒤 생성된다. 그래서 여기서는
   // 예약에 필요한 정보를 orderId 기준으로 로컬에 임시 저장만 하고 결제창을 띄운다.
   const handlePay = async () => {
+    if (paymentsBlocked) return;
     if (currentInstructorId && tour.instructorId === currentInstructorId) {
       toast({ title: "내가 운영하는 투어예요", description: "본인 투어는 예약할 수 없습니다.", variant: "destructive" });
       return;
@@ -286,6 +289,7 @@ const Checkout = () => {
       className="w-full"
       onClick={handlePay}
       disabled={
+        paymentsBlocked ||
         processing ||
         authLoading ||
         !agreedToPolicy ||
@@ -295,7 +299,9 @@ const Checkout = () => {
         remainingSlots < 1
       }
     >
-      {processing
+      {paymentsBlocked
+        ? "결제 준비 중이에요"
+        : processing
         ? "결제 처리 중..."
         : authLoading
           ? "로그인 정보 확인 중..."

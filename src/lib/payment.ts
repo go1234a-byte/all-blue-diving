@@ -16,6 +16,8 @@ import type { PaymentMethod } from "@/types";
 const TOSS_DOCS_TEST_CLIENT_KEY = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm";
 export const TOSS_CLIENT_KEY =
   (import.meta.env.VITE_TOSS_CLIENT_KEY as string | undefined) || TOSS_DOCS_TEST_CLIENT_KEY;
+/** 운영에서 테스트 키면 돈이 오가지 않으므로 결제를 받지 않는다. 라이브 키를 등록하면 자동으로 풀린다. */
+export const PAYMENTS_BLOCKED = import.meta.env.PROD && TOSS_CLIENT_KEY.startsWith("test_");
 
 /** 예약 하나당 고유 주문번호. 토스페이먼츠 규격: 영문/숫자/-_= 로 구성된 6~64자. */
 export function generateOrderId(): string {
