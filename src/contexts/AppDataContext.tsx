@@ -1260,7 +1260,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (!active) return;
       // 샘플 후기는 실제 예약 후기가 아니므로 평점·후기 목록 어디에도 쓰지 않는다. DB 원본은 남겨 둔다.
       if (!reviewsRes.error && reviewsRes.data) {
-        setReviews(reviewsRes.data.map(mapReviewRow).filter((r) => !isSampleContent(r.comment) && !isSampleContent(r.diverName)));
+        setReviews(reviewsRes.data.map(mapReviewRow).filter((r) => !isSampleContent(r.comment)));
       }
       if (!reportsRes.error && reportsRes.data) setReports(reportsRes.data.map(mapReportRow));
       if (!inquiriesRes.error && inquiriesRes.data) setInquiries(inquiriesRes.data.map(mapInquiryRow));
