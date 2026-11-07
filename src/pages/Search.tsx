@@ -1,3 +1,4 @@
+import { BusinessFooter } from "@/components/layout/BusinessFooter";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -281,6 +282,7 @@ const Search = () => {
             </div>
           )}
         </div>
+        <BusinessFooter />
       </main>
       {/* 검색 화면에서도 하단 탭바 유지 — 예전엔 검색으로 들어오면 탭바가 사라져 뒤로가기밖에 없었다. */}
       <BottomNav />

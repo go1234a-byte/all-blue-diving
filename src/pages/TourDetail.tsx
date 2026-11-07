@@ -1,3 +1,4 @@
+import { BusinessFooter } from "@/components/layout/BusinessFooter";
 import { usePageMeta, toDescription } from "@/hooks/usePageMeta";
 import { useState } from "react";
 import { TourSummaryStrip } from "@/components/tour/TourSummaryStrip";
@@ -554,6 +555,7 @@ const TourDetail = () => {
             </Button>
           </div>
         </aside>
+        <BusinessFooter />
       </main>
 
       <div

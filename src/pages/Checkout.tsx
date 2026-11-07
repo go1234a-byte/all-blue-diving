@@ -1,3 +1,4 @@
+import { BusinessFooter } from "@/components/layout/BusinessFooter";
 import { useRef, useState } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Tag } from "lucide-react";
@@ -548,6 +549,7 @@ const Checkout = () => {
             </CardContent>
           </Card>
         </aside>
+        <BusinessFooter />
       </main>
 
       {/* 모바일/앱(md 미만) 전용 — 하단 고정 결제 바 */}
