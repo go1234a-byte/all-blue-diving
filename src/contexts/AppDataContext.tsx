@@ -40,6 +40,7 @@ import { computeSettlement, formatKRW } from "@/lib/pricing";
 import { computeRefundRate, computeRefundAmount } from "@/lib/refund";
 import { shouldEvaluateAutoClose, MIN_PARTICIPANTS_AUTO_CANCEL_REASON, ADMIN_FORCED_CLOSURE_REASON } from "@/lib/tourAutoClose";
 import { sendPushToProfile } from "@/lib/push";
+import { isSampleContent } from "@/lib/sampleContent";
 import { sendEmailToProfile } from "@/lib/email";
 import { maskName } from "@/lib/masking";
 import { supabase } from "@/integrations/supabase/client";
@@ -1257,7 +1258,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         supabase.from("coupons").select("*").order("created_at", { ascending: false }),
       ]);
       if (!active) return;
-      if (!reviewsRes.error && reviewsRes.data) setReviews(reviewsRes.data.map(mapReviewRow));
+      // 샘플 후기는 실제 예약 후기가 아니므로 평점·후기 목록 어디에도 쓰지 않는다. DB 원본은 남겨 둔다.
+      if (!reviewsRes.error && reviewsRes.data) {
+        setReviews(reviewsRes.data.map(mapReviewRow).filter((r) => !isSampleContent(r.comment) && !isSampleContent(r.diverName)));
+      }
       if (!reportsRes.error && reportsRes.data) setReports(reportsRes.data.map(mapReportRow));
       if (!inquiriesRes.error && inquiriesRes.data) setInquiries(inquiriesRes.data.map(mapInquiryRow));
       if (!couponsRes.error && couponsRes.data) setCoupons(couponsRes.data.map(mapCouponRow));
