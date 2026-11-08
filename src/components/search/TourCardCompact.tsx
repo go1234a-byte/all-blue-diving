@@ -7,9 +7,9 @@ import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { formatDateRangeKR, formatNightsDaysKR } from "@/lib/dates";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
-import { isDepartureConfirmed } from "@/lib/tourLabels";
+import { isDepartureConfirmed, tourLevelLabel } from "@/lib/tourLabels";
 import { computeDaysRemaining } from "@/lib/refund";
-import { dDayLabel, ratingText, refundLine, seatState, seatsLeft } from "@/lib/tourDisplay";
+import { conditionFacts, dDayLabel, ratingText, refundLine, seatState, seatsLeft } from "@/lib/tourDisplay";
 import { AdminHeadcountControl } from "@/components/tour/AdminHeadcountControl";
 
 /** 모바일 검색 목록용 압축 카드: 상태 라벨 1~2개 · 제목 · 기간/강사 · 별점+후기 수 · 가격. (데스크톱은 기존 TourCard) */
@@ -42,6 +42,10 @@ export function TourCardCompact({ tour }: { tour: Tour }) {
         <p className="text-xs text-muted-foreground">
           {formatDateRangeKR(tour.startDate, tour.endDate)} · {formatNightsDaysKR(tour.startDate, tour.endDate)}
           {instructor?.verified ? " · 인증강사" : ""}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          <b className="font-semibold text-foreground">{tourLevelLabel(tour)}</b>
+          {conditionFacts(tour).map((f) => ` · ${f}`).join("")}
         </p>
         <p className="text-xs text-muted-foreground">↩ {refundLine(days)}</p>
         <p className="flex items-center gap-1 text-xs">

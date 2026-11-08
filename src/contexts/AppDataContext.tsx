@@ -317,6 +317,9 @@ function mapTourRow(row: any): Tour {
     meetingPoint: row.meeting_point ?? "",
     meetingTime: row.meeting_time ?? "",
     flightInfo: (row.flight_info ?? undefined) as Tour["flightInfo"],
+    divePlan: row.dive_plan ?? undefined,
+    pickupInfo: row.pickup_info ?? undefined,
+    onsiteCostNotes: row.onsite_cost_notes ?? undefined,
   };
 }
 
@@ -639,6 +642,9 @@ interface NewTourInput {
   meetingTime: string;
   itineraryDays: TourItineraryDay[];
   flightInfo?: Tour["flightInfo"];
+  divePlan?: string;
+  pickupInfo?: string;
+  onsiteCostNotes?: string;
 }
 
 /** 강사가 기존 투어를 수정할 때 사용하는 부분 업데이트 입력. 지정한 필드만 갱신한다. */
@@ -670,6 +676,11 @@ interface UpdateTourInput {
   meetingTime?: string;
   itineraryDays?: TourItineraryDay[];
   flightInfo?: Tour["flightInfo"];
+  waterTempC?: number;
+  visibilityM?: number;
+  divePlan?: string;
+  pickupInfo?: string;
+  onsiteCostNotes?: string;
 }
 
 interface NewCenterInput {
@@ -2064,6 +2075,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         meeting_time: input.meetingTime,
         itinerary_days: input.itineraryDays,
         flight_info: input.flightInfo ?? null,
+        dive_plan: input.divePlan?.trim() || null,
+        pickup_info: input.pickupInfo?.trim() || null,
+        onsite_cost_notes: input.onsiteCostNotes?.trim() || null,
       })
       .select()
       .single();
@@ -2173,6 +2187,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (patch.meetingTime !== undefined) dbPatch.meeting_time = patch.meetingTime;
     if (patch.itineraryDays !== undefined) dbPatch.itinerary_days = patch.itineraryDays;
     if (patch.flightInfo !== undefined) dbPatch.flight_info = patch.flightInfo ?? null;
+    if (patch.waterTempC !== undefined) dbPatch.water_temp_c = patch.waterTempC;
+    if (patch.visibilityM !== undefined) dbPatch.visibility_m = patch.visibilityM;
+    if (patch.divePlan !== undefined) dbPatch.dive_plan = patch.divePlan.trim() || null;
+    if (patch.pickupInfo !== undefined) dbPatch.pickup_info = patch.pickupInfo.trim() || null;
+    if (patch.onsiteCostNotes !== undefined) dbPatch.onsite_cost_notes = patch.onsiteCostNotes.trim() || null;
 
     const { error } = await supabase.from("tours").update(dbPatch as never).eq("id", tourId);
     if (error) throw error;

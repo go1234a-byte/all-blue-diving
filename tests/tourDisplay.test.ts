@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { computeInvoice, estimateTotal } from "../src/lib/pricing.ts";
 import { refundRateForDays, refundSummary } from "../src/lib/refund.ts";
-import { dDayLabel, earliestStartLabel, minPriceByCountry, ratingText, refundLine, seatState, seatsLeft, shortPrice } from "../src/lib/tourDisplay.ts";
+import { dDayLabel, earliestStartLabel, minPriceByCountry, ratingText, refundLine, seatState, seatsLeft, shortPrice, conditionFacts } from "../src/lib/tourDisplay.ts";
 
 test("환불율은 정책 표(30일 100 / 15일 50 / 7일 30 / 미만 0)와 경계값까지 같다", () => {
   assert.equal(refundRateForDays(45), 1);
@@ -59,4 +59,10 @@ test("예상 총액은 결제 화면 계산(computeInvoice)과 같고 인원수�
   assert.equal(estimateTotal(1_000_000, [80_000], 2), 2_376_000);
   assert.equal(estimateTotal(333_333, [], 3), computeInvoice(999_999).totalDue); // 반올림 차이까지 같다
   assert.equal(estimateTotal(1_000_000, [], 0), 1_100_000); // 0 이하는 1명으로
+});
+
+test("수온·시야: 입력된 값만 칩으로, 0은 숨긴다", () => {
+  assert.deepEqual(conditionFacts({ waterTempC: 27.4, visibilityM: 20 }), ["수온 27°C", "시야 20m"]);
+  assert.deepEqual(conditionFacts({ waterTempC: 0, visibilityM: 15 }), ["시야 15m"]);
+  assert.deepEqual(conditionFacts({ waterTempC: 0, visibilityM: 0 }), []);
 });

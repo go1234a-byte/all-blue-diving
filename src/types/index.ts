@@ -236,6 +236,10 @@ export interface Tour {
   cancelledAt?: string;
   /** 항공편 정보 (강사가 투어 등록 시 선택 입력). 투어 상세 화면에 강사 프로필 바로 아래 노출된다. */
   flightInfo?: TourFlightInfo;
+  /** 아래 3개는 강사가 선택 입력하는 안내. 비어 있으면 상세에 보이지 않는다. */
+  divePlan?: string; // 다이빙 횟수·포인트 결정 방식
+  pickupInfo?: string; // 픽업·이동 안내
+  onsiteCostNotes?: string; // 현장 지불·팁 안내
 }
 
 /** 항공편 한 편(가는 편 또는 오는 편)의 공항·시간 정보. 모두 자유 입력 텍스트(선택 사항). */

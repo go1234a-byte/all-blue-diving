@@ -7,6 +7,9 @@ import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { monthKeyOf } from "@/lib/dates";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
+import { computeDaysRemaining } from "@/lib/refund";
+import { conditionFacts, refundLine } from "@/lib/tourDisplay";
+import { tourLevelLabel } from "@/lib/tourLabels";
 import { dayLabelKR, groupToursByStartDate, hasSeatsFor, matchesActivity, topCountries } from "@/lib/tours";
 import type { Tour } from "@/types";
 
@@ -181,6 +184,11 @@ export function HomeTourFinder({ tours, month, act, party = 1, getJoined, verifi
                         </p>
                         <h4>{t.title}</h4>
                         <p className="hf-meta">{t.country} · {t.site} · {n}박 {n + 1}일</p>
+                        <p className="hf-fact">
+                          <b>{tourLevelLabel(t)}</b>
+                          {conditionFacts(t).map((f) => <span key={f}>{f}</span>)}
+                          <span className="hf-refund">{refundLine(computeDaysRemaining(t.startDate))}</span>
+                        </p>
                         <p className="hf-price">{formatKRW(applyPlatformFee(t.basePrice))}~</p>
                         <div className="hf-bar" aria-hidden="true"><i style={{ width: `${fill}%` }} /></div>
                         <p className={`hf-seats ${seats === 0 ? "full" : seats <= 3 ? "few" : ""}`}>
@@ -238,6 +246,9 @@ const CSS = `
 .hf-badge.sample{background:#FDECEA;color:#B3261E;}
 .hf-card .ab-wish{top:8px;right:8px;width:32px;height:32px;}
 .hf-badge.gold{background:#FFF3D6;color:#7A5A12;}
+.hf-fact{margin:3px 0 0;display:flex;flex-wrap:wrap;gap:2px 8px;font-size:.75rem;color:var(--text-2);}
+.hf-fact b{color:var(--navy);font-weight:700;}
+.hf-fact .hf-refund{color:#1B7F4B;font-weight:600;}
 .hf-price{margin:4px 0 0;font-size:1.0625rem;font-weight:800;}
 .hf-bar{height:6px;border-radius:3px;background:var(--line);margin-top:8px;overflow:hidden;}
 .hf-bar i{display:block;height:100%;background:var(--turq);}

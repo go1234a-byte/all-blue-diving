@@ -2,11 +2,12 @@ import { BusinessFooter } from "@/components/layout/BusinessFooter";
 import { usePageMeta, toDescription } from "@/hooks/usePageMeta";
 import { useState } from "react";
 import { TourSummaryStrip } from "@/components/tour/TourSummaryStrip";
+import { TourNotice } from "@/components/tour/TourNotice";
 import { ReviewPhotoStrip } from "@/components/tour/ReviewPhotoStrip";
 import { ItineraryTimeline } from "@/components/tour/ItineraryTimeline";
 import { PartySizeStepper } from "@/components/tour/PartySizeStepper";
 import { TourDetailTabs, type DetailTab } from "@/components/tour/TourDetailTabs";
-import { seatState, seatsLeft } from "@/lib/tourDisplay";
+import { conditionFacts, seatState, seatsLeft } from "@/lib/tourDisplay";
 import { CANCELLATION_POLICY_LINES, CANCELLATION_POLICY_NOTE } from "@/lib/refund";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, Backpack, Bookmark, CalendarDays, Compass, ImageDown, MapPin, MessageCircle, Share2, ShieldCheck, Star, Users } from "lucide-react";
@@ -158,6 +159,7 @@ const TourDetail = () => {
     ...(tour.itineraryDays && tour.itineraryDays.length > 0 ? [{ id: "tab-itinerary", label: "일정" }] : []),
     ...(tour.inclusions.length > 0 || tour.exclusions.length > 0 ? [{ id: "tab-incl", label: "포함·불포함" }] : []),
     ...(tourReviews.length > 0 ? [{ id: "tab-reviews", label: "후기" }] : []),
+    { id: "tab-notice", label: "예약 안내" },
     { id: "tab-refund", label: "환불·정책" },
   ];
 
@@ -313,6 +315,14 @@ const TourDetail = () => {
         </div>
 
         <TourSummaryStrip tour={tour} joined={confirmedCount} />
+
+        {conditionFacts(tour).length > 0 && (
+          <ul className="flex flex-wrap gap-1.5" aria-label="다이빙 조건">
+            {conditionFacts(tour).map((f) => (
+              <li key={f} className="rounded-full border border-border bg-card px-3 py-1 text-[12.5px] font-semibold text-foreground">{f}</li>
+            ))}
+          </ul>
+        )}
 
         <ReviewPhotoStrip tourId={tour.id} instructorId={tour.instructorId} />
 
@@ -506,6 +516,10 @@ const TourDetail = () => {
 
         <div id="tab-reviews" className="scroll-mt-28">
           <ReviewList tourId={tour.id} />
+        </div>
+
+        <div id="tab-notice" className="scroll-mt-28">
+          <TourNotice tour={tour} />
         </div>
 
         <div id="tab-refund" className="scroll-mt-28 space-y-2">

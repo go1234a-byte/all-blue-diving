@@ -63,3 +63,11 @@ export function earliestStartLabel(tours: Array<Pick<Tour, "startDate">>): strin
   const [, m, day] = d.split("-").map(Number);
   return `${m}/${day}`;
 }
+
+/** 강사가 입력한 수온·시야만 보여준다. 0·빈 값은 "정보 없음"이므로 칩을 만들지 않는다(예시 값으로 채우지 않는다). */
+export function conditionFacts(t: { waterTempC?: number; visibilityM?: number }): string[] {
+  const out: string[] = [];
+  if (t.waterTempC && t.waterTempC > 0) out.push(`수온 ${Math.round(t.waterTempC)}°C`);
+  if (t.visibilityM && t.visibilityM > 0) out.push(`시야 ${Math.round(t.visibilityM)}m`);
+  return out;
+}

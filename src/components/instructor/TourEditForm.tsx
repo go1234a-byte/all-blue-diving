@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { TourExtraInfoFields, EMPTY_EXTRA_INFO, extraInfoToPayload, extraInfoTexts, type ExtraInfoValues } from "@/components/instructor/TourExtraInfoFields";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -237,6 +238,13 @@ export function TourEditForm({ tour }: TourEditFormProps) {
   const [customInclusionInput, setCustomInclusionInput] = useState("");
   const [customExclusionInput, setCustomExclusionInput] = useState("");
   const [prepNotes, setPrepNotes] = useState(tour.prepNotes ?? "");
+  const [extraInfo, setExtraInfo] = useState<ExtraInfoValues>({
+    waterTempC: tour.waterTempC > 0 ? String(tour.waterTempC) : "",
+    visibilityM: tour.visibilityM > 0 ? String(tour.visibilityM) : "",
+    divePlan: tour.divePlan ?? "",
+    pickupInfo: tour.pickupInfo ?? "",
+    onsiteCostNotes: tour.onsiteCostNotes ?? "",
+  });
   const [customOptions, setCustomOptions] = useState<TourOption[]>(() => {
     const standard = STANDARD_TOUR_OPTION_DEFS.map((def, i) => {
       const existing = tour.customOptions.find((o) => o.name === def.name);
@@ -425,7 +433,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
     }
     // 투어명/소개는 검색 결과·상세 페이지에 그대로 공개되므로 채팅·후기와 동일한
     // 1차 필터를 통과해야 한다.
-    if (containsObjectionable(`${title} ${description}`)) {
+    if (containsObjectionable(`${title} ${description} ${extraInfoTexts(extraInfo).join(" ")}`)) {
       toast({ title: OBJECTIONABLE_BLOCKED_MESSAGE, variant: "destructive" });
       return;
     }
@@ -508,6 +516,7 @@ export function TourEditForm({ tour }: TourEditFormProps) {
         inclusions,
         exclusions,
         prepNotes,
+        ...extraInfoToPayload(extraInfo),
         customOptions: customOptions.filter((o) => o.name.trim() && o.price > 0),
         oneOnOneCare: tour.oneOnOneCare,
         meetingPoint: meetingPoint.trim(),
@@ -1019,6 +1028,8 @@ export function TourEditForm({ tour }: TourEditFormProps) {
           rows={4}
         />
       </div>
+
+      <TourExtraInfoFields value={extraInfo} onChange={setExtraInfo} />
 
       <div className="space-y-3 rounded-xl border-2 border-primary/40 p-4">
         <div className="space-y-1">
