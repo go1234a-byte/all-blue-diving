@@ -12,6 +12,8 @@
  *    (데스크톱 5장 / 모바일 3장 먼저 보이고, 나머지는 "더보기"로 노출됨)
  */
 
+import { VERIFIED_WATER } from "./verifiedWater";
+
 export interface DivePoint {
   id: string;
   region: string;
@@ -498,6 +500,9 @@ export const DIVE_POINTS: Record<string, DivePoint> = {
  * 한국에서 가까운 근거리 지역(제주·울릉·일본·필리핀·대만·베트남)을 배열 앞쪽에 두어
  * 전용 뷰 첫 화면에서 먼저 보이게 한다. 특수 다이빙(민물·동굴·아이스)은 뒤쪽에 붙인다.
  */
+// 출처를 확인한 지역만 수온·시야 문구를 바꾸고 verified 를 붙인다(src/content/verifiedWater.ts).
+for (const [id, v] of Object.entries(VERIFIED_WATER)) if (DIVE_POINTS[id]) Object.assign(DIVE_POINTS[id], v);
+
 export const GUIDE_BY_MONTH: string[][] = [
   // 1월
   ["jeju", "kerama", "malapascua", "yonaguni", "moalboal", "coron", "xiaoliuqiu", "condao", "tulamben", "subic", "maldives", "galapagos", "rajaampat", "similan", "socorro", "sipadan", "bonaire", "cayman", "belize", "mozambique", "cenotes", "fuji_lakes", "ojamo"],

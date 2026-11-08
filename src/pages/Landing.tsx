@@ -13,6 +13,7 @@ import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import { isOpenTour, matchesActivity, countOpenToursByMonth, hasSeatsFor, topCountries } from "@/lib/tours";
 import { HomeTourFinder } from "@/components/home/HomeTourFinder";
 import { MonthSeas } from "@/components/home/MonthSeas";
+import { DiveBasicsRow } from "@/components/home/DiveBasicsRow";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
 import { DIVE_POINTS, GUIDE_BY_MONTH, type DivePoint } from "@/content/divePointGuide";
 import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardGuide";
@@ -731,6 +732,9 @@ export default function Landing() {
         onOpenDetail={(pt) => setDetail({ kind: "point", data: pt })}
         onOpenAll={(m) => { setGuideMonth(m); setExplorer("guide"); }}
       />
+
+      {/* 3-1. 처음이라면 읽어 보세요 — 기초·안전 글(출처 표기), 카드 → /guide#id */}
+      <DiveBasicsRow />
 
       {/* 4. 리브어보드 — 배너 하나. 클릭 시 전용 뷰(Explorer) */}
       <section id="liveaboard" className="ab-sec ab-lb">

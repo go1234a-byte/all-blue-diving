@@ -21,6 +21,7 @@ import SupportChat from "./pages/SupportChat";
 import BusinessInquiryPage from "./pages/BusinessInquiryPage";
 import InstructorApplication from "./pages/InstructorApplication";
 import TermsPage from "./pages/TermsPage";
+import GuidePage from "./pages/GuidePage";
 import PrivacyPage from "./pages/PrivacyPage";
 import DiveComputerPrivacyPage from "./pages/DiveComputerPrivacyPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
@@ -144,6 +145,7 @@ export const routers = [
         ],
       },
       { path: "terms", name: "terms", element: <TermsPage /> },
+      { path: "guide", name: "guide", element: <GuidePage /> },
       { path: "privacy", name: "privacy", element: <PrivacyPage /> },
       { path: "divecomputer-privacy", name: "divecomputer-privacy", element: <DiveComputerPrivacyPage /> },
       { path: "refund-policy", name: "refund-policy", element: <RefundPolicyPage /> },
