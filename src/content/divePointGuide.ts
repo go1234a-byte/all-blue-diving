@@ -35,6 +35,8 @@ export interface DivePoint {
   special?: boolean;
   /** 가는 길 (예시) — 근거리 우선 지역 위주로 채움 */
   access?: string;
+  /** 수온·시야 등 수치를 출처로 확인한 기록. 없으면 화면에 수치를 내지 않는다(일반 설명만). */
+  verified?: { checkedAt: string; sources: string[] };
 }
 
 const P = (

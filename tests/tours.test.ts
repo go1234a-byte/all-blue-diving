@@ -59,3 +59,20 @@ test("인원 필터: 1명은 거르지 않고, 2명 이상은 남은 자리가 �
   assert.equal(hasSeatsFor(t, 9, 2), false);
   assert.equal(hasSeatsFor(t, 0, 10), true);
 });
+
+test("가이드 지역 지명: 가장 구체적인 지명, 괄호·일반어 제외, 제주도→제주", async () => {
+  const { pointKeyword, toursAtPoint } = await import("../src/lib/tours.ts");
+  assert.equal(pointKeyword("필리핀 · 세부 말라파스쿠아"), "말라파스쿠아");
+  assert.equal(pointKeyword("필리핀 · 모알보알 (세부)"), "모알보알");
+  assert.equal(pointKeyword("일본 · 게라마 제도 (오키나와 인근)"), "게라마");
+  assert.equal(pointKeyword("대한민국 · 제주도"), "제주");
+  assert.equal(pointKeyword("팔라우"), "팔라우");
+  const tours = [
+    { site: "세부 모알보알", title: "정어리떼 펀다이빙" },
+    { site: "말라파스쿠아", title: "환도상어 투어" },
+    { site: "서귀포", title: "제주 연산호 2박 3일" },
+  ];
+  assert.equal(toursAtPoint("필리핀 · 세부 말라파스쿠아", tours).length, 1);
+  assert.equal(toursAtPoint("필리핀 · 모알보알 (세부)", tours).length, 1);
+  assert.equal(toursAtPoint("대한민국 · 제주도", tours).length, 1);
+});

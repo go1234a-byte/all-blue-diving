@@ -57,3 +57,24 @@ export function dayLabelKR(iso: string): string {
   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   return `${m}월 ${d}일 ${WEEKDAY_KR[wd]}요일`;
 }
+
+/**
+ * 가이드 지역 이름("필리핀 · 세부 말라파스쿠아", "일본 · 게라마 제도 (오키나와 인근)")에서
+ * 투어와 맞춰 볼 가장 구체적인 지명 하나를 고른다. 괄호 설명과 "제도/섬/아톨" 같은 일반어는 뺀다.
+ * ponytail: 가장 긴 단어 = 가장 구체적인 지명이라는 휴리스틱. 틀리는 지역이 나오면 DivePoint 에 match 키워드를 둔다.
+ */
+const GENERIC_PLACE_WORDS = new Set(["제도", "섬", "아톨", "인근", "반도"]);
+export function pointKeyword(region: string): string {
+  const place = (region.split("·").slice(1).join(" ") || region).replace(/\(.*?\)/g, " ");
+  const words = place.split(/[\s,·]+/).filter((w) => w && !GENERIC_PLACE_WORDS.has(w));
+  const best = words.reduce((a, w) => (w.length > a.length ? w : a), "");
+  // "제주도"·"울릉도"처럼 '도'로 끝나는 섬 이름은 투어에 "제주"로만 적히는 경우가 많다.
+  return best.length === 3 && best.endsWith("도") ? best.slice(0, 2) : best;
+}
+
+/** 가이드 지역과 같은 곳의 투어(장소·제목에 지명이 들어간 것). */
+export function toursAtPoint<T extends { site: string; title: string }>(region: string, tours: T[]): T[] {
+  const kw = pointKeyword(region);
+  if (!kw) return [];
+  return tours.filter((t) => `${t.site} ${t.title}`.includes(kw));
+}

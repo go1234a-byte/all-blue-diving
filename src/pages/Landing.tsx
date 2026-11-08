@@ -12,6 +12,7 @@ import { formatDateRangeKR, currentMonthKey, monthOfKey, monthKeyOf } from "@/li
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import { isOpenTour, matchesActivity, countOpenToursByMonth, hasSeatsFor, topCountries } from "@/lib/tours";
 import { HomeTourFinder } from "@/components/home/HomeTourFinder";
+import { MonthSeas } from "@/components/home/MonthSeas";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
 import { DIVE_POINTS, GUIDE_BY_MONTH, type DivePoint } from "@/content/divePointGuide";
 import { LIVEABOARD_REGIONS, type LiveaboardRegion } from "@/content/liveaboardGuide";
@@ -290,7 +291,7 @@ function Explorer({
                     <p className="ab-bigcard-eyebrow">{pt.special ? `특수 다이빙 · ${pt.region}` : pt.region}</p>
                     <h3>{pt.hook}</h3>
                     <p className="ab-bigcard-oneliner">{pt.oneLiner}</p>
-                    <p className="ab-bigcard-meta">{pt.water}</p>
+                    {pt.verified && <p className="ab-bigcard-meta">{pt.water}</p>}
                     <span className="ab-bigcard-more">자세히 보기 →</span>
                   </div>
                 </button>
@@ -648,9 +649,12 @@ export default function Landing() {
 
       {/* 1. HERO — 검색 카드 중심. 출발월 칩에 월별 모집 중 투어 개수가 보이고, 고른 월·종류는 아래 목록도 같이 거른다. */}
       <header className="ab-hero2">
-        <div className="wrap ab-hero2-inner">
-          <h1>어디로, 언제<br />떠나볼까요?</h1>
-          <p className="ab-hero2-lede">자격·경력을 검증한 강사의 스쿠버·프리다이빙 투어만 모았어요.</p>
+        <div className="ab-hero2-ph">
+          <img src="/landing/descend.webp" alt="햇빛이 들어오는 산호 절벽 옆으로 내려가는 프리다이버" onError={handleImageFallback} fetchPriority="high" />
+        </div>
+        <div className="ab-hero2-inner">
+          <h1>검증된 강사와 떠나는 다이빙 투어</h1>
+          <p className="ab-hero2-lede">스쿠버·프리다이빙 투어를 출발월로 찾고, 강사에게 바로 예약하세요.</p>
           <div className="ab-tabs2" role="group" aria-label="다이빙 종류">
             {([["", "전체"], ["scuba", "스쿠버"], ["freediving", "프리다이빙"]] as const).map(([v, label]) => (
               <button key={v} type="button" className={heroAct === v ? "on" : ""} aria-pressed={heroAct === v} onClick={() => setHeroAct(v)}>{label}</button>
@@ -721,22 +725,12 @@ export default function Landing() {
         }}
       />
 
-      {/* 3. 언제 어디로 떠날까요 — 다이빙 포인트 가이드 배너 (클릭 시 Explorer) */}
-      <section id="guide" className="ab-sec ab-guide">
-        <div className="wrap">
-          <button type="button" className="ab-banner" onClick={() => setExplorer("guide")}>
-            <img src="/landing/coral.webp" alt="" onError={handleImageFallback} loading="lazy" />
-            <div className="ab-banner-body">
-              <p className="ab-banner-eyebrow">Dive Point Guide</p>
-              <h3>언제 어디로 떠날까요?</h3>
-              <p className="ab-banner-teaser">
-                {MONTH_LABELS_KR[guideMonth]}엔 {[...new Set(monthPoints.map((pt) => pt.region.split(/[ ,(]/)[0]))].slice(0, 3).join(" · ")} 쪽 바다가 좋아요.
-              </p>
-              <span className="ab-banner-cta">다이빙 포인트 둘러보기 →</span>
-            </div>
-          </button>
-        </div>
-      </section>
+      {/* 3. N월에 가기 좋은 바다 — 월별 가이드 + 지역별 모집 중 투어 수. 전체 보기는 기존 Explorer. */}
+      <MonthSeas
+        tours={openTours}
+        onOpenDetail={(pt) => setDetail({ kind: "point", data: pt })}
+        onOpenAll={(m) => { setGuideMonth(m); setExplorer("guide"); }}
+      />
 
       {/* 4. 리브어보드 — 배너 하나. 클릭 시 전용 뷰(Explorer) */}
       <section id="liveaboard" className="ab-sec ab-lb">
@@ -786,7 +780,7 @@ export default function Landing() {
               </p>
             )}
             <dl className="ab-sheet-dl">
-              <div><dt>수온 · 시야</dt><dd>{detail.data.water}</dd></div>
+              {detail.data.verified && <div><dt>수온 · 시야</dt><dd>{detail.data.water}</dd></div>}
               <div><dt>추천 레벨</dt><dd>{detail.data.level}</dd></div>
             </dl>
             <p className="ab-lbcard-label">대표 다이빙 포인트 (예시)</p>
@@ -1033,9 +1027,19 @@ const CSS = `
 
 
 /* HERO 2 — 검색 카드 중심(출발월 칩에 월별 투어 개수) */
-.ab-hero2{position:relative;background:linear-gradient(rgba(10,27,46,.72),rgba(10,27,46,.72)),url(/landing/hero.webp) center/cover;color:#fff;padding:calc(88px + env(safe-area-inset-top)) 0 var(--s5);}
+/* 첫 화면: 폰은 위 사진 띠 + 남색 판, 넓은 화면은 왼쪽 남색 판(제목·검색) | 오른쪽 사진 */
+.ab-hero2{position:relative;display:grid;background:var(--navy-dark);color:#fff;word-break:keep-all;}
+.ab-hero2-ph{position:relative;height:calc(30svh + env(safe-area-inset-top));overflow:hidden;}
+.ab-hero2-ph img{width:100%;height:100%;object-fit:cover;object-position:35% 45%;}
+.ab-hero2-ph::after{content:"";position:absolute;inset:0;background:rgba(10,27,46,.28);} /* 사진 위 내비 글자 대비용(고르게) */
+.ab-hero2-inner{padding:28px var(--gut) var(--s5);}
 .ab-hero2-inner > *{max-width:720px;}
-.ab-lp .ab-hero2 h1{font-size:clamp(1.875rem,6vw,3rem);color:#fff;}
+.ab-lp .ab-hero2 h1{font-size:clamp(2rem,7.6vw,4rem);line-height:1.08;letter-spacing:-.03em;color:#fff;max-width:13ch;}
+@media(min-width:1024px){
+  .ab-hero2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:min(100svh,880px);}
+  .ab-hero2-ph{grid-column:2;grid-row:1;height:auto;}
+  .ab-hero2-inner{grid-column:1;grid-row:1;display:flex;flex-direction:column;justify-content:center;padding:120px clamp(24px,4vw,64px) 48px var(--gut);}
+}
 .ab-hero2-lede{margin:var(--s3) 0 var(--s4);color:rgba(255,255,255,.88);max-width:44ch;}
 .ab-tabs2{display:flex;gap:22px;max-width:420px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.22);}
 .ab-tabs2 button{position:relative;background:none;border:0;padding:0 0 10px;color:rgba(255,255,255,.78);font:inherit;font-size:.9375rem;cursor:pointer;}
@@ -1061,6 +1065,12 @@ const CSS = `
   .ab-f2-where{grid-column:auto;}
   .ab-s2-go{grid-column:auto;padding:0 34px;}
   .ab-s2-hot{grid-column:1/-1;}
+}
+/* 반분할 히어로(1024+)에선 검색 카드가 화면 절반 폭이라 다시 2열로 */
+@media(min-width:1024px){
+  .ab-search2{grid-template-columns:1fr 1fr;padding:12px;}
+  .ab-f2-where,.ab-s2-go{grid-column:1/-1;}
+  .ab-s2-go{padding:16px;}
 }
 .ab-search{margin-top:var(--s5);display:flex;flex-wrap:wrap;gap:var(--s2);max-width:640px;background:rgba(255,255,255,.96);border-radius:12px;padding:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
 .ab-search-fld{flex:1 1 200px;min-width:0;border:0;outline:0;background:transparent;color:var(--navy);padding:12px 14px;font-size:.9375rem;font-family:inherit;}
