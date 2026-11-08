@@ -25,6 +25,11 @@ export function matchesActivity(t: Pick<Tour, "activityTypes">, act: string): bo
   return !act || t.activityTypes.includes(act as Tour["activityTypes"][number]);
 }
 
+/** 몇 명으로 갈 수 있는 투어인가. 1명(기본)은 거르지 않아 마감 투어도 "모집 마감"으로 그대로 보인다. */
+export function hasSeatsFor(t: Pick<Tour, "maxParticipants">, joined: number, party: number): boolean {
+  return party <= 1 || t.maxParticipants - joined >= party;
+}
+
 /** 출발일(YYYY-MM-DD) 오름차순으로 묶는다. */
 export function groupToursByStartDate<T extends Pick<Tour, "startDate">>(tours: T[]): Array<{ date: string; tours: T[] }> {
   const map = new Map<string, T[]>();

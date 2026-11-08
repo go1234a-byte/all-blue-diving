@@ -24,7 +24,7 @@ import { earliestStartLabel, minPriceByCountry, shortPrice } from "@/lib/tourDis
 import { useAppData } from "@/contexts/AppDataContext";
 import { applyPlatformFee } from "@/lib/pricing";
 import { monthKeyOf } from "@/lib/dates";
-import { isOpenTour } from "@/lib/tours";
+import { hasSeatsFor, isOpenTour } from "@/lib/tours";
 import { cn } from "@/lib/utils";
 import type { ActivityType, Tour } from "@/types";
 
@@ -79,6 +79,8 @@ const Search = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const query = searchParams.get("q")?.trim() ?? "";
+  // 홈 검색 카드의 "몇 명". 2명 이상이면 남은 자리가 그만큼 있는 투어만 보인다.
+  const party = Math.min(20, Math.max(1, Math.floor(Number(searchParams.get("party")) || 1)));
 
   const openTours = useMemo(() => tours.filter(isOpenTour), [tours]);
   // 슬라이더 끝값 = 모집중 투어 최고가(수수료 포함)를 50만원 단위로 올림. 최소 350만원.
@@ -142,6 +144,7 @@ const Search = () => {
       .filter((t) => !filters.flightIncluded || t.inclusions.some((i) => i.includes("항공")))
       .filter((t) => !filters.confirmedOnly || isDepartureConfirmed(t, getConfirmedParticipantCount(t.id)))
       .filter((t) => !filters.refundableOnly || isRefundableNow(t.startDate))
+      .filter((t) => hasSeatsFor(t, getConfirmedParticipantCount(t.id), party))
       .filter((t) => {
         // 카드/상세에는 플랫폼 수수료(10%)가 포함된 가격이 보이는데, 필터는 수수료 전
         // basePrice와 비교하고 있어서 최대 가격을 걸어도 그보다 최대 10% 비싼 투어가
@@ -156,7 +159,7 @@ const Search = () => {
         if (sort === "expensive") return b.basePrice - a.basePrice;
         return ratingOf(b) - ratingOf(a);
       });
-  }, [openTours, query, filters, sort, getConfirmedParticipantCount, ratingOf]);
+  }, [openTours, query, party, filters, sort, getConfirmedParticipantCount, ratingOf]);
 
   const sortTabs: Array<{ key: SortOption; label: string; value: string }> = [
     { key: "soonest", label: "출발 빠른순", value: earliestStartLabel(filteredTours) ?? "-" },
@@ -214,6 +217,22 @@ const Search = () => {
             )}
             <button type="submit" className="shrink-0 text-xs font-semibold text-primary">검색</button>
           </form>
+          {party > 1 && (
+            <p className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2 text-xs text-foreground">
+              <span>{party}명 기준 · 자리가 {party}석 이상 남은 투어만 보여요</span>
+              <button
+                type="button"
+                className="font-semibold text-primary"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams);
+                  params.delete("party");
+                  navigate(`/search?${params.toString()}`, { replace: true });
+                }}
+              >
+                해제
+              </button>
+            </p>
+          )}
           <div className="grid grid-cols-3 overflow-hidden rounded-xl border border-border bg-card" role="tablist" aria-label="정렬">
             {sortTabs.map((t) => (
               <button

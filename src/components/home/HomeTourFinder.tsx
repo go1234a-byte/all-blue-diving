@@ -7,7 +7,7 @@ import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { monthKeyOf } from "@/lib/dates";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
-import { dayLabelKR, groupToursByStartDate, matchesActivity, topCountries } from "@/lib/tours";
+import { dayLabelKR, groupToursByStartDate, hasSeatsFor, matchesActivity, topCountries } from "@/lib/tours";
 import type { Tour } from "@/types";
 
 export interface HomeAd {
@@ -23,6 +23,8 @@ interface Props {
   /** 검색 카드에서 고른 출발월(monthKey)과 활동. 목록이 같이 걸러진다. */
   month: number | "";
   act: "" | "scuba" | "freediving";
+  /** 검색 카드의 "몇 명". 2명 이상이면 남은 자리가 그만큼 있는 투어만 보인다. */
+  party?: number;
   getJoined: (tourId: string) => number;
   verifiedInstructorIds: Set<string>;
   /** 예시(샘플) 투어 판별 — 예약 불가 표시용. */
@@ -39,14 +41,18 @@ function nightsOf(t: Tour) {
   return Math.max(1, Math.round((+new Date(t.endDate) - +new Date(t.startDate)) / 86400000));
 }
 
-export function HomeTourFinder({ tours, month, act, getJoined, verifiedInstructorIds, isSample, urgent, ad }: Props) {
+export function HomeTourFinder({ tours, month, act, party = 1, getJoined, verifiedInstructorIds, isSample, urgent, ad }: Props) {
   const [country, setCountry] = useState("");
   const [showAll, setShowAll] = useState(false);
 
   // 월·활동으로 먼저 거른 뒤, 그 안에서 나라 칩을 만든다(칩 옆 숫자가 지금 보이는 결과와 맞도록).
   const byMonthAct = useMemo(
-    () => tours.filter((t) => (month === "" || monthKeyOf(t.startDate) === month) && matchesActivity(t, act)),
-    [tours, month, act],
+    () =>
+      tours.filter(
+        (t) =>
+          (month === "" || monthKeyOf(t.startDate) === month) && matchesActivity(t, act) && hasSeatsFor(t, getJoined(t.id), party),
+      ),
+    [tours, month, act, party, getJoined],
   );
   const chips = useMemo(() => topCountries(byMonthAct, 5), [byMonthAct]);
   const hasLiveaboard = useMemo(() => byMonthAct.some((t) => t.activityTypes.includes("liveaboard")), [byMonthAct]);

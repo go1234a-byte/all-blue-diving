@@ -10,7 +10,7 @@ import { applyPlatformFee, formatKRW } from "@/lib/pricing";
 import { handleImageFallback, IMAGE_PLACEHOLDER } from "@/lib/image";
 import { formatDateRangeKR, currentMonthKey, monthOfKey, monthKeyOf } from "@/lib/dates";
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
-import { isOpenTour, matchesActivity, countOpenToursByMonth } from "@/lib/tours";
+import { isOpenTour, matchesActivity, countOpenToursByMonth, hasSeatsFor, topCountries } from "@/lib/tours";
 import { HomeTourFinder } from "@/components/home/HomeTourFinder";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
 import { DIVE_POINTS, GUIDE_BY_MONTH, type DivePoint } from "@/content/divePointGuide";
@@ -496,6 +496,7 @@ export default function Landing() {
     [heroMonthStart],
   );
   const [heroAct, setHeroAct] = useState<"" | "scuba" | "freediving">("");
+  const [party, setParty] = useState(1);
   const [guideMonth, setGuideMonth] = useState(() => new Date().getMonth());
   const [explorer, setExplorer] = useState<"guide" | "liveaboard" | null>(null);
   const [detail, setDetail] = useState<
@@ -522,19 +523,26 @@ export default function Landing() {
   const openTours = useMemo(() => tours.filter(isOpenTour), [tours]);
   // 검색 카드: 종류(스쿠버/프리다이빙)로 먼저 거른 투어에서 월별 개수를 센다. 개수가 있는 월만 칩으로 보인다.
   const actTours = useMemo(() => openTours.filter((t) => matchesActivity(t, heroAct)), [openTours, heroAct]);
+  // 몇 명: 2명 이상이면 남은 자리가 그만큼 있는 투어만 센다(월 칩·결과 개수·아래 목록이 모두 같은 기준).
+  const fitTours = useMemo(
+    () => actTours.filter((t) => hasSeatsFor(t, getConfirmedParticipantCount(t.id), party)),
+    [actTours, party, getConfirmedParticipantCount],
+  );
+  const partyMax = useMemo(() => Math.min(10, Math.max(1, ...openTours.map((t) => t.maxParticipants))), [openTours]);
+  const destChips = useMemo(() => topCountries(fitTours, 4), [fitTours]);
   const monthChips = useMemo(
-    () => [...countOpenToursByMonth(actTours, monthKeyOf).entries()].filter(([k]) => k >= currentMonthKey()).sort((a, b) => a[0] - b[0]).slice(0, 8),
-    [actTours],
+    () => [...countOpenToursByMonth(fitTours, monthKeyOf).entries()].filter(([k]) => k >= currentMonthKey()).sort((a, b) => a[0] - b[0]).slice(0, 8),
+    [fitTours],
   );
   // 고른 월이 종류를 바꾼 뒤 칩에서 사라지면 전체로 되돌린다.
   useEffect(() => {
     if (month !== "" && !monthChips.some(([k]) => k === month)) setMonth("");
   }, [monthChips, month]);
   const resultCount = useMemo(
-    () => (month === "" ? actTours.length : actTours.filter((t) => monthKeyOf(t.startDate) === month).length),
-    [actTours, month],
+    () => (month === "" ? fitTours.length : fitTours.filter((t) => monthKeyOf(t.startDate) === month).length),
+    [fitTours, month],
   );
-  const goLabel = month === "" ? `투어 ${resultCount}개 보기` : `${MONTH_LABELS_KR[monthOfKey(month)]} 출발 투어 ${resultCount}개 보기`;
+  const goLabel = `${month === "" ? "" : `${MONTH_LABELS_KR[monthOfKey(month)]} 출발 · `}${party > 1 ? `${party}명 · ` : ""}투어 ${resultCount}개 보기`;
   const verifiedInstructorIds = useMemo(() => new Set(instructors.filter((i) => i.verified).map((i) => i.id)), [instructors]);
 
 
@@ -597,6 +605,7 @@ export default function Landing() {
     if (q.trim()) p.set("q", q.trim());
     if (month !== "") p.set("months", String(month));
     if (heroAct) p.set("activities", heroAct);
+    if (party > 1) p.set("party", String(party));
     navigate(`/search${p.toString() ? `?${p.toString()}` : ""}`);
   };
 
@@ -642,34 +651,51 @@ export default function Landing() {
         <div className="wrap ab-hero2-inner">
           <h1>어디로, 언제<br />떠나볼까요?</h1>
           <p className="ab-hero2-lede">자격·경력을 검증한 강사의 스쿠버·프리다이빙 투어만 모았어요.</p>
+          <div className="ab-tabs2" role="group" aria-label="다이빙 종류">
+            {([["", "전체"], ["scuba", "스쿠버"], ["freediving", "프리다이빙"]] as const).map(([v, label]) => (
+              <button key={v} type="button" className={heroAct === v ? "on" : ""} aria-pressed={heroAct === v} onClick={() => setHeroAct(v)}>{label}</button>
+            ))}
+          </div>
           <div className="ab-search2" role="search">
-            <label className="ab-s2-row">
-              <small>어디로</small>
+            <div className="ab-f2 ab-f2-where">
+              <label htmlFor="ab-where" className="ab-f2-lab">어디로</label>
               <input
+                id="ab-where"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && goSearch()}
                 placeholder="세부, 다합, 몰디브…"
-                aria-label="여행지"
+                autoComplete="off"
               />
-            </label>
-            <div className="ab-s2-seg" role="group" aria-label="다이빙 종류">
-              {([["", "전체"], ["scuba", "스쿠버"], ["freediving", "프리다이빙"]] as const).map(([v, label]) => (
-                <button key={v} type="button" className={heroAct === v ? "on" : ""} onClick={() => setHeroAct(v)}>{label}</button>
-              ))}
             </div>
-            <p className="ab-s2-lab">출발월</p>
-            <div className="ab-s2-months" role="group" aria-label="출발월">
-              <button type="button" className={month === "" ? "on" : ""} onClick={() => setMonth("")}>
-                <b>전체</b><small>{actTours.length}개</small>
-              </button>
-              {monthChips.map(([key, n]) => (
-                <button key={key} type="button" className={month === key ? "on" : ""} onClick={() => setMonth(month === key ? "" : key)}>
-                  <b>{MONTH_LABELS_KR[monthOfKey(key)]}</b><small>{n}개</small>
-                </button>
-              ))}
+            <div className="ab-f2">
+              <label htmlFor="ab-when" className="ab-f2-lab">언제</label>
+              <select id="ab-when" value={month === "" ? "" : String(month)} onChange={(e) => setMonth(e.target.value === "" ? "" : Number(e.target.value))}>
+                <option value="">전체 · {fitTours.length}개</option>
+                {monthChips.map(([key, n]) => (
+                  <option key={key} value={key}>{MONTH_LABELS_KR[monthOfKey(key)]} 출발 · {n}개</option>
+                ))}
+              </select>
+            </div>
+            <div className="ab-f2">
+              <label htmlFor="ab-party" className="ab-f2-lab">몇 명</label>
+              <select id="ab-party" value={party} onChange={(e) => setParty(Number(e.target.value))}>
+                {Array.from({ length: partyMax }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>{n}명</option>
+                ))}
+              </select>
             </div>
             <button type="button" className="ab-s2-go" onClick={goSearch}>{goLabel}</button>
+            {destChips.length > 0 && (
+              <p className="ab-s2-hot">
+                <span>많이 찾는 곳</span>
+                {destChips.map((c) => (
+                  <button key={c.country} type="button" className={q === c.country ? "on" : ""} onClick={() => setQ(q === c.country ? "" : c.country)}>
+                    {c.country} <small>{c.count}</small>
+                  </button>
+                ))}
+              </p>
+            )}
           </div>
         </div>
       </header>
@@ -681,6 +707,7 @@ export default function Landing() {
       <HomeTourFinder
         tours={openTours}
         month={month}
+        party={party}
         act={heroAct}
         getJoined={getConfirmedParticipantCount}
         verifiedInstructorIds={verifiedInstructorIds}
@@ -1010,24 +1037,31 @@ const CSS = `
 .ab-hero2-inner > *{max-width:720px;}
 .ab-lp .ab-hero2 h1{font-size:clamp(1.875rem,6vw,3rem);color:#fff;}
 .ab-hero2-lede{margin:var(--s3) 0 var(--s4);color:rgba(255,255,255,.88);max-width:44ch;}
-.ab-search2{background:#fff;color:var(--navy);border-radius:18px;padding:var(--s2);display:flex;flex-direction:column;gap:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
-.ab-s2-row{display:flex;flex-direction:column;padding:10px 14px;border-radius:12px;cursor:text;}
-.ab-s2-row small{color:var(--text-2);font-size:.75rem;}
-.ab-s2-row input{border:0;outline:0;background:transparent;color:var(--navy);font:inherit;font-size:1.0625rem;font-weight:600;padding:2px 0;}
-.ab-s2-row input::placeholder{color:var(--text-2);font-weight:500;}
-.ab-s2-seg{display:flex;background:var(--bg-soft);border-radius:10px;padding:3px;margin:0 6px;}
-.ab-s2-seg button{flex:1;border:0;background:transparent;color:var(--text-2);font:inherit;font-size:.9375rem;padding:10px 0;border-radius:8px;cursor:pointer;}
-.ab-s2-seg button.on{background:#fff;color:var(--navy);font-weight:700;box-shadow:0 1px 3px rgba(10,27,46,.18);}
-.ab-s2-lab{margin:var(--s2) 14px 0;font-size:.75rem;color:var(--text-2);}
-.ab-s2-months{display:flex;gap:6px;overflow-x:auto;padding:0 6px 4px;scrollbar-width:none;}
-.ab-s2-months::-webkit-scrollbar{display:none;}
-.ab-s2-months button{flex:0 0 66px;border:0;background:var(--bg-soft);color:var(--navy);border-radius:10px;padding:8px 0;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;}
-.ab-s2-months button b{font-size:1.0625rem;}
-.ab-s2-months button small{font-size:.6875rem;color:var(--text-2);}
-.ab-s2-months button.on{background:#0D47A1;color:#fff;}
-.ab-s2-months button.on small{color:#CFE0FF;}
-.ab-s2-go{border:0;cursor:pointer;background:var(--turq);color:#fff;font:inherit;font-weight:800;font-size:1rem;padding:15px;border-radius:12px;margin:0;}
-.ab-s2-go:hover{background:#128ea1;}
+.ab-tabs2{display:flex;gap:22px;max-width:420px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.22);}
+.ab-tabs2 button{position:relative;background:none;border:0;padding:0 0 10px;color:rgba(255,255,255,.78);font:inherit;font-size:.9375rem;cursor:pointer;}
+.ab-tabs2 button.on{color:#fff;font-weight:700;}
+.ab-tabs2 button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:#fff;}
+.ab-search2{background:#fff;color:var(--navy);border-radius:14px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;box-shadow:0 18px 44px -22px rgba(10,27,46,.6);}
+.ab-f2{display:flex;flex-direction:column;justify-content:center;gap:1px;min-height:58px;padding:9px 14px;border-radius:10px;background:var(--bg-soft);}
+.ab-f2-where{grid-column:1/-1;}
+.ab-f2:focus-within{box-shadow:inset 0 0 0 2px var(--turq);}
+.ab-f2-lab{font-size:.6875rem;font-weight:700;color:var(--text-2);letter-spacing:.02em;}
+.ab-f2 input,.ab-f2 select{width:100%;border:0;outline:0;background:transparent;color:var(--navy);font:inherit;font-size:1rem;font-weight:600;padding:0;appearance:none;-webkit-appearance:none;text-overflow:ellipsis;}
+.ab-f2 select{cursor:pointer;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%235B6B7A' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m1 1.5 5 5 5-5'/%3E%3C/svg%3E") right 2px center/12px 8px no-repeat;padding-right:20px;}
+.ab-f2 input::placeholder{color:var(--text-2);font-weight:500;}
+.ab-s2-go{grid-column:1/-1;border:0;cursor:pointer;background:var(--turq);color:#fff;font:inherit;font-weight:700;font-size:1rem;padding:16px;border-radius:10px;}
+.ab-s2-go:hover{background:#0E7385;}
+.ab-s2-go:focus-visible,.ab-s2-hot button:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
+.ab-s2-hot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin:2px 2px 0;font-size:.8125rem;color:var(--text-2);}
+.ab-s2-hot button{background:none;border:0;padding:2px 0;font:inherit;font-weight:600;color:var(--navy);cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;}
+.ab-s2-hot button:hover,.ab-s2-hot button.on{text-decoration-color:currentColor;}
+.ab-s2-hot small{color:var(--text-2);font-weight:500;}
+@media(min-width:900px){
+  .ab-search2{grid-template-columns:1.6fr 1.1fr .7fr auto;align-items:stretch;padding:10px;}
+  .ab-f2-where{grid-column:auto;}
+  .ab-s2-go{grid-column:auto;padding:0 34px;}
+  .ab-s2-hot{grid-column:1/-1;}
+}
 .ab-search{margin-top:var(--s5);display:flex;flex-wrap:wrap;gap:var(--s2);max-width:640px;background:rgba(255,255,255,.96);border-radius:12px;padding:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
 .ab-search-fld{flex:1 1 200px;min-width:0;border:0;outline:0;background:transparent;color:var(--navy);padding:12px 14px;font-size:.9375rem;font-family:inherit;}
 .ab-search-fld::placeholder{color:var(--text-2);}

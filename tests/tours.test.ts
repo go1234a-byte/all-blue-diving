@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { countOpenToursByMonth, dayLabelKR, groupToursByStartDate, isOpenTour, matchesActivity, topCountries } from "../src/lib/tours.ts";
+import { countOpenToursByMonth, dayLabelKR, groupToursByStartDate, hasSeatsFor, isOpenTour, matchesActivity, topCountries } from "../src/lib/tours.ts";
 
 // lib/dates 의 monthKeyOf 와 같은 규칙(연도*12+월). 이 테스트가 dates.ts 를 직접 import 하지 않도록 같은 식을 둔다.
 const keyOf = (iso: string) => {
@@ -50,4 +50,12 @@ test("지역 칩: 투어 수 많은 순, 동률은 이름순, 최대 n개", () =
 test("날짜 라벨은 요일까지 (2026-11-29 는 일요일)", () => {
   assert.equal(dayLabelKR("2026-11-29"), "11월 29일 일요일");
   assert.equal(dayLabelKR("2026-12-06T00:00:00Z"), "12월 6일 일요일");
+});
+
+test("인원 필터: 1명은 거르지 않고, 2명 이상은 남은 자리가 그 인원 이상일 때만", () => {
+  const t = { maxParticipants: 10 };
+  assert.equal(hasSeatsFor(t, 10, 1), true); // 마감이어도 1명 기본값에서는 목록에 남는다
+  assert.equal(hasSeatsFor(t, 8, 2), true);
+  assert.equal(hasSeatsFor(t, 9, 2), false);
+  assert.equal(hasSeatsFor(t, 0, 10), true);
 });
