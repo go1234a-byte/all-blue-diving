@@ -708,7 +708,14 @@ export default function Landing() {
       {/* 1-1. 다가오는 다이빙 D-day — 예약한 다이버에게만 */}
       <UpcomingTripCard />
 
-      {/* 2. 모집 중 투어 — 지역 칩 · 마감 임박 · 출발일별 목록 (검색 카드의 월·종류가 목록도 거른다) */}
+      {/* 2. N월에 가기 좋은 바다 — 월별 가이드 + 지역별 모집 중 투어 수. 전체 보기는 기존 Explorer. */}
+      <MonthSeas
+        tours={openTours}
+        onOpenDetail={(pt) => setDetail({ kind: "point", data: pt })}
+        onOpenAll={(m) => { setGuideMonth(m); setExplorer("guide"); }}
+      />
+
+      {/* 3. 모집 중 투어 — 지역 칩 · 마감 임박 · 출발일별 목록 (검색 카드의 월·종류가 목록도 거른다) */}
       <HomeTourFinder
         tours={openTours}
         month={month}
@@ -724,13 +731,6 @@ export default function Landing() {
           sub: AD_BANNER.sub,
           onClick: () => (isExternalHref(AD_BANNER.href) ? window.open(AD_BANNER.href, "_blank", "noopener,noreferrer") : navigate(AD_BANNER.href)),
         }}
-      />
-
-      {/* 3. N월에 가기 좋은 바다 — 월별 가이드 + 지역별 모집 중 투어 수. 전체 보기는 기존 Explorer. */}
-      <MonthSeas
-        tours={openTours}
-        onOpenDetail={(pt) => setDetail({ kind: "point", data: pt })}
-        onOpenAll={(m) => { setGuideMonth(m); setExplorer("guide"); }}
       />
 
       {/* 3-1. 처음이라면 읽어 보세요 — 기초·안전 글(출처 표기), 카드 → /guide#id */}
@@ -1031,18 +1031,19 @@ const CSS = `
 
 
 /* HERO 2 — 검색 카드 중심(출발월 칩에 월별 투어 개수) */
-/* 첫 화면: 폰은 위 사진 띠 + 남색 판, 넓은 화면은 왼쪽 남색 판(제목·검색) | 오른쪽 사진 */
-.ab-hero2{position:relative;display:grid;background:var(--navy-dark);color:#fff;word-break:keep-all;}
-.ab-hero2-ph{position:relative;height:calc(30svh + env(safe-area-inset-top));overflow:hidden;}
-.ab-hero2-ph img{width:100%;height:100%;object-fit:cover;object-position:35% 45%;}
-.ab-hero2-ph::after{content:"";position:absolute;inset:0;background:rgba(10,27,46,.28);} /* 사진 위 내비 글자 대비용(고르게) */
-.ab-hero2-inner{padding:28px var(--gut) var(--s5);}
+/* 첫 화면(시안 A): 사진을 화면 전체에 깔고 왼쪽 아래에 제목·검색. 폰에선 검색 카드가 아래에서 올라온 흰 판. */
+.ab-hero2{position:relative;display:flex;align-items:flex-end;min-height:min(100svh,920px);background:var(--navy-dark);color:#fff;word-break:keep-all;overflow:hidden;}
+.ab-hero2-ph{position:absolute;inset:0;}
+.ab-hero2-ph img{width:100%;height:100%;object-fit:cover;object-position:35% 40%;}
+.ab-hero2-ph::after{content:"";position:absolute;inset:0;background:rgba(6,20,36,.45);} /* 글자 대비용, 사진 전체에 고르게 */
+.ab-hero2-inner{position:relative;width:100%;max-width:var(--maxw);margin:0 auto;padding:calc(120px + env(safe-area-inset-top)) var(--gut) clamp(28px,5vh,56px);}
 .ab-hero2-inner > *{max-width:720px;}
-.ab-lp .ab-hero2 h1{font-size:clamp(2rem,7.6vw,4rem);line-height:1.08;letter-spacing:-.03em;color:#fff;max-width:13ch;}
-@media(min-width:1024px){
-  .ab-hero2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:min(100svh,880px);}
-  .ab-hero2-ph{grid-column:2;grid-row:1;height:auto;}
-  .ab-hero2-inner{grid-column:1;grid-row:1;display:flex;flex-direction:column;justify-content:center;padding:120px clamp(24px,4vw,64px) 48px var(--gut);}
+.ab-hero2-inner > .ab-search2{max-width:none;}
+.ab-lp .ab-hero2 h1{font-size:clamp(2.25rem,1rem + 4.6vw,5.25rem);line-height:1.04;letter-spacing:-.035em;color:#fff;max-width:12ch;}
+@media(max-width:640px){
+  .ab-hero2{min-height:0;}
+  .ab-hero2-inner{padding:calc(34svh + env(safe-area-inset-top)) var(--gut) 0;}
+  .ab-hero2-inner > .ab-search2{margin-inline:calc(var(--gut) * -1);border-radius:20px 20px 0 0;padding:16px var(--gut) 20px;box-shadow:none;}
 }
 .ab-hero2-lede{margin:var(--s3) 0 var(--s4);color:rgba(255,255,255,.88);max-width:44ch;}
 .ab-tabs2{display:flex;gap:22px;max-width:420px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.22);}
@@ -1070,12 +1071,7 @@ const CSS = `
   .ab-s2-go{grid-column:auto;padding:0 34px;}
   .ab-s2-hot{grid-column:1/-1;}
 }
-/* 반분할 히어로(1024+)에선 검색 카드가 화면 절반 폭이라 다시 2열로 */
-@media(min-width:1024px){
-  .ab-search2{grid-template-columns:1fr 1fr;padding:12px;}
-  .ab-f2-where,.ab-s2-go{grid-column:1/-1;}
-  .ab-s2-go{padding:16px;}
-}
+
 .ab-search{margin-top:var(--s5);display:flex;flex-wrap:wrap;gap:var(--s2);max-width:640px;background:rgba(255,255,255,.96);border-radius:12px;padding:var(--s2);box-shadow:0 20px 50px -20px rgba(10,27,46,.5);}
 .ab-search-fld{flex:1 1 200px;min-width:0;border:0;outline:0;background:transparent;color:var(--navy);padding:12px 14px;font-size:.9375rem;font-family:inherit;}
 .ab-search-fld::placeholder{color:var(--text-2);}
