@@ -89,3 +89,10 @@ export function mapTossMethodToPaymentMethod(method?: string, easyPayProvider?: 
   }
   return "card";
 }
+
+/** 예약 취소로 쌓인 환불 요청을 서버가 토스 결제 취소로 실행하게 한다. 실패해도 취소 자체에는 영향이 없다(관리자 화면에서 재시도 가능). */
+export function kickRefunds(): void {
+  void supabase.functions.invoke("process-refunds").then(({ error }) => {
+    if (error) console.error("[kickRefunds] 환불 처리 호출 실패(요청은 대기 중):", error.message);
+  });
+}

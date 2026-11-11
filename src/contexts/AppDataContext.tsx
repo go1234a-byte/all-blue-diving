@@ -1,3 +1,4 @@
+import { kickRefunds } from "@/lib/payment";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
   ArbitrationMessage,
@@ -1843,6 +1844,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           })
           .then(({ error }) => {
             if (error) console.error("[resolveUnderMinDecision] bookings 취소/정산 RPC 실패:", error);
+            else kickRefunds();
           });
 
         setPayouts((prev) =>
@@ -1929,6 +1931,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         })
         .then(({ error }) => {
           if (error) console.error("[forceCancelTourBookings] bookings 취소/정산 RPC 실패:", error);
+            else kickRefunds();
         });
 
       setPayouts((prev) =>
@@ -1991,6 +1994,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         .rpc("cancel_booking_with_refund", { p_booking_id: booking.id, p_reason: cancelReason, p_full_refund: true })
         .then(({ error }) => {
           if (error) console.error("[cancelTourByInstructor] bookings 취소/정산 RPC 실패:", error);
+            else kickRefunds();
         });
 
       setPayouts((prev) =>
@@ -3680,6 +3684,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           : "예약 취소에 실패했습니다.",
       );
     }
+    kickRefunds(); // 환불 요청이 쌓였으면 서버가 토스 결제 취소를 실행한다
 
     // 서버(cancel_booking_settlement)와 동일한 규칙: 이미 지급 완료(released)된 정산은
     // 되돌리지 않는다. 전액환불이면 정산을 취소 처리하고, 부분환불이면 회사가 보유하는
@@ -3811,6 +3816,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             : "강제 환불 승인에 실패했습니다.",
         );
       }
+      kickRefunds();
 
       setPayouts((prev) =>
         prev.map((p) =>

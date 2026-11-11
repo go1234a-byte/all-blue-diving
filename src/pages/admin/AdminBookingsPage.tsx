@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { CancellationReviewQueue } from "@/components/admin/CancellationReviewQueue";
 import { SettlementGapsPanel } from "@/components/admin/SettlementGapsPanel";
+import { RefundIssuesPanel } from "@/components/admin/RefundIssuesPanel";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatDateKR } from "@/lib/dates";
 import { formatKRW } from "@/lib/pricing";
@@ -49,6 +50,7 @@ const AdminBookingsPage = () => {
   return (
     <div className="space-y-4">
       <CancellationReviewQueue />
+      <RefundIssuesPanel />
       <SettlementGapsPanel />
       <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
