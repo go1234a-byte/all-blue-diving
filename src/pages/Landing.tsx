@@ -12,6 +12,7 @@ import { formatDateRangeKR, currentMonthKey, monthOfKey, monthKeyOf } from "@/li
 import { ACTIVITY_LABEL } from "@/lib/activityBadge";
 import { isOpenTour, matchesActivity, countOpenToursByMonth, hasSeatsFor, topCountries } from "@/lib/tours";
 import { HomeTourFinder } from "@/components/home/HomeTourFinder";
+import { HeroAds } from "@/components/home/HeroAds";
 import { MonthSeas } from "@/components/home/MonthSeas";
 import { DiveBasicsRow } from "@/components/home/DiveBasicsRow";
 import { MONTH_LABELS_KR } from "@/lib/diveSeasons";
@@ -650,9 +651,7 @@ export default function Landing() {
 
       {/* 1. HERO — 검색 카드 중심. 출발월 칩에 월별 모집 중 투어 개수가 보이고, 고른 월·종류는 아래 목록도 같이 거른다. */}
       <header className="ab-hero2">
-        <div className="ab-hero2-ph">
-          <img src="/landing/descend.webp" alt="햇빛이 들어오는 산호 절벽 옆으로 내려가는 프리다이버" onError={handleImageFallback} fetchPriority="high" />
-        </div>
+        <HeroAds />
         <div className="ab-hero2-inner">
           <h1>검증된 강사와 떠나는 다이빙 투어</h1>
           <p className="ab-hero2-lede">스쿠버·프리다이빙 투어를 출발월로 찾고, 강사에게 바로 예약하세요.</p>
