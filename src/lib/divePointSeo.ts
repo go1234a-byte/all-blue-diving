@@ -130,7 +130,7 @@ export function divePointMeta(point: DivePoint) {
   const months = formatMonthRanges(recommendedMonths(point.id));
   const title = `${point.region} 다이빙 가이드${months ? ` — 추천 시기 ${months}` : ""}`;
   const life = point.life.slice(0, 3).join("·");
-  const description = `${point.oneLiner} ${life ? `${life} 등을 만날 수 있는 ` : ""}${point.region}의 시즌·수온·대표 포인트·추천 레벨을 정리했습니다.`
+  const description = `${point.oneLiner} ${life ? `${life} 등을 만날 수 있는 ` : ""}${point.region}의 시즌·${point.verified ? "수온·" : ""}대표 포인트·추천 레벨을 정리했습니다.`
     .replace(/\s+/g, " ")
     .trim();
   return {
@@ -144,7 +144,7 @@ export function divePointMeta(point: DivePoint) {
 export const DIVE_INDEX_META = {
   title: "다이빙 포인트 가이드 — 월별 추천 다이빙 여행지",
   description:
-    "몰디브·팔라우·필리핀·제주까지, 월별로 다이빙하기 좋은 국내외 다이빙 포인트의 시즌·수온·해양생물·추천 레벨을 한눈에 비교하세요.",
+    "몰디브·팔라우·필리핀·제주까지, 월별로 다이빙하기 좋은 국내외 다이빙 포인트의 시즌·해양생물·추천 레벨을 한눈에 비교하세요.",
   path: "/dive",
 };
 

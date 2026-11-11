@@ -75,7 +75,7 @@ ${sameSeason.length ? `<section class="dv-sec"><h2>같은 시기에 좋은 다�
 export function diveIndexStaticHtml(): string {
   const points = allDivePoints();
   return `<div class="dv">${bar("/", "← 홈")}
-<section class="dv-index-head"><div class="dv-wrap"><p class="dv-eyebrow light">DIVE POINT GUIDE</p><h1>언제, 어디로 다이빙을 떠날까요</h1><p>국내외 다이빙 포인트 ${points.length}곳의 시즌·수온·해양생물·추천 레벨을 정리했습니다. 떠나고 싶은 달을 고르면 그때 좋은 바다만 모아 보여드립니다.</p></div></section>
+<section class="dv-index-head"><div class="dv-wrap"><p class="dv-eyebrow light">DIVE POINT GUIDE</p><h1>언제, 어디로 다이빙을 떠날까요</h1><p>국내외 다이빙 포인트 ${points.length}곳의 시즌·해양생물·추천 레벨을 정리했습니다. 수온·시야는 출처를 확인한 지역만 보여드립니다. 떠나고 싶은 달을 고르면 그때 좋은 바다만 모아 보여드립니다.</p></div></section>
 <nav class="dv-months" aria-label="월 선택"><div class="dv-wrap"><div class="dv-chips"><a href="/dive" class="on">전체</a>${MONTH_LABELS.map((l, m) => `<a href="/dive?month=${m + 1}">${l}</a>`).join("")}</div></div></nav>
 <main class="dv-wrap"><p class="dv-count">전체 ${points.length}곳</p><div class="dv-grid">${points.map((p) => card(p, "h2")).join("")}</div>
 <p class="dv-disclaimer">${esc(DISCLAIMER)}</p></main></div>`;

@@ -5,6 +5,8 @@
  * 새 지역 추가 = 출처 2개 이상 확인 → 여기 한 줄.
  */
 const CHECKED = "2026-11-08";
+/** 2차 확인 — 검토 기록: .planning/content-review/2026-11-11_검토요청_2차.md */
+const CHECKED_2 = "2026-11-11";
 
 export const VERIFIED_WATER: Record<string, { water: string; verified: { checkedAt: string; sources: string[] } }> = {
   jeju: {
@@ -38,5 +40,45 @@ export const VERIFIED_WATER: Record<string, { water: string; verified: { checked
   maldives: {
     water: "수온 약 27–30°C · 시야 대략 15–30m (아톨·시기마다 차이)",
     verified: { checkedAt: CHECKED, sources: ["https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-the-maldives", "https://bandosmaldives.com/news/the-best-time-for-diving-in-the-maldives-a-seasonal-guide/"] },
+  },
+  palau: {
+    water: "수온 약 27–30°C · 시야 대략 15–30m (건기에 더 맑음)",
+    verified: { checkedAt: CHECKED_2, sources: ["https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-palau", "https://www.bluewaterdivetravel.com/palau-scuba-diving-travel", "https://dive-the-world.com/diving-sites-palau.php"] },
+  },
+  ulleung: {
+    water: "여름 수온 약 20–26°C · 겨울은 훨씬 차가움 · 시야는 날마다 차이가 큼",
+    verified: { checkedAt: CHECKED_2, sources: ["https://www.koreaherald.com/article/10549294", "https://seatemperatures.net/asia/south-korea/ulleungdo-august-temperature/", "https://www.seoulz.com/korea-scuba-diving/"] },
+  },
+  ishigaki: {
+    water: "수온 약 21–29°C (겨울이 낮음) · 시야 대략 20m 안팎",
+    verified: { checkedAt: CHECKED_2, sources: ["https://dive-forecast.vercel.app/en/blog/ishigaki", "https://dive-forecast.vercel.app/blog/ishigaki-water-temp", "https://www.primescuba-ishigaki.com/en/?p=30594"] },
+  },
+  miyako: {
+    water: "수온 약 21–29°C (겨울이 낮음) · 시야는 날마다 차이가 큼",
+    verified: { checkedAt: CHECKED_2, sources: ["https://en.japantravel.com/okinawa/miyakojima-a-diver-s-paradise/3872", "https://en.activityjapan.com/feature/january-okinawa-diving"] },
+  },
+  anilao: {
+    water: "수온 약 24–28°C · 시야 대략 10–20m (7~9월은 낮음)",
+    verified: { checkedAt: CHECKED_2, sources: ["https://www.dive-the-world.com/diving-sites-philippines-batangas.php", "https://www.bluewaterdivetravel.com/anilao-diving"] },
+  },
+  apo_dumaguete: {
+    water: "수온 약 25–30°C · 시야 대략 10–25m (건기에 더 맑음)",
+    verified: { checkedAt: CHECKED_2, sources: ["https://www.bluewaterdivetravel.com/dumaguete-diving", "https://www.dive-the-world.com/diving-sites-philippines-dumaguete-apo-island.php"] },
+  },
+  puerto_galera: {
+    water: "수온 약 25–29°C · 시야 대략 10–20m",
+    verified: { checkedAt: CHECKED_2, sources: ["https://diveadventures.com.au/?p=1953", "https://underwaterasia.info/philippines/puerto-galera-dive-guide"] },
+  },
+  boracay: {
+    water: "수온 약 25–29°C · 시야 대략 10–25m (12~2월은 낮을 수 있음)",
+    verified: { checkedAt: CHECKED_2, sources: ["https://blog.padi.com/philippines-diving-calendar-where-to-dive-december/", "https://divezone.net/?p=907", "https://scubago.com/south-east-asia/philippines/visayas/boracay"] },
+  },
+  sipadan: {
+    water: "수온 약 27–30°C · 시야 대략 15–30m · 하루 입장 허가 인원이 제한됨",
+    verified: { checkedAt: CHECKED_2, sources: ["https://www.dive-the-world.com/posts/sipadan/best-time-for-sipadan-diving-optimal-conditions.php", "https://www.bluewaterdivetravel.com/sipadan-diving", "https://www.divessi.com/en/blog/guide-to-scuba-diving-in-sipadan-1483"] },
+  },
+  komodo: {
+    water: "북부 수온 약 27–29°C, 남부는 20°C 안팎까지 낮아짐 · 시야 대략 10–30m",
+    verified: { checkedAt: CHECKED_2, sources: ["https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-komodo-indonesia", "https://www.komodoresort.com/komodo-diving/conditions/", "https://www.bluewaterdivetravel.com/komodo-diving"] },
   },
 };

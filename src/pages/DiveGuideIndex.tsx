@@ -63,7 +63,7 @@ export default function DiveGuideIndex() {
         <div className="dv-wrap">
           <p className="dv-eyebrow light">DIVE POINT GUIDE</p>
           <h1>언제, 어디로 다이빙을 떠날까요</h1>
-          <p>국내외 다이빙 포인트 {allDivePoints().length}곳의 시즌·수온·해양생물·추천 레벨을 정리했습니다. 떠나고 싶은 달을 고르면 그때 좋은 바다만 모아 보여드립니다.</p>
+          <p>국내외 다이빙 포인트 {allDivePoints().length}곳의 시즌·해양생물·추천 레벨을 정리했습니다. 수온·시야는 출처를 확인한 지역만 보여드립니다. 떠나고 싶은 달을 고르면 그때 좋은 바다만 모아 보여드립니다.</p>
         </div>
       </section>
 
