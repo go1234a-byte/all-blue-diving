@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+export async function genCrawlData() {
 const out = join(tmpdir(), `diveBasics-${process.pid}.mjs`);
 await build({ entryPoints: ["src/content/diveBasics.ts"], bundle: true, format: "esm", platform: "node", outfile: out, logLevel: "error" });
 const { DIVE_BASICS, DIVE_BASICS_NOTICE } = await import(pathToFileURL(out).href);
@@ -16,3 +17,6 @@ const body = `// 자동 생성 — scripts/gen-crawl-data.mjs (npm run build 때
 )};\nexport const DIVE_BASICS_NOTICE = ${JSON.stringify(DIVE_BASICS_NOTICE)};\n`;
 writeFileSync("api/_lib/crawlData.js", body);
 console.log(`crawlData.js: ${DIVE_BASICS.length}개 글`);
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) await genCrawlData();

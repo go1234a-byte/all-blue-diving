@@ -44,8 +44,11 @@ export async function supabaseRows(query) {
   return res.json();
 }
 
+// dist/index.html 은 "/"(홈 본문 포함)이라, 함수는 본문 없는 앱 껍데기인 spa.html을 쓴다(없으면 index.html).
 export function readIndexHtml() {
-  return fs.readFileSync(path.join(process.cwd(), "dist", "index.html"), "utf-8");
+  const dist = path.join(process.cwd(), "dist");
+  const file = fs.existsSync(path.join(dist, "spa.html")) ? "spa.html" : "index.html";
+  return fs.readFileSync(path.join(dist, file), "utf-8");
 }
 
 // JSON-LD를 <script>에 그대로 넣을 때 "</script>" 같은 문자열로 태그가 끊기지 않게 한다.

@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/gen-crawl-data.mjs",
     "build": "vite build",
     "build:prod": "vite build",
     "build:dev": "NODE_ENV=development vite build --mode development",

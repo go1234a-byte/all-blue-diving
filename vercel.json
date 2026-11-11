@@ -1,12 +1,11 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/api/page?p=home" },
     { "source": "/search", "destination": "/api/page?p=search" },
     { "source": "/guide", "destination": "/api/page?p=guide" },
     { "source": "/tour/:id", "destination": "/api/og/tour/:id" },
     { "source": "/instructor/:id/profile", "destination": "/api/og/instructor/:id" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/spa.html" }
   ],
   "headers": [
     {
@@ -17,13 +16,13 @@
   ],
   "functions": {
     "api/page.js": {
-      "includeFiles": "dist/index.html"
+      "includeFiles": "dist/{index,spa}.html"
     },
     "api/og/tour/[id].js": {
-      "includeFiles": "dist/index.html"
+      "includeFiles": "dist/{index,spa}.html"
     },
     "api/og/instructor/[id].js": {
-      "includeFiles": "dist/index.html"
+      "includeFiles": "dist/{index,spa}.html"
     }
   }
 }
