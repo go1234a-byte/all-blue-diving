@@ -11,6 +11,8 @@ const CHECKED_2 = "2026-11-11";
 const CHECKED_3 = "2026-11-11";
 /** 4차 확인 — 검토 기록: .planning/content-review/2026-11-11_검토요청_4차.md */
 const CHECKED_4 = "2026-11-11";
+/** 5차 확인 — 검토 기록: .planning/content-review/2026-11-11_검토요청_5차.md */
+const CHECKED_5 = "2026-11-11";
 
 export const VERIFIED_WATER: Record<string, { water: string; verified: { checkedAt: string; sources: string[] } }> = {
   jeju: {
@@ -160,5 +162,77 @@ export const VERIFIED_WATER: Record<string, { water: string; verified: { checked
   malta: {
     water: "수온 약 14–27°C (2~3월이 가장 낮음) · 시야 대략 20–30m (고조가 더 맑음)",
     verified: { checkedAt: CHECKED_4, sources: ["https://divesitedirectory.co.uk/malta.html", "https://divebooker.com/malta-daz3923", "https://www.bluewaterdivetravel.com/malta-diving"] },
+  },
+  galapagos: {
+    water: "따뜻한 시기(12~5월) 수온 약 24–28°C·시야 대략 15–30m, 추운 시기(6~11월) 약 16–24°C·시야 10–20m · 수온약층이 심함",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.bluewaterdivetravel.com/galapagos-diving", "https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-the-galapagos", "https://www.quasarex.com/galapagos/climate-and-weather"] },
+  },
+  cocos: {
+    water: "수온 약 24–29°C (깊은 곳은 20°C 안팎까지 차가움) · 시야 대략 10–30m (12~5월 건기가 더 맑음)",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.dive-the-world.com/posts/cocos/scuba-diving-cocos-island-ideal-times.php", "https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-cocos-island", "https://zubludiving.com/destination/costa-rica/cocos-island"] },
+  },
+  socorro: {
+    water: "수온 약 21–27°C (1~4월이 낮음) · 시야 대략 15–30m · 11~5월에만 리브어보드 운항",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.bluewaterdivetravel.com/socorro-islands-dive-liveaboards", "https://www.padi.com/diving-in/socorro-islands/", "https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-the-socorro-islands-mexico"] },
+  },
+  bonaire: {
+    water: "수온 약 26–29°C · 시야 대략 20–30m",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.bluewaterdivetravel.com/bonaire-diving", "https://bonaire.com/en/travel-info/weather-climate/", "https://www.habitatbonaire.com/post/the-best-time-of-year-to-dive-in-bonaire"] },
+  },
+  cayman: {
+    water: "수온 약 25–30°C (겨울이 낮음) · 시야 대략 20–30m",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.scubadiving.com/travel/caribbean-atlantic/grand-cayman-island", "https://www.dive-the-world.com/liveaboards-cayman-islands.php", "https://www.oceanfrontiers.com/faqs"] },
+  },
+  belize: {
+    water: "수온 약 26–29°C · 시야 대략 12–25m (외곽 환초가 더 맑음) · 블루홀은 30m 부근에 수온약층",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-belize", "https://blog.padi.com/the-best-time-of-year-to-dive-belize/", "https://www.dive-the-world.com/posts/lighthouse/blue-hole/diving-blue-hole-in-belize-tips.php"] },
+  },
+  frenchpolynesia: {
+    water: "수온 약 26–29°C · 시야 대략 15–30m (5~10월이 더 맑음, 물때에 따라 차이 큼)",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.bluewaterdivetravel.com/destination/rangiroa-diving", "https://www.bluewaterdivetravel.com/destination/fakarava-diving", "https://etahititravel.com/diving-in-french-polynesia/practical-information/", "https://scubaboard.com/community/threads/fakarava-rangiroa-trip-report-the-diving.459171/"] },
+  },
+  mafia: {
+    water: "수온 약 25–29°C · 시야 대략 10–25m (3월 중순~5월 우기엔 낮음)",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.tanzaniatourism.com/safari/scuba-diving-in-mafia-island", "https://www.traveldojo.com/mafia-island", "https://www.timbuktutravel.com/region/mafia-island-trip/best-time-to-visit"] },
+  },
+  aliwal: {
+    water: "수온 약 19–24°C (겨울이 낮음) · 시야 대략 5–20m, 맑은 날은 더 좋음",
+    verified: { checkedAt: CHECKED_5, sources: ["https://scubaco.co.za/best-time-to-dive-aliwal-shoal-a-seasonal-guide/", "https://divesitedirectory.co.uk/south_africa_aliwal_shoal.html", "https://ikelite.com/blogs/features/an-insiders-guide-to-diving-aliwal-shoal-south-africa"] },
+  },
+  mozambique: {
+    water: "겨울(6~11월) 수온 약 20–22°C·여름 27–29°C · 시야 평균 15m 안팎, 플랑크톤에 따라 5–30m",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.mozambiqueexperience.com/post/diving-in-tofo-a-megafauna-paradise-in-mozambique", "https://www.uwphotographyguide.com/dive-adventure-tofo-beach-mozambique/", "https://travel.padi.com/d/inhambane-tofo"] },
+  },
+  azores: {
+    water: "수온 약 17–24°C (여름이 따뜻함) · 시야 대략 15–30m (봄은 낮음)",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-the-azores", "https://www.originaldiving.com/europe/portugal/dive-azores/best-time", "https://haliotis.pt/en/centros/santa-maria/"] },
+  },
+  condao: {
+    water: "다이빙 시즌(3~9월) 수온 약 27–30°C · 시야 맑은 날 20m 안팎 · 11~2월은 바람이 세고 시야가 낮음",
+    verified: { checkedAt: CHECKED_5, sources: ["https://english.baoquangninh.vn/four-best-diving-spots-in-vietnam-3245789.html", "https://localvietnam.com/con-dao/diving-con-dao/", "https://seatemperature.info/con-dao-islands-water-temperature.html"] },
+  },
+  silfra: {
+    water: "수온 연중 약 2–4°C · 시야 대략 100m 안팎 · 드라이슈트 자격(또는 최근 2년 내 10회 경험) 필요",
+    verified: { checkedAt: CHECKED_5, sources: ["https://guidetoiceland.is/travel-info/diving-and-snorkelling-in-iceland-1-1", "https://www.goldencircledaytours.is/blog/how-cold-is-silfra", "https://scubadiverlife.com/scuba-diving-silfra"] },
+  },
+  cenotes: {
+    water: "수온 연중 약 24–25°C · 시야 대략 30m 이상 (민물·바닷물이 섞이는 할로클라인 층에선 흐려짐)",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.bluewaterdivetravel.com/cenotes-diving", "https://cursosdebuceo.com/en/blog/post/271", "https://www.scubadiving.com/scuba-diving-cenotes-in-mexicos-yucatan-peninsula"] },
+  },
+  baikal: {
+    water: "얼음 다이빙철(1~4월) 수온 약 0–1.5°C · 시야 대략 20–40m (3월 말 해빙기엔 낮아짐)",
+    verified: { checkedAt: CHECKED_5, sources: ["https://www.divessi.com/fr/blog/ice-diving-on-lake-baikal-4241.html", "https://divemagazine.com/scuba-diving-long-reads/ice-cool-scuba-diving-in-lake-baikal", "https://divesitedirectory.co.uk/scuba_diving_russia_listvyanka_irkutsk_region_lake_baikal.html"] },
+  },
+  ojamo: {
+    water: "수온 연중 약 3–6°C · 깊은 갱도는 맑지만 수면 가까이는 여름에 시야 1m까지 떨어짐",
+    verified: { checkedAt: CHECKED_5, sources: ["https://xray-mag.com/content/finlands-ojamo-mine", "https://blog.padi.com/diving-hells-gate-ambassadiver-gemma-smith/", "https://www.scubadiving.com/secret-spot-finland-mine-sweep"] },
+  },
+  shikotsu: {
+    water: "수온은 계절 차이가 큼(겨울은 매우 차가움) · 시야 대략 25m 이상 · 겨울엔 드라이슈트 필요",
+    verified: { checkedAt: CHECKED_5, sources: ["https://bluejapan.org/?p=2446", "https://japanuncharted.com/hokkaido/lake/lake-shikotsu-nature-guide", "https://en.activityjapan.com/publish/plan/42659"] },
+  },
+  fuji_lakes: {
+    water: "해발 약 900m 고소 다이빙 · 1년 내내 차가움(겨울 최저 약 4°C) · 드라이슈트·고소 다이빙 자격 필요",
+    verified: { checkedAt: CHECKED_5, sources: ["https://blog.padi.com/freshwater-diving-japan/", "https://en.wikipedia.org/wiki/Lake_Motosu", "https://www.diveoclock.com/destinations/Asia/Japan/Fuji/"] },
   },
 };
