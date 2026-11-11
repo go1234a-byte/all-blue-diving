@@ -14,6 +14,7 @@ const BASE_URL = "https://allbluedive.com";
 const STATIC_ROUTES = [
   { path: "/", priority: "1.0" },
   { path: "/search", priority: "0.8" },
+  { path: "/guide", priority: "0.7" },
   { path: "/terms", priority: "0.2" },
   { path: "/privacy", priority: "0.2" },
   { path: "/refund-policy", priority: "0.2" },
@@ -51,7 +52,7 @@ export default async function handler(req, res) {
   // 이미 제외되는 것과 동일한 기준으로 사이트맵에서도 뺀다.
   const [tours, instructors] = await Promise.all([
     fetchJson(
-      `${SUPABASE_URL}/rest/v1/tours?cancelled_at=is.null&admin_status=is.null&select=id,created_at`,
+      `${SUPABASE_URL}/rest/v1/tours?cancelled_at=is.null&admin_status=is.null&title=not.ilike.*%28%EC%83%98%ED%94%8C*&select=id,created_at`,
     ),
     fetchJson(
       `${SUPABASE_URL}/rest/v1/instructors?verified_status=eq.true&select=id,created_at`,

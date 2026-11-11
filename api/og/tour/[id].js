@@ -16,6 +16,7 @@ import {
   supabaseRows,
   toDescription,
 } from "../../_lib/seo.js";
+import { injectBody, tourBodyHtml } from "../../_lib/pageHtml.js";
 
 // src/lib/pricing.ts의 applyPlatformFee와 같은 계산 — 화면에 보이는 가격과 맞춘다.
 const PLATFORM_FEE_RATE = 0.1;
@@ -108,7 +109,10 @@ export default async function handler(req, res) {
       sendHtml(res, notFoundHtml(html), 404);
       return;
     }
-    html = injectHead(html, buildMeta(tour));
+    const meta = buildMeta(tour);
+    html = injectHead(html, meta);
+    // 크롤러가 JS 없이도 제목·장소·가격·설명을 읽게 본문도 넣는다(React가 켜지면 교체됨).
+    html = injectBody(html, tourBodyHtml(tour, meta.description));
   } catch (error) {
     // 조회 실패(일시 장애 등)는 "없음"이 아니다 — 기본 메타태그로 200 응답. 단 index.html의
     // canonical(홈)은 빼야 한다 — 남겨 두면 검색엔진이 이 페이지를 홈의 중복으로 오해한다.

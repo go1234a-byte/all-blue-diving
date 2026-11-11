@@ -1,5 +1,8 @@
 {
   "rewrites": [
+    { "source": "/", "destination": "/api/page?p=home" },
+    { "source": "/search", "destination": "/api/page?p=search" },
+    { "source": "/guide", "destination": "/api/page?p=guide" },
     { "source": "/tour/:id", "destination": "/api/og/tour/:id" },
     { "source": "/instructor/:id/profile", "destination": "/api/og/instructor/:id" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
@@ -13,6 +16,9 @@
     }
   ],
   "functions": {
+    "api/page.js": {
+      "includeFiles": "dist/index.html"
+    },
     "api/og/tour/[id].js": {
       "includeFiles": "dist/index.html"
     },
