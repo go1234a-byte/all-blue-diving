@@ -651,10 +651,7 @@ export default function Landing() {
 
       {/* 1. HERO — 검색 카드 중심. 출발월 칩에 월별 모집 중 투어 개수가 보이고, 고른 월·종류는 아래 목록도 같이 거른다. */}
       <header className="ab-hero2">
-        <HeroAds />
-        <div className="ab-hero2-inner">
-          <h1>검증된 강사와 떠나는 다이빙 투어</h1>
-          <p className="ab-hero2-lede">스쿠버·프리다이빙 투어를 출발월로 찾고, 강사에게 바로 예약하세요.</p>
+        <HeroAds>
           <div className="ab-tabs2" role="group" aria-label="다이빙 종류">
             {([["", "전체"], ["scuba", "스쿠버"], ["freediving", "프리다이빙"]] as const).map(([v, label]) => (
               <button key={v} type="button" className={heroAct === v ? "on" : ""} aria-pressed={heroAct === v} onClick={() => setHeroAct(v)}>{label}</button>
@@ -699,7 +696,7 @@ export default function Landing() {
               ))}
             </p>
           </div>
-        </div>
+        </HeroAds>
       </header>
 
       {/* 1-1. 다가오는 다이빙 D-day — 예약한 다이버에게만 */}
@@ -1038,8 +1035,8 @@ const CSS = `
 .ab-hero2-inner > .ab-search2{max-width:none;}
 .ab-lp .ab-hero2 h1{font-size:clamp(2.25rem,1rem + 4.6vw,5.25rem);line-height:1.04;letter-spacing:-.035em;color:#fff;max-width:12ch;}
 @media(max-width:640px){
-  .ab-hero2{min-height:0;}
-  .ab-hero2-inner{padding:calc(34svh + env(safe-area-inset-top)) var(--gut) 0;}
+  .ab-hero2{min-height:calc(100svh - 64px);}
+  .ab-hero2-inner{padding:calc(96px + env(safe-area-inset-top)) var(--gut) 0;}
   .ab-hero2-inner > .ab-search2{margin-inline:calc(var(--gut) * -1);border-radius:20px 20px 0 0;padding:16px var(--gut) 20px;box-shadow:none;}
 }
 .ab-hero2-lede{margin:var(--s3) 0 var(--s4);color:rgba(255,255,255,.88);max-width:44ch;}
