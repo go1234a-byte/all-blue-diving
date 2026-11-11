@@ -9,6 +9,8 @@ const CHECKED = "2026-11-08";
 const CHECKED_2 = "2026-11-11";
 /** 3차 확인 — 검토 기록: .planning/content-review/2026-11-11_검토요청_3차.md */
 const CHECKED_3 = "2026-11-11";
+/** 4차 확인 — 검토 기록: .planning/content-review/2026-11-11_검토요청_4차.md */
+const CHECKED_4 = "2026-11-11";
 
 export const VERIFIED_WATER: Record<string, { water: string; verified: { checkedAt: string; sources: string[] } }> = {
   jeju: {
@@ -118,5 +120,45 @@ export const VERIFIED_WATER: Record<string, { water: string; verified: { checked
   izu_mikomoto: {
     water: "시즌(6~10월) 수온 약 21–28°C · 시야는 쿠로시오 해류에 따라 크게 달라짐 · 조류가 강해 경험 필요",
     verified: { checkedAt: CHECKED_3, sources: ["https://dive-forecast.vercel.app/blog/mikomoto", "https://en.marinediving.com/area/mikomoto/", "https://www.freedomdive.com/en/dive_location/mikomoto"] },
+  },
+  maldives_baa: {
+    water: "수온 약 27–29°C · 시야 대략 15–25m (만타 시즌인 우기엔 낮아짐) · 하니파루 베이 안은 스노클만 가능",
+    verified: { checkedAt: CHECKED_4, sources: ["https://www.padi.com/dive-site/maldives/hanifaru-bay/", "https://dive-the-world.com/diving-sites-maldives-northern-atolls-baa-atoll.php", "https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-the-maldives"] },
+  },
+  redsea: {
+    water: "수온 약 22–29°C (겨울이 낮고 8월이 가장 따뜻함) · 시야 대략 20–30m",
+    verified: { checkedAt: CHECKED_4, sources: ["https://routri.com/travel-inspiration/red-sea-water-temperature", "https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-the-red-sea", "https://www.dive-the-world.com/posts/egypt/when-and-where-diving-in-egypt-red-sea.php"] },
+  },
+  redsea_north: {
+    water: "겨울 수온 약 21–24°C (더 낮은 날도 있음) · 여름 26–29°C · 시야 대략 20–30m",
+    verified: { checkedAt: CHECKED_4, sources: ["https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-the-red-sea", "https://www.dive-the-world.com/posts/egypt/when-and-where-diving-in-egypt-red-sea.php", "https://www.inyourpocket.com/egypt/articles/diving-the-red-sea-best-sites-from-sharm-el-sheikh", "https://www.scubadiving.com/travel/red-sea/red-sea-travel-guide-2001"] },
+  },
+  sudan: {
+    water: "수온 약 26–30°C · 시야 대략 20–30m 이상 (11~6월이 더 맑음)",
+    verified: { checkedAt: CHECKED_4, sources: ["https://travel.padi.com/d/sudan", "https://www.bluewaterdivetravel.com/sudan-diving", "https://www.dive-the-world.com/liveaboards-red-sea-sudan.php"] },
+  },
+  gbr: {
+    water: "수온 약 24–29°C (6~8월이 낮음) · 시야 대략 15–20m, 좋은 날은 30m",
+    verified: { checkedAt: CHECKED_4, sources: ["https://www.diversden.com.au/travel-guide/weather/", "https://www.dive-the-world.com/posts/gbr/diving-in-the-great-barrier-reef-australia-best-months-clear-visibility.php", "https://www.spiritoffreedom.com.au/diving-the-great-barrier-reef/dive-seasons-weather/"] },
+  },
+  ningaloo: {
+    water: "수온 약 21–28°C · 시야 대략 10–20m · 고래상어는 스노클로만 만남",
+    verified: { checkedAt: CHECKED_4, sources: ["https://www.padi.com/diving-in/australia/exmouth/", "https://diveadventures.com.au/?p=1903", "https://scubaboard.com/community/threads/exmouth-australia-april-6-12-2025-ningaloo.660784"] },
+  },
+  fiji: {
+    water: "수온 약 23–29°C (5~10월이 낮음) · 시야 대략 20m 이상 (건기가 더 맑음)",
+    verified: { checkedAt: CHECKED_4, sources: ["https://bluewaterdivetravel.com/fiji-diving", "https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-fiji", "https://divezone.net/?p=21331"] },
+  },
+  seychelles: {
+    water: "수온 약 25–29°C (6~8월이 낮음) · 시야 대략 10–30m (4~5월·10~11월이 가장 맑음)",
+    verified: { checkedAt: CHECKED_4, sources: ["https://koek.sc/seychelles-diving-guide/seychelles-diving-season", "https://www.bluewaterdivetravel.com/seychelles-diving", "https://www.scubadiving.com/scuba-diving-seychelles"] },
+  },
+  oman: {
+    water: "수온 약 22–31°C (겨울이 낮음) · 시야 대략 10–25m (여름 플랑크톤 철엔 낮아짐)",
+    verified: { checkedAt: CHECKED_4, sources: ["https://canvascluboman.com/en/blog/diving-in-oman", "https://divernet.com/world-dives/daymaniyat-islands-diving-in-oman/", "https://starfish.ch/dive/Oman.html"] },
+  },
+  malta: {
+    water: "수온 약 14–27°C (2~3월이 가장 낮음) · 시야 대략 20–30m (고조가 더 맑음)",
+    verified: { checkedAt: CHECKED_4, sources: ["https://divesitedirectory.co.uk/malta.html", "https://divebooker.com/malta-daz3923", "https://www.bluewaterdivetravel.com/malta-diving"] },
   },
 };
