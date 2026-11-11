@@ -80,7 +80,7 @@ test("가이드 지역 지명: 가장 구체적인 지명, 괄호·일반어 제
 test("검증된 수치: 지역마다 출처 2개 이상, 문구에 (예시) 없음", async () => {
   const { VERIFIED_WATER } = await import("../src/content/verifiedWater.ts");
   const rows = Object.entries(VERIFIED_WATER);
-  assert.equal(rows.length, 18);
+  assert.equal(rows.length, 27);
   for (const [id, v] of rows) {
     assert.ok(v.verified.sources.length >= 2, id);
     assert.ok(!v.water.includes("예시"), id);

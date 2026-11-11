@@ -7,6 +7,8 @@
 const CHECKED = "2026-11-08";
 /** 2차 확인 — 검토 기록: .planning/content-review/2026-11-11_검토요청_2차.md */
 const CHECKED_2 = "2026-11-11";
+/** 3차 확인 — 검토 기록: .planning/content-review/2026-11-11_검토요청_3차.md */
+const CHECKED_3 = "2026-11-11";
 
 export const VERIFIED_WATER: Record<string, { water: string; verified: { checkedAt: string; sources: string[] } }> = {
   jeju: {
@@ -80,5 +82,41 @@ export const VERIFIED_WATER: Record<string, { water: string; verified: { checked
   komodo: {
     water: "북부 수온 약 27–29°C, 남부는 20°C 안팎까지 낮아짐 · 시야 대략 10–30m",
     verified: { checkedAt: CHECKED_2, sources: ["https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-komodo-indonesia", "https://www.komodoresort.com/komodo-diving/conditions/", "https://www.bluewaterdivetravel.com/komodo-diving"] },
+  },
+  tubbataha: {
+    water: "수온 약 27–30°C · 시야 대략 20–30m 이상 · 3월 중순~6월 중순에만 리브어보드로 들어갈 수 있음",
+    verified: { checkedAt: CHECKED_3, sources: ["https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-tubbataha", "https://www.bluewaterdivetravel.com/exploring-tubbataha-reef", "https://www.dive-the-world.com/posts/tubbataha/diving-best-time-of-year.php"] },
+  },
+  rajaampat: {
+    water: "수온 약 27–30°C · 시야 대략 15–30m (10~4월이 더 맑음, 5~9월은 낮아짐)",
+    verified: { checkedAt: CHECKED_3, sources: ["https://www.bluewaterdivetravel.com/article/raja-ampat-dive-season-explained", "https://www.liveaboard.com/diving/season-calendar/best-time-to-dive-in-raja-ampat-indonesia", "https://diveadventures.com.au/?p=1917"] },
+  },
+  lembeh: {
+    water: "수온 약 25–29°C (7~8월이 낮음) · 시야 대략 5–15m (마크로 포인트 기준)",
+    verified: { checkedAt: CHECKED_3, sources: ["https://blog.padi.com/diving-in-lembeh/", "https://zubludiving.com/destination/indonesia/north-sulawesi/lembeh-strait", "https://www.dive-the-world.com/posts/sulawesi/diving-lembeh-seasonal-macro-guide.php"] },
+  },
+  subic: {
+    water: "수온 약 26–29°C · 시야는 포인트·날씨에 따라 대략 5–20m (만 안쪽 난파선이 낮음)",
+    verified: { checkedAt: CHECKED_3, sources: ["https://www.undercurrent.org/UCnow/dive_reviews/Philippines/BoardwalkDivecenter_SubicBay_report_5904.html", "https://undercurrent.org/UCnow/dive_reviews/Philippines/Vascots_SubicBay_report_5995.html", "https://divezone.net/?p=2127"] },
+  },
+  xiaoliuqiu: {
+    water: "수온 약 22–29°C (겨울이 낮음) · 시야 대략 10–20m (맑은 여름날은 더 좋음)",
+    verified: { checkedAt: CHECKED_3, sources: ["https://www.twosevenths.com/en/outdoors/diving-liuqiu-travel/", "https://taiwanoutdoors.com/diving/dive-sites/xiaoliuqiu", "https://xray-mag.com/content/dive-taiwan-xiaoliuqiu"] },
+  },
+  taiwan_islands: {
+    water: "수온 약 21–29°C (겨울이 낮음) · 시야 대략 15–30m 이상 (란위가 더 맑은 편)",
+    verified: { checkedAt: CHECKED_3, sources: ["https://taiwanoutdoors.com/diving/dive-sites/green-island", "https://bluetrend-main.pages.dev/en/taiwan-diving-spot-island/", "https://scubaboard.com/community/threads/taiwan-orchid-island-trip-report.330218"] },
+  },
+  yonaguni: {
+    water: "수온 약 21–29°C (겨울 귀상어 시즌은 23–24°C 안팎) · 시야는 날마다 차이가 큼",
+    verified: { checkedAt: CHECKED_3, sources: ["https://dive-forecast.vercel.app/blog/yonaguni", "https://www.insidejapantours.com/themes-d/diving/yonaguni/", "https://oktodive.pages.dev/dive-sites/yonaguni"] },
+  },
+  ogasawara: {
+    water: "수온 약 19–28°C (겨울이 낮음) · 시야 대략 20m 이상 (초여름~가을이 안정적)",
+    verified: { checkedAt: CHECKED_3, sources: ["https://saiyu.co.jp/en/itinerary/IJTY13", "https://www.uwphotographyguide.com/ogasawara-islands-dive-trip/", "https://oktodive.pages.dev/dive-sites/ogasawara"] },
+  },
+  izu_mikomoto: {
+    water: "시즌(6~10월) 수온 약 21–28°C · 시야는 쿠로시오 해류에 따라 크게 달라짐 · 조류가 강해 경험 필요",
+    verified: { checkedAt: CHECKED_3, sources: ["https://dive-forecast.vercel.app/blog/mikomoto", "https://en.marinediving.com/area/mikomoto/", "https://www.freedomdive.com/en/dive_location/mikomoto"] },
   },
 };
