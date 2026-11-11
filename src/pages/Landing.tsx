@@ -691,16 +691,14 @@ export default function Landing() {
               </select>
             </div>
             <button type="button" className="ab-s2-go" onClick={goSearch}>{goLabel}</button>
-            {destChips.length > 0 && (
-              <p className="ab-s2-hot">
-                <span>많이 찾는 곳</span>
-                {destChips.map((c) => (
-                  <button key={c.country} type="button" className={q === c.country ? "on" : ""} onClick={() => setQ(q === c.country ? "" : c.country)}>
-                    {c.country} <small>{c.count}</small>
-                  </button>
-                ))}
-              </p>
-            )}
+            <p className="ab-s2-hot">
+              {destChips.length > 0 && <span>많이 찾는 곳</span>}
+              {destChips.map((c) => (
+                <button key={c.country} type="button" className={q === c.country ? "on" : ""} onClick={() => setQ(q === c.country ? "" : c.country)}>
+                  {c.country} <small>{c.count}</small>
+                </button>
+              ))}
+            </p>
           </div>
         </div>
       </header>
@@ -1061,7 +1059,7 @@ const CSS = `
 .ab-s2-go{grid-column:1/-1;border:0;cursor:pointer;background:var(--turq);color:#fff;font:inherit;font-weight:700;font-size:1rem;padding:16px;border-radius:10px;}
 .ab-s2-go:hover{background:#0E7385;}
 .ab-s2-go:focus-visible,.ab-s2-hot button:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
-.ab-s2-hot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin:2px 2px 0;font-size:.8125rem;color:var(--text-2);}
+.ab-s2-hot{grid-column:1/-1;min-height:26px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin:2px 2px 0;font-size:.8125rem;color:var(--text-2);}
 .ab-s2-hot button{background:none;border:0;padding:2px 0;font:inherit;font-weight:600;color:var(--navy);cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;}
 .ab-s2-hot button:hover,.ab-s2-hot button.on{text-decoration-color:currentColor;}
 .ab-s2-hot small{color:var(--text-2);font-weight:500;}
