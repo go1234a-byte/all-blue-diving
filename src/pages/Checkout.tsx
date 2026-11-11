@@ -14,7 +14,7 @@ import { TourOptionsSelector } from "@/components/tour/TourOptionsSelector";
 import { PaymentReceiptBreakdown } from "@/components/checkout/PaymentReceiptBreakdown";
 import { CancellationRefundPolicyCard } from "@/components/checkout/CancellationRefundPolicyCard";
 import { TossPaymentWidget, type TossPaymentWidgetHandle } from "@/components/checkout/TossPaymentWidget";
-import { generateOrderId, PAYMENTS_BLOCKED, savePendingBooking, type PendingBookingPayload } from "@/lib/payment";
+import { createPaymentOrder, PAYMENTS_BLOCKED } from "@/lib/payment";
 import { PolicyDisclosure } from "@/components/policy/PolicyDisclosure";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -50,7 +50,7 @@ const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getTourById, getCouponByCode, addBooking, toursLoading, getConfirmedParticipantCount } =
+  const { getTourById, getCouponByCode, toursLoading, getConfirmedParticipantCount } =
     useAppData();
   const { profile, user, currentDiverId, currentInstructorId, isLoggedIn, authLoading } = useRole();
   // 심사용 데모 계정만 테스트 결제로 예약 흐름을 끝까지 볼 수 있다. DB 트리거도 같은 기준이다.
@@ -242,28 +242,30 @@ const Checkout = () => {
         drinking: p.drinking,
         roomNote: p.roomNote.trim() || undefined,
       }));
-      const pending: PendingBookingPayload = {
+      // 금액은 서버가 계산한다. 주문(orderId)과 서버 금액이 화면 금액과 다르면(가격·쿠폰이 그 사이 바뀜) 결제하지 않는다.
+      const { orderId, amount: serverAmount } = await createPaymentOrder({
         tourId: tour.id,
-        diverId: currentDiverId || undefined,
-        diverName: profile?.name ?? "게스트 다이버",
-        basePrice: invoice.basePrice,
-        optionsCost: invoice.optionsCost,
+        participantCount,
         selectedOptions: invoice.selectedOptions,
-        platformFee: invoice.platformFee,
-        totalPaid: invoice.totalDue,
-        onSiteBalance: invoice.onSiteBalance,
         couponCode: invoice.couponCode,
-        discountAmount: invoice.discountAmount,
+        diverName: profile?.name ?? "게스트 다이버",
         gender: self.gender,
         snoring: self.snoring,
         smoking: self.smoking,
         drinking: self.drinking,
         roomNote: self.roomNote.trim() || undefined,
-        participantCount,
         companions: participantCount > 1 ? companions : undefined,
-      };
-      const orderId = generateOrderId();
-      savePendingBooking(orderId, pending);
+        companionNames: participantCount > 1 ? companions.map((c) => c.name).join(", ") : undefined,
+      });
+      if (serverAmount !== invoice.totalDue) {
+        toast({
+          title: "결제 금액이 바뀌었어요",
+          description: "가격이나 쿠폰이 변경됐어요. 화면을 새로고침한 뒤 금액을 확인하고 다시 시도해 주세요.",
+          variant: "destructive",
+        });
+        setProcessing(false);
+        return;
+      }
       await tossRef.current.requestPayment({
         orderId,
         orderName:

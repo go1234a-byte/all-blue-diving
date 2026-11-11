@@ -851,6 +851,8 @@ interface AppDataContextValue {
     },
   ) => Promise<void>;
   addBooking: (input: NewBookingInput) => Promise<Booking>;
+  /** 결제 승인 뒤 서버(verify-payment)가 만든 예약을 불러와 화면 상태에 반영하고 정산·강사 알림을 처리한다. */
+  registerPaidBooking: (bookingId: string) => Promise<Booking>;
   submitInstructorApplication: (input: NewInstructorSignupInput) => Promise<InstructorProfile>;
   addDiverSignup: (input: NewDiverSignupInput) => Profile;
   registerDiverProfile: (profile: Profile) => void;
@@ -2503,6 +2505,40 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       );
     }
 
+    return booking;
+  };
+
+  const registerPaidBooking = async (bookingId: string): Promise<Booking> => {
+    const { data, error } = await supabase.from("bookings").select("*").eq("id", bookingId).single();
+    if (error || !data) throw new Error("결제는 완료됐지만 예약 정보를 불러오지 못했어요. 내 예약에서 확인해 주세요.");
+    const booking = mapBookingRow(data);
+    setBookings((prev) => (prev.some((b) => b.id === booking.id) ? prev : [booking, ...prev]));
+    void fetchTourConfirmedCounts();
+
+    // 정산(payout/invoice) — 서버(verify-payment)가 이미 시도했다면 RPC가 "이미 있음"으로 바로 끝난다(멱등).
+    const { error: settlementError } = await supabase.rpc("create_booking_settlement", { p_booking_id: booking.id });
+    if (settlementError) console.error("[registerPaidBooking] 정산 생성 RPC 실패 (관리자 정산 재시도 가능):", settlementError);
+
+    const tour = tours.find((t) => t.id === booking.tourId);
+    if (tour) {
+      void persistInstructorNotification({
+        instructorId: tour.instructorId,
+        tourId: tour.id,
+        bookingId: booking.id,
+        tourTitle: tour.title,
+        diverName: maskName(booking.diverName),
+        selectedOptionNames: booking.selectedOptions.map((o) => o.name),
+        settlementAmount: booking.basePrice + booking.optionsCost,
+        createdAt: new Date().toISOString(),
+        type: "new_booking",
+      });
+      notifyInstructorPush(
+        tour.instructorId,
+        "신규 투어 예약 완료",
+        `${maskName(booking.diverName)} 다이버가 ${tour.title} 투어를 예약했습니다.`,
+        "/instructor",
+      );
+    }
     return booking;
   };
 
@@ -4277,6 +4313,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateBookingTravelInfo,
       updateDiverProfile,
       addBooking,
+      registerPaidBooking,
       submitInstructorApplication,
       addDiverSignup,
       registerDiverProfile,

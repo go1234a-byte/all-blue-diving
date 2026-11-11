@@ -7,12 +7,7 @@ import { CalendarSyncButtons } from "@/components/checkout/CalendarSyncButtons";
 import { PaymentReceiptBreakdown } from "@/components/checkout/PaymentReceiptBreakdown";
 import { useAppData } from "@/contexts/AppDataContext";
 import { buildTourCalendarEvent } from "@/lib/calendar";
-import {
-  clearPendingBooking,
-  loadPendingBooking,
-  mapTossMethodToPaymentMethod,
-  verifyTossPayment,
-} from "@/lib/payment";
+import { verifyTossPayment } from "@/lib/payment";
 import type { Booking, Invoice } from "@/types";
 
 type Status = "verifying" | "success" | "skeleton" | "error";
@@ -20,7 +15,7 @@ type Status = "verifying" | "success" | "skeleton" | "error";
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { getTourById, getInstructorById, addBooking, bookings } = useAppData();
+  const { getTourById, getInstructorById, registerPaidBooking } = useAppData();
 
   const [status, setStatus] = useState<Status>("verifying");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -29,75 +24,43 @@ const PaymentSuccess = () => {
 
   const paymentKey = searchParams.get("paymentKey");
   const orderId = searchParams.get("orderId");
-  const amount = searchParams.get("amount");
-  // 테스트 모드(Checkout.tsx의 임시 결제 우회)로 들어온 경우: 서버 검증 없이 이미 생성된 예약을 그대로 보여준다.
-  // TODO: 실제 토스페이먼츠 연동 복구 시 이 mock 분기를 제거할 것.
-  const mockBookingId = searchParams.get("mock") === "1" ? searchParams.get("bookingId") : null;
-
   useEffect(() => {
     // React StrictMode/재렌더링으로 중복 실행되어 결제 승인이 두 번 요청되는 것을 방지한다.
     if (ranRef.current) return;
     ranRef.current = true;
 
-    if (mockBookingId) {
-      const existing = bookings.find((b) => b.id === mockBookingId);
-      if (existing) {
-        setBooking(existing);
-        setStatus("success");
-      } else {
-        setStatus("error");
-        setErrorMessage("예약 정보를 찾을 수 없습니다.");
-      }
-      return;
-    }
-
     (async () => {
-      if (!paymentKey || !orderId || !amount) {
+      if (!paymentKey || !orderId) {
         setStatus("error");
         setErrorMessage("잘못된 접근입니다. 결제 정보가 없습니다.");
         return;
       }
 
-      const pending = loadPendingBooking(orderId);
-      if (!pending) {
-        setStatus("error");
-        setErrorMessage("예약 정보를 찾을 수 없습니다. 브라우저를 변경했거나 정보가 만료되었을 수 있어요.");
-        return;
-      }
-
-      const result = await verifyTossPayment({ paymentKey, orderId, amount: Number(amount) });
+      // 승인과 예약 생성은 서버가 한다. 금액은 보내지 않는다(서버가 주문에 저장한 금액으로 승인).
+      const result = await verifyTossPayment({ paymentKey, orderId });
 
       if (result.skeleton) {
         setStatus("skeleton");
         return;
       }
 
-      if (!result.verified) {
+      if (!result.verified || !result.bookingId) {
         setStatus("error");
         setErrorMessage(result.message ?? result.error ?? "결제 승인 검증에 실패했습니다.");
         return;
       }
 
       try {
-        const paymentMethod = mapTossMethodToPaymentMethod(result.method, result.easyPayProvider);
-        const created = await addBooking({ ...pending, paymentMethod });
-
-        // 쿠폰 사용횟수 증가는 이제 addBooking이 거치는 서버 측 가격검증 트리거
-        // (validate_booking_price, 마이그레이션 20260813180000) 안에서 예약 INSERT와 같은
-        // 트랜잭션으로 원자적으로 처리된다 — 여기서 별도로 redeemCoupon을 또 호출하면 이중 차감된다.
-
-        clearPendingBooking(orderId);
-        setBooking(created);
+        setBooking(await registerPaidBooking(result.bookingId));
         setStatus("success");
       } catch (err) {
         setStatus("error");
-        setErrorMessage(err instanceof Error ? err.message : "예약 생성 중 오류가 발생했습니다.");
+        setErrorMessage(err instanceof Error ? err.message : "예약 정보를 불러오지 못했습니다.");
       }
     })();
-    // ranRef 가드로 마운트당 한 번만 실행되는 효과라 addBooking/bookings/redeemCoupon 등은
-    // 의존성에 넣지 않는다(넣으면 오히려 각 값이 바뀔 때마다 재실행 트리거로 오인될 수 있음).
+    // ranRef 가드로 마운트당 한 번만 실행되는 효과라 의존성은 넣지 않는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentKey, orderId, amount]);
+  }, [paymentKey, orderId]);
 
   if (status === "verifying") {
     return (

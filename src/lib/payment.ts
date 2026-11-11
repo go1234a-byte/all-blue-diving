@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { NewBookingInput } from "@/contexts/AppDataContext";
 import type { PaymentMethod } from "@/types";
 
 /**
@@ -19,37 +18,42 @@ export const TOSS_CLIENT_KEY =
 /** 운영에서 테스트 키면 돈이 오가지 않으므로 결제를 받지 않는다. 라이브 키를 등록하면 자동으로 풀린다. */
 export const PAYMENTS_BLOCKED = import.meta.env.PROD && TOSS_CLIENT_KEY.startsWith("test_");
 
-/** 예약 하나당 고유 주문번호. 토스페이먼츠 규격: 영문/숫자/-_= 로 구성된 6~64자. */
-export function generateOrderId(): string {
-  const random = crypto.randomUUID().replace(/-/g, "");
-  return `allblue-${Date.now()}-${random}`.slice(0, 64);
+/** 결제 전에 서버가 주문을 만들고 금액을 계산한다. 결제창에는 이 금액(과 orderId)만 쓴다. */
+export interface CreateOrderInput {
+  tourId: string;
+  participantCount: number;
+  selectedOptions: { name: string; price: number }[];
+  couponCode?: string;
+  diverName: string;
+  gender: string;
+  snoring: boolean;
+  smoking: boolean;
+  drinking: boolean;
+  roomNote?: string;
+  companions?: unknown[];
+  companionNames?: string;
 }
 
-/**
- * 결제 승인(리다이렉트) 이전에는 예약(Booking)을 만들 수 없으므로,
- * 결제창으로 이동하기 직전 예약에 필요한 정보를 orderId 기준으로 로컬에 임시 저장해둔다.
- * 결제 성공 리다이렉트(/payment/success)에서 이 값을 읽어 서버 검증 후 addBooking()을 호출한다.
- */
-export type PendingBookingPayload = Omit<NewBookingInput, "paymentMethod">;
-
-const PENDING_BOOKING_KEY_PREFIX = "allblue-pending-booking-";
-
-export function savePendingBooking(orderId: string, payload: PendingBookingPayload): void {
-  window.localStorage.setItem(`${PENDING_BOOKING_KEY_PREFIX}${orderId}`, JSON.stringify(payload));
-}
-
-export function loadPendingBooking(orderId: string): PendingBookingPayload | null {
-  const raw = window.localStorage.getItem(`${PENDING_BOOKING_KEY_PREFIX}${orderId}`);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as PendingBookingPayload;
-  } catch {
-    return null;
-  }
-}
-
-export function clearPendingBooking(orderId: string): void {
-  window.localStorage.removeItem(`${PENDING_BOOKING_KEY_PREFIX}${orderId}`);
+export async function createPaymentOrder(input: CreateOrderInput): Promise<{ orderId: string; amount: number }> {
+  const { data, error } = await supabase.rpc("create_payment_order" as never, {
+    p_tour_id: input.tourId,
+    p_participant_count: input.participantCount,
+    p_selected_options: input.selectedOptions,
+    p_coupon_code: input.couponCode ?? null,
+    p_diver_name: input.diverName,
+    p_gender: input.gender,
+    p_snoring: input.snoring,
+    p_smoking: input.smoking,
+    p_drinking: input.drinking,
+    p_room_note: input.roomNote ?? null,
+    p_companions: input.companions ?? [],
+    p_companion_names: input.companionNames ?? null,
+  } as never);
+  if (error) throw new Error(error.message);
+  const raw = data as unknown;
+  const row = (Array.isArray(raw) ? raw[0] : raw) as { order_id: string; amount: number | string } | null | undefined;
+  if (!row) throw new Error("주문을 만들지 못했습니다.");
+  return { orderId: row.order_id, amount: Number(row.amount) };
 }
 
 export interface VerifyPaymentResult {
@@ -57,15 +61,16 @@ export interface VerifyPaymentResult {
   skeleton?: boolean;
   message?: string;
   error?: string;
+  bookingId?: string;
   method?: string;
   easyPayProvider?: string;
+  refunded?: boolean;
 }
 
-/** 서버(Edge Function)에 결제 승인 검증을 요청한다. 클라이언트는 이 결과를 신뢰하지 않고 반드시 서버 검증을 거친다. */
+/** 서버(Edge Function)에 결제 승인과 예약 생성을 요청한다. 금액은 보내지 않는다(서버가 주문에 저장한 금액을 쓴다). */
 export async function verifyTossPayment(params: {
   paymentKey: string;
   orderId: string;
-  amount: number;
 }): Promise<VerifyPaymentResult> {
   const { data, error } = await supabase.functions.invoke("verify-payment", { body: params });
   if (error) {

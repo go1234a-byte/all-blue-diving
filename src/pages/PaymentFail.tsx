@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { clearPendingBooking, loadPendingBooking } from "@/lib/payment";
+import { supabase } from "@/integrations/supabase/client";
 
 const FRIENDLY_MESSAGES: Record<string, string> = {
   USER_CANCEL: "결제를 취소하셨습니다.",
@@ -23,11 +23,16 @@ const PaymentFail = () => {
 
   useEffect(() => {
     if (!orderId) return;
-    const pending = loadPendingBooking(orderId);
-    if (pending) {
-      setRetryTourId(pending.tourId);
-      clearPendingBooking(orderId);
-    }
+    // 주문은 서버에 저장돼 있다 — 어느 투어였는지만 읽어 "다시 결제" 버튼에 쓴다.
+    void supabase
+      .from("payment_orders" as never)
+      .select("tour_id")
+      .eq("order_id", orderId)
+      .maybeSingle()
+      .then(({ data }) => {
+        const row = data as { tour_id?: string } | null;
+        if (row?.tour_id) setRetryTourId(row.tour_id);
+      });
   }, [orderId]);
 
   const friendlyMessage = (code && FRIENDLY_MESSAGES[code]) ?? message ?? "결제가 완료되지 않았습니다.";
