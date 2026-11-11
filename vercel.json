@@ -1,17 +1,30 @@
 {
+  "buildCommand": "npm run build",
   "rewrites": [
     { "source": "/search", "destination": "/api/page?p=search" },
     { "source": "/guide", "destination": "/api/page?p=guide" },
     { "source": "/tour/:id", "destination": "/api/og/tour/:id" },
     { "source": "/instructor/:id/profile", "destination": "/api/og/instructor/:id" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/dive", "destination": "/dive/index.html" },
+    { "source": "/dive/:id", "destination": "/dive/:id/index.html" },
     { "source": "/((?!api/).*)", "destination": "/spa.html" }
   ],
   "headers": [
     {
       "source": "/(.*)",
-      "has": [{ "type": "host", "value": "(?<sub>.*)\\.vercel\\.app" }],
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+      "has": [
+        {
+          "type": "host",
+          "value": "(?<sub>.*)\\.vercel\\.app"
+        }
+      ],
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
     }
   ],
   "functions": {
@@ -23,6 +36,9 @@
     },
     "api/og/instructor/[id].js": {
       "includeFiles": "dist/{index,spa}.html"
+    },
+    "api/sitemap.js": {
+      "includeFiles": "dist/dive/manifest.json"
     }
   }
 }

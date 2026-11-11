@@ -45,7 +45,7 @@ export function divePointStaticHtml(point: DivePoint): string {
 
   const facts = [
     season ? ["추천 시기", season] : null,
-    ["수온 · 시야", stripExample(point.water)],
+    point.verified ? ["수온 · 시야", stripExample(point.water)] : null,
     ["추천 레벨", stripExample(point.level)],
     point.access ? ["가는 길", stripExample(point.access)] : null,
   ]

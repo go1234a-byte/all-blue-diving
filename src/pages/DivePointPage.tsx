@@ -83,7 +83,7 @@ export default function DivePointPage() {
       <main className="dv-wrap">
         <dl className="dv-facts">
           {season && <div><dt>추천 시기</dt><dd>{season}</dd></div>}
-          <div><dt>수온 · 시야</dt><dd>{stripExample(point.water)}</dd></div>
+          {point.verified && <div><dt>수온 · 시야</dt><dd>{stripExample(point.water)}</dd></div>}
           <div><dt>추천 레벨</dt><dd>{stripExample(point.level)}</dd></div>
           {point.access && <div><dt>가는 길</dt><dd>{stripExample(point.access)}</dd></div>}
         </dl>
