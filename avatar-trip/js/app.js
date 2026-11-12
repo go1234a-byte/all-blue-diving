@@ -26,7 +26,7 @@
   let sim = { minute: 0, speed: 600, paused: false, realtime: false, lastTs: Date.now(), started: false };
   let tab = 'plan';
   let activeDay = 0;
-  let planMap = null, liveMap = null;
+  let planMap = null, liveMap = null, mapsReady = false;
   let editing = null; // { day, id } 또는 { hotel: true }
   let pickMode = false;
   let mapDay = -1;
@@ -66,6 +66,7 @@
   function rebuild() {
     segs = build(trip);
     diaryCache = {};
+    prefetchRoutes();
     saveTrip();
   }
 
@@ -277,21 +278,51 @@
   }
 
   function dayPlaces(d) {
-    const start = d === 0 ? (trip.airport || trip.hotel) : trip.hotel;
     const stops = trip.days[d] || [];
     const places = [{ ...trip.hotel, type: 'hotel', label: '숙' }];
-    if (d === 0 && trip.airport) places.push({ ...trip.airport, type: 'airport', label: '✈' });
-    if (d === trip.nights && trip.airport) places.push({ ...trip.airport, type: 'airport', label: '✈' });
+    if (trip.airport && (d === 0 || d === trip.nights)) places.push({ ...trip.airport, type: 'airport', label: '✈' });
     stops.forEach((s, i) => places.push({ ...s, label: String(i + 1) }));
-    const route = [start, ...stops, d === trip.nights && trip.airport ? trip.airport : trip.hotel].map(p => ({ lat: p.lat, lng: p.lng }));
-    return { places, route };
+    return places;
+  }
+
+  function dayLines(d, withFlight) {
+    return segs.filter(s => s.day === d && (s.type === 'move' || (withFlight && (s.type === 'flight' || s.type === 'flightHome')))).map(s => {
+      const mode = s.type === 'move' ? s.mode : 'flight';
+      return { mode, coords: window.Routes.cached(s.from, s.to, mode) || [[s.from.lng, s.from.lat], [s.to.lng, s.to.lat]] };
+    });
+  }
+
+  let routeTimer = null;
+  let prefetchRun = 0;
+  function prefetchRoutes() {
+    const run = ++prefetchRun;
+    const walks = segs.filter(s => s.type === 'move' && s.mode === 'walk' && !window.Routes.cached(s.from, s.to, 'walk'));
+    let i = 0;
+    const next = () => {
+      if (run !== prefetchRun || i >= walks.length) return;
+      const s = walks[i++];
+      window.Routes.get(s.from, s.to, 'walk').then(() => {
+        clearTimeout(routeTimer);
+        routeTimer = setTimeout(refreshRoutes, 300);
+        setTimeout(next, 250);
+      });
+    };
+    next();
+  }
+
+  function refreshRoutes() {
+    if (!mapsReady) return;
+    planMap.map.setRoutes(dayLines(activeDay, false));
+    if (mapDay >= 0) liveMap.map.setRoutes(dayLines(mapDay, true));
   }
 
   function updatePlanMap() {
-    if (!planMap) return;
-    const { places, route } = dayPlaces(activeDay);
-    planMap.map.setPlaces(places, route);
-    planMap.map.fit();
+    if (!planMap || !mapsReady) return;
+    const places = dayPlaces(activeDay);
+    planMap.map.setPlaces(places);
+    planMap.map.setRoutes(dayLines(activeDay, false));
+    const near = places.filter(p => p.type !== 'airport');
+    planMap.map.fit(near.length ? near : places);
   }
 
   /* ---------------- 장소 추가/수정 ---------------- */
@@ -466,23 +497,30 @@
   /* ---------------- 대신 여행 화면 ---------------- */
   const canvas = $('#scene');
   const ctx = canvas.getContext('2d');
-  let cw = 0, ch = 0;
+  const wxCanvas = $('#wxOverlay');
+  const wxCtx = wxCanvas.getContext('2d');
+  let cw = 0, ch = 0, ow = 0, oh = 0;
 
   function sizeCanvas() {
-    const r = canvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const r = canvas.getBoundingClientRect();
     cw = r.width; ch = r.height;
     canvas.width = Math.round(cw * dpr);
     canvas.height = Math.round(ch * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const r2 = wxCanvas.getBoundingClientRect();
+    ow = r2.width; oh = r2.height;
+    wxCanvas.width = Math.round(ow);
+    wxCanvas.height = Math.round(oh);
   }
 
   function firstMinute() { return segs[1] ? segs[1].start : 0; }
   function lastMinute() { const d = segs.find(s => s.type === 'done'); return d ? d.start + 30 : 1e9; }
 
   function startTrip() {
-    sim = { minute: firstMinute(), speed: 600, paused: false, realtime: false, lastTs: Date.now(), started: true };
+    sim = { minute: firstMinute(), speed: 60, paused: false, realtime: false, lastTs: Date.now(), started: true };
     saveSim();
+    setFollow(true);
     switchTab('live');
     toast(`${trip.avatarName || '아바타'} 출발! 인천공항에서 비행기 타는 중`);
   }
@@ -511,8 +549,220 @@
     };
   }
 
+  /* 아바타 위치: 이동 중이면 실제 길 위, 줄 설 때는 가게 앞 줄 끝 */
+  const QUEUE_GAP = 3.2; // m
+  function prevPointOf(seg) {
+    for (let i = seg.idx - 1; i >= 0; i--) if (segs[i].from) return segs[i].from;
+    return null;
+  }
+  function queueDir(seg) {
+    const prev = prevPointOf(seg);
+    return prev ? window.Routes.bearing(seg.place, prev) : 200;
+  }
+  function queueAhead(seg, minute) {
+    const n = Math.max(1, Math.round(seg.place.wait / 4));
+    return Math.max(0, Math.ceil(n * (1 - progress(seg, minute))) - 1);
+  }
+  function avatarPos(seg, minute) {
+    const p = progress(seg, minute);
+    if (seg.from && seg.to) {
+      const mode = seg.type === 'move' ? seg.mode : 'flight';
+      const coords = window.Routes.cached(seg.from, seg.to, mode) || [[seg.from.lng, seg.from.lat], [seg.to.lng, seg.to.lat]];
+      return window.Routes.along(coords, p);
+    }
+    const pl = seg.place;
+    if (!pl) return null;
+    if (seg.type === 'queue') {
+      const dir = queueDir(seg);
+      const o = window.Routes.offset(pl, dir, QUEUE_GAP * (queueAhead(seg, minute) + 1));
+      return { ...o, bearing: (dir + 180) % 360 };
+    }
+    if (seg.type === 'wander') {
+      const ang = (minute * 4) % 360;
+      const o = window.Routes.offset(pl, ang, 45);
+      return { ...o, bearing: (ang + 90) % 360 };
+    }
+    // 핀을 가리지 않게 장소 바로 옆(약 9m)에 서 있기
+    return { ...window.Routes.offset(pl, 120, 9), bearing: null };
+  }
+
+  /* 아바타 마커 */
+  let avatar = null;
+  let crowd = { key: '', items: [] };
+  let follow = true, camKind = '', camUntil = 0, camBearing = 0, lastSky = 0;
+
+  function makeAvatar() {
+    const el = document.createElement('div');
+    el.className = 'avatar-mk';
+    el.style.zIndex = '10';
+    el.innerHTML = '<div class="avatar-bubble"></div><canvas width="192" height="300"></canvas><span class="avatar-shadow"></span>';
+    const cv = el.querySelector('canvas');
+    return { el, cv, c: cv.getContext('2d'), bubble: el.querySelector('.avatar-bubble'), marker: null };
+  }
+
+  function drawSprite(seg, st, screenHeading) {
+    const c = avatar.c;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, 192, 300);
+    c.setTransform(3, 0, 0, 3, 0, 0);
+    const kind = st.kind;
+    const base = { color: st.color, t: st.t, scarf: (st.wx?.temp ?? 15) <= 7 };
+    const cat = W.describe(st.wx?.code ?? 0).cat;
+    const wet = ['rain', 'drizzle', 'storm', 'snow'].includes(cat);
+    const umb = wet ? (cat === 'snow' ? '#e0533d' : '#2d6cdf') : false;
+    if (kind === 'flight' || kind === 'flightHome') {
+      c.save();
+      c.translate(32, 62);
+      c.rotate((screenHeading * Math.PI) / 180);
+      c.fillStyle = '#ffffff';
+      c.strokeStyle = '#2b3a55';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(0, -24); c.quadraticCurveTo(4, -18, 4, -6); c.lineTo(22, 4); c.lineTo(22, 9); c.lineTo(4, 4); c.lineTo(3, 16); c.lineTo(9, 21); c.lineTo(9, 24); c.lineTo(0, 21);
+      c.lineTo(-9, 24); c.lineTo(-9, 21); c.lineTo(-3, 16); c.lineTo(-4, 4); c.lineTo(-22, 9); c.lineTo(-22, 4); c.lineTo(-4, -6); c.quadraticCurveTo(-4, -18, 0, -24);
+      c.fill(); c.stroke();
+      c.fillStyle = st.color;
+      c.fillRect(-2, -6, 4, 18);
+      c.restore();
+      return;
+    }
+    if (kind === 'train') {
+      c.fillStyle = '#e9edf2';
+      c.strokeStyle = '#2b3a55'; c.lineWidth = 1.5;
+      c.beginPath(); c.roundRect(4, 46, 56, 34, 8); c.fill(); c.stroke();
+      c.fillStyle = st.color; c.fillRect(4, 70, 56, 5);
+      c.fillStyle = '#9ec5ea';
+      for (let i = 0; i < 3; i++) { c.beginPath(); c.roundRect(8 + i * 17, 52, 14, 13, 3); c.fill(); }
+      c.save();
+      c.beginPath(); c.rect(25, 52, 14, 13); c.clip();
+      window.Scene.drawAvatar(c, 32, 92, 0.38, { ...base, pose: 'stand' });
+      c.restore();
+      c.fillStyle = '#2b3a55';
+      c.beginPath(); c.arc(16, 82, 3, 0, Math.PI * 2); c.arc(48, 82, 3, 0, Math.PI * 2); c.fill();
+      return;
+    }
+    const flip = Math.sin((screenHeading * Math.PI) / 180) < -0.2;
+    c.save();
+    if (flip) { c.translate(64, 0); c.scale(-1, 1); }
+    const o = { ...base, pose: 'stand' };
+    if (kind === 'walk' || kind === 'wander' || kind === 'shop') {
+      o.pose = 'walk';
+      o.phase = st.t / (kind === 'walk' ? 140 : 260);
+      o.umbrella = umb;
+      if (kind === 'shop') o.bags = 1 + Math.floor(st.p * 3);
+    } else if (kind === 'queue') {
+      o.umbrella = umb;
+    } else if (kind === 'food') {
+      o.pose = 'eat'; o.phase = st.t / 380;
+    } else if (kind === 'sight') {
+      if (st.t % 4000 > 2200) o.pose = 'camera';
+      else o.umbrella = umb;
+    } else if (kind === 'arrive' || kind === 'depart' || kind === 'before') {
+      o.suitcase = true;
+    } else if (kind === 'sleep' || kind === 'done') {
+      o.sleep = true;
+    }
+    window.Scene.drawAvatar(c, 30, 96, 0.6, o);
+    c.restore();
+    if (kind === 'sleep' || kind === 'done') {
+      c.fillStyle = '#ffffff';
+      c.strokeStyle = '#2b3a55'; c.lineWidth = 0.8;
+      c.font = '700 11px sans-serif';
+      const k = (st.t / 1500) % 1;
+      c.globalAlpha = 1 - k;
+      c.strokeText('Z', 44 + k * 8, 40 - k * 16); c.fillText('Z', 44 + k * 8, 40 - k * 16);
+      c.globalAlpha = 1;
+    }
+  }
+
+  function personEl(seed) {
+    const el = document.createElement('div');
+    el.className = 'person-mk';
+    const cv = document.createElement('canvas');
+    cv.width = 120; cv.height = 210;
+    const c = cv.getContext('2d');
+    c.scale(3, 3);
+    const colors = ['#6b7a99', '#b4675a', '#4f8a72', '#c79a3f', '#7f5fa8', '#3e4a5c', '#9b6b52', '#5a7fa8'];
+    window.Scene.drawPerson(c, 20, 68, 0.5, colors[seed % colors.length], 100 + seed, 0);
+    el.appendChild(cv);
+    return el;
+  }
+
+  function updateCrowd(seg, minute) {
+    const want = seg.type === 'queue' ? Math.min(10, queueAhead(seg, minute)) : 0;
+    const key = seg.type === 'queue' ? `${seg.idx}:${want}` : '';
+    if (crowd.key === key) return;
+    crowd.items.forEach(i => i.remove());
+    crowd = { key, items: [] };
+    if (!want || !liveMap) return;
+    const dir = queueDir(seg);
+    for (let i = 0; i < want; i++) {
+      const pos = window.Routes.offset(seg.place, dir, QUEUE_GAP * (i + 1));
+      crowd.items.push(liveMap.map.addMarker(personEl(i), pos));
+    }
+  }
+
+  function cameraFor(kind) {
+    switch (kind) {
+      case 'walk': return { zoom: 18.2, pitch: 62, orbit: 0 };
+      case 'wander': return { zoom: 17.6, pitch: 60, orbit: 0 };
+      case 'shop': return { zoom: 18, pitch: 62, orbit: 3 };
+      case 'queue': return { zoom: 19, pitch: 66, orbit: 2.5 };
+      case 'food': case 'cafe': case 'sight': return { zoom: 18.4, pitch: 64, orbit: 4 };
+      case 'train': return { zoom: 14.8, pitch: 50, orbit: 0 };
+      case 'flight': case 'flightHome': return { zoom: 5.4, pitch: 20, orbit: 0 };
+      case 'arrive': case 'depart': return { zoom: 16, pitch: 55, orbit: 3 };
+      default: return { zoom: 16.8, pitch: 55, orbit: 1.5 };
+    }
+  }
+
+  function updateMap(seg, minute, now, dt, st) {
+    if (!liveMap || !mapsReady) return;
+    const day = Math.max(0, Math.min(trip.nights, Math.floor(minute / 1440)));
+    if (day !== mapDay) {
+      mapDay = day;
+      liveMap.map.setPlaces(dayPlaces(day));
+      liveMap.map.setRoutes(dayLines(day, true));
+    }
+    const pos = avatarPos(seg, minute);
+    if (!pos) return;
+    if (!avatar) {
+      avatar = makeAvatar();
+      avatar.marker = liveMap.map.addMarker(avatar.el, pos);
+    }
+    avatar.marker.set(pos);
+    const mapBearing = liveMap.map.getBearing();
+    const heading = pos.bearing != null ? pos.bearing - mapBearing : 90;
+    drawSprite(seg, st, heading);
+    updateCrowd(seg, minute);
+
+    if (!follow) return;
+    const kind = st.kind;
+    const cam = cameraFor(kind);
+    if (kind !== camKind) {
+      camKind = kind;
+      camBearing = pos.bearing != null && cam.orbit === 0 ? pos.bearing : mapBearing;
+      liveMap.map.camera({ center: pos, zoom: cam.zoom, pitch: cam.pitch, bearing: camBearing }, 1400);
+      camUntil = now + 1500;
+      return;
+    }
+    if (now < camUntil) return;
+    if (cam.orbit) camBearing = (camBearing + cam.orbit * dt) % 360;
+    else if (pos.bearing != null) {
+      const diff = ((pos.bearing - camBearing + 540) % 360) - 180;
+      camBearing = (camBearing + diff * Math.min(1, dt * 1.5) + 360) % 360;
+    }
+    liveMap.map.camera({ center: pos, bearing: camBearing });
+  }
+
+  function setFollow(on) {
+    follow = on;
+    $('#followBtn').hidden = on;
+    if (on) camKind = '';
+  }
+
   let lastDom = 0;
-  function renderLiveDom(seg) {
+  function renderLiveDom(seg, now) {
     const m = sim.minute;
     const day = Math.floor(m / 1440);
     const inTrip = day >= 0 && day <= trip.nights;
@@ -553,16 +803,20 @@
     renderDayBar(day, m);
     renderToday(day, seg);
 
-    // 지도
-    if (liveMap) {
-      const d = Math.max(0, Math.min(trip.nights, day));
-      if (d !== mapDay) {
-        mapDay = d;
-        const { places, route } = dayPlaces(d);
-        liveMap.map.setPlaces(places, route);
-        liveMap.map.fit();
-      }
-      if (pos && Math.abs(pos.lat - trip.lat) < 3 && Math.abs(pos.lng - trip.lng) < 3) liveMap.map.setAvatar(pos, trip.avatarColor);
+    // 말풍선
+    if (avatar) {
+      let txt = st.title;
+      if (seg.type === 'queue') txt = st.line.startsWith('앞에') ? `줄 서는 중 · ${st.line.split(' · ')[0]}` : '곧 들어가요!';
+      else if (seg.type === 'activity') txt = { food: '🍜 냠냠 먹는 중', cafe: '☕ 커피 한 잔', sight: '📷 구경 중', shop: '🛍️ 쇼핑 중' }[seg.kind] || st.title;
+      else if (seg.type === 'move') txt = seg.mode === 'walk' ? `🚶 ${placeName(seg)}까지 ${Math.max(0, Math.ceil(seg.end - m))}분` : `🚃 ${placeName(seg)}행`;
+      else if (seg.type === 'sleep') txt = '💤 숙소에서 쉬는 중';
+      else if (seg.type === 'wander') txt = '👀 동네 구경 중';
+      avatar.bubble.textContent = txt;
+    }
+    if (mapsReady && now - lastSky > 5000) {
+      lastSky = now;
+      const [top, hor] = window.Scene.sky(sceneState(seg, m, 0));
+      liveMap.map.setSky(top, hor);
     }
   }
 
@@ -610,10 +864,13 @@
     if (tab === 'live') {
       stepSim(dt);
       const seg = find(segs, sim.minute);
-      if (cw > 0) window.Scene.render(ctx, cw, ch, sceneState(seg, sim.minute, now));
+      const st = sceneState(seg, sim.minute, now);
+      if (cw > 0 && !$('#insetBox').hidden) window.Scene.render(ctx, cw, ch, st);
+      if (ow > 0) window.Scene.overlay(wxCtx, ow, oh, st);
+      updateMap(seg, sim.minute, now, dt, st);
       if (now - lastDom > 250) {
         lastDom = now;
-        renderLiveDom(seg);
+        renderLiveDom(seg, now);
       }
     }
     requestAnimationFrame(loop);
@@ -666,7 +923,7 @@
         sim.minute = firstMinute();
         sim.started = true;
       }
-      requestAnimationFrame(() => { sizeCanvas(); liveMap?.map.resize(); mapDay = -1; $('#todayList').dataset.key = ''; });
+      requestAnimationFrame(() => { sizeCanvas(); liveMap?.map.resize(); mapDay = -1; camKind = ''; $('#todayList').dataset.key = ''; });
     }
     if (next === 'plan') requestAnimationFrame(() => { planMap?.map.resize(); updatePlanMap(); });
     if (next === 'diary') renderDiary();
@@ -817,6 +1074,19 @@
     });
 
     window.addEventListener('resize', () => { if (tab === 'live') sizeCanvas(); });
+    $('#followBtn').addEventListener('click', () => setFollow(true));
+    $('#satBtn').addEventListener('click', () => {
+      const on = $('#satBtn').getAttribute('aria-pressed') !== 'true';
+      $('#satBtn').setAttribute('aria-pressed', String(on));
+      $('#satBtn').textContent = on ? '일반 지도' : '위성 사진';
+      liveMap?.map.setSatellite(on);
+    });
+    $('#insetBtn').addEventListener('click', () => {
+      const box = $('#insetBox');
+      box.hidden = !box.hidden;
+      $('#insetBtn').setAttribute('aria-pressed', String(!box.hidden));
+      if (!box.hidden) requestAnimationFrame(sizeCanvas);
+    });
   }
 
   /* ---------------- 시작 ---------------- */
@@ -845,16 +1115,20 @@
     if (awayMin > 5) toast(`자리를 비운 사이 아바타가 ${awayMin >= 60 ? Math.round(awayMin / 60) + '시간' : Math.round(awayMin) + '분'} 동안 여행했어요`);
     requestAnimationFrame(loop);
 
+    W.load(trip).then(w => { wx = w; renderPlan(); });
     const key = store.get(LS.key);
-    planMap = await window.TripMap.create($('#planMap'), key);
+    const center = { lat: trip.hotel?.lat ?? trip.lat, lng: trip.hotel?.lng ?? trip.lng };
+    planMap = await window.TripMap.create($('#planMap'), { googleKey: key, center, zoom: 13 });
     planMap.map.onClick(onPlanMapClick);
-    liveMap = await window.TripMap.create($('#liveMap'), key);
-    $('#mapProvider').textContent = planMap.provider === 'google' ? 'Google 지도' : planMap.provider === 'osm' ? 'OpenStreetMap · 설정에서 Google 지도 키를 넣으면 구글 지도로 바뀌어요' : '';
+    liveMap = await window.TripMap.create($('#liveMap'), { googleKey: key, center, zoom: 16, pitch: 60 });
+    liveMap.map.onUserMove(() => setFollow(false));
+    $('#mapProvider').textContent = planMap.provider === 'google' ? 'Google 지도' : planMap.provider === 'osm' ? '지도 © OpenStreetMap · OpenFreeMap. 설정에서 Google 지도 키를 넣으면 구글 지도로 바뀌어요.' : '';
+    await Promise.all([planMap.map.ready, liveMap.map.ready]);
+    mapsReady = true;
     updatePlanMap();
     mapDay = -1;
-
-    wx = await W.load(trip);
-    renderPlan();
+    camKind = '';
+    refreshRoutes();
   }
 
   init();

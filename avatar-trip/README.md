@@ -29,8 +29,14 @@ python3 -m http.server 8080   # 또는 npx serve .
 
 ## 지도
 
-기본은 OpenStreetMap(Leaflet). 앱의 **설정**에 Google Maps JavaScript API 키를 넣으면 구글 지도로 바뀝니다.
-키는 브라우저 localStorage에만 저장됩니다.
+- 기본: **MapLibre + OpenFreeMap** 벡터 지도 (키 필요 없음). 3D 건물, 기울이기·회전, 한국어 지명 우선
+- **위성 사진** 버튼: Esri World Imagery 위성 사진으로 전환
+- 아바타는 **실제 도보 경로**(FOSSGIS OSRM, routing.openstreetmap.de)를 따라 걷고, 카메라가 내비게이션처럼 따라감
+  - 줄 서는 곳에서는 가게 앞에 사람들이 줄을 서 있고, 앞사람이 들어갈 때마다 한 칸씩 앞으로
+  - 가게·명소에서는 카메라가 천천히 돌며 주변을 보여 줌
+  - 지도를 직접 움직이면 따라가기가 멈추고 '아바타 따라가기' 버튼이 나옴
+- 실제 날씨·시간이 지도 위에 겹쳐짐 (비·눈·안개, 해 질 녘, 밤)
+- 설정에 **Google Maps JavaScript API 키**를 넣으면 Google 벡터 지도(기울이기·회전, 위성 하이브리드)로 바뀜. 키는 브라우저 localStorage에만 저장
 
 ## 파일
 
@@ -40,5 +46,6 @@ python3 -m http.server 8080   # 또는 npx serve .
 | `js/weather.js` | Open-Meteo 예보·과거 기록 불러오기 |
 | `js/timeline.js` | 일정 → 분 단위 타임라인 (이동·줄 서기·활동·취침) |
 | `js/scene.js` | 아바타 장면 그리기 (Canvas) |
-| `js/map.js` | Leaflet / Google Maps 지도 |
+| `js/routes.js` | 실제 도보 경로, 경로 위 위치 계산 |
+| `js/map.js` | MapLibre / Google Maps 지도 |
 | `js/app.js` | 화면과 상태 |

@@ -143,17 +143,47 @@ main { max-width: 1280px; margin: 0 auto; padding-bottom: 40px; }
 .map-off { display: grid; place-items: center; height: 100%; text-align: center; padding: 20px; color: var(--muted); font-size: 14px; }
 .pick-banner { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 1000; background: var(--ink); color: var(--bg); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .pick-banner button { padding: 4px 10px; }
-.pin span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #fff; font-weight: 700; font-size: 13px; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); }
-.avatar-pin span { display: block; width: 26px; height: 26px; border-radius: 50%; background: var(--c); border: 4px solid #fff; box-shadow: 0 0 0 0 var(--c); animation: ping 1.8s infinite; }
-@keyframes ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 60%, transparent); } 100% { box-shadow: 0 0 0 16px transparent; } }
+/* 구글 지도 느낌의 핀 */
+.gpin { width: 30px; height: 36px; cursor: pointer; }
+.gpin-head b { transform: rotate(45deg); }
+.gpin-head {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: var(--c); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); color: #fff; font-weight: 700; font-size: 13px;
+}
+.gpin-name {
+  position: absolute; top: 38px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #202124; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;
+}
+
+/* 지도 위 아바타 */
+.avatar-mk { width: 64px; height: 100px; pointer-events: none; }
+.avatar-mk canvas { position: absolute; left: 0; bottom: 0; width: 64px; height: 100px; z-index: 2; }
+.avatar-shadow { position: absolute; left: 50%; bottom: -6px; width: 40px; height: 14px; margin-left: -20px; border-radius: 50%; background: rgba(26, 115, 232, 0.35); box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.25); animation: ring 1.8s infinite; }
+@keyframes ring { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+.avatar-bubble {
+  position: absolute; bottom: 102px; left: 50%; transform: translateX(-50%); z-index: 3;
+  background: #fff; color: #202124; font-size: 13px; font-weight: 700; padding: 6px 11px; border-radius: 14px; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.avatar-bubble:empty { display: none; }
+.avatar-bubble::after { content: ""; position: absolute; left: 50%; top: 100%; margin-left: -6px; border: 6px solid transparent; border-top-color: #fff; }
+.person-mk { width: 40px; height: 70px; pointer-events: none; }
+.person-mk canvas { width: 40px; height: 70px; display: block; }
 
 /* 대신 여행 중 */
-.live-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: 20px; align-items: start; }
+.stage-map { position: relative; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); height: min(72vh, 680px); min-height: 420px; background: #dfe6e9; margin-bottom: 14px; }
+.map.live { position: absolute; inset: 0; height: 100%; border: 0; border-radius: 0; }
+#wxOverlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.hud { position: absolute; left: 12px; top: 12px; right: 60px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 3; }
+.chip { background: rgba(255, 255, 255, 0.95); color: #16233a; border-radius: 99px; padding: 5px 12px; font-size: 13px; font-weight: 500; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); }
+.map-tools { position: absolute; left: 12px; bottom: 44px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 3; }
+.map-tools button { background: #fff; color: #202124; border: 0; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); font-size: 13px; font-weight: 500; }
+.map-tools button.primary { background: #1a73e8; color: #fff; }
+.map-tools button[aria-pressed="true"] { background: #202124; color: #fff; }
+.inset { position: absolute; right: 12px; bottom: 30px; width: min(300px, 45%); aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; border: 3px solid #fff; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); z-index: 3; }
+.inset canvas { width: 100%; height: 100%; display: block; }
+.live-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 20px; align-items: start; }
 .stage-col { display: grid; gap: 12px; min-width: 0; }
-.stage { position: relative; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: #1c2a52; aspect-ratio: 16 / 9; max-width: 100%; }
-.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.hud { position: absolute; left: 12px; top: 12px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
-.chip { background: rgba(255, 255, 255, 0.92); color: #16233a; border-radius: 99px; padding: 4px 11px; font-size: 13px; font-weight: 500; backdrop-filter: blur(4px); }
 .status { display: flex; justify-content: space-between; gap: 16px; align-items: center; flex-wrap: wrap; }
 .status h2 { font-size: 22px; }
 .status p { margin: 2px 0 0; }
@@ -173,8 +203,7 @@ main { max-width: 1280px; margin: 0 auto; padding-bottom: 40px; }
 .seg button:last-child { border-right: 0; }
 .seg button.on, #realtimeBtn.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .controls > button { font-size: 13px; }
-.live-side { display: grid; gap: 12px; position: sticky; top: 12px; }
-.live-side .map { height: 300px; }
+.live-side { display: grid; gap: 12px; }
 .today h3 { font-size: 17px; margin-bottom: 8px; }
 .today ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .today li { display: grid; grid-template-columns: 46px 22px minmax(0, 1fr) auto; gap: 6px; align-items: center; font-size: 14px; padding: 6px 8px; border-radius: 8px; }
@@ -232,3 +261,5 @@ dialog h2 { font-size: 22px; }
 @media (prefers-reduced-motion: reduce) {
   .avatar-pin span { animation: none; }
 }
+/* 구글 지도 마커 안에서도 자식 위치 기준이 되도록 */
+.gpin:not(.maplibregl-marker), .avatar-mk:not(.maplibregl-marker) { position: relative; }

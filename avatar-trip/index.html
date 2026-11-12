@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -106,16 +106,25 @@
 
     <!-- 대신 여행 중 -->
     <section id="panel-live" class="panel" role="tabpanel" hidden>
+      <div class="stage-map">
+        <div id="liveMap" class="map live"></div>
+        <canvas id="wxOverlay" aria-hidden="true"></canvas>
+        <div class="hud">
+          <span class="chip" id="hudDay"></span>
+          <span class="chip mono" id="hudTime"></span>
+          <span class="chip" id="hudWx"></span>
+        </div>
+        <div class="map-tools">
+          <button type="button" id="followBtn" class="primary" hidden>아바타 따라가기</button>
+          <button type="button" id="satBtn" aria-pressed="false">위성 사진</button>
+          <button type="button" id="insetBtn" aria-pressed="false">아바타 시점</button>
+        </div>
+        <div class="inset" id="insetBox" hidden>
+          <canvas id="scene" aria-label="아바타 시점 그림"></canvas>
+        </div>
+      </div>
       <div class="live-grid">
         <div class="stage-col">
-          <div class="stage">
-            <canvas id="scene" aria-label="아바타가 지금 있는 곳"></canvas>
-            <div class="hud">
-              <span class="chip" id="hudDay"></span>
-              <span class="chip mono" id="hudTime"></span>
-              <span class="chip" id="hudWx"></span>
-            </div>
-          </div>
           <div class="status card">
             <div>
               <h2 id="statusTitle"></h2>
@@ -143,7 +152,6 @@
           <p id="wxSourceLive" class="muted small"></p>
         </div>
         <aside class="live-side">
-          <div id="liveMap" class="map"></div>
           <section class="card today">
             <h3 id="todayTitle">오늘 일정</h3>
             <ol id="todayList"></ol>
@@ -227,11 +235,12 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="js/data.js"></script>
   <script src="js/weather.js"></script>
   <script src="js/timeline.js"></script>
   <script src="js/scene.js"></script>
+  <script src="js/routes.js"></script>
   <script src="js/map.js"></script>
   <script src="js/app.js"></script>
 </body>

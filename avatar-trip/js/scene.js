@@ -990,5 +990,33 @@ window.Scene = (() => {
     ctx.restore();
   }
 
-  return { render, drawAvatar, landmarkKind };
+  /* 지도 위 날씨·시간 효과 */
+  function overlay(ctx, W, H, st) {
+    ctx.clearRect(0, 0, W, H);
+    const night = nightness(st.hour);
+    const cat = wxCat(st.wx?.code);
+    const g = gloomOf(cat);
+    if (night > 0) {
+      ctx.fillStyle = `rgba(8,16,48,${0.5 * night})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+    if (st.hour > 16.8 && st.hour < 18.6 && g < 0.5) {
+      const k = 1 - Math.abs(st.hour - 17.7) / 0.9;
+      ctx.fillStyle = `rgba(255,130,60,${0.16 * k})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+    if (g > 0) {
+      ctx.fillStyle = `rgba(90,100,115,${0.22 * g})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+    drawPrecip(ctx, W, H, st);
+  }
+  function sky(st) {
+    let [top, bot] = skyAt(st.hour);
+    const g = gloomOf(wxCat(st.wx?.code));
+    const grey = nightness(st.hour) > 0.5 ? '#2a2f3a' : '#9aa3ad';
+    return [mix(top, grey, g * 0.8), mix(bot, grey, g * 0.8)];
+  }
+
+  return { render, drawAvatar, drawPerson, landmarkKind, overlay, sky, nightness };
 })();
