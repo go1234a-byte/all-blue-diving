@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>다녀올게</title>
+  <meta name="description" content="여행 일정을 짜면 내 아바타가 먼저 다녀오는 여행 앱. 실제 날씨와 지도를 따라 줄 서고, 먹고, 구경해요.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="12" width="26" height="22" rx="6" fill="currentColor"/><path d="M15 12V8a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="14" cy="36" r="2.5" fill="currentColor"/><circle cx="26" cy="36" r="2.5" fill="currentColor"/><path d="M13 22h14M13 27h9" stroke="var(--surface)" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <div>
+        <h1>다녀올게</h1>
+        <p>내 아바타가 먼저 다녀오는 여행</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="화면">
+      <button type="button" class="tab" role="tab" data-tab="plan">일정 짜기</button>
+      <button type="button" class="tab" role="tab" data-tab="live">대신 여행 중</button>
+      <button type="button" class="tab" role="tab" data-tab="diary">여행 일기</button>
+    </nav>
+    <button type="button" id="settingsBtn" class="ghost">설정</button>
+  </header>
+
+  <main>
+    <!-- 일정 짜기 -->
+    <section id="panel-plan" class="panel" role="tabpanel">
+      <div class="plan-grid">
+        <div class="plan-main">
+          <section class="card setup">
+            <div class="setup-avatar">
+              <canvas id="avatarPreview" width="72" height="96" aria-label="아바타 미리보기"></canvas>
+              <div class="field">
+                <label for="avatarName">아바타 이름</label>
+                <input id="avatarName" maxlength="12" placeholder="예: 나무">
+                <div id="avatarColors" class="swatches" aria-label="아바타 색"></div>
+              </div>
+            </div>
+            <div class="setup-fields">
+              <div class="field">
+                <label for="preset">여행지</label>
+                <select id="preset">
+                  <option value="osaka">오사카·교토 3박 4일 (추천 일정)</option>
+                  <option value="tokyo">도쿄 2박 3일 (추천 일정)</option>
+                  <option value="custom">다른 도시 직접 짜기</option>
+                </select>
+                <small id="cityName" class="muted"></small>
+              </div>
+              <div class="field" id="citySearchRow" hidden>
+                <label for="citySearch">도시 찾기</label>
+                <div class="inline">
+                  <input id="citySearch" placeholder="예: 후쿠오카, 방콕, Paris">
+                  <button type="button" id="citySearchBtn">찾기</button>
+                </div>
+                <ul id="cityResults" class="results"></ul>
+              </div>
+              <div class="field">
+                <label for="startDate">출발일</label>
+                <input type="date" id="startDate">
+              </div>
+              <div class="field">
+                <label for="tripLen">기간</label>
+                <select id="tripLen">
+                  <option value="2">2박 3일</option>
+                  <option value="3">3박 4일</option>
+                </select>
+              </div>
+              <div class="field">
+                <span class="label">숙소</span>
+                <div class="inline">
+                  <span id="hotelName" class="hotel"></span>
+                  <button type="button" id="hotelBtn">바꾸기</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card weather" aria-labelledby="wxTitle">
+            <h2 id="wxTitle">여행 기간 날씨</h2>
+            <div id="weatherStrip"></div>
+          </section>
+
+          <div id="days" class="days"></div>
+        </div>
+
+        <aside class="plan-side">
+          <div class="map-wrap">
+            <div id="planMap" class="map"></div>
+            <div id="pickBanner" class="pick-banner" hidden>
+              지도에서 위치를 눌러 주세요
+              <button type="button" id="pickCancel">취소</button>
+            </div>
+          </div>
+          <p id="mapProvider" class="muted small"></p>
+          <button type="button" id="goLive" class="primary big">아바타 출발시키기</button>
+          <p class="muted small">출발하면 아바타가 일정대로 이동하고, 가게 앞에서 줄을 서고, 먹고 구경해요. 화면을 닫아도 여행은 계속돼요.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 대신 여행 중 -->
+    <section id="panel-live" class="panel" role="tabpanel" hidden>
+      <div class="live-grid">
+        <div class="stage-col">
+          <div class="stage">
+            <canvas id="scene" aria-label="아바타가 지금 있는 곳"></canvas>
+            <div class="hud">
+              <span class="chip" id="hudDay"></span>
+              <span class="chip mono" id="hudTime"></span>
+              <span class="chip" id="hudWx"></span>
+            </div>
+          </div>
+          <div class="status card">
+            <div>
+              <h2 id="statusTitle"></h2>
+              <p id="statusLine" class="muted"></p>
+            </div>
+            <div id="nowLinks" class="links"></div>
+          </div>
+          <div class="daybar-wrap">
+            <div id="dayBar" class="daybar" title="눌러서 그 시각으로 이동"></div>
+            <div class="legend">
+              <span><i style="background:var(--c-move)"></i>이동</span>
+              <span><i style="background:var(--stamp)"></i>줄 서기</span>
+              <span><i style="background:var(--accent)"></i>먹기·구경</span>
+              <span><i style="background:var(--c-wander)"></i>자유 시간</span>
+              <span><i style="background:var(--c-sleep)"></i>숙소</span>
+            </div>
+          </div>
+          <div class="controls">
+            <div id="speeds" class="seg" role="group" aria-label="빨리 보기 속도"></div>
+            <button type="button" id="pauseBtn">멈춤</button>
+            <button type="button" id="skipBtn">다음 장소로</button>
+            <button type="button" id="realtimeBtn" aria-pressed="false" title="현지 시각에 맞춰 움직여요">실제 시간에 맞추기</button>
+            <button type="button" id="restartBtn" class="ghost">처음부터</button>
+          </div>
+          <p id="wxSourceLive" class="muted small"></p>
+        </div>
+        <aside class="live-side">
+          <div id="liveMap" class="map"></div>
+          <section class="card today">
+            <h3 id="todayTitle">오늘 일정</h3>
+            <ol id="todayList"></ol>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 여행 일기 -->
+    <section id="panel-diary" class="panel" role="tabpanel" hidden>
+      <div id="diary" class="diary"></div>
+    </section>
+  </main>
+
+  <dialog id="stopDialog" aria-labelledby="stopDialogTitle">
+    <form method="dialog" onsubmit="return false">
+      <h2 id="stopDialogTitle">장소 추가</h2>
+      <div class="field">
+        <label for="stopName">이름</label>
+        <div class="inline">
+          <input id="stopName" placeholder="예: 이치란 라멘 도톤보리" autocomplete="off">
+          <button type="button" id="stopSearchBtn">검색</button>
+        </div>
+        <ul id="stopResults" class="results"></ul>
+        <div class="inline small">
+          <span id="stopCoords" class="muted"></span>
+          <button type="button" id="pickOnMap" class="link">지도에서 찍기</button>
+        </div>
+      </div>
+      <div class="grid2 stop-only">
+        <div class="field">
+          <label for="stopType">종류</label>
+          <select id="stopType">
+            <option value="food">🍜 맛집</option>
+            <option value="cafe">☕ 카페</option>
+            <option value="sight">📷 구경</option>
+            <option value="shop">🛍️ 쇼핑</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="stopAt">입장 시각 (선택)</label>
+          <input type="time" id="stopAt">
+        </div>
+        <div class="field">
+          <label for="stopStay">머무는 시간(분)</label>
+          <input type="number" id="stopStay" min="10" step="5">
+        </div>
+        <div class="field">
+          <label for="stopWait">예상 줄 서기(분)</label>
+          <input type="number" id="stopWait" min="0" step="5">
+        </div>
+      </div>
+      <div class="field stop-only">
+        <label for="stopNote">메모 (먹고 싶은 메뉴 등)</label>
+        <input id="stopNote" maxlength="40" placeholder="예: 돈코츠 라멘, 반숙 달걀 추가">
+      </div>
+      <p id="stopError" class="error" role="alert"></p>
+      <div class="actions">
+        <button type="button" id="stopCancel" class="ghost">취소</button>
+        <button type="button" id="stopSave" class="primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+    <form method="dialog" onsubmit="return false">
+      <h2 id="settingsTitle">설정</h2>
+      <div class="field">
+        <label for="gmapsKey">Google Maps API 키 (선택)</label>
+        <input id="gmapsKey" placeholder="AIza…" autocomplete="off">
+        <small class="muted">키를 넣으면 지도가 Google 지도로 바뀌어요. 키는 이 브라우저에만 저장돼요. 키가 없어도 장소마다 'Google 지도' 링크로 열 수 있어요.</small>
+      </div>
+      <div class="actions">
+        <button type="button" id="resetAll" class="ghost danger">처음 상태로</button>
+        <span class="spacer"></span>
+        <button type="button" id="settingsCancel" class="ghost">닫기</button>
+        <button type="button" id="settingsSave" class="primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/weather.js"></script>
+  <script src="js/timeline.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
