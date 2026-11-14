@@ -30,11 +30,11 @@
       "destination": "/dive/:id/index.html"
     },
     {
-      "source": "/:slug(green-island-dive-shop|green-island-part-time-swap|kinmen-part-time-swap|lanyu-diving-inn|lanyu-island-part-time-swap|mazu-part-time-swap|penghu-part-time-swap|xiaoliuqiu-part-time-swap|privacy-policy|sample-page)/?",
+      "source": "/((?:green-island-dive-shop|green-island-part-time-swap|kinmen-part-time-swap|lanyu-diving-inn|lanyu-island-part-time-swap|mazu-part-time-swap|penghu-part-time-swap|xiaoliuqiu-part-time-swap|privacy-policy|sample-page)/?)",
       "destination": "/api/gone"
     },
     {
-      "source": "/:wp(wp-content|wp-includes|wp-admin|wp-json|category|tag|author|feed|comments)/:rest*",
+      "source": "/((?:wp-content|wp-includes|wp-admin|wp-json|category|tag|author|feed|comments)(?:/.*)?)",
       "destination": "/api/gone"
     },
     {
