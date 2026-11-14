@@ -58,7 +58,7 @@ export function MonthSeas({ tours, onOpenDetail, onOpenAll }: Props) {
                   <li key={p.id} className={on ? "on" : ""}>
                     <button type="button" aria-expanded={on} onClick={() => setOpenId(p.id)}>
                       <span className="nm">{p.region}</span>
-                      <span className={`ct${n ? " has" : ""}`}>{n ? `모집 중 ${n}개` : "가이드만 있어요"}</span>
+                      {n > 0 && <span className="ct has">모집 중 {n}개</span>}
                     </button>
                     {on && (
                       <div className="more">
