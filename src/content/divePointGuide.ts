@@ -493,6 +493,62 @@ export const DIVE_POINTS: Record<string, DivePoint> = {
     "겨울에는 두꺼운 얼음을 절개해 입수하고 텐더 라인으로 다이버를 관리한다. 여름에는 보트 다이빙도 가능하다.",
     ["/landing/descend.webp", "/landing/coral.webp"],
     [{ name: "얼음 아래 (올혼 섬 인근)", desc: "[지형] 절개한 얼음 구멍으로 입수, 아래에서 올려다보는 빛의 커튼." }], true),
+  // ── 국내 바다·아이스 / 오키노에라부·마라투아 — 2026-11-14 추가 (참고: nbdivers.com/dive-korea·dive-trips 공개 안내, 지역 관광·다이빙 업체 자료)
+  donghae: P("donghae", "대한민국 · 동해 (강릉·속초·울진·포항)", "서울에서 두 시간, 가을이면 물이 확 맑아집니다", "/landing/boat.webp",
+    "가을(9~11월)에 시야가 가장 트이는 국내 동해안 — 인공어초 주변에 생물이 몰린다.",
+    "수온 여름 약 22°C · 겨울 약 5°C · 시야 15–25m (예시)", ["가자미", "문어", "성게", "인공어초 어군"],
+    "OW 이상 · 수온이 낮아 드라이슈트 경험이 있으면 좋음",
+    "강릉·속초·울진·포항 항구에서 보트로 5~30분이면 포인트에 닿는다. 연중 다이빙이 가능하고, 가을에 물이 가장 맑다. 얕은 연안부터 깊은 수심까지 폭이 넓다.",
+    ["/landing/boat.webp", "/landing/descend.webp"],
+    [{ name: "강릉·속초 인공어초", desc: "[지형] 콘크리트 어초에 말미잘·성게가 붙고 어군이 모인다." },
+     { name: "울진·포항 연안", desc: "[지형] 암반과 모래가 섞인 연안, 가자미·문어 관찰." }], false, "서울에서 차로 약 2~3시간, 항구에서 보트 5~30분"),
+  seohae: P("seohae", "대한민국 · 서해 (태안 · 격렬비열도)", "조류를 읽는 사람만 들어가는 서해 끝 무인도", "/landing/group.webp",
+    "외해 무인도 격렬비열도의 물고기 떼 — 물때(정조)에 맞춰 들어가는 드리프트 다이빙.",
+    "수온 여름 약 22°C · 겨울 약 3°C · 시야 3–8m (예시)", ["물고기 떼", "해조류 숲", "암반 생물"],
+    "AOW 이상 · 조류·드리프트 경험자",
+    "서해는 조수 간만의 차가 커서 정조 시간에 맞춰 입수한다. 연안은 시야가 짧지만, 태안 앞바다 외해의 격렬비열도는 어군이 두텁다. 국내 다이빙 경험을 넓히려는 다이버에게 맞는다.",
+    ["/landing/boat.webp", "/landing/group.webp"],
+    [{ name: "격렬비열도", desc: "[대물] 외해 무인도, 조류를 타고 도는 어군." },
+     { name: "태안·보령 연안", desc: "[지형] 물때에 맞춘 연안 다이빙." }], false, "서울에서 태안까지 차로 약 1.5~2시간, 이후 보트"),
+  namhae: P("namhae", "대한민국 · 남해 (통영·거제·여수)", "국내에서 처음 바다에 들어간다면 여기부터", "/landing/coral.webp",
+    "국내 바다 중 수온이 높고 잔잔한 편 — 입문 다이버에게 먼저 권하는 바다.",
+    "수온 여름 약 27°C · 겨울 약 12°C · 시야 8–15m (예시)", ["연산호", "볼락·자리돔 어군", "바다거북(드물게)"],
+    "입문(체험·OW 교육)부터",
+    "통영·거제·여수 일대 섬 사이 내만이 잔잔해 교육과 첫 바다 다이빙에 많이 쓴다. 여름에 가장 따뜻하고, 바위 벽에 연산호가 핀다.",
+    ["/landing/coral.webp", "/landing/instructor.webp"],
+    [{ name: "통영 섬 연안", desc: "[마크로] 잔잔한 내만, 교육·체험 다이빙." },
+     { name: "거제·여수 연안", desc: "[지형] 연산호가 붙은 바위 벽." }], false, "부산에서 차로 약 1시간(거제·통영), 서울에서 KTX·차로 약 4시간"),
+  hongcheon_ice: P("hongcheon_ice", "대한민국 · 홍천강 아이스다이빙", "한겨울, 얼어붙은 강에 구멍을 냅니다", "/landing/descend.webp",
+    "1~2월 강이 얼면 열리는 국내 아이스다이빙 — 얼음 아래의 고요한 빛.",
+    "수온 0–2°C(얼음 아래) · 시야 5–10m (예시)", ["얼음 천장", "강바닥 자갈", "빛이 스미는 얼음 구멍"],
+    "드라이슈트 자격·경험 필수 · 아이스다이빙 교육 과정으로 진행",
+    "두꺼운 얼음에 입수 구멍을 내고, 지상 팀이 생명줄(텐더 라인)을 잡은 채 들어간다. 오버헤드 환경이라 반드시 교육 과정과 전문 인솔로 진행한다.",
+    ["/landing/descend.webp", "/landing/hero.webp"],
+    [{ name: "홍천강 결빙 구간", desc: "[지형] 얼음 구멍 입수, 생명줄을 단 오버헤드 다이빙." }], true, "서울에서 차로 약 1.5시간"),
+  baekdam_ice: P("baekdam_ice", "대한민국 · 인제 백담계곡 아이스다이빙", "설악산 계곡물, 얼음 밑은 이렇게 맑습니다", "/landing/hero.webp",
+    "설악산 자락 맑은 계곡의 1~2월 아이스다이빙 — 강보다 시야가 트인다.",
+    "수온 0–2°C(얼음 아래) · 시야 8–15m (예시)", ["푸른 얼음 천장", "계곡 바위", "맑은 계곡물"],
+    "드라이슈트 자격·경험 필수 · 아이스다이빙 교육 과정으로 진행",
+    "백담사 인근 계곡이 얼면 얼음 구멍으로 들어간다. 물이 맑아 얼음을 통과한 빛이 푸르게 번진다. 생명줄과 지상 안전 팀이 붙는 오버헤드 다이빙이다.",
+    ["/landing/descend.webp", "/landing/scuba1.webp"],
+    [{ name: "백담계곡 결빙 구간", desc: "[지형] 맑은 계곡의 얼음 아래, 생명줄을 단 오버헤드 다이빙." }], true, "서울에서 차로 약 2.5시간"),
+  okinoerabu: P("okinoerabu", "일본 · 오키노에라부 섬 (가고시마)", "섬 전체가 융기 산호, 바다 밑도 동굴과 아치입니다", "/landing/turtle.webp",
+    "융기 산호초 섬의 동굴·크레바스·아치 지형 — 북풍을 피할 포인트가 있어 연중 다이빙.",
+    "수온 약 21–28°C · 시야 20–30m (예시)", ["전갱이(갱이) 토네이도", "바다거북", "혹등고래(겨울)", "돗돔·대형 회유어(봄)"],
+    "AOW 이상 · 아치·동굴 지형은 중급 이상",
+    "가고시마에서 남쪽으로 약 550km. 큰 강이 없어 연중 물이 맑고 포인트가 40곳이 넘는다. 겨울(1~3월)엔 시야 30m 이상인 날이 많고 전갱이 무리, 혹등고래를 노린다. 섬 남쪽에 아치·동굴 포인트가 몰려 있다.",
+    ["/landing/turtle.webp", "/landing/coral.webp"],
+    [{ name: "섬 남쪽 아치·동굴 포인트", desc: "[지형] 융기 산호가 만든 아치와 복잡한 동굴." },
+     { name: "드롭오프 포인트", desc: "[대물] 수심 30m대로 떨어지는 벽, 회유어." }], false, "인천 → 가고시마 또는 오키나와 나하 경유, 국내선·배로 이동"),
+  maratua: P("maratua", "인도네시아 · 마라투아 (데라완 제도)", "보르네오 바다의 바라쿠다 토네이도", "/landing/scuba1.webp",
+    "채널 입구에서 바라쿠다 떼가 소용돌이치는 섬 — 초록거북·대모거북이 흔하다.",
+    "수온 약 27–30°C · 시야 15–30m (예시)", ["바라쿠다 토네이도", "초록거북·대모거북", "회색암초상어", "독수리가오리 떼"],
+    "AOW 이상 · 채널 드리프트 경험 권장",
+    "동부 칼리만탄 데라완 제도의 환초 섬. 성수기는 대략 4~10월이고 리조트는 1월을 빼고 연중 운영한다. 인근 카카반 섬 해파리 호수는 스쿠버 금지이고, 수영 허용 여부가 바뀐 적이 있어 현지 확인이 필요하다.",
+    ["/landing/turtle.webp", "/landing/whale.webp"],
+    [{ name: "빅 피시 컨트리 · 채널", desc: "[대물] 바라쿠다 토네이도, 회색암초상어, 독수리가오리." },
+     { name: "터틀 트래픽", desc: "[대물] 초록거북이 자주 지나는 포인트." },
+     { name: "바라쿠다 포인트", desc: "[대물] 조류가 센 드리프트 포인트." }], false, "인천 → 발리·자카르타 경유 → 발릭파판 → 베라우(BEJ) 또는 마라투아 공항, 이후 보트"),
 };
 
 /**
@@ -505,27 +561,27 @@ for (const [id, v] of Object.entries(VERIFIED_WATER)) if (DIVE_POINTS[id]) Objec
 
 export const GUIDE_BY_MONTH: string[][] = [
   // 1월
-  ["jeju", "kerama", "malapascua", "yonaguni", "moalboal", "coron", "xiaoliuqiu", "condao", "tulamben", "subic", "maldives", "galapagos", "rajaampat", "similan", "socorro", "sipadan", "bonaire", "cayman", "belize", "mozambique", "cenotes", "fuji_lakes", "ojamo"],
+  ["jeju", "kerama", "okinoerabu", "malapascua", "yonaguni", "moalboal", "coron", "xiaoliuqiu", "condao", "tulamben", "subic", "maldives", "galapagos", "rajaampat", "similan", "socorro", "sipadan", "bonaire", "cayman", "belize", "mozambique", "cenotes", "fuji_lakes", "ojamo", "hongcheon_ice", "baekdam_ice"],
   // 2월
-  ["jeju", "kerama", "malapascua", "yonaguni", "moalboal", "coron", "xiaoliuqiu", "condao", "tulamben", "subic", "ogasawara", "maldives", "mafia", "rajaampat", "similan", "socorro", "palau", "tubbataha", "bonaire", "cayman", "belize", "baikal", "cenotes", "ojamo"],
+  ["jeju", "kerama", "okinoerabu", "malapascua", "yonaguni", "moalboal", "coron", "xiaoliuqiu", "condao", "tulamben", "subic", "ogasawara", "maldives", "mafia", "rajaampat", "similan", "socorro", "palau", "tubbataha", "bonaire", "cayman", "belize", "baikal", "cenotes", "ojamo", "hongcheon_ice", "baekdam_ice"],
   // 3월
-  ["jeju", "kerama", "malapascua", "moalboal", "coron", "puerto_galera", "xiaoliuqiu", "condao", "tulamben", "subic", "ogasawara", "tubbataha", "rajaampat", "similan", "socorro", "redsea", "maldives", "palau", "ningaloo", "sudan", "redsea_north", "baikal", "cenotes"],
+  ["jeju", "kerama", "okinoerabu", "malapascua", "moalboal", "coron", "puerto_galera", "xiaoliuqiu", "condao", "tulamben", "subic", "ogasawara", "tubbataha", "rajaampat", "similan", "socorro", "redsea", "maldives", "palau", "ningaloo", "sudan", "redsea_north", "baikal", "cenotes"],
   // 4월
-  ["jeju", "kerama", "malapascua", "moalboal", "anilao", "apo_dumaguete", "boracay", "condao", "tulamben", "taiwan_islands", "tubbataha", "rajaampat", "similan", "socorro", "redsea", "palau", "komodo", "ningaloo", "fiji", "sudan", "redsea_north", "nagara", "cenotes"],
+  ["jeju", "kerama", "okinoerabu", "malapascua", "moalboal", "anilao", "apo_dumaguete", "boracay", "condao", "tulamben", "taiwan_islands", "tubbataha", "rajaampat", "similan", "socorro", "redsea", "palau", "komodo", "maratua", "ningaloo", "fiji", "sudan", "redsea_north", "nagara", "cenotes"],
   // 5월
-  ["jeju", "ulleung", "izu_mikomoto", "anilao", "apo_dumaguete", "moalboal", "boracay", "condao", "tulamben", "taiwan_islands", "palau", "tubbataha", "redsea", "rajaampat", "socorro", "komodo", "sipadan", "ningaloo", "fiji", "silfra", "malta", "redsea_north", "nagara", "cenotes"],
+  ["jeju", "okinoerabu", "ulleung", "izu_mikomoto", "anilao", "apo_dumaguete", "moalboal", "boracay", "condao", "tulamben", "taiwan_islands", "palau", "tubbataha", "redsea", "rajaampat", "socorro", "komodo", "maratua", "sipadan", "ningaloo", "fiji", "silfra", "malta", "redsea_north", "nagara", "cenotes"],
   // 6월
-  ["jeju", "ulleung", "izu_mikomoto", "anilao", "moalboal", "boracay", "puerto_galera", "tulamben", "taiwan_islands", "redsea", "komodo", "cocos", "palau", "sipadan", "socorro", "seychelles", "ningaloo", "gbr", "aliwal", "frenchpolynesia", "silfra", "malta", "redsea_north", "nagara", "fuji_lakes", "shikotsu"],
+  ["jeju", "namhae", "seohae", "ulleung", "izu_mikomoto", "anilao", "moalboal", "boracay", "puerto_galera", "tulamben", "taiwan_islands", "redsea", "komodo", "maratua", "cocos", "palau", "sipadan", "socorro", "seychelles", "ningaloo", "gbr", "aliwal", "frenchpolynesia", "silfra", "malta", "redsea_north", "nagara", "fuji_lakes", "shikotsu"],
   // 7월
-  ["jeju", "ulleung", "izu_mikomoto", "anilao", "moalboal", "boracay", "puerto_galera", "tulamben", "taiwan_islands", "cocos", "komodo", "sipadan", "redsea", "palau", "seychelles", "oman", "ningaloo", "gbr", "aliwal", "frenchpolynesia", "azores", "silfra", "malta", "lembeh", "redsea_north", "nagara", "baikal"],
+  ["jeju", "namhae", "seohae", "ulleung", "izu_mikomoto", "anilao", "moalboal", "boracay", "puerto_galera", "tulamben", "taiwan_islands", "cocos", "komodo", "maratua", "sipadan", "redsea", "palau", "seychelles", "oman", "ningaloo", "gbr", "aliwal", "frenchpolynesia", "azores", "silfra", "malta", "lembeh", "redsea_north", "nagara", "baikal"],
   // 8월
-  ["jeju", "ulleung", "ishigaki", "izu_mikomoto", "ogasawara", "moalboal", "anilao", "tulamben", "taiwan_islands", "komodo", "maldives_baa", "sipadan", "cocos", "seychelles", "oman", "rajaampat", "gbr", "aliwal", "frenchpolynesia", "azores", "malta", "lembeh", "sudan", "redsea_north", "cenotes"],
+  ["jeju", "namhae", "seohae", "ulleung", "ishigaki", "izu_mikomoto", "ogasawara", "moalboal", "anilao", "tulamben", "taiwan_islands", "komodo", "maratua", "maldives_baa", "sipadan", "cocos", "seychelles", "oman", "rajaampat", "gbr", "aliwal", "frenchpolynesia", "azores", "malta", "lembeh", "sudan", "redsea_north", "cenotes"],
   // 9월
-  ["jeju", "ulleung", "ishigaki", "izu_mikomoto", "moalboal", "anilao", "apo_dumaguete", "tulamben", "seychelles", "oman", "maldives_baa", "komodo", "sipadan", "rajaampat", "redsea", "aliwal", "frenchpolynesia", "azores", "malta", "lembeh", "sudan", "redsea_north", "cenotes"],
+  ["jeju", "namhae", "seohae", "donghae", "ulleung", "ishigaki", "izu_mikomoto", "moalboal", "anilao", "apo_dumaguete", "tulamben", "seychelles", "oman", "maldives_baa", "komodo", "maratua", "sipadan", "rajaampat", "redsea", "aliwal", "frenchpolynesia", "azores", "malta", "lembeh", "sudan", "redsea_north", "cenotes"],
   // 10월
-  ["jeju", "kerama", "ishigaki", "moalboal", "anilao", "coron", "puerto_galera", "condao", "tulamben", "sipadan", "maldives_baa", "rajaampat", "komodo", "similan", "redsea", "mafia", "aliwal", "frenchpolynesia", "azores", "lembeh", "mozambique", "sudan", "cenotes"],
+  ["jeju", "donghae", "kerama", "okinoerabu", "ishigaki", "moalboal", "anilao", "coron", "puerto_galera", "condao", "tulamben", "sipadan", "maldives_baa", "rajaampat", "komodo", "maratua", "similan", "redsea", "mafia", "aliwal", "frenchpolynesia", "azores", "lembeh", "mozambique", "sudan", "cenotes"],
   // 11월
-  ["jeju", "kerama", "malapascua", "moalboal", "coron", "xiaoliuqiu", "condao", "tulamben", "boracay", "subic", "similan", "socorro", "rajaampat", "maldives", "sipadan", "palau", "mafia", "cayman", "belize", "bonaire", "mozambique", "lembeh", "cenotes", "fuji_lakes"],
+  ["jeju", "donghae", "kerama", "okinoerabu", "malapascua", "moalboal", "coron", "xiaoliuqiu", "condao", "tulamben", "boracay", "subic", "similan", "socorro", "rajaampat", "maldives", "sipadan", "palau", "mafia", "cayman", "belize", "bonaire", "mozambique", "lembeh", "cenotes", "fuji_lakes"],
   // 12월
-  ["jeju", "kerama", "malapascua", "yonaguni", "moalboal", "coron", "xiaoliuqiu", "condao", "tulamben", "subic", "similan", "socorro", "rajaampat", "maldives", "redsea", "palau", "mafia", "cayman", "belize", "bonaire", "mozambique", "cenotes", "fuji_lakes", "ojamo"],
+  ["jeju", "kerama", "okinoerabu", "malapascua", "yonaguni", "moalboal", "coron", "xiaoliuqiu", "condao", "tulamben", "subic", "similan", "socorro", "rajaampat", "maldives", "redsea", "palau", "mafia", "cayman", "belize", "bonaire", "mozambique", "cenotes", "fuji_lakes", "ojamo"],
 ];
