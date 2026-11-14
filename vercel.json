@@ -1,14 +1,46 @@
 {
   "buildCommand": "npm run build",
   "rewrites": [
-    { "source": "/search", "destination": "/api/page?p=search" },
-    { "source": "/guide", "destination": "/api/page?p=guide" },
-    { "source": "/tour/:id", "destination": "/api/og/tour/:id" },
-    { "source": "/instructor/:id/profile", "destination": "/api/og/instructor/:id" },
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/dive", "destination": "/dive/index.html" },
-    { "source": "/dive/:id", "destination": "/dive/:id/index.html" },
-    { "source": "/((?!api/).*)", "destination": "/spa.html" }
+    {
+      "source": "/search",
+      "destination": "/api/page?p=search"
+    },
+    {
+      "source": "/guide",
+      "destination": "/api/page?p=guide"
+    },
+    {
+      "source": "/tour/:id",
+      "destination": "/api/og/tour/:id"
+    },
+    {
+      "source": "/instructor/:id/profile",
+      "destination": "/api/og/instructor/:id"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/dive",
+      "destination": "/dive/index.html"
+    },
+    {
+      "source": "/dive/:id",
+      "destination": "/dive/:id/index.html"
+    },
+    {
+      "source": "/:slug(green-island-dive-shop|green-island-part-time-swap|kinmen-part-time-swap|lanyu-diving-inn|lanyu-island-part-time-swap|mazu-part-time-swap|penghu-part-time-swap|xiaoliuqiu-part-time-swap|privacy-policy|sample-page)/?",
+      "destination": "/api/gone"
+    },
+    {
+      "source": "/:wp(wp-content|wp-includes|wp-admin|wp-json|category|tag|author|feed|comments)/:rest*",
+      "destination": "/api/gone"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/spa.html"
+    }
   ],
   "headers": [
     {
