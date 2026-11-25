@@ -33,6 +33,15 @@ const RefundPolicyPage = () => {
         </p>
 
         <div className="space-y-8 text-sm leading-relaxed text-foreground">
+          <section className="rounded-lg bg-muted/50 p-4">
+            <h2 className="mb-2 text-base font-semibold">상품 및 서비스 제공 기간</h2>
+            <p>
+              회사가 중개하는 상품은 강사(센터) 회원이 진행하는 스쿠버다이빙·프리다이빙·리브어보드 투어(무형 서비스)이며,
+              배송되는 재화가 없습니다. 서비스 제공 기간은 각 투어 상세페이지에 표시된 <b>출발일부터 종료일까지</b>이고,
+              판매 금액(1인 기준)·포함/불포함 사항·집결지·일정은 같은 상세페이지에 고지합니다. 결제가 완료되면 예약 내역은
+              즉시 "내 예약"에서 확인할 수 있고, 서비스는 투어 출발일에 현지에서 제공됩니다.
+            </p>
+          </section>
           <section>
             <h2 className="mb-2 text-base font-semibold">1. 기본원칙</h2>
             <p>
