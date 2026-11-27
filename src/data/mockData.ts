@@ -26,9 +26,9 @@ export const MOCK_DIVE_CENTERS: DiveCenter[] = [
     address: "필리핀 세부 모알보알 파나그사마 비치로 12",
     operatingHours: "매일 07:00 - 19:00",
     photos: [
-      "https://cdn.enter.pro/resources/uid_100187712/gallery_boat_setup_0117a349.png",
-      "https://cdn.enter.pro/resources/uid_100187712/gallery_group_divers_9f03a7bd.png",
-      "https://cdn.enter.pro/resources/uid_100187712/gallery_coral_macro_ddd7bad3.png",
+      "/landing/boat.webp",
+      "/landing/group.webp",
+      "/landing/coral.webp",
     ],
   },
   {
@@ -37,9 +37,9 @@ export const MOCK_DIVE_CENTERS: DiveCenter[] = [
     address: "제주특별자치도 서귀포시 성산읍 섭지코지로 25",
     operatingHours: "매일 08:00 - 18:00",
     photos: [
-      "https://cdn.enter.pro/resources/uid_100187712/gallery_group_divers_9f03a7bd.png",
-      "https://cdn.enter.pro/resources/uid_100187712/gallery_sunset_return_bbd94b9e.png",
-      "https://cdn.enter.pro/resources/uid_100187712/gallery_boat_setup_0117a349.png",
+      "/landing/group.webp",
+      "/landing/hero.webp",
+      "/landing/boat.webp",
     ],
   },
   {
@@ -48,9 +48,9 @@ export const MOCK_DIVE_CENTERS: DiveCenter[] = [
     address: "팔라우 코로르 말라칼 하버로드 8",
     operatingHours: "매일 06:30 - 20:00",
     photos: [
-      "https://cdn.enter.pro/resources/uid_100187712/gallery_coral_macro_ddd7bad3.png",
-      "https://cdn.enter.pro/resources/uid_100187712/gallery_boat_setup_0117a349.png",
-      "https://cdn.enter.pro/resources/uid_100187712/gallery_sunset_return_bbd94b9e.png",
+      "/landing/coral.webp",
+      "/landing/boat.webp",
+      "/landing/hero.webp",
     ],
   },
 ];
