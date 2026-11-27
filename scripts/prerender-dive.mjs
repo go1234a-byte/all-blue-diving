@@ -42,7 +42,7 @@ if (!template.includes('<div id="root"></div>')) {
 
 function render({ meta, jsonLd, body }) {
   let html = injectHead(template, {
-    title: `${meta.title} | ALL BLUE`,
+    title: `${meta.title} | 올블루 ALL BLUE`,
     description: meta.description,
     url: `${SITE_URL}${meta.path}`,
     image: meta.image,

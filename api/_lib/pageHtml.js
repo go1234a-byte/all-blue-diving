@@ -29,7 +29,7 @@ export function tourListHtml(tours) {
 }
 
 export function homeHtml(tours) {
-  return `<h1>ALL BLUE — 모든 바다가 만나는 곳</h1>
+  return `<h1>올블루(ALL BLUE) — 스쿠버·프리다이빙 투어 예약</h1>
 <p>자격과 경력을 검증한 강사의 스쿠버다이빙·프리다이빙·리브어보드 투어를 한 곳에서 비교하고 예약하는 다이빙 투어 플랫폼입니다.</p>
 <h2>모집 중인 다이빙 투어</h2>${tourListHtml(tours)}
 <p><a href="${SITE_URL}/search">전체 투어 검색</a> · <a href="${SITE_URL}/guide">다이빙 기초·안전 가이드</a></p>`;

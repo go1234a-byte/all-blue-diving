@@ -24,7 +24,7 @@ async function fetchInstructor(id) {
 function buildMeta(ins) {
   const url = `${SITE_URL}/instructor/${ins.id}/profile`;
   const credential = [ins.agency, ins.level].filter(Boolean).join(" ");
-  const title = `${ins.name} 강사 프로필 | ALL BLUE`;
+  const title = `${ins.name} 강사 프로필 | 올블루 ALL BLUE`;
   const description =
     toDescription(ins.bio) ||
     `${credential ? `${credential} ` : ""}${ins.name} 강사의 다이빙 투어와 후기를 ALL BLUE에서 확인해보세요.`;

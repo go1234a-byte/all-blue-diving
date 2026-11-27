@@ -9,12 +9,12 @@ import { useEffect } from "react";
 // 이전 페이지의 제목이 남지 않게 한다.
 
 export const SITE_URL = "https://allbluedive.com";
-const DEFAULT_TITLE = "ALL BLUE - 모든 바다가 만나는 곳";
-const DEFAULT_DESCRIPTION = "전 세계 스쿠버다이빙 & 프리다이빙 투어를 한 곳에서 비교하고 예약하세요.";
+const DEFAULT_TITLE = "올블루 ALL BLUE - 스쿠버·프리다이빙 투어 예약";
+const DEFAULT_DESCRIPTION = "올블루(ALL BLUE)에서 전 세계 스쿠버다이빙·프리다이빙 투어를 한 곳에서 비교하고 예약하세요.";
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
 export interface PageMeta {
-  /** 브랜드 접미사(" | ALL BLUE")는 자동으로 붙는다. 비우면 기본 제목. */
+  /** 브랜드 접미사(" | 올블루 ALL BLUE")는 자동으로 붙는다. 비우면 기본 제목. */
   title?: string;
   description?: string;
   /** 사이트 기준 경로 (예: "/tour/abc"). 쿼리스트링은 넣지 않는다. */
@@ -45,7 +45,7 @@ function setCanonical(href: string) {
 }
 
 function apply(meta: PageMeta) {
-  const title = meta.title ? `${meta.title} | ALL BLUE` : DEFAULT_TITLE;
+  const title = meta.title ? `${meta.title} | 올블루 ALL BLUE` : DEFAULT_TITLE;
   const description = meta.description?.trim() || DEFAULT_DESCRIPTION;
   const url = `${SITE_URL}${meta.path ?? "/"}`;
   const image = meta.image || DEFAULT_IMAGE;

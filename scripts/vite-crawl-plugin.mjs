@@ -7,7 +7,7 @@
 import { copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { genCrawlData } from "./gen-crawl-data.mjs";
 
-export const HOME_BODY = `<main data-seo-home style="max-width:720px;margin:0 auto;padding:24px 16px;font-family:Pretendard,-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#14263A;line-height:1.6"><script>if(location.hostname==="localhost")document.documentElement.classList.add("native")</script><style>html.native [data-seo-home]{display:none}</style><h1>ALL BLUE — 모든 바다가 만나는 곳</h1><p>자격과 경력을 검증한 강사의 스쿠버다이빙·프리다이빙·리브어보드 투어를 한 곳에서 비교하고 예약하는 다이빙 투어 플랫폼입니다.</p><p><a href="/search">모집 중인 다이빙 투어 검색</a> · <a href="/guide">다이빙 기초·안전 가이드</a></p></main>`;
+export const HOME_BODY = `<main data-seo-home style="max-width:720px;margin:0 auto;padding:24px 16px;font-family:Pretendard,-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#14263A;line-height:1.6"><script>if(location.hostname==="localhost")document.documentElement.classList.add("native")</script><style>html.native [data-seo-home]{display:none}</style><h1>올블루(ALL BLUE) — 스쿠버·프리다이빙 투어 예약</h1><p>자격과 경력을 검증한 강사의 스쿠버다이빙·프리다이빙·리브어보드 투어를 한 곳에서 비교하고 예약하는 다이빙 투어 플랫폼입니다.</p><p><a href="/search">모집 중인 다이빙 투어 검색</a> · <a href="/guide">다이빙 기초·안전 가이드</a></p></main>`;
 
 export function crawlPlugin() {
   return {

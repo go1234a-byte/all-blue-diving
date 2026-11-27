@@ -35,7 +35,7 @@ async function fetchTour(id) {
 
 function buildMeta(tour) {
   const url = `${SITE_URL}/tour/${tour.id}`;
-  const title = `${tour.title} | ALL BLUE`;
+  const title = `${tour.title} | 올블루 ALL BLUE`;
   const description =
     toDescription(tour.description) ||
     `${tour.country} · ${tour.site}에서 떠나는 다이빙 투어를 ALL BLUE에서 확인해보세요.`;

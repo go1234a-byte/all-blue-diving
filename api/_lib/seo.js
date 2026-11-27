@@ -107,7 +107,7 @@ export function sendHtml(res, html, status = 200) {
 /** 삭제됐거나 없는 투어/강사 주소: 앱 화면은 그대로(“찾을 수 없음” 표시) 두고 상태코드만 404. */
 export function notFoundHtml(html) {
   return injectHead(html, {
-    title: "페이지를 찾을 수 없습니다 | ALL BLUE",
+    title: "페이지를 찾을 수 없습니다 | 올블루 ALL BLUE",
     description: "요청하신 페이지가 삭제되었거나 주소가 바뀌었습니다.",
     url: `${SITE_URL}/`,
     noindex: true,

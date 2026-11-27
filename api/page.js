@@ -5,9 +5,9 @@ import { DIVE_BASICS, DIVE_BASICS_NOTICE } from "./_lib/crawlData.js";
 import { guideHtml, homeHtml, injectBody, searchHtml } from "./_lib/pageHtml.js";
 
 const META = {
-  home: { path: "/", title: "ALL BLUE - 모든 바다가 만나는 곳", description: "전 세계 스쿠버다이빙 & 프리다이빙 투어를 한 곳에서 비교하고 예약하세요." },
-  search: { path: "/search", title: "다이빙 투어 검색 | ALL BLUE", description: "나라·월·활동(스쿠버/프리다이빙)별로 전 세계 다이빙 투어를 비교하고 바로 예약하세요." },
-  guide: { path: "/guide", title: "다이빙 기초·안전 가이드 | ALL BLUE", description: "오픈워터와 어드밴스드의 차이, 준비물, 비행 전 휴식까지 처음 다이빙하는 분을 위한 기초·안전 가이드." },
+  home: { path: "/", title: "올블루 ALL BLUE - 스쿠버·프리다이빙 투어 예약", description: "올블루(ALL BLUE)에서 전 세계 스쿠버다이빙·프리다이빙 투어를 한 곳에서 비교하고 예약하세요." },
+  search: { path: "/search", title: "다이빙 투어 검색 | 올블루 ALL BLUE", description: "나라·월·활동(스쿠버/프리다이빙)별로 전 세계 다이빙 투어를 비교하고 바로 예약하세요." },
+  guide: { path: "/guide", title: "다이빙 기초·안전 가이드 | 올블루 ALL BLUE", description: "오픈워터와 어드밴스드의 차이, 준비물, 비행 전 휴식까지 처음 다이빙하는 분을 위한 기초·안전 가이드." },
 };
 
 // 지난 투어·취소·정지·샘플은 뺀다(사이트맵과 같은 기준).
